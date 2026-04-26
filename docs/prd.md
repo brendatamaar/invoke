@@ -2362,7 +2362,7 @@ The core engine is **isomorphic** — it runs in the browser (MVP) and Node.js (
 | HTTP client | net/http (standard library) | — |
 | HTTP tracing | net/http/httptrace | — |
 | TLS | crypto/tls | — |
-| WebSocket | gorilla/websocket or nhooyr/websocket | latest |
+| WebSocket | nhooyr.io/websocket | latest |
 | gRPC reflection | google.golang.org/grpc/reflection | latest |
 | Logging | zerolog or slog | latest |
 

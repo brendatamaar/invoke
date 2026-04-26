@@ -1,16 +1,20 @@
-# invoke — MVP Execution Detail
+# invoke — v1 Execution Detail
 
-**Purpose:** Step-by-step implementation guide for building the invoke MVP.
-**Scope:** MVP phase only — anonymous public users, IndexedDB storage, no accounts, no database.
+**Purpose:** Step-by-step implementation guide for building invoke up to the full v1 release.
+**Scope:** v1 phase — the full feature set described in `mvp-features.md` and `prd.md`. Anonymous public users, IndexedDB storage, no accounts, no database.
 **Granularity:** Each task is approximately 1–2 hours of work.
+
+> **First-ship target is the Alpha MVP, not v1.** This document is the long-form plan for the full v1 build. The actual first ship is the **Alpha MVP** — a deliberately smaller subset focused on proving the core REST request-execution loop. See `alpha-mvp.md` for the Alpha scope and a vertical-slice execution plan that gets you to a usable app in ~6 working slices.
+>
+> Tasks below cover everything needed for v1. When following the Alpha plan, you'll execute Stage 1 from this document as-is (it's the scaffold), then pull the relevant tasks for REST execution, IndexedDB storage, variables, and import/export from Stages 2–6 as called out by each Alpha slice. Tasks for GraphQL, WebSocket, gRPC, flow builder, mock server, scripting, response diff, and public hosted deployment are Beta/v1 work — leave them in this document and come back to them after Alpha ships.
 
 ---
 
-## MVP Feature Summary
+## v1 Feature Summary
 
-The MVP delivers a fully functional, browser-based API testing tool with zero account requirement. All data is stored in the user's browser via IndexedDB.
+The full v1 delivers a fully functional, browser-based API testing tool with zero account requirement. All data is stored in the user's browser via IndexedDB.
 
-### What's Included in MVP
+### What's Included in v1
 
 - **Protocols:** REST, GraphQL, WebSocket, gRPC
 - **Core engine:** Collection management, environment/variable system, flow runner (request chaining), assertion engine, response diffing, mock server, code generation (14 targets), history with full-text search, scripting (pre-request/post-response)
@@ -19,13 +23,14 @@ The MVP delivers a fully functional, browser-based API testing tool with zero ac
 - **Deployment:** Public hosted (invoke.dev), self-hosted Docker Compose (no database), single all-in-one Docker container
 - **Storage:** Browser IndexedDB via Dexie.js (no server-side database)
 
-### What's NOT in MVP
+### What's NOT in v1
 
 - User accounts, authentication, OAuth login (v2)
 - PostgreSQL storage (v2)
 - Team workspaces, roles, permissions (v3)
-- CLI tool (v4)
+- Desktop app (v4)
 - Real-time collaboration (v5)
+- CLI tool (v6)
 
 ---
 
@@ -124,7 +129,7 @@ The MVP delivers a fully functional, browser-based API testing tool with zero ac
 
 | # | Task | Description | Output |
 |---|------|-------------|--------|
-| 3.1 | WebSocket connection handler | Implement WebSocket connection using `gorilla/websocket`. Handle upgrade, text/binary frame send/receive, ping/pong, clean close with status codes. | WebSocket connections working |
+| 3.1 | WebSocket connection handler | Implement WebSocket connection using `nhooyr.io/websocket`. Handle dial, text/binary frame send/receive, ping/pong, clean close with status codes. Use `context.Context` for cancellation. | WebSocket connections working |
 | 3.2 | Connection registry | Implement `map[string]*Connection` registry with mutex. Assign UUID per connection. Background goroutine checks idle connections every 30s, closes connections idle for 30min (configurable TTL). | Connection lifecycle managed with cleanup |
 | 3.3 | WebSocket RPCs | Implement `WebSocketConnect` (returns stream of `WebSocketMessage`), `WebSocketSend`, `WebSocketClose` RPCs. Map connection IDs between Node.js server and Go registry. | Full WebSocket lifecycle via gRPC |
 | 3.4 | gRPC reflection client | Implement gRPC server reflection client. Discover services, methods, input/output types. Generate JSON schema from proto descriptors for message editor hints. | Can discover services on any gRPC server with reflection enabled |
