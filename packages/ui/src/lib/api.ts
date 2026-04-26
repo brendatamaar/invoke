@@ -16,9 +16,10 @@ export async function execute(request: RequestConfig): Promise<ExecuteResponse> 
       headers: request.headers,
       body: request.bodyMode === "none" ? "" : request.body,
       timeoutMs: request.timeoutMs,
-      followRedirects: true,
-      maxRedirects: 10,
-      verifySsl: true
+      followRedirects: request.options?.followRedirects ?? true,
+      maxRedirects: request.options?.maxRedirects ?? 10,
+      verifySsl: request.options?.verifySsl ?? true,
+      proxy: request.options?.proxy
     })
   });
   if (!response.ok) throw new Error(await response.text());

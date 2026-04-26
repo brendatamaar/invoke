@@ -16,6 +16,7 @@ test.beforeEach(async ({ page }) => {
   });
   await page.reload();
   await expect(page.getByText(/pong from Go/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Extract" })).toHaveCount(0);
 });
 
 test("sends a REST request and records history", async ({ page }) => {

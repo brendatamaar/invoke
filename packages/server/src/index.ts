@@ -110,6 +110,7 @@ function normalizeResponse(response: any) {
     timing: response.timing ?? {},
     tls: response.tls,
     redirects: response.redirects ?? [],
+    attempts: response.attempts ?? [],
     requestSize: response.requestSize,
     responseSize: response.responseSize,
     error: response.error

@@ -15,7 +15,7 @@
     "lint": "pnpm -r lint",
     "format": "prettier --write .",
     "executor:dev": "go run ./executor/cmd/executor",
-    "executor:test": "go test ./executor/..."
+    "executor:test": "cd executor && go test ./..."
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

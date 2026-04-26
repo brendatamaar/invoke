@@ -19,6 +19,7 @@ import {
   type HttpMethod,
   type KeyValue,
   type RequestConfig,
+  type RequestDraft,
   type SavedRequest
 } from "@invoke/core";
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
@@ -31,7 +32,7 @@ const methods: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", 
 const bodyModes: BodyMode[] = ["none", "json", "form-data", "urlencoded", "raw"];
 const authTypes: AuthConfig["type"][] = ["none", "basic", "bearer", "api-key"];
 
-const request = ref<RequestConfig>(emptyRequest());
+const request = ref<RequestDraft>(emptyRequest());
 const collections = ref<Collection[]>([]);
 const requests = ref<SavedRequest[]>([]);
 const environments = ref<Environment[]>([]);
@@ -48,6 +49,7 @@ const envDraft = ref<Environment | undefined>();
 const saveDialog = reactive({ open: false, name: "", collectionId: "" });
 const extractRules = ref<ExtractionRule[]>([]);
 const sessionVariables = ref<Record<string, string>>({});
+const showExtractTab = false;
 
 const activeEnvironment = computed(() => environments.value.find((env) => env.id === activeEnvironmentId.value));
 const groupedRequests = computed(() =>
@@ -171,14 +173,30 @@ function openSave() {
 async function saveRequest() {
   if (!saveDialog.name || !saveDialog.collectionId) return;
   const saved = await store.saveRequest(request.value, saveDialog.name, saveDialog.collectionId);
-  request.value = { ...saved };
+  request.value = requestDraftFromSaved(saved);
   saveDialog.open = false;
   await refreshAll();
 }
 
 function loadRequest(saved: SavedRequest) {
-  request.value = JSON.parse(JSON.stringify(saved));
+  request.value = requestDraftFromSaved(saved);
   response.value = undefined;
+}
+
+function requestDraftFromSaved(saved: SavedRequest): RequestDraft {
+  return {
+    ...(JSON.parse(JSON.stringify(saved.request)) as RequestConfig),
+    id: saved.id,
+    collectionId: saved.collectionId,
+    folderId: saved.folderId,
+    name: saved.name,
+    protocol: saved.protocol,
+    sortOrder: saved.sortOrder
+  };
+}
+
+function savedMethod(saved: SavedRequest) {
+  return (saved.request as RequestConfig).method;
 }
 
 async function deleteRequest(saved: SavedRequest) {
@@ -246,16 +264,22 @@ async function importFiles(event: Event, kind: "yaml" | "postman") {
   if (kind === "postman") {
     const doc = JSON.parse(await files[0].text());
     const imported = importPostmanCollection(doc);
-    await store.createCollection(imported.collection.name);
+    await store.createCollection(imported.collection.name, imported.collection);
     const latest = (await store.listCollections())[0];
     for (const item of imported.requests) {
-      await store.saveRequest({ ...item, id: undefined, collectionId: latest.id }, item.name, latest.id);
+      await store.saveRequest(item.request as RequestConfig, item.name, latest.id, {
+        protocol: item.protocol,
+        folderId: item.folderId
+      });
     }
   } else {
     const imported = await importYamlFiles(files);
-    const collection = await store.createCollection(imported.collection.name);
+    const collection = await store.createCollection(imported.collection.name, imported.collection);
     for (const item of imported.requests) {
-      await store.saveRequest({ ...item, id: undefined, collectionId: collection.id }, item.name, collection.id);
+      await store.saveRequest(item.request as RequestConfig, item.name, collection.id, {
+        protocol: item.protocol,
+        folderId: item.folderId
+      });
     }
   }
   input.value = "";
@@ -308,7 +332,7 @@ function download(blob: Blob, filename: string) {
             :class="{ active: request.id === saved.id }"
             @click="loadRequest(saved)"
           >
-            <span :data-method="saved.method">{{ saved.method }}</span>
+            <span :data-method="savedMethod(saved)">{{ savedMethod(saved) }}</span>
             <strong>{{ saved.name }}</strong>
             <small @click.stop="deleteRequest(saved)">x</small>
           </button>
@@ -322,8 +346,8 @@ function download(blob: Blob, filename: string) {
           <input type="file" accept=".json" @change="importFiles($event, 'postman')" />
         </label>
         <label class="file-button">
-          YAML files
-          <input type="file" multiple accept=".yaml,.yml" @change="importFiles($event, 'yaml')" />
+          Invoke ZIP
+          <input type="file" multiple accept=".zip,.yaml,.yml" @change="importFiles($event, 'yaml')" />
         </label>
       </section>
 
@@ -369,7 +393,7 @@ function download(blob: Blob, filename: string) {
             <button :class="{ active: selectedTab === 'headers' }" @click="selectedTab = 'headers'">Headers</button>
             <button :class="{ active: selectedTab === 'auth' }" @click="selectedTab = 'auth'">Auth</button>
             <button :class="{ active: selectedTab === 'body' }" @click="selectedTab = 'body'">Body</button>
-            <button :class="{ active: selectedTab === 'extract' }" @click="selectedTab = 'extract'">Extract</button>
+            <button v-if="showExtractTab" :class="{ active: selectedTab === 'extract' }" @click="selectedTab = 'extract'">Extract</button>
           </nav>
 
           <div v-if="selectedTab === 'params'" class="editor">
@@ -397,9 +421,10 @@ function download(blob: Blob, filename: string) {
             <select v-model="request.bodyMode">
               <option v-for="mode in bodyModes" :key="mode" :value="mode">{{ mode }}</option>
             </select>
+            <!-- CodeMirror is deferred until Beta 1 GraphQL work brings codemirror-graphql into the app. -->
             <textarea v-model="request.body" spellcheck="false" placeholder="{ }" />
           </div>
-          <div v-if="selectedTab === 'extract'" class="editor">
+          <div v-if="showExtractTab && selectedTab === 'extract'" class="editor">
             <div v-for="(rule, index) in extractRules" :key="index" class="kv-row">
               <input v-model="rule.name" placeholder="variable_name" />
               <input v-model="rule.jsonPath" placeholder="$.token" />
@@ -422,6 +447,7 @@ function download(blob: Blob, filename: string) {
             <button :class="{ active: responseTab === 'timing' }" @click="responseTab = 'timing'">Timing</button>
             <button :class="{ active: responseTab === 'tls' }" @click="responseTab = 'tls'">TLS</button>
           </nav>
+          <!-- CodeMirror response rendering is deferred with the editor work above; Alpha keeps a plain pre. -->
           <pre v-if="responseTab === 'body'" class="body-view" data-testid="response-body">{{ response?.error || responseBody }}</pre>
           <table v-if="responseTab === 'headers'">
             <tbody><tr v-for="header in response?.headers ?? []" :key="header.key"><th>{{ header.key }}</th><td>{{ header.value }}</td></tr></tbody>
