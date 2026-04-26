@@ -429,6 +429,66 @@ func (x *Timing) GetTotalMs() float64 {
 	return 0
 }
 
+type TimingPhase struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	StartMs       float64                `protobuf:"fixed64,2,opt,name=start_ms,json=startMs,proto3" json:"start_ms,omitempty"`
+	DurationMs    float64                `protobuf:"fixed64,3,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TimingPhase) Reset() {
+	*x = TimingPhase{}
+	mi := &file_executor_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TimingPhase) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimingPhase) ProtoMessage() {}
+
+func (x *TimingPhase) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimingPhase.ProtoReflect.Descriptor instead.
+func (*TimingPhase) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *TimingPhase) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TimingPhase) GetStartMs() float64 {
+	if x != nil {
+		return x.StartMs
+	}
+	return 0
+}
+
+func (x *TimingPhase) GetDurationMs() float64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
 type Certificate struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Subject           string                 `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
@@ -444,7 +504,7 @@ type Certificate struct {
 
 func (x *Certificate) Reset() {
 	*x = Certificate{}
-	mi := &file_executor_proto_msgTypes[6]
+	mi := &file_executor_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -456,7 +516,7 @@ func (x *Certificate) String() string {
 func (*Certificate) ProtoMessage() {}
 
 func (x *Certificate) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[6]
+	mi := &file_executor_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -469,7 +529,7 @@ func (x *Certificate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Certificate.ProtoReflect.Descriptor instead.
 func (*Certificate) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{6}
+	return file_executor_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Certificate) GetSubject() string {
@@ -532,7 +592,7 @@ type TlsInfo struct {
 
 func (x *TlsInfo) Reset() {
 	*x = TlsInfo{}
-	mi := &file_executor_proto_msgTypes[7]
+	mi := &file_executor_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -544,7 +604,7 @@ func (x *TlsInfo) String() string {
 func (*TlsInfo) ProtoMessage() {}
 
 func (x *TlsInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[7]
+	mi := &file_executor_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -557,7 +617,7 @@ func (x *TlsInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TlsInfo.ProtoReflect.Descriptor instead.
 func (*TlsInfo) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{7}
+	return file_executor_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *TlsInfo) GetVersion() string {
@@ -586,13 +646,15 @@ type Redirect struct {
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	Status        int32                  `protobuf:"varint,2,opt,name=status,proto3" json:"status,omitempty"`
 	Headers       []*Header              `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty"`
+	Timing        *Timing                `protobuf:"bytes,4,opt,name=timing,proto3" json:"timing,omitempty"`
+	Phases        []*TimingPhase         `protobuf:"bytes,5,rep,name=phases,proto3" json:"phases,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Redirect) Reset() {
 	*x = Redirect{}
-	mi := &file_executor_proto_msgTypes[8]
+	mi := &file_executor_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -604,7 +666,7 @@ func (x *Redirect) String() string {
 func (*Redirect) ProtoMessage() {}
 
 func (x *Redirect) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[8]
+	mi := &file_executor_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +679,7 @@ func (x *Redirect) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Redirect.ProtoReflect.Descriptor instead.
 func (*Redirect) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{8}
+	return file_executor_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Redirect) GetUrl() string {
@@ -641,6 +703,104 @@ func (x *Redirect) GetHeaders() []*Header {
 	return nil
 }
 
+func (x *Redirect) GetTiming() *Timing {
+	if x != nil {
+		return x.Timing
+	}
+	return nil
+}
+
+func (x *Redirect) GetPhases() []*TimingPhase {
+	if x != nil {
+		return x.Phases
+	}
+	return nil
+}
+
+type TimingAttempt struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Status        int32                  `protobuf:"varint,2,opt,name=status,proto3" json:"status,omitempty"`
+	Headers       []*Header              `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty"`
+	Timing        *Timing                `protobuf:"bytes,4,opt,name=timing,proto3" json:"timing,omitempty"`
+	Phases        []*TimingPhase         `protobuf:"bytes,5,rep,name=phases,proto3" json:"phases,omitempty"`
+	Redirect      bool                   `protobuf:"varint,6,opt,name=redirect,proto3" json:"redirect,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TimingAttempt) Reset() {
+	*x = TimingAttempt{}
+	mi := &file_executor_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TimingAttempt) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimingAttempt) ProtoMessage() {}
+
+func (x *TimingAttempt) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimingAttempt.ProtoReflect.Descriptor instead.
+func (*TimingAttempt) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *TimingAttempt) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *TimingAttempt) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *TimingAttempt) GetHeaders() []*Header {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+func (x *TimingAttempt) GetTiming() *Timing {
+	if x != nil {
+		return x.Timing
+	}
+	return nil
+}
+
+func (x *TimingAttempt) GetPhases() []*TimingPhase {
+	if x != nil {
+		return x.Phases
+	}
+	return nil
+}
+
+func (x *TimingAttempt) GetRedirect() bool {
+	if x != nil {
+		return x.Redirect
+	}
+	return false
+}
+
 type HttpResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        int32                  `protobuf:"varint,1,opt,name=status,proto3" json:"status,omitempty"`
@@ -653,13 +813,14 @@ type HttpResponse struct {
 	RequestSize   int64                  `protobuf:"varint,8,opt,name=request_size,json=requestSize,proto3" json:"request_size,omitempty"`
 	ResponseSize  int64                  `protobuf:"varint,9,opt,name=response_size,json=responseSize,proto3" json:"response_size,omitempty"`
 	Error         string                 `protobuf:"bytes,10,opt,name=error,proto3" json:"error,omitempty"`
+	Attempts      []*TimingAttempt       `protobuf:"bytes,11,rep,name=attempts,proto3" json:"attempts,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *HttpResponse) Reset() {
 	*x = HttpResponse{}
-	mi := &file_executor_proto_msgTypes[9]
+	mi := &file_executor_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -671,7 +832,7 @@ func (x *HttpResponse) String() string {
 func (*HttpResponse) ProtoMessage() {}
 
 func (x *HttpResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[9]
+	mi := &file_executor_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +845,7 @@ func (x *HttpResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HttpResponse.ProtoReflect.Descriptor instead.
 func (*HttpResponse) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{9}
+	return file_executor_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *HttpResponse) GetStatus() int32 {
@@ -757,6 +918,13 @@ func (x *HttpResponse) GetError() string {
 	return ""
 }
 
+func (x *HttpResponse) GetAttempts() []*TimingAttempt {
+	if x != nil {
+		return x.Attempts
+	}
+	return nil
+}
+
 var File_executor_proto protoreflect.FileDescriptor
 
 const file_executor_proto_rawDesc = "" +
@@ -794,7 +962,12 @@ const file_executor_proto_rawDesc = "" +
 	"\attfb_ms\x18\x04 \x01(\x01R\x06ttfbMs\x12\x1f\n" +
 	"\vtransfer_ms\x18\x05 \x01(\x01R\n" +
 	"transferMs\x12\x19\n" +
-	"\btotal_ms\x18\x06 \x01(\x01R\atotalMs\"\xec\x01\n" +
+	"\btotal_ms\x18\x06 \x01(\x01R\atotalMs\"]\n" +
+	"\vTimingPhase\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x19\n" +
+	"\bstart_ms\x18\x02 \x01(\x01R\astartMs\x12\x1f\n" +
+	"\vduration_ms\x18\x03 \x01(\x01R\n" +
+	"durationMs\"\xec\x01\n" +
 	"\vCertificate\x12\x18\n" +
 	"\asubject\x18\x01 \x01(\tR\asubject\x12\x16\n" +
 	"\x06issuer\x18\x02 \x01(\tR\x06issuer\x12\x1d\n" +
@@ -807,11 +980,20 @@ const file_executor_proto_rawDesc = "" +
 	"\aTlsInfo\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12!\n" +
 	"\fcipher_suite\x18\x02 \x01(\tR\vcipherSuite\x12@\n" +
-	"\fcertificates\x18\x03 \x03(\v2\x1c.invoke.executor.CertificateR\fcertificates\"g\n" +
+	"\fcertificates\x18\x03 \x03(\v2\x1c.invoke.executor.CertificateR\fcertificates\"\xce\x01\n" +
 	"\bRedirect\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\x05R\x06status\x121\n" +
-	"\aheaders\x18\x03 \x03(\v2\x17.invoke.executor.HeaderR\aheaders\"\x82\x03\n" +
+	"\aheaders\x18\x03 \x03(\v2\x17.invoke.executor.HeaderR\aheaders\x12/\n" +
+	"\x06timing\x18\x04 \x01(\v2\x17.invoke.executor.TimingR\x06timing\x124\n" +
+	"\x06phases\x18\x05 \x03(\v2\x1c.invoke.executor.TimingPhaseR\x06phases\"\xef\x01\n" +
+	"\rTimingAttempt\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\x05R\x06status\x121\n" +
+	"\aheaders\x18\x03 \x03(\v2\x17.invoke.executor.HeaderR\aheaders\x12/\n" +
+	"\x06timing\x18\x04 \x01(\v2\x17.invoke.executor.TimingR\x06timing\x124\n" +
+	"\x06phases\x18\x05 \x03(\v2\x1c.invoke.executor.TimingPhaseR\x06phases\x12\x1a\n" +
+	"\bredirect\x18\x06 \x01(\bR\bredirect\"\xbe\x03\n" +
 	"\fHttpResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\x05R\x06status\x12\x1f\n" +
 	"\vstatus_text\x18\x02 \x01(\tR\n" +
@@ -824,7 +1006,8 @@ const file_executor_proto_rawDesc = "" +
 	"\frequest_size\x18\b \x01(\x03R\vrequestSize\x12#\n" +
 	"\rresponse_size\x18\t \x01(\x03R\fresponseSize\x12\x14\n" +
 	"\x05error\x18\n" +
-	" \x01(\tR\x05error2\x9b\x01\n" +
+	" \x01(\tR\x05error\x12:\n" +
+	"\battempts\x18\v \x03(\v2\x1e.invoke.executor.TimingAttemptR\battempts2\x9b\x01\n" +
 	"\fHttpExecutor\x12C\n" +
 	"\x04Ping\x12\x1c.invoke.executor.PingRequest\x1a\x1d.invoke.executor.PingResponse\x12F\n" +
 	"\aExecute\x12\x1c.invoke.executor.HttpRequest\x1a\x1d.invoke.executor.HttpResponseB;Z9github.com/brendatama/invoke/executor/internal/executorpbb\x06proto3"
@@ -841,37 +1024,45 @@ func file_executor_proto_rawDescGZIP() []byte {
 	return file_executor_proto_rawDescData
 }
 
-var file_executor_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_executor_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_executor_proto_goTypes = []any{
-	(*PingRequest)(nil),  // 0: invoke.executor.PingRequest
-	(*PingResponse)(nil), // 1: invoke.executor.PingResponse
-	(*Header)(nil),       // 2: invoke.executor.Header
-	(*ProxyConfig)(nil),  // 3: invoke.executor.ProxyConfig
-	(*HttpRequest)(nil),  // 4: invoke.executor.HttpRequest
-	(*Timing)(nil),       // 5: invoke.executor.Timing
-	(*Certificate)(nil),  // 6: invoke.executor.Certificate
-	(*TlsInfo)(nil),      // 7: invoke.executor.TlsInfo
-	(*Redirect)(nil),     // 8: invoke.executor.Redirect
-	(*HttpResponse)(nil), // 9: invoke.executor.HttpResponse
+	(*PingRequest)(nil),   // 0: invoke.executor.PingRequest
+	(*PingResponse)(nil),  // 1: invoke.executor.PingResponse
+	(*Header)(nil),        // 2: invoke.executor.Header
+	(*ProxyConfig)(nil),   // 3: invoke.executor.ProxyConfig
+	(*HttpRequest)(nil),   // 4: invoke.executor.HttpRequest
+	(*Timing)(nil),        // 5: invoke.executor.Timing
+	(*TimingPhase)(nil),   // 6: invoke.executor.TimingPhase
+	(*Certificate)(nil),   // 7: invoke.executor.Certificate
+	(*TlsInfo)(nil),       // 8: invoke.executor.TlsInfo
+	(*Redirect)(nil),      // 9: invoke.executor.Redirect
+	(*TimingAttempt)(nil), // 10: invoke.executor.TimingAttempt
+	(*HttpResponse)(nil),  // 11: invoke.executor.HttpResponse
 }
 var file_executor_proto_depIdxs = []int32{
 	2,  // 0: invoke.executor.HttpRequest.headers:type_name -> invoke.executor.Header
 	3,  // 1: invoke.executor.HttpRequest.proxy:type_name -> invoke.executor.ProxyConfig
-	6,  // 2: invoke.executor.TlsInfo.certificates:type_name -> invoke.executor.Certificate
+	7,  // 2: invoke.executor.TlsInfo.certificates:type_name -> invoke.executor.Certificate
 	2,  // 3: invoke.executor.Redirect.headers:type_name -> invoke.executor.Header
-	2,  // 4: invoke.executor.HttpResponse.headers:type_name -> invoke.executor.Header
-	5,  // 5: invoke.executor.HttpResponse.timing:type_name -> invoke.executor.Timing
-	7,  // 6: invoke.executor.HttpResponse.tls:type_name -> invoke.executor.TlsInfo
-	8,  // 7: invoke.executor.HttpResponse.redirects:type_name -> invoke.executor.Redirect
-	0,  // 8: invoke.executor.HttpExecutor.Ping:input_type -> invoke.executor.PingRequest
-	4,  // 9: invoke.executor.HttpExecutor.Execute:input_type -> invoke.executor.HttpRequest
-	1,  // 10: invoke.executor.HttpExecutor.Ping:output_type -> invoke.executor.PingResponse
-	9,  // 11: invoke.executor.HttpExecutor.Execute:output_type -> invoke.executor.HttpResponse
-	10, // [10:12] is the sub-list for method output_type
-	8,  // [8:10] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	5,  // 4: invoke.executor.Redirect.timing:type_name -> invoke.executor.Timing
+	6,  // 5: invoke.executor.Redirect.phases:type_name -> invoke.executor.TimingPhase
+	2,  // 6: invoke.executor.TimingAttempt.headers:type_name -> invoke.executor.Header
+	5,  // 7: invoke.executor.TimingAttempt.timing:type_name -> invoke.executor.Timing
+	6,  // 8: invoke.executor.TimingAttempt.phases:type_name -> invoke.executor.TimingPhase
+	2,  // 9: invoke.executor.HttpResponse.headers:type_name -> invoke.executor.Header
+	5,  // 10: invoke.executor.HttpResponse.timing:type_name -> invoke.executor.Timing
+	8,  // 11: invoke.executor.HttpResponse.tls:type_name -> invoke.executor.TlsInfo
+	9,  // 12: invoke.executor.HttpResponse.redirects:type_name -> invoke.executor.Redirect
+	10, // 13: invoke.executor.HttpResponse.attempts:type_name -> invoke.executor.TimingAttempt
+	0,  // 14: invoke.executor.HttpExecutor.Ping:input_type -> invoke.executor.PingRequest
+	4,  // 15: invoke.executor.HttpExecutor.Execute:input_type -> invoke.executor.HttpRequest
+	1,  // 16: invoke.executor.HttpExecutor.Ping:output_type -> invoke.executor.PingResponse
+	11, // 17: invoke.executor.HttpExecutor.Execute:output_type -> invoke.executor.HttpResponse
+	16, // [16:18] is the sub-list for method output_type
+	14, // [14:16] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_executor_proto_init() }
@@ -885,7 +1076,7 @@ func file_executor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_executor_proto_rawDesc), len(file_executor_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

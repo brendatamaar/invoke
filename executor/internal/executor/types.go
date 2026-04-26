@@ -10,4 +10,6 @@ type PingRequest = executorpb.PingRequest
 type PingResponse = executorpb.PingResponse
 type Redirect = executorpb.Redirect
 type Timing = executorpb.Timing
+type TimingAttempt = executorpb.TimingAttempt
+type TimingPhase = executorpb.TimingPhase
 type TlsInfo = executorpb.TlsInfo
