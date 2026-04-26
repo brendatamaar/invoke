@@ -1,0 +1,12 @@
+version: v2
+plugins:
+  - local: protoc-gen-go
+    out: executor
+    opt:
+      - paths=import
+      - module=github.com/brendatama/invoke/executor
+  - local: protoc-gen-go-grpc
+    out: executor
+    opt:
+      - paths=import
+      - module=github.com/brendatama/invoke/executor
