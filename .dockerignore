@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+packages/*/node_modules
+packages/*/dist
+executor/bin
+coverage
+test-results
+playwright-report
+tmp
+.env
+.DS_Store
+*.log
