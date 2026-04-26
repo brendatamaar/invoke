@@ -7,6 +7,8 @@
 - `mvp-features.md` — the full v1 feature catalog (everything we eventually want)
 - `execution-detail.md` — task-level breakdown for the full v1 build
 - `alpha-mvp.md` (this file) — what we actually build first
+- `beta-1-mvp.md` — the second ship (daily-use upgrade)
+- `beta-2-mvp.md` — the third ship (testing and comparison upgrade)
 
 ---
 
@@ -41,7 +43,6 @@ This isn't pessimism about the product. It's recognizing that the value proposit
 - Variable system: `{{variable}}` resolution in URL, headers, body, auth
 - Variable scope: environment → request (no global, collection, folder, flow scopes yet)
 - Built-in dynamic variables: `$uuid`, `$timestamp`, `$isoTimestamp`, `$randomInt`
-- Variable extraction from response (JSONPath only) for chaining within a session
 
 **Storage (IndexedDB via Dexie)**
 - Collections (one workspace, no nested folders — flat list under each collection)
@@ -59,22 +60,22 @@ This isn't pessimism about the product. It's recognizing that the value proposit
 - Light/dark theme
 
 **Import/Export**
-- YAML export (file-per-request, matching the PRD's `.invoke.yaml` format)
-- YAML import (read directory back into a collection)
+- YAML export: collection serialized to one YAML file per request (matching the PRD's `.invoke.yaml` format), packaged as a downloadable `.zip`
+- YAML import: upload a `.zip` containing file-per-request YAML, restore as a new collection
 - Postman v2.1 collection import (REST requests only, ignore scripts/tests)
 - cURL import (paste cURL command into URL bar, parse to request fields)
 
 **Infrastructure**
 - Local development via `docker-compose.dev.yml`
 - Self-hosted via `docker-compose.yml` (single command, runs locally on user's machine)
-- **No public hosted deployment in Alpha** — invoke.dev waits for Beta
+- **No public hosted deployment in Alpha** — invoke.dev waits for v1, not Beta
 
 **Go executor**
 - HTTP execution with `net/http/httptrace` for timing
 - Redirect tracking
 - TLS inspection (cert chain, expiry)
 - Configurable timeout
-- HTTP and SOCKS5 proxy support
+- HTTP proxy support (corporate networks). SOCKS5 deferred to v1.
 - gRPC service exposing `Execute` and `Ping` RPCs
 
 **Server (Node.js)**
@@ -84,20 +85,26 @@ This isn't pessimism about the product. It's recognizing that the value proposit
 
 ### 2.2 What's OUT of the Alpha (deferred to Beta or later)
 
-**Deferred to Beta:**
-- GraphQL (with schema explorer)
-- Assertions engine
-- Response diff viewer
-- Code export (start with 3–4 targets: cURL, JS fetch, Python requests, Node axios)
-- OpenAPI import
-- Insomnia, Hoppscotch import
-- Full-text history search
+**Deferred to Beta 1 (daily-use upgrade):**
+- GraphQL Basic (query, variables, send, save — no schema explorer yet)
+- Code export (cURL, JS fetch, Python requests, Node axios)
+- OpenAPI 3.0 import
+- Naive history search (string matching)
 - Command palette (`Ctrl+K`)
 - Timing waterfall visualization (D3)
-- Public hosted deployment (`invoke.dev`) with rate limits, SSRF protection, abuse monitoring
 - Nested folders inside collections
 
+**Deferred to Beta 2 (testing and comparison upgrade):**
+- Assertions engine
+- Response diff viewer
+- GraphQL Advanced (schema introspection, explorer, autocomplete)
+- Insomnia, Hoppscotch import
+- Streaming responses (SSE coverage)
+- Variable extraction from response (JSONPath chaining within a session)
+- All-in-one Docker container (stretch goal)
+
 **Deferred to v1:**
+- Public hosted deployment (`invoke.dev`) with rate limits, SSRF protection, abuse monitoring
 - WebSocket protocol
 - gRPC protocol
 - Visual flow builder (request chaining UI)
@@ -107,6 +114,7 @@ This isn't pessimism about the product. It's recognizing that the value proposit
 - mTLS / client certificate manager
 - Cookie jar UI
 - Advanced auth: OAuth 2.0 flows, Digest, AWS Sig V4, NTLM
+- SOCKS5 proxy support
 - Drag-and-drop reordering in collection sidebar
 - Multiple workspaces
 
@@ -143,7 +151,7 @@ This is the only "horizontal" stage. You can't avoid it — the build system, gR
 
 Reuse `execution-detail.md` Stage 1 (Parts 1.1 through 1.9) as-is. The deliverable is unchanged: a ping travels Vue UI → Hono proxy → Go executor → back, and `@invoke/core` is importable in the browser without Node polyfills.
 
-**Acceptance:** Open browser. Page loads. Click "ping". See "pong from Go 1.22.x" in the UI. `@invoke/core` is imported and a sample function (e.g. UUID generation) runs in the browser console.
+**Acceptance:** Open browser. Page loads. The app automatically pings the executor on mount and shows "pong from Go 1.22.x" in the UI without requiring a manual ping button. `@invoke/core` is imported and a sample function (e.g. UUID generation) runs in the browser console.
 
 ### Slice 1 — Send a REST request (week 2)
 
@@ -153,11 +161,11 @@ The single most important slice. After this, invoke does something Postman does,
 - Go executor `Execute` RPC: `net/http` request with `httptrace` timing, return status, headers, body, timing breakdown
 - Hono proxy: `POST /api/execute` forwards to Go via gRPC
 - Vue UI: minimal request builder — URL input, method dropdown, raw JSON body textarea, headers as a key/value list, "Send" button
-- Vue UI: response panel — status code, total duration, headers list, body pretty-printed (CodeMirror with JSON mode)
+- Vue UI: response panel — status code, total duration, headers list, body pretty-printed in a plain text viewer. CodeMirror is deferred until Beta 1's GraphQL editor work.
 
 **Skip for now:** auth, query params tab, env vars, save, collections, history.
 
-**Acceptance:** Type `https://jsonplaceholder.typicode.com/users` into URL bar, press Send. Within 1 second, response panel shows `200 OK`, `~XXX ms`, the JSON array of users formatted with syntax highlighting, and response headers. Same for a `POST` with a JSON body to `https://httpbin.org/post`. Switch to a URL that 404s and verify the status badge turns red.
+**Acceptance:** Type `https://jsonplaceholder.typicode.com/users` into URL bar, press Send. Within 1 second, response panel shows `200 OK`, `~XXX ms`, the JSON array of users formatted readably, and response headers. Same for a `POST` with a JSON body to `https://httpbin.org/post`. Switch to a URL that 404s and verify the status badge turns red.
 
 ### Slice 2 — Save and reuse a request (week 3)
 
@@ -192,12 +200,12 @@ After this slice, invoke handles the "swap between local/staging/prod" workflow 
 After this slice, invoke is migration-ready (Postman users can come over) and handles real-world authenticated APIs.
 
 **Build:**
-- Core engine: YAML serializer (collection → file-per-request directory structure)
-- Core engine: YAML deserializer (directory → collection)
+- Core engine: YAML serializer (collection → file-per-request structure, packaged as a zip blob using `jszip`)
+- Core engine: YAML deserializer (read uploaded zip via `jszip`, restore collection from the file-per-request layout)
 - Core engine: Postman v2.1 importer (REST only — ignore scripts, tests, monitors)
 - Core engine: cURL parser (paste curl command → request fields)
-- Vue UI: "Export" button on collections (downloads a `.zip` of YAML files via `dexie-export-import` + `js-yaml` pipeline)
-- Vue UI: "Import" dropdown (Postman / cURL / YAML directory)
+- Vue UI: "Export" button on collections (downloads a `.zip` of YAML files)
+- Vue UI: "Import" dropdown (Postman JSON / cURL paste / invoke YAML zip)
 - Auth tab in request builder: None / Basic / Bearer / API Key
 - Auth resolution applied before forwarding to proxy
 
@@ -211,9 +219,9 @@ After this slice, invoke is shippable as Alpha.
 - History panel: last 1,000 requests, click to reload
 - History persists to IndexedDB
 - Light/dark theme toggle
-- Keyboard shortcuts: `Ctrl+Enter` to send, `Ctrl+S` to save, `Ctrl+N` for new request, `Ctrl+,` for settings
+- Keyboard shortcuts: `Ctrl+Enter` to send, `Ctrl+S` to save, `Ctrl+N` for new request
 - TLS inspection in response panel (cert subject, issuer, expiry — text only, no fancy UI)
-- Timeout configuration (default 30s, configurable per request)
+- Timeout default of 30s in the request model (per-request timeout UI deferred)
 - Self-hosted `docker-compose.yml` (production build, single command)
 - README with screenshots, installation instructions, "open browser, send request" quickstart
 - Basic E2E test with Playwright covering Slice 1 → 4 happy paths
@@ -259,21 +267,30 @@ Every slice above ends with concrete observable acceptance criteria, not "X work
 
 ## 6. After Alpha
 
-Alpha → Beta is where the product becomes broadly competitive. Beta is roughly:
+Alpha → Beta is split across **two milestones** (Beta 1 and Beta 2) to avoid the same scope problem we corrected in Alpha. Both stay self-hosted only — public hosting waits for v1.
 
-- GraphQL client + schema explorer
+**Beta 1 — Daily-use upgrade.** Closes the gaps that prevent a Postman user from switching for daily work:
+- GraphQL Basic (query, variables, send, save — no schema explorer yet)
+- Timing waterfall (D3 visualization, ships first because it's visible proof of the timing claim)
+- Code export (cURL, fetch, Python `requests`, Node `axios`)
+- OpenAPI 3.0 import (standard, not just a competitor escape hatch)
+- Nested folders in collections
+- Command palette (`Ctrl+K`)
+- Naive history search (string matching, no inverted index)
+
+See `beta-1-mvp.md` for full scope and execution plan.
+
+**Beta 2 — Testing and comparison upgrade.** Adds the validation/comparison layer:
 - Assertions engine
 - Response diff viewer
-- Code export (3–4 targets to start)
-- OpenAPI import, Insomnia import
-- Full-text history search
-- Command palette (`Ctrl+K`)
-- Timing waterfall (D3)
-- Public hosted deployment with rate limits, SSRF protection, basic abuse monitoring
-- Nested folders in collections
-- A `security-threat-model.md` document, written before public hosted goes live
+- GraphQL Advanced (schema introspection, explorer, autocomplete)
+- Insomnia and Hoppscotch import
+- Streaming responses (`ExecuteStream`, SSE coverage)
+- All-in-one Docker container (stretch goal, not a slice gate)
 
-Beta → v1 is the long tail: WebSocket, gRPC, visual flow builder, mock server, scripting, the rest of codegen, advanced auth, mTLS, drag-and-drop. These are differentiators but none of them is on the critical path to "open browser, send REST, save it."
+See `beta-2-mvp.md` for full scope and execution plan.
+
+**Beta → v1** is where invoke goes public and adds the remaining differentiators: WebSocket, gRPC, visual flow builder, mock server, scripting, the rest of codegen, advanced auth, mTLS, SOCKS5 proxy, drag-and-drop, and the public hosted deployment (`invoke.dev`) with the threat model in place. These are real value-adds but none is on the critical path to "open browser, send REST, save it."
 
 The roadmap from v1 onward (v2 accounts, v3 teams, v4 desktop, v5 collaboration, v6 CLI) is unchanged from the PRD.
 
@@ -287,6 +304,6 @@ The roadmap from v1 onward (v2 accounts, v3 teams, v4 desktop, v5 collaboration,
 
 3. **Test as you go, but don't over-test for Alpha.** Unit tests for core engine logic (variable resolution, YAML serialization, cURL parsing) are worth it. Component tests for Vue UI are worth it sparingly. A few Playwright E2E tests covering the happy paths of each slice are worth it. Aiming for 80% coverage everywhere is not.
 
-4. **Public hosted deployment waits.** Running a public proxy that lets anonymous users send arbitrary HTTP through your VPS is an abuse magnet (SSRF probes, credential stuffers, scrapers eating your egress). Self-hosted via Docker is a feature in the privacy-first positioning, not a limitation. Add public hosted in Beta with the threat model in place.
+4. **Public hosted deployment waits for v1.** Running a public proxy that lets anonymous users send arbitrary HTTP through your VPS is an abuse magnet (SSRF probes, credential stuffers, scrapers eating your egress). Self-hosted via Docker is a feature in the privacy-first positioning, not a limitation. Add public hosted in v1 with the threat model in place.
 
 5. **Reference `prd.md` for type definitions and contracts.** This document tells you what to build and in what order; the PRD tells you exactly how each feature should behave at the interface level (TypeScript types, gRPC proto, YAML schema).
