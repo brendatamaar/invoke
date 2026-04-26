@@ -54,7 +54,6 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	traceData := newTraceData()
 	httpReq, err := http.NewRequestWithContext(ctx, method, req.GetUrl(), bytes.NewReader(req.GetBody()))
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
@@ -64,14 +63,13 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 			httpReq.Header.Add(header.GetKey(), header.GetValue())
 		}
 	}
-	httpReq = httpReq.WithContext(httptrace.WithClientTrace(httpReq.Context(), traceData.trace()))
 
 	transport, err := transportFor(req)
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
 	}
-	client := &http.Client{Transport: transport}
-	redirects := make([]*Redirect, 0)
+	attempts := make([]*attemptRecord, 0)
+	client := &http.Client{Transport: &recordingTransport{base: transport, attempts: &attempts}}
 	if !req.GetFollowRedirects() {
 		client.CheckRedirect = func(next *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -82,16 +80,6 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 			maxRedirects = 10
 		}
 		client.CheckRedirect = func(next *http.Request, via []*http.Request) error {
-			if len(via) > 0 {
-				prior := via[len(via)-1]
-				if prior.Response != nil {
-					redirects = append(redirects, &Redirect{
-						Url:     prior.URL.String(),
-						Status:  int32(prior.Response.StatusCode),
-						Headers: headersFromHTTP(prior.Response.Header),
-					})
-				}
-			}
 			if len(via) >= maxRedirects {
 				return errors.New("stopped after maximum redirects")
 			}
@@ -102,22 +90,30 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 	start := time.Now()
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		traceData.finish(time.Now())
-		return &HttpResponse{Error: err.Error(), Timing: traceData.timing(start)}, nil
+		finishedAt := time.Now()
+		finalizeLastAttempt(attempts, finishedAt)
+		return &HttpResponse{
+			Error:     err.Error(),
+			Timing:    aggregateTiming(attempts, start, finishedAt),
+			Redirects: redirectsFromAttempts(attempts),
+			Attempts:  attemptsToProto(attempts),
+		}, nil
 	}
 	defer resp.Body.Close()
 
-	bodyStarted := time.Now()
 	body, readErr := io.ReadAll(resp.Body)
-	traceData.finish(time.Now())
+	finishedAt := time.Now()
+	finalizeLastAttempt(attempts, finishedAt)
 	if readErr != nil {
-		return &HttpResponse{Error: readErr.Error(), Timing: traceData.timing(start)}, nil
+		return &HttpResponse{
+			Error:     readErr.Error(),
+			Timing:    aggregateTiming(attempts, start, finishedAt),
+			Redirects: redirectsFromAttempts(attempts),
+			Attempts:  attemptsToProto(attempts),
+		}, nil
 	}
 
-	timing := traceData.timing(start)
-	if timing.TransferMs == 0 {
-		timing.TransferMs = floatMs(time.Since(bodyStarted))
-	}
+	timing := aggregateTiming(attempts, start, finishedAt)
 	out := &HttpResponse{
 		Status:       int32(resp.StatusCode),
 		StatusText:   resp.Status,
@@ -125,7 +121,8 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 		Body:         body,
 		Timing:       timing,
 		Tls:          tlsInfo(resp.TLS),
-		Redirects:    redirects,
+		Redirects:    redirectsFromAttempts(attempts),
+		Attempts:     attemptsToProto(attempts),
 		RequestSize:  int64(len(req.GetBody())),
 		ResponseSize: int64(len(body)),
 	}
@@ -215,6 +212,94 @@ func tlsVersion(version uint16) string {
 	}
 }
 
+type recordingTransport struct {
+	base     http.RoundTripper
+	attempts *[]*attemptRecord
+}
+
+type attemptRecord struct {
+	start   time.Time
+	trace   *traceData
+	attempt *TimingAttempt
+}
+
+func (t *recordingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	traceData := newTraceData()
+	start := time.Now()
+	tracedReq := req.WithContext(httptrace.WithClientTrace(req.Context(), traceData.trace()))
+	resp, err := t.base.RoundTrip(tracedReq)
+	record := &attemptRecord{
+		start: start,
+		trace: traceData,
+		attempt: &TimingAttempt{
+			Url:     req.URL.String(),
+			Headers: []*Header{},
+		},
+	}
+	if resp != nil {
+		record.attempt.Status = int32(resp.StatusCode)
+		record.attempt.Headers = headersFromHTTP(resp.Header)
+		record.attempt.Redirect = resp.StatusCode >= 300 && resp.StatusCode < 400
+	}
+	record.finalize(time.Now())
+	*t.attempts = append(*t.attempts, record)
+	return resp, err
+}
+
+func (r *attemptRecord) finalize(at time.Time) {
+	r.trace.finish(at)
+	r.attempt.Timing = r.trace.timing(r.start)
+	r.attempt.Phases = r.trace.phases(r.start)
+}
+
+func finalizeLastAttempt(attempts []*attemptRecord, at time.Time) {
+	if len(attempts) == 0 {
+		return
+	}
+	attempts[len(attempts)-1].finalize(at)
+}
+
+func attemptsToProto(attempts []*attemptRecord) []*TimingAttempt {
+	out := make([]*TimingAttempt, 0, len(attempts))
+	for _, attempt := range attempts {
+		out = append(out, attempt.attempt)
+	}
+	return out
+}
+
+func redirectsFromAttempts(attempts []*attemptRecord) []*Redirect {
+	redirects := make([]*Redirect, 0)
+	for _, attempt := range attempts {
+		if !attempt.attempt.GetRedirect() {
+			continue
+		}
+		redirects = append(redirects, &Redirect{
+			Url:     attempt.attempt.GetUrl(),
+			Status:  attempt.attempt.GetStatus(),
+			Headers: attempt.attempt.GetHeaders(),
+			Timing:  attempt.attempt.GetTiming(),
+			Phases:  attempt.attempt.GetPhases(),
+		})
+	}
+	return redirects
+}
+
+func aggregateTiming(attempts []*attemptRecord, start, end time.Time) *Timing {
+	timing := &Timing{TotalMs: floatMs(end.Sub(start))}
+	for _, attempt := range attempts {
+		attemptTiming := attempt.attempt.GetTiming()
+		if attemptTiming == nil {
+			continue
+		}
+		timing.DnsMs += attemptTiming.GetDnsMs()
+		timing.TcpMs += attemptTiming.GetTcpMs()
+		timing.TlsMs += attemptTiming.GetTlsMs()
+		timing.TtfbMs += attemptTiming.GetTtfbMs()
+		timing.TransferMs += attemptTiming.GetTransferMs()
+	}
+	return timing
+}
+
 type traceData struct {
 	dnsStart, dnsDone       time.Time
 	connStart, connDone     time.Time
@@ -255,11 +340,40 @@ func (t *traceData) timing(start time.Time) *Timing {
 	}
 }
 
+func (t *traceData) phases(start time.Time) []*TimingPhase {
+	totalEnd := t.finishedRead
+	if totalEnd.IsZero() {
+		totalEnd = time.Now()
+	}
+	return []*TimingPhase{
+		phase("dns", start, t.dnsStart, t.dnsDone),
+		phase("tcp", start, t.connStart, t.connDone),
+		phase("tls", start, t.tlsStart, t.tlsDone),
+		phase("ttfb", start, nonZero(t.wroteRequest, start), t.firstByte),
+		phase("transfer", start, t.firstByte, totalEnd),
+	}
+}
+
+func phase(name string, requestStart, phaseStart, phaseEnd time.Time) *TimingPhase {
+	return &TimingPhase{
+		Name:       name,
+		StartMs:    offset(requestStart, phaseStart),
+		DurationMs: elapsed(phaseStart, phaseEnd),
+	}
+}
+
 func elapsed(start, end time.Time) float64 {
 	if start.IsZero() || end.IsZero() || end.Before(start) {
 		return 0
 	}
 	return floatMs(end.Sub(start))
+}
+
+func offset(start, at time.Time) float64 {
+	if start.IsZero() || at.IsZero() || at.Before(start) {
+		return 0
+	}
+	return floatMs(at.Sub(start))
 }
 
 func floatMs(duration time.Duration) float64 {
