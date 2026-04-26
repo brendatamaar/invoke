@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package invoke.executor;
+
+option go_package = "github.com/brendatama/invoke/executor/internal/executorpb";
+
+service HttpExecutor {
+  rpc Ping(PingRequest) returns (PingResponse);
+  rpc Execute(HttpRequest) returns (HttpResponse);
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string message = 1;
+  string version = 2;
+  int64 uptime_ms = 3;
+}
+
+message Header {
+  string key = 1;
+  string value = 2;
+}
+
+message ProxyConfig {
+  string type = 1;
+  string url = 2;
+  string username = 3;
+  string password = 4;
+}
+
+message HttpRequest {
+  string method = 1;
+  string url = 2;
+  repeated Header headers = 3;
+  bytes body = 4;
+  int64 timeout_ms = 5;
+  bool follow_redirects = 6;
+  int32 max_redirects = 7;
+  bool verify_ssl = 8;
+  ProxyConfig proxy = 9;
+}
+
+message Timing {
+  double dns_ms = 1;
+  double tcp_ms = 2;
+  double tls_ms = 3;
+  double ttfb_ms = 4;
+  double transfer_ms = 5;
+  double total_ms = 6;
+}
+
+message Certificate {
+  string subject = 1;
+  string issuer = 2;
+  string not_before = 3;
+  string not_after = 4;
+  repeated string dns_names = 5;
+  string serial_number = 6;
+  string sha256_fingerprint = 7;
+}
+
+message TlsInfo {
+  string version = 1;
+  string cipher_suite = 2;
+  repeated Certificate certificates = 3;
+}
+
+message Redirect {
+  string url = 1;
+  int32 status = 2;
+  repeated Header headers = 3;
+}
+
+message HttpResponse {
+  int32 status = 1;
+  string status_text = 2;
+  repeated Header headers = 3;
+  bytes body = 4;
+  Timing timing = 5;
+  TlsInfo tls = 6;
+  repeated Redirect redirects = 7;
+  int64 request_size = 8;
+  int64 response_size = 9;
+  string error = 10;
+}

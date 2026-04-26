@@ -1,0 +1,39 @@
+services:
+  executor:
+    build:
+      context: .
+      dockerfile: Dockerfile.executor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 50051"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    environment:
+      EXECUTOR_GRPC_ADDR: executor:50051
+      PORT: 4000
+    depends_on:
+      executor:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

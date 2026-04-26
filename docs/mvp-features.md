@@ -52,13 +52,21 @@
 
 ## 1. Overview
 
-The invoke MVP is a fully functional, browser-based API testing tool designed to replace Postman for developers who value speed, privacy, and a clean experience. Every feature in the MVP works without requiring an account, without syncing data to the cloud, and without bloated application overhead.
+This document catalogs the **full v1 feature set** for invoke — the public release that will compete head-to-head with Postman, Bruno, and Hoppscotch. It is the destination, not the first ship.
 
-### What Makes the MVP Complete
+> **Scope note:** The first publicly shipped release is the **Alpha MVP**, a deliberately smaller subset focused on proving the core request-execution loop. See `alpha-mvp.md` for the Alpha scope. This document (`mvp-features.md`) describes everything targeted for the v1 milestone, of which Alpha is the first slice.
 
-Unlike typical MVPs that ship with minimal features, the invoke MVP ships with a genuinely competitive feature set. The reasoning is simple: an API client with half the features of Postman isn't useful to anyone. To displace incumbents, the MVP must match or exceed them on core capabilities.
+The invoke v1 is a fully functional, browser-based API testing tool designed to replace Postman for developers who value speed, privacy, and a clean experience. Every feature works without requiring an account, without syncing data to the cloud, and without bloated application overhead.
 
-**The MVP includes:**
+### What v1 Wins On
+
+invoke does not need to match Postman feature-for-feature to displace it. Bruno, Hoppscotch, and Insomnia all shipped initial releases with far less surface area than Postman and grew from there. invoke's competitive thesis is sharper than feature parity:
+
+> **Open the browser, send requests fast, keep data local, export to Git-friendly files.**
+
+That promise is what every release — Alpha through v1 — is judged against. Features earn their place in v1 only if they support that promise or close a gap that would prevent a Postman user from switching for their daily work. Features that exist only because Postman has them are out.
+
+**The v1 includes:**
 - All four modern API protocols (REST, GraphQL, WebSocket, gRPC)
 - Full collection and environment management
 - Visual flow builder for chained requests
@@ -69,7 +77,7 @@ Unlike typical MVPs that ship with minimal features, the invoke MVP ships with a
 - Response assertions and diffing
 - Complete history with full-text search
 
-**The MVP deliberately excludes:**
+**The v1 deliberately excludes:**
 - User accounts (coming in v2)
 - Team workspaces (coming in v3)
 - Native desktop app (coming in v4)
@@ -112,7 +120,7 @@ The library produces two entry points:
 
 **Why it exists:** Real-time applications (chat, notifications, live updates) use WebSocket. Developers need a way to test these connections just like they test HTTP endpoints.
 
-**How it works:** The core engine sends a connection request to the Go executor via gRPC. The Go executor establishes the WebSocket connection using `gorilla/websocket` and assigns it a UUID. The connection is stored in a registry with a TTL (30-minute idle timeout with background cleanup). The core engine returns the connection ID to the UI, which uses it for subsequent send/receive operations. Messages flow bidirectionally: UI → server → Go executor → WebSocket server, and back. A connection registry ensures abandoned connections (user closes browser tab) don't leak resources.
+**How it works:** The core engine sends a connection request to the Go executor via gRPC. The Go executor establishes the WebSocket connection using `nhooyr.io/websocket` and assigns it a UUID. The connection is stored in a registry with a TTL (30-minute idle timeout with background cleanup). The core engine returns the connection ID to the UI, which uses it for subsequent send/receive operations. Messages flow bidirectionally: UI → server → Go executor → WebSocket server, and back. A connection registry ensures abandoned connections (user closes browser tab) don't leak resources.
 
 #### gRPC Client
 
@@ -880,7 +888,7 @@ The web UI is the primary user interface for the MVP — a Vue 3 SPA that render
 
 **Why it exists:** Quick renames without opening a settings dialog.
 
-**How it works:** Double-click toggles the node's name into an input field. Enter saves, Escape cancels. The update is sent to the server via the update API.
+**How it works:** Double-click toggles the node's name into an input field. Enter saves, Escape cancels. The update is persisted through the IndexedDB storage adapter via `@invoke/core`.
 
 ### 3.4 Environment Manager
 

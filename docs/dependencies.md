@@ -159,7 +159,7 @@ The thin Node.js API gateway. Delegates all business logic to `@invoke/core`.
 
 ## 3. Web UI (`@invoke/ui`)
 
-The Vue 3 SPA. Presentation layer only — all logic delegated to the server.
+The Vue 3 SPA. In MVP, the UI imports `@invoke/core` directly and runs business logic (variable resolution, assertions, flow orchestration, diffing, code generation, import/export) in the browser, persisting through the IndexedDB storage adapter. In v2+, when authenticated user accounts and PostgreSQL are added, the UI becomes a presentation layer that delegates business logic to the server for logged-in users. Anonymous users continue using the thick-client MVP behavior.
 
 ### Framework & Build
 
