@@ -1,0 +1,31 @@
+{
+  "name": "@invoke/server",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.0",
+    "@grpc/proto-loader": "^0.8.0",
+    "@hono/node-server": "^1.19.5",
+    "@hono/zod-validator": "^0.4.3",
+    "@invoke/core": "workspace:*",
+    "dotenv": "^16.6.1",
+    "hono": "^4.10.7",
+    "pino": "^9.14.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.25",
+    "supertest": "^7.1.4",
+    "tsx": "^4.21.0",
+    "vitest": "^3.2.4"
+  }
+}
