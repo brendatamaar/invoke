@@ -1,9 +1,19 @@
 import Dexie, { type Table } from "dexie";
-import type { Collection, Environment, HistoryEntry, RequestConfig, SavedRequest } from "./types";
-import { clonePlain, id } from "./request";
+import type {
+  Collection,
+  Environment,
+  Folder,
+  HistoryEntry,
+  RequestConfig,
+  RequestDraft,
+  RequestProtocol,
+  SavedRequest
+} from "./types";
+import { clonePlain, id, toRequestConfig } from "./request";
 
 class InvokeDB extends Dexie {
   collections!: Table<Collection, string>;
+  folders!: Table<Folder, string>;
   requests!: Table<SavedRequest, string>;
   environments!: Table<Environment, string>;
   history!: Table<HistoryEntry, string>;
@@ -18,31 +28,110 @@ class InvokeDB extends Dexie {
       history: "id, createdAt",
       meta: "key"
     });
+    this.version(2)
+      .stores({
+        collections: "id, name, updatedAt, sortOrder",
+        folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
+        requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+        environments: "id, name, updatedAt",
+        history: "id, createdAt, requestId, collectionId, protocol",
+        meta: "key"
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table("collections")
+          .toCollection()
+          .modify((collection: Partial<Collection>) => {
+            collection.variables ??= [];
+            collection.sortOrder ??= collection.createdAt ?? Date.now();
+          });
+
+        await tx
+          .table("requests")
+          .toCollection()
+          .modify((stored: any) => {
+            if (stored.request) {
+              stored.protocol ??= "rest";
+              stored.folderId ??= null;
+              stored.sortOrder ??= stored.createdAt ?? Date.now();
+              return;
+            }
+
+            const request = toRequestConfig({
+              method: stored.method ?? "GET",
+              url: stored.url ?? "",
+              params: stored.params ?? [],
+              headers: stored.headers ?? [],
+              bodyMode: stored.bodyMode ?? "none",
+              body: stored.body ?? "",
+              auth: stored.auth ?? { type: "none" },
+              timeoutMs: stored.timeoutMs ?? 30000,
+              variables: stored.variables ?? [],
+              options: stored.options
+            });
+
+            stored.protocol = "rest";
+            stored.folderId = null;
+            stored.sortOrder = stored.createdAt ?? Date.now();
+            stored.request = request;
+
+            delete stored.method;
+            delete stored.url;
+            delete stored.params;
+            delete stored.headers;
+            delete stored.bodyMode;
+            delete stored.body;
+            delete stored.auth;
+            delete stored.timeoutMs;
+            delete stored.variables;
+            delete stored.options;
+          });
+
+        await tx
+          .table("history")
+          .toCollection()
+          .modify((entry: Partial<HistoryEntry>) => {
+            entry.protocol ??= "rest";
+          });
+      });
   }
 }
 
 export class InvokeStore {
   private db = new InvokeDB();
 
+  close() {
+    this.db.close();
+  }
+
   async listCollections() {
     return this.db.collections.orderBy("updatedAt").reverse().toArray();
   }
 
-  async createCollection(name: string) {
+  async createCollection(name: string, data: Partial<Collection> = {}) {
     const now = Date.now();
-    const collection: Collection = { id: id(), name, createdAt: now, updatedAt: now };
+    const collection: Collection = {
+      ...data,
+      id: id(),
+      name,
+      variables: data.variables ?? [],
+      sortOrder: data.sortOrder ?? now,
+      createdAt: now,
+      updatedAt: now
+    };
     await this.db.collections.add(collection);
     return collection;
   }
 
   async updateCollection(collection: Collection) {
-    const updated = { ...collection, updatedAt: Date.now() };
+    const updated = { ...collection, variables: collection.variables ?? [], updatedAt: Date.now() };
     await this.db.collections.put(updated);
     return updated;
   }
 
   async deleteCollection(collectionId: string) {
-    await this.db.transaction("rw", this.db.collections, this.db.requests, async () => {
+    await this.db.transaction("rw", this.db.collections, this.db.folders, this.db.requests, async () => {
+      await this.db.folders.where("collectionId").equals(collectionId).delete();
       await this.db.requests.where("collectionId").equals(collectionId).delete();
       await this.db.collections.delete(collectionId);
     });
@@ -53,14 +142,44 @@ export class InvokeStore {
     return this.db.requests.orderBy("updatedAt").reverse().toArray();
   }
 
-  async saveRequest(request: RequestConfig, name: string, collectionId: string) {
+  async listFolders(collectionId?: string) {
+    if (collectionId) return this.db.folders.where("collectionId").equals(collectionId).toArray();
+    return this.db.folders.orderBy("sortOrder").toArray();
+  }
+
+  async createFolder(collectionId: string, name: string, parentFolderId: string | null = null) {
     const now = Date.now();
-    const saved: SavedRequest = {
-      ...clonePlain(request),
-      id: request.id ?? id(),
+    const folder: Folder = {
+      id: id(),
       collectionId,
+      parentFolderId,
       name,
-      createdAt: (request as SavedRequest).createdAt ?? now,
+      variables: [],
+      sortOrder: now,
+      createdAt: now,
+      updatedAt: now
+    };
+    await this.db.folders.add(folder);
+    return folder;
+  }
+
+  async saveRequest(
+    request: RequestConfig | RequestDraft,
+    name: string,
+    collectionId: string,
+    options: { id?: string; folderId?: string | null; protocol?: RequestProtocol; sortOrder?: number; createdAt?: number } = {}
+  ) {
+    const now = Date.now();
+    const draft = request as RequestDraft;
+    const saved: SavedRequest = {
+      id: options.id ?? draft.id ?? id(),
+      collectionId,
+      folderId: options.folderId ?? draft.folderId ?? null,
+      name,
+      protocol: options.protocol ?? draft.protocol ?? "rest",
+      request: clonePlain(toRequestConfig(request)),
+      sortOrder: options.sortOrder ?? draft.sortOrder ?? now,
+      createdAt: options.createdAt ?? (request as Partial<SavedRequest>).createdAt ?? now,
       updatedAt: now
     };
     await this.db.requests.put(clonePlain(saved));
@@ -103,7 +222,15 @@ export class InvokeStore {
   }
 
   async addHistory(entry: Omit<HistoryEntry, "id" | "createdAt">) {
-    const saved: HistoryEntry = { ...clonePlain(entry), id: id(), createdAt: Date.now() };
+    const request = entry.request as RequestDraft;
+    const saved: HistoryEntry = {
+      ...clonePlain(entry),
+      id: id(),
+      requestId: entry.requestId ?? request.id,
+      collectionId: entry.collectionId ?? request.collectionId,
+      protocol: entry.protocol ?? request.protocol ?? "rest",
+      createdAt: Date.now()
+    };
     await this.db.history.add(saved);
     const count = await this.db.history.count();
     if (count > 1000) {
