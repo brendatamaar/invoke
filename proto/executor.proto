@@ -50,6 +50,12 @@ message Timing {
   double total_ms = 6;
 }
 
+message TimingPhase {
+  string name = 1;
+  double start_ms = 2;
+  double duration_ms = 3;
+}
+
 message Certificate {
   string subject = 1;
   string issuer = 2;
@@ -70,6 +76,17 @@ message Redirect {
   string url = 1;
   int32 status = 2;
   repeated Header headers = 3;
+  Timing timing = 4;
+  repeated TimingPhase phases = 5;
+}
+
+message TimingAttempt {
+  string url = 1;
+  int32 status = 2;
+  repeated Header headers = 3;
+  Timing timing = 4;
+  repeated TimingPhase phases = 5;
+  bool redirect = 6;
 }
 
 message HttpResponse {
@@ -83,4 +100,5 @@ message HttpResponse {
   int64 request_size = 8;
   int64 response_size = 9;
   string error = 10;
+  repeated TimingAttempt attempts = 11;
 }
