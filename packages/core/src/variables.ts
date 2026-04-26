@@ -1,13 +1,20 @@
 import { JSONPath } from "jsonpath-plus";
 import { applyAuth, buildUrl } from "./auth";
-import type { Environment, ExecuteResponse, ExtractionRule, RequestConfig } from "./types";
+import type { Environment, ExecuteResponse, ExtractionRule, KeyValue, RequestConfig } from "./types";
+
+export interface VariableScope {
+  name?: string;
+  variables: KeyValue[] | Record<string, string>;
+}
 
 export function variablesFromEnvironment(environment?: Environment): Record<string, string> {
-  return Object.fromEntries(
-    (environment?.variables ?? [])
-      .filter((item) => item.enabled !== false && item.key.trim())
-      .map((item) => [item.key.trim(), item.value])
-  );
+  return variablesFromKeyValues(environment?.variables ?? []);
+}
+
+export function variablesFromScopes(scopes: VariableScope[]) {
+  return scopes.reduce<Record<string, string>>((merged, scope) => {
+    return { ...merged, ...variablesFromScope(scope) };
+  }, {});
 }
 
 export function resolveTemplate(input: string, variables: Record<string, string>) {
@@ -28,30 +35,42 @@ export function resolveTemplate(input: string, variables: Record<string, string>
   return { value: resolveOne(input), unresolved: [...unresolved] };
 }
 
-export function resolveRequest(request: RequestConfig, environment?: Environment, sessionVariables: Record<string, string> = {}) {
-  const variables = { ...variablesFromEnvironment(environment), ...sessionVariables };
+export function resolveRequest(
+  request: RequestConfig,
+  environmentOrScopes?: Environment | VariableScope[],
+  sessionVariables: Record<string, string> = {}
+) {
+  const scopes = Array.isArray(environmentOrScopes)
+    ? environmentOrScopes
+    : [
+        { name: "environment", variables: environmentOrScopes?.variables ?? [] },
+        { name: "request", variables: request.variables ?? [] },
+        { name: "session", variables: sessionVariables }
+      ];
+  const variables = variablesFromScopes(scopes);
   const unresolved = new Set<string>();
   const resolve = (value: string) => {
     const resolved = resolveTemplate(value, variables);
     resolved.unresolved.forEach((name) => unresolved.add(name));
     return resolved.value;
   };
-  const withAuth = applyAuth(request);
-  const resolved: RequestConfig = {
-    ...withAuth,
-    url: resolve(buildUrl(withAuth.url, withAuth.params)),
-    headers: withAuth.headers.map((header) => ({ ...header, key: resolve(header.key), value: resolve(header.value) })),
-    body: resolve(withAuth.body),
+  const resolvedBase: RequestConfig = {
+    ...request,
+    url: resolve(request.url),
+    params: request.params.map((param) => ({ ...param, key: resolve(param.key), value: resolve(param.value) })),
+    headers: request.headers.map((header) => ({ ...header, key: resolve(header.key), value: resolve(header.value) })),
+    body: resolve(request.body),
     auth: {
-      ...withAuth.auth,
-      username: resolve(withAuth.auth.username ?? ""),
-      password: resolve(withAuth.auth.password ?? ""),
-      token: resolve(withAuth.auth.token ?? ""),
-      apiKeyName: resolve(withAuth.auth.apiKeyName ?? ""),
-      apiKeyValue: resolve(withAuth.auth.apiKeyValue ?? "")
+      ...request.auth,
+      username: resolve(request.auth.username ?? ""),
+      password: resolve(request.auth.password ?? ""),
+      token: resolve(request.auth.token ?? ""),
+      apiKeyName: resolve(request.auth.apiKeyName ?? ""),
+      apiKeyValue: resolve(request.auth.apiKeyValue ?? "")
     }
   };
-  return { request: resolved, unresolved: [...unresolved] };
+  const withAuth = applyAuth(resolvedBase);
+  return { request: { ...withAuth, url: buildUrl(withAuth.url, withAuth.params) }, unresolved: [...unresolved] };
 }
 
 export function extractVariables(response: ExecuteResponse, rules: ExtractionRule[]) {
@@ -83,4 +102,21 @@ function dynamicVariable(name: string) {
     default:
       return `{{${name}}}`;
   }
+}
+
+function variablesFromScope(scope: VariableScope) {
+  if (Array.isArray(scope.variables)) return variablesFromKeyValues(scope.variables);
+  return Object.fromEntries(
+    Object.entries(scope.variables)
+      .filter(([key]) => key.trim())
+      .map(([key, value]) => [key.trim(), String(value)])
+  );
+}
+
+function variablesFromKeyValues(variables: KeyValue[]) {
+  return Object.fromEntries(
+    variables
+      .filter((item) => item.enabled !== false && item.key.trim())
+      .map((item) => [item.key.trim(), item.value])
+  );
 }

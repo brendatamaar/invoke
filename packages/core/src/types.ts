@@ -1,6 +1,7 @@
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
 export type BodyMode = "none" | "json" | "form-data" | "urlencoded" | "raw";
 export type AuthType = "none" | "basic" | "bearer" | "api-key";
+export type RequestProtocol = "rest" | "graphql" | "websocket" | "grpc";
 
 export interface KeyValue {
   id?: string;
@@ -21,9 +22,6 @@ export interface AuthConfig {
 }
 
 export interface RequestConfig {
-  id?: string;
-  collectionId?: string;
-  name?: string;
   method: HttpMethod;
   url: string;
   params: KeyValue[];
@@ -32,20 +30,74 @@ export interface RequestConfig {
   body: string;
   auth: AuthConfig;
   timeoutMs: number;
+  variables?: KeyValue[];
+  options?: RequestOptions;
+}
+
+export interface RequestOptions {
+  followRedirects?: boolean;
+  maxRedirects?: number;
+  verifySsl?: boolean;
+  proxy?: {
+    type: "http" | "socks5";
+    url: string;
+    username?: string;
+    password?: string;
+  };
+}
+
+export interface GraphQLRequestConfig {
+  url: string;
+  headers: KeyValue[];
+  auth: AuthConfig;
+  query: string;
+  variables: string;
+  operationName?: string;
+  timeoutMs: number;
+  options?: RequestOptions;
+}
+
+export type ProtocolRequestConfig = RequestConfig | GraphQLRequestConfig;
+
+export interface RequestDraft extends RequestConfig {
+  id?: string;
+  collectionId?: string;
+  folderId?: string | null;
+  name?: string;
+  protocol?: RequestProtocol;
+  sortOrder?: number;
 }
 
 export interface Collection {
   id: string;
   name: string;
   description?: string;
+  variables?: KeyValue[];
+  sortOrder?: number;
   createdAt: number;
   updatedAt: number;
 }
 
-export interface SavedRequest extends RequestConfig {
+export interface Folder {
   id: string;
   collectionId: string;
+  parentFolderId?: string | null;
   name: string;
+  description?: string;
+  variables?: KeyValue[];
+  sortOrder: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SavedRequest {
+  id: string;
+  collectionId: string;
+  folderId?: string | null;
+  name: string;
+  protocol: RequestProtocol;
+  request: ProtocolRequestConfig;
+  sortOrder: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -65,6 +117,23 @@ export interface Timing {
   ttfbMs: number;
   transferMs: number;
   totalMs: number;
+}
+
+export type TimingPhaseName = "dns" | "tcp" | "tls" | "ttfb" | "transfer";
+
+export interface TimingPhase {
+  name: TimingPhaseName;
+  startMs: number;
+  durationMs: number;
+}
+
+export interface TimingAttempt {
+  url: string;
+  status?: number;
+  headers: KeyValue[];
+  timing: Timing;
+  phases: TimingPhase[];
+  redirect: boolean;
 }
 
 export interface CertificateInfo {
@@ -90,8 +159,9 @@ export interface ExecuteResponse {
   body: string;
   bodyEncoding?: "utf8" | "base64";
   timing: Timing;
+  attempts?: TimingAttempt[];
   tls?: TlsInfo;
-  redirects?: Array<{ url: string; status: number; headers: KeyValue[] }>;
+  redirects?: Array<{ url: string; status: number; headers: KeyValue[]; timing?: Timing; phases?: TimingPhase[] }>;
   requestSize: number;
   responseSize: number;
   error?: string;
@@ -102,6 +172,9 @@ export interface HistoryEntry {
   request: RequestConfig;
   response?: ExecuteResponse;
   environmentId?: string;
+  requestId?: string;
+  collectionId?: string;
+  protocol?: RequestProtocol;
   createdAt: number;
 }
 
