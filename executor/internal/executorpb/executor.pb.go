@@ -925,6 +925,74 @@ func (x *HttpResponse) GetAttempts() []*TimingAttempt {
 	return nil
 }
 
+type ResponseChunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Body          []byte                 `protobuf:"bytes,1,opt,name=body,proto3" json:"body,omitempty"`
+	FinalResponse *HttpResponse          `protobuf:"bytes,2,opt,name=final_response,json=finalResponse,proto3" json:"final_response,omitempty"`
+	Done          bool                   `protobuf:"varint,3,opt,name=done,proto3" json:"done,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResponseChunk) Reset() {
+	*x = ResponseChunk{}
+	mi := &file_executor_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResponseChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResponseChunk) ProtoMessage() {}
+
+func (x *ResponseChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResponseChunk.ProtoReflect.Descriptor instead.
+func (*ResponseChunk) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ResponseChunk) GetBody() []byte {
+	if x != nil {
+		return x.Body
+	}
+	return nil
+}
+
+func (x *ResponseChunk) GetFinalResponse() *HttpResponse {
+	if x != nil {
+		return x.FinalResponse
+	}
+	return nil
+}
+
+func (x *ResponseChunk) GetDone() bool {
+	if x != nil {
+		return x.Done
+	}
+	return false
+}
+
+func (x *ResponseChunk) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_executor_proto protoreflect.FileDescriptor
 
 const file_executor_proto_rawDesc = "" +
@@ -1007,10 +1075,16 @@ const file_executor_proto_rawDesc = "" +
 	"\rresponse_size\x18\t \x01(\x03R\fresponseSize\x12\x14\n" +
 	"\x05error\x18\n" +
 	" \x01(\tR\x05error\x12:\n" +
-	"\battempts\x18\v \x03(\v2\x1e.invoke.executor.TimingAttemptR\battempts2\x9b\x01\n" +
+	"\battempts\x18\v \x03(\v2\x1e.invoke.executor.TimingAttemptR\battempts\"\x93\x01\n" +
+	"\rResponseChunk\x12\x12\n" +
+	"\x04body\x18\x01 \x01(\fR\x04body\x12D\n" +
+	"\x0efinal_response\x18\x02 \x01(\v2\x1d.invoke.executor.HttpResponseR\rfinalResponse\x12\x12\n" +
+	"\x04done\x18\x03 \x01(\bR\x04done\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error2\xec\x01\n" +
 	"\fHttpExecutor\x12C\n" +
 	"\x04Ping\x12\x1c.invoke.executor.PingRequest\x1a\x1d.invoke.executor.PingResponse\x12F\n" +
-	"\aExecute\x12\x1c.invoke.executor.HttpRequest\x1a\x1d.invoke.executor.HttpResponseB;Z9github.com/brendatama/invoke/executor/internal/executorpbb\x06proto3"
+	"\aExecute\x12\x1c.invoke.executor.HttpRequest\x1a\x1d.invoke.executor.HttpResponse\x12O\n" +
+	"\rExecuteStream\x12\x1c.invoke.executor.HttpRequest\x1a\x1e.invoke.executor.ResponseChunk0\x01B;Z9github.com/brendatama/invoke/executor/internal/executorpbb\x06proto3"
 
 var (
 	file_executor_proto_rawDescOnce sync.Once
@@ -1024,7 +1098,7 @@ func file_executor_proto_rawDescGZIP() []byte {
 	return file_executor_proto_rawDescData
 }
 
-var file_executor_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_executor_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_executor_proto_goTypes = []any{
 	(*PingRequest)(nil),   // 0: invoke.executor.PingRequest
 	(*PingResponse)(nil),  // 1: invoke.executor.PingResponse
@@ -1038,6 +1112,7 @@ var file_executor_proto_goTypes = []any{
 	(*Redirect)(nil),      // 9: invoke.executor.Redirect
 	(*TimingAttempt)(nil), // 10: invoke.executor.TimingAttempt
 	(*HttpResponse)(nil),  // 11: invoke.executor.HttpResponse
+	(*ResponseChunk)(nil), // 12: invoke.executor.ResponseChunk
 }
 var file_executor_proto_depIdxs = []int32{
 	2,  // 0: invoke.executor.HttpRequest.headers:type_name -> invoke.executor.Header
@@ -1054,15 +1129,18 @@ var file_executor_proto_depIdxs = []int32{
 	8,  // 11: invoke.executor.HttpResponse.tls:type_name -> invoke.executor.TlsInfo
 	9,  // 12: invoke.executor.HttpResponse.redirects:type_name -> invoke.executor.Redirect
 	10, // 13: invoke.executor.HttpResponse.attempts:type_name -> invoke.executor.TimingAttempt
-	0,  // 14: invoke.executor.HttpExecutor.Ping:input_type -> invoke.executor.PingRequest
-	4,  // 15: invoke.executor.HttpExecutor.Execute:input_type -> invoke.executor.HttpRequest
-	1,  // 16: invoke.executor.HttpExecutor.Ping:output_type -> invoke.executor.PingResponse
-	11, // 17: invoke.executor.HttpExecutor.Execute:output_type -> invoke.executor.HttpResponse
-	16, // [16:18] is the sub-list for method output_type
-	14, // [14:16] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	11, // 14: invoke.executor.ResponseChunk.final_response:type_name -> invoke.executor.HttpResponse
+	0,  // 15: invoke.executor.HttpExecutor.Ping:input_type -> invoke.executor.PingRequest
+	4,  // 16: invoke.executor.HttpExecutor.Execute:input_type -> invoke.executor.HttpRequest
+	4,  // 17: invoke.executor.HttpExecutor.ExecuteStream:input_type -> invoke.executor.HttpRequest
+	1,  // 18: invoke.executor.HttpExecutor.Ping:output_type -> invoke.executor.PingResponse
+	11, // 19: invoke.executor.HttpExecutor.Execute:output_type -> invoke.executor.HttpResponse
+	12, // 20: invoke.executor.HttpExecutor.ExecuteStream:output_type -> invoke.executor.ResponseChunk
+	18, // [18:21] is the sub-list for method output_type
+	15, // [15:18] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_executor_proto_init() }
@@ -1076,7 +1154,7 @@ func file_executor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_executor_proto_rawDesc), len(file_executor_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
