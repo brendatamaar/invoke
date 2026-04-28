@@ -1,23 +1,37 @@
 <script setup lang="ts">
 import {
   CODE_EXPORT_TARGETS,
+  compareResponses,
   emptyGraphQLRequest,
   emptyRequest,
   exportCollectionZip,
   extractVariables,
+  formatGraphQLTypeRef,
   generateCodeSnippet,
+  graphQLFieldSnippet,
+  GRAPHQL_INTROSPECTION_QUERY,
+  importHoppscotchCollection,
+  importInsomniaExport,
   graphQLToRequestConfig,
   importOpenApiSpec,
   importPostmanCollection,
   importYamlFiles,
   InvokeStore,
   parseCurl,
+  parseGraphQLIntrospection,
   prettyBody,
+  publicGraphQLTypes,
+  normalizeExtractionRules,
   resolveGraphQLRequest,
   resolveRequest,
+  rootGraphQLTypes,
+  runAssertions,
   searchHistory,
+  type Assertion,
+  type AssertionResult,
   type AuthConfig,
   type BodyMode,
+  type DiffResult,
   type CodeExportTarget,
   type Collection,
   type Environment,
@@ -25,6 +39,9 @@ import {
   type ExtractionRule,
   type Folder,
   type GraphQLRequestConfig,
+  type GraphQLIntrospectionField,
+  type GraphQLIntrospectionSchema,
+  type GraphQLIntrospectionType,
   type HistoryEntry,
   type HttpMethod,
   type KeyValue,
@@ -36,8 +53,9 @@ import {
 } from "@invoke/core";
 import Fuse from "fuse.js";
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
-import { execute, ping } from "./lib/api";
+import { execute, executeStream, ping } from "./lib/api";
 import FolderTreeNode from "./components/FolderTreeNode.vue";
+import GraphQLEditor from "./components/GraphQLEditor.vue";
 import KeyValueEditor from "./components/KeyValueEditor.vue";
 import TimingWaterfall from "./components/TimingWaterfall.vue";
 
@@ -72,6 +90,9 @@ const methods: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", 
 const bodyModes: BodyMode[] = ["none", "json", "form-data", "urlencoded", "raw"];
 const authTypes: AuthConfig["type"][] = ["none", "basic", "bearer", "api-key"];
 const protocols: RequestProtocol[] = ["rest", "graphql"];
+const assertionTypes: Assertion["type"][] = ["status", "responseTime", "header", "bodyJsonPath", "bodySchema", "regex"];
+const assertionMatchers: Assertion["matcher"][] = ["equals", "notEquals", "exists", "gt", "lt", "contains", "matches"];
+const extractionSources: NonNullable<ExtractionRule["source"]>[] = ["body", "header", "status"];
 
 const request = ref<RequestDraft>(emptyRequest());
 const graphqlRequest = ref<GraphQLRequestConfig>(emptyGraphQLRequest());
@@ -82,9 +103,15 @@ const environments = ref<Environment[]>([]);
 const activeEnvironmentId = ref<string | undefined>();
 const history = ref<HistoryEntry[]>([]);
 const response = ref<ExecuteResponse | undefined>();
-const selectedTab = ref<"params" | "headers" | "auth" | "body" | "graphql" | "graphqlVariables" | "extract">("params");
-const responseTab = ref<"body" | "headers" | "timing" | "tls" | "code">("body");
+const assertionRules = ref<Assertion[]>([]);
+const assertionResults = ref<AssertionResult[]>([]);
+const selectedTab = ref<"params" | "headers" | "auth" | "body" | "graphql" | "graphqlVariables" | "assertions" | "extract">("params");
+const responseTab = ref<"body" | "headers" | "timing" | "tls" | "assertions" | "code">("body");
 const loading = ref(false);
+const streaming = ref(false);
+const streamMode = ref(false);
+const streamBytes = ref(0);
+const streamController = ref<AbortController | undefined>();
 const status = ref("Ready");
 const importPreview = reactive({ message: "", error: "" });
 const codeTarget = ref<CodeExportTarget>("curl");
@@ -101,13 +128,23 @@ const showSettings = ref(false);
 const openApiFileInput = ref<HTMLInputElement>();
 const postmanFileInput = ref<HTMLInputElement>();
 const invokeFileInput = ref<HTMLInputElement>();
+const insomniaFileInput = ref<HTMLInputElement>();
+const hoppscotchFileInput = ref<HTMLInputElement>();
 const theme = ref(localStorage.getItem("theme") ?? "dark");
 const showEnvPanel = ref(false);
 const envDraft = ref<Environment | undefined>();
 const saveDialog = reactive({ open: false, name: "", collectionId: "", folderId: "" });
 const extractRules = ref<ExtractionRule[]>([]);
 const sessionVariables = ref<Record<string, string>>({});
-const showExtractTab = false;
+const showExtractTab = true;
+const diffLeftId = ref("");
+const diffRightId = ref("");
+const diffResult = ref<DiffResult | undefined>();
+const showDiffModal = ref(false);
+const graphqlSchema = ref<GraphQLIntrospectionSchema | undefined>();
+const graphqlSchemaStatus = ref("");
+const expandedGraphQLTypeNames = ref<string[]>([]);
+const gqlEditor = ref<{ insertText: (value: string) => void }>();
 const expandedFolderIds = ref<string[]>([]);
 const contextMenu = reactive<{ open: boolean; x: number; y: number; target?: ContextTarget }>({
   open: false,
@@ -159,6 +196,16 @@ const statusClass = computed(() => {
 const responseContentType = computed(() => response.value?.headers.find((h) => h.key.toLowerCase() === "content-type")?.value ?? "");
 const responseBody = computed(() => prettyBody(response.value?.body ?? "", responseContentType.value));
 const displayedHistory = computed(() => searchHistory(history.value, debouncedHistoryQuery.value, 100));
+const diffableHistory = computed(() => history.value.filter((entry) => entry.response));
+const diffLeftEntry = computed(() => history.value.find((entry) => entry.id === diffLeftId.value));
+const diffRightEntry = computed(() => history.value.find((entry) => entry.id === diffRightId.value));
+const assertionSummary = computed(() => {
+  const total = assertionResults.value.length;
+  const passed = assertionResults.value.filter((result) => result.passed).length;
+  return { total, passed, failed: total - passed };
+});
+const graphqlRootTypes = computed(() => rootGraphQLTypes(graphqlSchema.value));
+const graphqlPublicTypes = computed(() => publicGraphQLTypes(graphqlSchema.value));
 const codeExportRequest = computed(() => {
   if (activeProtocol.value === "graphql") {
     return resolveRequest(graphQLToRequestConfig(graphqlResolution.value.request as GraphQLRequestConfig)).request;
@@ -225,9 +272,17 @@ watch(
   }
 );
 
+watch(
+  () => graphqlRequest.value.url,
+  () => {
+    void loadCachedGraphQLSchema();
+  }
+);
+
 onMounted(async () => {
   document.documentElement.dataset.theme = theme.value;
   await refreshAll();
+  await loadCachedGraphQLSchema();
   try {
     const pong = await pingWithRetry();
     status.value = pong.message;
@@ -526,43 +581,113 @@ function historyPaletteItem(entry: HistoryEntry): PaletteItem {
   };
 }
 
+function currentRestRequest(): RequestDraft {
+  return {
+    ...request.value,
+    assertions: clone(assertionRules.value),
+    extractionRules: clone(extractRules.value)
+  };
+}
+
+function currentGraphQLRequest(): GraphQLRequestConfig {
+  return {
+    ...graphqlRequest.value,
+    assertions: clone(assertionRules.value),
+    extractionRules: clone(extractRules.value)
+  };
+}
+
 async function send() {
   loading.value = true;
+  streamBytes.value = 0;
+  assertionResults.value = [];
   response.value = undefined;
+  const source = activeProtocol.value === "graphql" ? currentGraphQLRequest() : currentRestRequest();
   const resolved =
     activeProtocol.value === "graphql"
-      ? resolveGraphQLRequest(graphqlRequest.value, resolutionScopes.value)
-      : resolveRequest(request.value, resolutionScopes.value);
+      ? resolveGraphQLRequest(source as GraphQLRequestConfig, resolutionScopes.value)
+      : resolveRequest(source as RequestConfig, resolutionScopes.value);
   const executable = activeProtocol.value === "graphql" ? graphQLToRequestConfig(resolved.request as GraphQLRequestConfig) : (resolved.request as RequestConfig);
   try {
     if (resolved.unresolved.length > 0) {
       status.value = `Unresolved: ${resolved.unresolved.join(", ")}`;
     }
+    if (streamMode.value) {
+      await sendStreaming(executable, source);
+      return;
+    }
     const result = await execute(executable);
-    response.value = result;
-    const extracted = extractVariables(result, extractRules.value);
-    sessionVariables.value = { ...sessionVariables.value, ...extracted };
-    await store.addHistory({
-      request: activeProtocol.value === "graphql" ? graphqlRequest.value : request.value,
-      response: result,
-      environmentId: activeEnvironmentId.value,
-      requestId: request.value.id,
-      collectionId: request.value.collectionId,
-      protocol: activeProtocol.value
-    });
-    history.value = await store.listHistory(10000);
-    status.value = result.error ? result.error : `Completed in ${Math.round(result.timing?.totalMs ?? 0)} ms`;
+    await finishResponse(result, source);
   } catch (error) {
     status.value = String(error);
   } finally {
     loading.value = false;
+    streaming.value = false;
   }
+}
+
+async function sendStreaming(executable: RequestConfig, source: ProtocolRequestConfig) {
+  const controller = new AbortController();
+  streamController.value = controller;
+  streaming.value = true;
+  response.value = {
+    status: 0,
+    statusText: "streaming...",
+    headers: [],
+    body: "",
+    timing: { dnsMs: 0, tcpMs: 0, tlsMs: 0, ttfbMs: 0, transferMs: 0, totalMs: 0 },
+    requestSize: executable.body.length,
+    responseSize: 0
+  };
+  await executeStream(executable, {
+    signal: controller.signal,
+    onChunk(chunk) {
+      response.value = response.value
+        ? { ...response.value, body: `${response.value.body}${chunk}`, responseSize: response.value.responseSize + chunk.length }
+        : response.value;
+      streamBytes.value += chunk.length;
+    },
+    onFinal: async (finalResponse) => {
+      const body = finalResponse.body || response.value?.body || "";
+      await finishResponse({ ...finalResponse, body, responseSize: finalResponse.responseSize || body.length }, source);
+    }
+  });
+}
+
+async function finishResponse(result: ExecuteResponse, source: ProtocolRequestConfig) {
+  response.value = result;
+  assertionResults.value = runAssertions(result, assertionRules.value);
+  const extracted = extractVariables(result, extractRules.value);
+  sessionVariables.value = { ...sessionVariables.value, ...extracted };
+  await store.addHistory({
+    request: source,
+    response: result,
+    assertions: assertionResults.value,
+    environmentId: activeEnvironmentId.value,
+    requestId: request.value.id,
+    collectionId: request.value.collectionId,
+    protocol: activeProtocol.value
+  });
+  history.value = await store.listHistory(10000);
+  const assertionLabel = assertionResults.value.length
+    ? `, ${assertionSummary.value.passed}/${assertionSummary.value.total} assertions passed`
+    : "";
+  status.value = result.error ? result.error : `Completed in ${Math.round(result.timing?.totalMs ?? 0)} ms${assertionLabel}`;
+}
+
+function stopStream() {
+  streamController.value?.abort();
+  streaming.value = false;
+  loading.value = false;
+  status.value = "Stream stopped";
 }
 
 function newRequest() {
   request.value = emptyRequest();
   graphqlRequest.value = emptyGraphQLRequest();
   response.value = undefined;
+  assertionRules.value = [];
+  assertionResults.value = [];
   extractRules.value = [];
 }
 
@@ -574,6 +699,8 @@ function newRequestIn(collectionId?: string, folderId: string | null = null) {
   };
   graphqlRequest.value = emptyGraphQLRequest();
   response.value = undefined;
+  assertionRules.value = [];
+  assertionResults.value = [];
   extractRules.value = [];
   closeContextMenu();
 }
@@ -605,7 +732,7 @@ function openSave() {
 
 async function saveRequest() {
   if (!saveDialog.name || !saveDialog.collectionId) return;
-  const saved = await store.saveRequest(activeProtocol.value === "graphql" ? graphqlRequest.value : request.value, saveDialog.name, saveDialog.collectionId, {
+  const saved = await store.saveRequest(activeProtocol.value === "graphql" ? currentGraphQLRequest() : currentRestRequest(), saveDialog.name, saveDialog.collectionId, {
     folderId: saveDialog.folderId || null,
     protocol: activeProtocol.value
   });
@@ -617,6 +744,7 @@ async function saveRequest() {
 function loadRequest(saved: SavedRequest) {
   applySavedRequest(saved);
   response.value = undefined;
+  assertionResults.value = [];
 }
 
 function requestDraftFromSaved(saved: SavedRequest): RequestDraft {
@@ -632,6 +760,8 @@ function requestDraftFromSaved(saved: SavedRequest): RequestDraft {
 }
 
 function applySavedRequest(saved: SavedRequest) {
+  assertionRules.value = clone(saved.request.assertions ?? []);
+  extractRules.value = normalizeExtractionRules(saved.request.extractionRules);
   if (saved.protocol === "graphql") {
     graphqlRequest.value = JSON.parse(JSON.stringify(saved.request)) as GraphQLRequestConfig;
     request.value = {
@@ -826,8 +956,91 @@ function removeAt(target: unknown[], index: number) {
   target.splice(index, 1);
 }
 
+function addAssertion() {
+  assertionRules.value.push({
+    id: crypto.randomUUID(),
+    type: "status",
+    expression: "",
+    matcher: "equals",
+    expected: "200",
+    enabled: true
+  });
+}
+
+function assertionLabel(assertionId: string) {
+  const assertion = assertionRules.value.find((item) => item.id === assertionId);
+  if (!assertion) return assertionId;
+  if (assertion.type === "status") return "status";
+  if (assertion.type === "responseTime") return "response time";
+  return assertion.expression || assertion.type;
+}
+
+function historyAssertionLabel(entry: HistoryEntry) {
+  if (!entry.assertions?.length) return "";
+  const passed = entry.assertions.filter((assertion) => assertion.passed).length;
+  return `${passed}/${entry.assertions.length}`;
+}
+
 function addExtraction() {
-  extractRules.value.push({ name: "", jsonPath: "$." });
+  extractRules.value.push({ id: crypto.randomUUID(), variableName: "", source: "body", expression: "$.", fallback: "", enabled: true });
+}
+
+function compareSelectedHistory() {
+  const left = diffLeftEntry.value?.response;
+  const right = diffRightEntry.value?.response;
+  if (!left || !right || diffLeftId.value === diffRightId.value) return;
+  diffResult.value = compareResponses(left, right);
+  showDiffModal.value = true;
+}
+
+async function loadCachedGraphQLSchema() {
+  if (!graphqlRequest.value.url.trim()) {
+    graphqlSchema.value = undefined;
+    graphqlSchemaStatus.value = "";
+    return;
+  }
+  const cached = await store.getGraphQLSchema(graphqlRequest.value.url);
+  graphqlSchema.value = cached?.schema;
+  graphqlSchemaStatus.value = cached ? `Schema cached ${new Date(cached.lastFetched).toLocaleString()}` : "";
+  expandedGraphQLTypeNames.value = graphqlSchema.value ? graphqlRootTypes.value.map((item) => item.type.name) : [];
+}
+
+async function introspectGraphQLSchema() {
+  if (!graphqlRequest.value.url.trim()) return;
+  graphqlSchemaStatus.value = "Introspecting schema...";
+  try {
+    const resolved = resolveGraphQLRequest(
+      { ...graphqlRequest.value, query: GRAPHQL_INTROSPECTION_QUERY, variables: "{}", operationName: "IntrospectionQuery" },
+      resolutionScopes.value
+    );
+    const result = await execute(graphQLToRequestConfig(resolved.request));
+    const schema = parseGraphQLIntrospection(result.body);
+    graphqlSchema.value = schema;
+    expandedGraphQLTypeNames.value = rootGraphQLTypes(schema).map((item) => item.type.name);
+    await store.saveGraphQLSchema({ endpoint: graphqlRequest.value.url, schema, lastFetched: Date.now() });
+    graphqlSchemaStatus.value = `Schema loaded: ${schema.types.length} types`;
+  } catch (error) {
+    graphqlSchemaStatus.value = `Introspection failed: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+function toggleGraphQLType(typeName: string) {
+  expandedGraphQLTypeNames.value = expandedGraphQLTypeNames.value.includes(typeName)
+    ? expandedGraphQLTypeNames.value.filter((name) => name !== typeName)
+    : [...expandedGraphQLTypeNames.value, typeName];
+}
+
+function graphQLTypeFields(type?: GraphQLIntrospectionType) {
+  return type?.fields ?? [];
+}
+
+function insertGraphQLField(field: GraphQLIntrospectionField) {
+  const snippet = graphQLFieldSnippet(field);
+  if (!gqlEditor.value) {
+    graphqlRequest.value.query = `${graphqlRequest.value.query}\n${snippet}`;
+    return;
+  }
+  gqlEditor.value.insertText(snippet);
 }
 
 async function refreshCodeSnippet() {
@@ -878,7 +1091,7 @@ async function exportCollection(collection: Collection) {
   download(blob, `${collection.name}.invoke.zip`);
 }
 
-async function importFiles(event: Event, kind: "yaml" | "postman" | "openapi") {
+async function importFiles(event: Event, kind: "yaml" | "postman" | "openapi" | "insomnia" | "hoppscotch") {
   const input = event.target as HTMLInputElement;
   const files = [...(input.files ?? [])];
   if (files.length === 0) return;
@@ -889,6 +1102,14 @@ async function importFiles(event: Event, kind: "yaml" | "postman" | "openapi") {
     if (kind === "postman") {
       const doc = JSON.parse(await files[0].text());
       const imported = importPostmanCollection(doc);
+      await persistImported(imported);
+    } else if (kind === "insomnia") {
+      const doc = JSON.parse(await files[0].text());
+      const imported = importInsomniaExport(doc);
+      await persistImported(imported);
+    } else if (kind === "hoppscotch") {
+      const doc = JSON.parse(await files[0].text());
+      const imported = importHoppscotchCollection(doc);
       await persistImported(imported);
     } else if (kind === "openapi") {
       const imported = await importOpenApiSpec(await files[0].text(), files[0].name);
@@ -909,6 +1130,9 @@ async function importFiles(event: Event, kind: "yaml" | "postman" | "openapi") {
 }
 
 function loadHistory(entry: HistoryEntry) {
+  assertionRules.value = clone(entry.request.assertions ?? []);
+  extractRules.value = normalizeExtractionRules(entry.request.extractionRules);
+  assertionResults.value = clone(entry.assertions ?? []);
   if (entry.protocol === "graphql") {
     graphqlRequest.value = JSON.parse(JSON.stringify(entry.request)) as GraphQLRequestConfig;
     request.value = {
@@ -955,6 +1179,10 @@ async function persistImported(imported: { collection: Collection; folders?: Fol
   importPreview.error = "";
 }
 
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 function download(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -971,7 +1199,7 @@ function download(blob: Blob, filename: string) {
       <div class="brand">
         <div>
           <strong>invoke</strong>
-          <span>beta 1</span>
+          <span>beta 2</span>
         </div>
         <button data-testid="new-request" title="New request" @click="newRequest">+</button>
       </div>
@@ -1029,6 +1257,14 @@ function download(blob: Blob, filename: string) {
           OpenAPI
           <input ref="openApiFileInput" type="file" accept=".json,.yaml,.yml" @change="importFiles($event, 'openapi')" />
         </label>
+        <label class="file-button">
+          Insomnia
+          <input ref="insomniaFileInput" type="file" accept=".json" @change="importFiles($event, 'insomnia')" />
+        </label>
+        <label class="file-button">
+          Hoppscotch
+          <input ref="hoppscotchFileInput" type="file" accept=".json" @change="importFiles($event, 'hoppscotch')" />
+        </label>
         <div
           v-if="importPreview.error || importPreview.message"
           class="import-preview"
@@ -1041,11 +1277,22 @@ function download(blob: Blob, filename: string) {
 
       <section class="side-section history">
         <div class="side-title"><span>History</span></div>
+        <div class="diff-controls">
+          <select v-model="diffLeftId" data-testid="diff-left">
+            <option value="">Left</option>
+            <option v-for="entry in diffableHistory" :key="`left-${entry.id}`" :value="entry.id">{{ historyMethod(entry) }} {{ entry.response?.status ?? "-" }} {{ new Date(entry.createdAt).toLocaleTimeString() }}</option>
+          </select>
+          <select v-model="diffRightId" data-testid="diff-right">
+            <option value="">Right</option>
+            <option v-for="entry in diffableHistory" :key="`right-${entry.id}`" :value="entry.id">{{ historyMethod(entry) }} {{ entry.response?.status ?? "-" }} {{ new Date(entry.createdAt).toLocaleTimeString() }}</option>
+          </select>
+          <button :disabled="!diffLeftId || !diffRightId || diffLeftId === diffRightId" data-testid="compare-history" @click="compareSelectedHistory">Compare</button>
+        </div>
         <input v-model="historyQuery" class="history-search" data-testid="history-search" placeholder="Search history" />
         <button v-for="entry in displayedHistory" :key="entry.id" class="history-row" @click="loadHistory(entry)">
           <span :data-method="historyMethod(entry)">{{ historyMethod(entry) }}</span>
           <strong>{{ historyUrl(entry) }}</strong>
-          <small>{{ entry.response?.status ?? "-" }}</small>
+          <small>{{ entry.response?.status ?? "-" }} {{ historyAssertionLabel(entry) }}</small>
         </button>
         <p v-if="displayedHistory.length === 0" class="history-empty">No matching history</p>
       </section>
@@ -1080,7 +1327,9 @@ function download(blob: Blob, filename: string) {
           @blur="maybeParseCurl"
         />
         <input v-else v-model="graphqlRequest.url" data-testid="graphql-url-input" placeholder="https://api.example.com/graphql" />
+        <label class="stream-toggle"><input v-model="streamMode" type="checkbox" /> Stream</label>
         <button class="send" data-testid="send-request" :disabled="loading" @click="send">{{ loading ? "Sending" : "Send" }}</button>
+        <button v-if="streaming" data-testid="stop-stream" @click="stopStream">Stop</button>
         <button data-testid="save-request" @click="openSave">Save</button>
       </section>
 
@@ -1103,6 +1352,7 @@ function download(blob: Blob, filename: string) {
             >
               Variables
             </button>
+            <button :class="{ active: selectedTab === 'assertions' }" @click="selectedTab = 'assertions'">Assertions</button>
             <button v-if="showExtractTab" :class="{ active: selectedTab === 'extract' }" @click="selectedTab = 'extract'">Extract</button>
           </nav>
 
@@ -1162,16 +1412,66 @@ function download(blob: Blob, filename: string) {
             <textarea v-model="request.body" spellcheck="false" placeholder="{ }" />
           </div>
           <div v-if="activeProtocol === 'graphql' && selectedTab === 'graphql'" class="editor graphql-editor">
-            <label>Operation name<input v-model="graphqlRequest.operationName" data-testid="graphql-operation-input" placeholder="Optional" /></label>
-            <textarea v-model="graphqlRequest.query" data-testid="graphql-query-input" spellcheck="false" placeholder="query { }" />
+            <div class="graphql-toolbar">
+              <label>Operation name<input v-model="graphqlRequest.operationName" data-testid="graphql-operation-input" placeholder="Optional" /></label>
+              <button data-testid="graphql-introspect" :disabled="!graphqlRequest.url || loading" @click="introspectGraphQLSchema">Introspect schema</button>
+              <small>{{ graphqlSchemaStatus }}</small>
+            </div>
+            <div class="graphql-workbench">
+              <GraphQLEditor ref="gqlEditor" v-model="graphqlRequest.query" :schema="graphqlSchema" />
+              <aside class="schema-explorer" data-testid="graphql-schema-explorer">
+                <strong>Schema</strong>
+                <p v-if="!graphqlSchema" class="muted">No schema loaded</p>
+                <section v-for="root in graphqlRootTypes" :key="root.label">
+                  <button class="schema-type" @click="toggleGraphQLType(root.type.name)">
+                    {{ root.label }} <small>{{ root.type.name }}</small>
+                  </button>
+                  <div v-if="expandedGraphQLTypeNames.includes(root.type.name)" class="schema-fields">
+                    <button v-for="field in graphQLTypeFields(root.type)" :key="field.name" @click="insertGraphQLField(field)">
+                      <span>{{ field.name }}</span><small>{{ formatGraphQLTypeRef(field.type) }}</small>
+                    </button>
+                  </div>
+                </section>
+                <section v-for="type in graphqlPublicTypes.slice(0, 40)" :key="type.name">
+                  <button class="schema-type" @click="toggleGraphQLType(type.name)">
+                    {{ type.name }} <small>{{ type.kind }}</small>
+                  </button>
+                  <div v-if="expandedGraphQLTypeNames.includes(type.name)" class="schema-fields">
+                    <button v-for="field in graphQLTypeFields(type)" :key="field.name" @click="insertGraphQLField(field)">
+                      <span>{{ field.name }}</span><small>{{ formatGraphQLTypeRef(field.type) }}</small>
+                    </button>
+                  </div>
+                </section>
+              </aside>
+            </div>
           </div>
           <div v-if="activeProtocol === 'graphql' && selectedTab === 'graphqlVariables'" class="editor graphql-editor">
             <textarea v-model="graphqlRequest.variables" data-testid="graphql-variables-input" spellcheck="false" placeholder="{ }" />
           </div>
+          <div v-if="selectedTab === 'assertions'" class="editor assertion-editor">
+            <div v-for="(assertion, index) in assertionRules" :key="assertion.id" class="assertion-row">
+              <label class="check"><input v-model="assertion.enabled" type="checkbox" /> on</label>
+              <select v-model="assertion.type" data-testid="assertion-type">
+                <option v-for="type in assertionTypes" :key="type" :value="type">{{ type }}</option>
+              </select>
+              <input v-model="assertion.expression" data-testid="assertion-expression" placeholder="status/header/JSONPath/schema" />
+              <select v-model="assertion.matcher" data-testid="assertion-matcher">
+                <option v-for="matcher in assertionMatchers" :key="matcher" :value="matcher">{{ matcher }}</option>
+              </select>
+              <input v-model="assertion.expected" data-testid="assertion-expected" placeholder="expected" />
+              <button @click="removeAt(assertionRules, index)">Remove</button>
+            </div>
+            <button data-testid="add-assertion" @click="addAssertion">Add assertion</button>
+          </div>
           <div v-if="showExtractTab && selectedTab === 'extract'" class="editor">
-            <div v-for="(rule, index) in extractRules" :key="index" class="kv-row">
-              <input v-model="rule.name" placeholder="variable_name" />
-              <input v-model="rule.jsonPath" placeholder="$.token" />
+            <div v-for="(rule, index) in extractRules" :key="rule.id ?? index" class="extraction-row">
+              <label class="check"><input v-model="rule.enabled" type="checkbox" /> on</label>
+              <input v-model="rule.variableName" placeholder="variable_name" />
+              <select v-model="rule.source">
+                <option v-for="source in extractionSources" :key="source" :value="source">{{ source }}</option>
+              </select>
+              <input v-model="rule.expression" placeholder="$.token or Authorization" />
+              <input v-model="rule.fallback" placeholder="fallback" />
               <button @click="removeAt(extractRules, index)">Remove</button>
             </div>
             <button @click="addExtraction">Add extraction</button>
@@ -1184,12 +1484,15 @@ function download(blob: Blob, filename: string) {
             <strong :class="statusClass" data-testid="response-status">{{ response?.status ? `${response.status} ${response.statusText}` : "No response" }}</strong>
             <span>{{ response?.timing?.totalMs ? `${Math.round(response.timing.totalMs)} ms` : "" }}</span>
             <span>{{ response?.responseSize ? `${response.responseSize} bytes` : "" }}</span>
+            <span v-if="streaming" class="streaming-badge">streaming... {{ streamBytes }} bytes</span>
+            <span v-if="assertionSummary.total" :class="assertionSummary.failed ? 'bad' : 'ok'">{{ assertionSummary.passed }}/{{ assertionSummary.total }} assertions passed</span>
           </div>
           <nav class="tabs">
             <button :class="{ active: responseTab === 'body' }" @click="responseTab = 'body'">Body</button>
             <button :class="{ active: responseTab === 'headers' }" @click="responseTab = 'headers'">Headers</button>
             <button :class="{ active: responseTab === 'timing' }" @click="responseTab = 'timing'">Timing</button>
             <button :class="{ active: responseTab === 'tls' }" @click="responseTab = 'tls'">TLS</button>
+            <button :class="{ active: responseTab === 'assertions' }" @click="responseTab = 'assertions'">Assertions</button>
             <button :class="{ active: responseTab === 'code' }" @click="responseTab = 'code'">Code</button>
           </nav>
           <!-- CodeMirror response rendering is deferred with the editor work above; Alpha keeps a plain pre. -->
@@ -1205,6 +1508,14 @@ function download(blob: Blob, filename: string) {
               <span>Issuer: {{ cert.issuer }}</span>
               <span>Valid: {{ cert.notBefore }} to {{ cert.notAfter }}</span>
               <code>{{ cert.sha256Fingerprint }}</code>
+            </article>
+          </div>
+          <div v-if="responseTab === 'assertions'" class="assertion-results" data-testid="assertion-results">
+            <p v-if="assertionResults.length === 0" class="empty-timing">No assertions have run for this response.</p>
+            <article v-for="result in assertionResults" :key="result.assertionId" :class="{ failed: !result.passed }">
+              <strong :class="result.passed ? 'ok' : 'bad'">{{ result.passed ? "pass" : "fail" }}</strong>
+              <span>{{ assertionLabel(result.assertionId) }}</span>
+              <small v-if="!result.passed">{{ result.message }}</small>
             </article>
           </div>
           <div v-if="responseTab === 'code'" class="code-export" data-testid="code-export">
@@ -1288,6 +1599,32 @@ function download(blob: Blob, filename: string) {
           <div><dt>Requests</dt><dd>{{ requests.length }}</dd></div>
           <div><dt>History</dt><dd>{{ history.length }}</dd></div>
         </dl>
+      </section>
+    </div>
+
+    <div v-if="showDiffModal && diffResult" class="overlay" data-testid="diff-modal" @click.self="showDiffModal = false">
+      <section class="modal diff-modal">
+        <header>
+          <h2>Response diff</h2>
+          <button @click="showDiffModal = false">Close</button>
+        </header>
+        <div class="diff-summary">
+          <span>{{ diffResult.summary.additions }} additions</span>
+          <span>{{ diffResult.summary.deletions }} deletions</span>
+          <span>{{ diffResult.summary.changes }} changes</span>
+          <span>{{ Math.round(diffResult.responseTimeDeltaMs) }} ms delta</span>
+        </div>
+        <div class="diff-panes">
+          <pre>{{ diffResult.leftText }}</pre>
+          <pre>{{ diffResult.rightText }}</pre>
+        </div>
+        <div class="diff-list">
+          <article v-for="change in diffResult.changes.slice(0, 200)" :key="`${change.type}-${change.path}`" :class="`diff-${change.type}`">
+            <strong>{{ change.type }}</strong>
+            <span>{{ change.path }}</span>
+            <code>{{ JSON.stringify(change.type === 'remove' ? change.oldValue : change.value) }}</code>
+          </article>
+        </div>
       </section>
     </div>
 
