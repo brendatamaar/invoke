@@ -1,5 +1,7 @@
 export * from "./auth";
+export * from "./codegen";
 export * from "./format";
+export * from "./history";
 export * from "./import-export";
 export * from "./request";
 export * from "./storage";
