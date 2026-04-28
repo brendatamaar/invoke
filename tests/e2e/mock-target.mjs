@@ -33,6 +33,14 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (url.pathname === "/graphql") {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const payload = JSON.parse(body || "{}");
+    res.end(JSON.stringify({ data: { ok: true, query: payload.query, variables: payload.variables ?? {} } }));
+    return;
+  }
+
   res.statusCode = 404;
   res.end(JSON.stringify({ error: "not found" }));
 });
