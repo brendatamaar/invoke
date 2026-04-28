@@ -4,11 +4,14 @@ import yaml from "js-yaml";
 import JSZip from "jszip";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  compareResponses,
   emptyRequest,
   generateCodeSnippet,
   graphQLToRequestConfig,
   exportCollectionZip,
   extractVariables,
+  importHoppscotchCollection,
+  importInsomniaExport,
   importOpenApiSpec,
   importInvokeZip,
   importPostmanCollection,
@@ -18,6 +21,7 @@ import {
   resolveGraphQLRequest,
   resolveRequest,
   resolveTemplate,
+  runAssertions,
   searchHistory,
   toRequestConfig,
   type Collection,
@@ -170,9 +174,143 @@ describe("imports", () => {
         requestSize: 0,
         responseSize: 18
       },
-      [{ name: "token", jsonPath: "$.token" }]
+      [{ variableName: "token", source: "body", expression: "$.token" }]
     );
     expect(values.token).toBe("secret");
+  });
+
+  it("normalizes legacy extraction aliases without exposing them in the public type", () => {
+    const values = extractVariables(
+      { ...responseFixture(), body: JSON.stringify({ token: "secret" }) },
+      [{ name: "token", jsonPath: "$.token" } as any]
+    );
+
+    expect(values.token).toBe("secret");
+  });
+
+  it("extracts variables from body, headers, and status with fallbacks", () => {
+    const values = extractVariables(
+      {
+        ...responseFixture(),
+        status: 201,
+        headers: [{ key: "X-Token", value: "header-secret", enabled: true }],
+        body: JSON.stringify({ data: { accessToken: "body-secret" } })
+      },
+      [
+        { variableName: "token", source: "body", expression: "$.data.accessToken" },
+        { variableName: "headerToken", source: "header", expression: "X-Token" },
+        { variableName: "createdStatus", source: "status", expression: "" },
+        { variableName: "fallback", source: "body", expression: "$.missing", fallback: "default" }
+      ]
+    );
+
+    expect(values).toMatchObject({
+      token: "body-secret",
+      headerToken: "header-secret",
+      createdStatus: "201",
+      fallback: "default"
+    });
+  });
+
+  it("runs Beta 2 assertions including JSONPath, regex, response time, and schema validation", () => {
+    const response = {
+      ...responseFixture(),
+      body: JSON.stringify({ users: [{ id: 1, email: "ada@example.com" }] }),
+      timing: { ...responseFixture().timing, totalMs: 123 }
+    };
+
+    const results = runAssertions(response, [
+      { id: "status", type: "status", expression: "", matcher: "equals", expected: "200" },
+      { id: "jsonpath", type: "bodyJsonPath", expression: "$.users[0].id", matcher: "exists", expected: "" },
+      { id: "time", type: "responseTime", expression: "", matcher: "lt", expected: "500" },
+      { id: "regex", type: "regex", expression: "/^\\{/", matcher: "matches", expected: "" },
+      {
+        id: "schema",
+        type: "bodySchema",
+        expression: "",
+        matcher: "equals",
+        expected: JSON.stringify({
+          type: "object",
+          required: ["users"],
+          properties: {
+            users: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["id", "email"],
+                properties: { id: { type: "number" }, email: { type: "string" } }
+              }
+            }
+          }
+        })
+      }
+    ]);
+
+    expect(results.every((result) => result.passed)).toBe(true);
+  });
+
+  it("diffs JSON responses structurally with summary counts", () => {
+    const diff = compareResponses(
+      { ...responseFixture(), body: JSON.stringify({ users: [{ id: 1, email: "old@example.com" }] }) },
+      { ...responseFixture(), body: JSON.stringify({ users: [{ id: 1, email: "new@example.com" }], next: true }) }
+    );
+
+    expect(diff.mode).toBe("json");
+    expect(diff.summary).toMatchObject({ additions: 1, deletions: 0, changes: 1 });
+    expect(diff.changes.map((change) => change.path)).toContain("body.users[0].email");
+  });
+
+  it("does not report object key order as a structural diff", () => {
+    const diff = compareResponses(
+      { ...responseFixture(), body: JSON.stringify({ a: 1, b: 2 }) },
+      { ...responseFixture(), body: JSON.stringify({ b: 2, a: 1 }) }
+    );
+
+    expect(diff.summary).toEqual({ additions: 0, deletions: 0, changes: 0 });
+    expect(diff.changes).toEqual([]);
+  });
+
+  it("imports Insomnia v4 exports with folders, requests, and environments", () => {
+    const imported = importInsomniaExport({
+      resources: [
+        { _id: "wrk_1", _type: "workspace", name: "Insomnia API" },
+        { _id: "fld_1", _type: "request_group", parentId: "wrk_1", name: "auth" },
+        {
+          _id: "req_1",
+          _type: "request",
+          parentId: "fld_1",
+          name: "Login",
+          method: "POST",
+          url: "{{ base_url }}/login",
+          headers: [{ name: "Content-Type", value: "application/json" }],
+          body: { mimeType: "application/json", text: '{ "email": "ada@example.com" }' }
+        },
+        { _id: "env_1", _type: "environment", name: "staging", data: { base_url: "https://api.example.com" } }
+      ]
+    });
+
+    expect(imported.collection.name).toBe("Insomnia API");
+    expect(imported.folders[0].name).toBe("auth");
+    expect(imported.requests[0].folderId).toBe(imported.folders[0].id);
+    expect(imported.environments[0].variables).toContainEqual({ key: "base_url", value: "https://api.example.com", enabled: true });
+  });
+
+  it("imports Hoppscotch collections with nested folders", () => {
+    const imported = importHoppscotchCollection({
+      name: "Hoppscotch API",
+      folders: [
+        {
+          name: "users",
+          requests: [{ name: "List users", method: "GET", endpoint: "{{base_url}}/users" }]
+        }
+      ],
+      environments: [{ name: "local", variables: [{ key: "base_url", value: "http://localhost:3000" }] }]
+    });
+
+    expect(imported.collection.name).toBe("Hoppscotch API");
+    expect(imported.folders[0].name).toBe("users");
+    expect(imported.requests[0].folderId).toBe(imported.folders[0].id);
+    expect(imported.requests[0].request.url).toBe("{{base_url}}/users");
   });
 
   it("imports OpenAPI operations into tag folders with placeholders", async () => {
@@ -608,6 +746,27 @@ describe("invoke YAML", () => {
       headers: { "Content-Type": "application/json" },
       body: { type: "json", content: '{ "name": "Ada" }' }
     });
+  });
+
+  it("disambiguates duplicate folder and request slugs in ZIP export", async () => {
+    const { collection, requests } = fixtureCollection();
+    const duplicateFolders: Folder[] = [
+      { id: "fld_a", collectionId: collection.id, parentFolderId: null, name: "users", variables: [], sortOrder: 1, createdAt: 1, updatedAt: 1 },
+      { id: "fld_b", collectionId: collection.id, parentFolderId: null, name: "users", variables: [], sortOrder: 2, createdAt: 1, updatedAt: 1 }
+    ];
+    const duplicateRequests: SavedRequest[] = [
+      { ...requests[0], id: "req_a", folderId: duplicateFolders[0].id, name: "Create user" },
+      { ...requests[0], id: "req_b", folderId: duplicateFolders[0].id, name: "Create user" },
+      { ...requests[0], id: "req_c", folderId: duplicateFolders[1].id, name: "Create user" }
+    ];
+
+    const blob = await exportCollectionZip(collection, duplicateRequests, duplicateFolders);
+    const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+    const names = Object.keys(zip.files);
+
+    expect(names.some((name) => name.includes("users/create-user.invoke.yaml"))).toBe(true);
+    expect(names.some((name) => name.includes("users/create-user-2.invoke.yaml"))).toBe(true);
+    expect(names.some((name) => name.includes("users-2/create-user.invoke.yaml"))).toBe(true);
   });
 });
 
