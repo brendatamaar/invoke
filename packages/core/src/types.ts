@@ -169,7 +169,7 @@ export interface ExecuteResponse {
 
 export interface HistoryEntry {
   id: string;
-  request: RequestConfig;
+  request: ProtocolRequestConfig;
   response?: ExecuteResponse;
   environmentId?: string;
   requestId?: string;

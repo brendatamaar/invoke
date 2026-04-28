@@ -1,6 +1,6 @@
 import { JSONPath } from "jsonpath-plus";
 import { applyAuth, buildUrl } from "./auth";
-import type { Environment, ExecuteResponse, ExtractionRule, KeyValue, RequestConfig } from "./types";
+import type { Environment, ExecuteResponse, ExtractionRule, GraphQLRequestConfig, KeyValue, RequestConfig } from "./types";
 
 export interface VariableScope {
   name?: string;
@@ -71,6 +71,44 @@ export function resolveRequest(
   };
   const withAuth = applyAuth(resolvedBase);
   return { request: { ...withAuth, url: buildUrl(withAuth.url, withAuth.params) }, unresolved: [...unresolved] };
+}
+
+export function resolveGraphQLRequest(
+  request: GraphQLRequestConfig,
+  environmentOrScopes?: Environment | VariableScope[],
+  sessionVariables: Record<string, string> = {}
+) {
+  const scopes = Array.isArray(environmentOrScopes)
+    ? environmentOrScopes
+    : [
+        { name: "environment", variables: environmentOrScopes?.variables ?? [] },
+        { name: "session", variables: sessionVariables }
+      ];
+  const variables = variablesFromScopes(scopes);
+  const unresolved = new Set<string>();
+  const resolve = (value: string) => {
+    const resolved = resolveTemplate(value, variables);
+    resolved.unresolved.forEach((name) => unresolved.add(name));
+    return resolved.value;
+  };
+
+  const resolved: GraphQLRequestConfig = {
+    ...request,
+    url: resolve(request.url),
+    headers: request.headers.map((header) => ({ ...header, key: resolve(header.key), value: resolve(header.value) })),
+    query: resolve(request.query),
+    variables: resolve(request.variables),
+    operationName: resolve(request.operationName ?? ""),
+    auth: {
+      ...request.auth,
+      username: resolve(request.auth.username ?? ""),
+      password: resolve(request.auth.password ?? ""),
+      token: resolve(request.auth.token ?? ""),
+      apiKeyName: resolve(request.auth.apiKeyName ?? ""),
+      apiKeyValue: resolve(request.auth.apiKeyValue ?? "")
+    }
+  };
+  return { request: resolved, unresolved: [...unresolved] };
 }
 
 export function extractVariables(response: ExecuteResponse, rules: ExtractionRule[]) {
