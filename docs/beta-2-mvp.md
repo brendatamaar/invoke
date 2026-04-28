@@ -53,6 +53,7 @@ Beta 2 stays self-hosted only. Public hosting waits for v1.
 - Persist assertion results in `HistoryEntry` so old runs can be reviewed
 - Schema cache: introspected GraphQL schemas keyed by endpoint URL, refreshable on demand
 - Session variable bag (in-memory, not persisted) for variable extraction within a tab session
+- History search index upgrade: replace Beta 1's naive scan with `flexsearch` or equivalent if the 10k-entry UI search profile remains above 300ms
 
 **Web UI**
 - Assertions tab in the request builder: list of assertions with type/expression/matcher/expected fields, "+ add assertion" button, per-row delete
@@ -67,6 +68,7 @@ Beta 2 stays self-hosted only. Public hosting waits for v1.
 **Import/Export**
 - Insomnia v4 import: read Insomnia's JSON export structure (`_type: "request"`, `_type: "request_group"`), map to invoke's request and folder models
 - Hoppscotch import: read Hoppscotch's JSON collection structure
+- Invoke ZIP export hardening: disambiguate duplicate folder/request slugs so two same-named resources in the same parent cannot overwrite each other in the archive
 
 **Infrastructure**
 - All-in-one Docker container (`Dockerfile.aio`) bundling UI static files + Node server + Go executor in one image with a small entrypoint script. **Stretch goal** — does not gate the Beta 2 release.

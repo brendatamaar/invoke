@@ -154,13 +154,15 @@ Continue the slice pattern from Alpha. Each slice ends with the app being more u
 
 **Build:**
 - Core engine: GraphQL request type (`{ query, variables, operationName, headers }`), serialization to HTTP POST body with `Content-Type: application/json`
-- Core engine: OpenAPI 3.0 importer using `@apidevtools/swagger-parser` — walk paths × operations, generate one REST request per operation, map path/query/header parameters to placeholder variables, organize requests by `tags[]` into folders
+- Core engine: OpenAPI 3.0 importer using `@apidevtools/swagger-parser` — walk paths × operations, generate one REST request per operation, map path/query/header parameters to placeholder variables, map `servers[]` to environments with `base_url`, organize requests by `tags[]` into folders
 - Vue UI: protocol switcher in the URL bar area (REST / GraphQL toggle) — switching changes the request builder layout
 - Vue UI: GraphQL request builder — query editor with `codemirror-graphql` for syntax highlighting (no autocomplete in Beta 1), variables panel as a JSON editor below the query, headers tab shared with REST. "Send" button works the same way.
 - Vue UI: Save GraphQL request to a collection — same flow as REST, but stored with `protocol: 'graphql'`
 - Vue UI: Import dialog upgrade — dropdown for format, supports OpenAPI 3.0 in addition to existing Postman/cURL/YAML zip. Preview pane showing what will be imported (N requests in M folders).
 
 **Skip for now:** Schema introspection. Schema explorer panel. Autocomplete. GraphQL subscriptions (need WebSocket). All Beta 2 or v1.
+
+**Known limitation:** OpenAPI external `$ref` targets, including remote URLs, are not supported in the browser importer. Browser CORS makes remote dereferencing hard to support cleanly without a server-side fetch step, so this is deferred to v1.
 
 **Acceptance:** Switch the protocol toggle to GraphQL. Point the endpoint at `https://countries.trevorblades.com/`. Type `query { country(code: "ID") { name capital } }` in the query editor with syntax highlighting. Add `{}` to the variables panel. Press Send — response shows the JSON result with the timing waterfall from Slice B1.1. Save the query to a collection. Reload browser — saved query restores correctly with its variables. For OpenAPI: import the Petstore spec — collection appears with one folder per tag (`pet`, `store`, `user`), each containing requests for the operations in that tag, with path parameters as `{{petId}}` placeholders. Pick one imported request, fill in the placeholder, send — get a real response from the Petstore.
 

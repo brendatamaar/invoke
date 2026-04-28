@@ -1,18 +1,30 @@
 # invoke
 
-invoke is a privacy-first API development and testing platform: a browser UI, local-first storage, and a Go executor for accurate HTTP timing. The Alpha focuses on the core loop: open the app, send REST requests, inspect the response, save it locally, and export Git-friendly files.
+invoke is a privacy-first API development and testing platform: a browser UI, local-first storage, and a Go executor for accurate HTTP timing. Beta 1 covers the daily API workflow: send REST and GraphQL requests, inspect accurate timing, organize collections locally, import OpenAPI specs, export runnable code, and jump around with a command palette.
 
 No account. No cloud sync. Your collections, environments, and history live in your browser's IndexedDB.
 
-## Alpha Scope
+## Beta 1 Scope
 
 - REST requests: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`
+- GraphQL requests with query, variables, shared headers, and save/load support
 - Headers, query params, JSON/raw bodies, Basic/Bearer/API key auth
-- Go HTTP executor with DNS/TCP/TLS/TTFB/transfer/total timing
-- Browser-local collections, environments, and history in IndexedDB
-- `{{variable}}` resolution and dynamic variables like `{{$uuid}}`
-- YAML zip export/import, Postman v2.1 import, cURL paste import
-- Light/dark theme and keyboard shortcuts
+- Go HTTP executor with DNS/TCP/TLS/TTFB/transfer/total timing plus a waterfall view
+- Browser-local collections, nested folders, environments, and searchable history in IndexedDB
+- `{{variable}}` resolution across environment, collection, folder, request, and session scopes
+- YAML zip export/import, Postman v2.1 import, OpenAPI 3.x import, cURL paste import
+- Code export for cURL, JavaScript `fetch`, Python `requests`, and Node `axios`
+- Light/dark theme, keyboard shortcuts, shortcut help, and command palette
+
+## Screenshots
+
+![GraphQL editor](docs/assets/beta-1/graphql-editor.png)
+
+![Timing waterfall](docs/assets/beta-1/timing-waterfall.png)
+
+![Command palette](docs/assets/beta-1/command-palette.png)
+
+![OpenAPI import preview](docs/assets/beta-1/openapi-import.png)
 
 ## Architecture
 
@@ -58,7 +70,7 @@ The executor service is defined in `proto/executor.proto`. Generated Go code is 
 pnpm proto:generate
 ```
 
-## Self-Hosted Alpha
+## Self-Hosted Beta 1
 
 ```bash
 docker compose up --build
@@ -76,8 +88,8 @@ pnpm e2e
 go test ./executor/...
 ```
 
-`pnpm e2e` starts the Go executor, Hono server, Vite UI, and a local mock target API, then runs the Alpha happy paths in Chromium.
+`pnpm e2e` starts the Go executor, Hono server, Vite UI, and a local mock target API, then runs the Beta 1 happy paths in Chromium.
 
-## Alpha Status
+## Beta 1 Status
 
-Alpha is intentionally narrow. Deferred features include GraphQL, WebSocket, gRPC client UI, assertions, response diffing, mock server, command palette, and hosted public deployment. See `docs/alpha-mvp.md` for the exact scope and acceptance criteria.
+Beta 1 is local-first and browser-owned. Deferred features include WebSocket, gRPC client UI, assertions, response diffing, mock server, GraphQL schema explorer/autocomplete, additional importers, and hosted public deployment. See `docs/beta-1-mvp.md` for the exact scope and acceptance criteria.
