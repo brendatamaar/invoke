@@ -1,6 +1,14 @@
 import { JSONPath } from "jsonpath-plus";
 import { applyAuth, buildUrl } from "./auth";
-import type { Environment, ExecuteResponse, ExtractionRule, GraphQLRequestConfig, KeyValue, RequestConfig } from "./types";
+import type {
+  Environment,
+  ExecuteResponse,
+  ExtractionRule,
+  ExtractionSource,
+  GraphQLRequestConfig,
+  KeyValue,
+  RequestConfig
+} from "./types";
 
 export interface VariableScope {
   name?: string;
@@ -119,12 +127,41 @@ export function extractVariables(response: ExecuteResponse, rules: ExtractionRul
   } catch {
     json = undefined;
   }
-  for (const rule of rules) {
-    if (!rule.name || !rule.jsonPath || json == null) continue;
-    const result = JSONPath({ path: rule.jsonPath, json, wrap: false }) as unknown;
-    if (result != null) values[rule.name] = typeof result === "string" ? result : JSON.stringify(result);
+  for (const rule of normalizeExtractionRules(rules)) {
+    if (rule.enabled === false) continue;
+    const variableName = rule.variableName;
+    const source = rule.source ?? "body";
+    const expression = rule.expression;
+    if (!variableName.trim()) continue;
+    const result = extractValue(response, source, expression, json);
+    const value = result ?? rule.fallback;
+    if (value != null) values[variableName.trim()] = typeof value === "string" ? value : JSON.stringify(value);
   }
   return values;
+}
+
+export function normalizeExtractionRules(rules: unknown[] | undefined = []): ExtractionRule[] {
+  return (rules ?? []).map((raw) => {
+    const rule = raw as Partial<ExtractionRule> & { name?: string; jsonPath?: string };
+    return {
+      id: rule.id,
+      variableName: String(rule.variableName ?? rule.name ?? ""),
+      source: rule.source ?? "body",
+      expression: String(rule.expression ?? rule.jsonPath ?? ""),
+      fallback: rule.fallback,
+      enabled: rule.enabled ?? true
+    };
+  });
+}
+
+function extractValue(response: ExecuteResponse, source: ExtractionSource, expression: string, json?: unknown) {
+  if (source === "status") return response.status;
+  if (source === "header") {
+    const normalized = expression.trim().toLowerCase();
+    return response.headers.find((header) => header.key.trim().toLowerCase() === normalized)?.value;
+  }
+  if (json == null || !expression.trim()) return undefined;
+  return JSONPath({ path: expression, json, wrap: false }) as unknown;
 }
 
 function dynamicVariable(name: string) {

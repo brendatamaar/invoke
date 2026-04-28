@@ -260,6 +260,13 @@ small {
   display: none;
 }
 
+.diff-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
 .import-preview {
   margin-top: 10px;
   padding: 8px 10px;
@@ -309,6 +316,14 @@ small {
   font-weight: 800;
 }
 
+.stream-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .warning {
   margin: 12px 16px 0;
   padding: 10px;
@@ -352,9 +367,62 @@ small {
   gap: 10px;
 }
 
-.graphql-editor label {
+.graphql-editor label,
+.graphql-toolbar {
   display: grid;
   gap: 6px;
+  color: var(--muted);
+}
+
+.graphql-toolbar {
+  grid-template-columns: minmax(180px, 1fr) auto minmax(140px, 1fr);
+  align-items: end;
+}
+
+.graphql-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 10px;
+}
+
+.schema-explorer {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  max-height: 460px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.schema-explorer section {
+  display: grid;
+  gap: 4px;
+}
+
+.schema-type,
+.schema-fields button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.schema-fields {
+  display: grid;
+  gap: 3px;
+  padding-left: 10px;
+}
+
+.schema-fields button {
+  border-color: transparent;
+  background: var(--panel);
+}
+
+.muted {
   color: var(--muted);
 }
 
@@ -392,6 +460,11 @@ small {
   border-bottom: 1px solid var(--line);
 }
 
+.streaming-badge {
+  color: var(--accent);
+  font-weight: 800;
+}
+
 .ok {
   color: var(--ok);
 }
@@ -414,6 +487,29 @@ small {
   line-height: 1.5;
 }
 
+.assertion-results {
+  padding: 12px;
+}
+
+.assertion-results article {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.assertion-results article.failed {
+  border-color: color-mix(in srgb, var(--danger) 60%, var(--line));
+}
+
+.assertion-results small {
+  grid-column: 2;
+}
+
 .code-export {
   display: grid;
   gap: 10px;
@@ -425,6 +521,21 @@ small {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.assertion-editor,
+.assertion-results {
+  display: grid;
+  gap: 8px;
+}
+
+.assertion-row,
+.extraction-row {
+  display: grid;
+  grid-template-columns: auto minmax(110px, 0.8fr) minmax(120px, 1.2fr) minmax(110px, 0.8fr) minmax(120px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .code-toolbar select {
@@ -787,17 +898,80 @@ small {
 }
 
 .help-modal,
-.settings-modal {
+.settings-modal,
+.diff-modal {
   display: grid;
   gap: 14px;
 }
 
 .help-modal header,
-.settings-modal header {
+.settings-modal header,
+.diff-modal header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.diff-modal {
+  width: min(1120px, calc(100vw - 32px));
+  max-height: 86vh;
+  overflow: auto;
+}
+
+.diff-summary,
+.diff-list article {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.diff-summary span {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.diff-panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.diff-panes pre {
+  max-height: 420px;
+  margin: 0;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  white-space: pre-wrap;
+}
+
+.diff-list {
+  display: grid;
+  gap: 6px;
+}
+
+.diff-list article {
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.diff-add {
+  border-color: color-mix(in srgb, var(--ok) 50%, var(--line)) !important;
+}
+
+.diff-remove {
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--line)) !important;
+}
+
+.diff-change {
+  border-color: color-mix(in srgb, var(--warn) 50%, var(--line)) !important;
 }
 
 .settings-stats {
@@ -883,5 +1057,11 @@ small {
 
   .panes {
     height: auto;
+  }
+
+  .graphql-toolbar,
+  .graphql-workbench,
+  .diff-panes {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type {
+  CachedGraphQLSchema,
   Collection,
   Environment,
   Folder,
@@ -263,6 +264,15 @@ export class InvokeStore {
     await this.db.meta.put({ key, value: clonePlain(value) });
   }
 
+  async getGraphQLSchema(endpoint: string) {
+    return this.getMeta<CachedGraphQLSchema>(schemaCacheKey(endpoint));
+  }
+
+  async saveGraphQLSchema(schema: CachedGraphQLSchema) {
+    await this.setMeta(schemaCacheKey(schema.endpoint), schema);
+    return schema;
+  }
+
   async addHistory(entry: Omit<HistoryEntry, "id" | "createdAt">) {
     const request = entry.request as RequestDraft;
     const saved: HistoryEntry = {
@@ -289,6 +299,10 @@ export class InvokeStore {
   async searchHistory(query: string, limit = 100) {
     return filterHistory(await this.listHistory(HISTORY_LIMIT), query, limit);
   }
+}
+
+function schemaCacheKey(endpoint: string) {
+  return `graphql-schema:${endpoint.trim()}`;
 }
 
 function collectFolderIds(folders: Folder[], rootId: string) {

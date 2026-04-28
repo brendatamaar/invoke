@@ -129,6 +129,121 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 	return out, nil
 }
 
+func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor_ExecuteStreamServer) error {
+	if strings.TrimSpace(req.GetUrl()) == "" {
+		return stream.Send(&ResponseChunk{Done: true, Error: "url is required", FinalResponse: &HttpResponse{Error: "url is required"}})
+	}
+	method := strings.ToUpper(strings.TrimSpace(req.GetMethod()))
+	if method == "" {
+		method = http.MethodGet
+	}
+
+	timeout := time.Duration(req.GetTimeoutMs()) * time.Millisecond
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(stream.Context(), timeout)
+	defer cancel()
+
+	httpReq, err := http.NewRequestWithContext(ctx, method, req.GetUrl(), bytes.NewReader(req.GetBody()))
+	if err != nil {
+		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
+	}
+	for _, header := range req.GetHeaders() {
+		if strings.TrimSpace(header.GetKey()) != "" {
+			httpReq.Header.Add(header.GetKey(), header.GetValue())
+		}
+	}
+
+	transport, err := transportFor(req)
+	if err != nil {
+		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
+	}
+	attempts := make([]*attemptRecord, 0)
+	client := &http.Client{Transport: &recordingTransport{base: transport, attempts: &attempts}}
+	if !req.GetFollowRedirects() {
+		client.CheckRedirect = func(next *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	} else {
+		maxRedirects := int(req.GetMaxRedirects())
+		if maxRedirects <= 0 {
+			maxRedirects = 10
+		}
+		client.CheckRedirect = func(next *http.Request, via []*http.Request) error {
+			if len(via) >= maxRedirects {
+				return errors.New("stopped after maximum redirects")
+			}
+			return nil
+		}
+	}
+
+	start := time.Now()
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		finishedAt := time.Now()
+		finalizeLastAttempt(attempts, finishedAt)
+		finalResponse := &HttpResponse{
+			Error:     err.Error(),
+			Timing:    aggregateTiming(attempts, start, finishedAt),
+			Redirects: redirectsFromAttempts(attempts),
+			Attempts:  attemptsToProto(attempts),
+		}
+		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: finalResponse})
+	}
+	defer resp.Body.Close()
+
+	var body bytes.Buffer
+	chunk := make([]byte, 16*1024)
+	for {
+		n, readErr := resp.Body.Read(chunk)
+		if n > 0 {
+			part := append([]byte(nil), chunk[:n]...)
+			body.Write(part)
+			if err := stream.Send(&ResponseChunk{Body: part}); err != nil {
+				return err
+			}
+		}
+		if readErr == io.EOF {
+			break
+		}
+		if readErr != nil {
+			finishedAt := time.Now()
+			finalizeLastAttempt(attempts, finishedAt)
+			finalResponse := &HttpResponse{
+				Status:       int32(resp.StatusCode),
+				StatusText:   resp.Status,
+				Headers:      headersFromHTTP(resp.Header),
+				Body:         body.Bytes(),
+				Timing:       aggregateTiming(attempts, start, finishedAt),
+				Tls:          tlsInfo(resp.TLS),
+				Redirects:    redirectsFromAttempts(attempts),
+				Attempts:     attemptsToProto(attempts),
+				RequestSize:  int64(len(req.GetBody())),
+				ResponseSize: int64(body.Len()),
+				Error:        readErr.Error(),
+			}
+			return stream.Send(&ResponseChunk{Done: true, Error: readErr.Error(), FinalResponse: finalResponse})
+		}
+	}
+
+	finishedAt := time.Now()
+	finalizeLastAttempt(attempts, finishedAt)
+	finalResponse := &HttpResponse{
+		Status:       int32(resp.StatusCode),
+		StatusText:   resp.Status,
+		Headers:      headersFromHTTP(resp.Header),
+		Body:         body.Bytes(),
+		Timing:       aggregateTiming(attempts, start, finishedAt),
+		Tls:          tlsInfo(resp.TLS),
+		Redirects:    redirectsFromAttempts(attempts),
+		Attempts:     attemptsToProto(attempts),
+		RequestSize:  int64(len(req.GetBody())),
+		ResponseSize: int64(body.Len()),
+	}
+	return stream.Send(&ResponseChunk{Done: true, FinalResponse: finalResponse})
+}
+
 func transportFor(req *HttpRequest) (*http.Transport, error) {
 	verify := req.GetVerifySsl()
 	transport := &http.Transport{

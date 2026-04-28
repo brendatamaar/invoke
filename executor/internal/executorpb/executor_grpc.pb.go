@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HttpExecutor_Ping_FullMethodName    = "/invoke.executor.HttpExecutor/Ping"
-	HttpExecutor_Execute_FullMethodName = "/invoke.executor.HttpExecutor/Execute"
+	HttpExecutor_Ping_FullMethodName          = "/invoke.executor.HttpExecutor/Ping"
+	HttpExecutor_Execute_FullMethodName       = "/invoke.executor.HttpExecutor/Execute"
+	HttpExecutor_ExecuteStream_FullMethodName = "/invoke.executor.HttpExecutor/ExecuteStream"
 )
 
 // HttpExecutorClient is the client API for HttpExecutor service.
@@ -29,6 +30,7 @@ const (
 type HttpExecutorClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	Execute(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (*HttpResponse, error)
+	ExecuteStream(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ResponseChunk], error)
 }
 
 type httpExecutorClient struct {
@@ -59,12 +61,32 @@ func (c *httpExecutorClient) Execute(ctx context.Context, in *HttpRequest, opts 
 	return out, nil
 }
 
+func (c *httpExecutorClient) ExecuteStream(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ResponseChunk], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &HttpExecutor_ServiceDesc.Streams[0], HttpExecutor_ExecuteStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[HttpRequest, ResponseChunk]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type HttpExecutor_ExecuteStreamClient = grpc.ServerStreamingClient[ResponseChunk]
+
 // HttpExecutorServer is the server API for HttpExecutor service.
 // All implementations must embed UnimplementedHttpExecutorServer
 // for forward compatibility.
 type HttpExecutorServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	Execute(context.Context, *HttpRequest) (*HttpResponse, error)
+	ExecuteStream(*HttpRequest, grpc.ServerStreamingServer[ResponseChunk]) error
 	mustEmbedUnimplementedHttpExecutorServer()
 }
 
@@ -80,6 +102,9 @@ func (UnimplementedHttpExecutorServer) Ping(context.Context, *PingRequest) (*Pin
 }
 func (UnimplementedHttpExecutorServer) Execute(context.Context, *HttpRequest) (*HttpResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Execute not implemented")
+}
+func (UnimplementedHttpExecutorServer) ExecuteStream(*HttpRequest, grpc.ServerStreamingServer[ResponseChunk]) error {
+	return status.Error(codes.Unimplemented, "method ExecuteStream not implemented")
 }
 func (UnimplementedHttpExecutorServer) mustEmbedUnimplementedHttpExecutorServer() {}
 func (UnimplementedHttpExecutorServer) testEmbeddedByValue()                      {}
@@ -138,6 +163,17 @@ func _HttpExecutor_Execute_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HttpExecutor_ExecuteStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(HttpRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(HttpExecutorServer).ExecuteStream(m, &grpc.GenericServerStream[HttpRequest, ResponseChunk]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type HttpExecutor_ExecuteStreamServer = grpc.ServerStreamingServer[ResponseChunk]
+
 // HttpExecutor_ServiceDesc is the grpc.ServiceDesc for HttpExecutor service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -154,6 +190,12 @@ var HttpExecutor_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HttpExecutor_Execute_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ExecuteStream",
+			Handler:       _HttpExecutor_ExecuteStream_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "executor.proto",
 }
