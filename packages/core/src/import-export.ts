@@ -88,6 +88,8 @@ export async function exportCollectionZip(collection: Collection, requests: Save
   const root = zip.folder(slug(collection.name))!;
   const collectionFolders = folders.filter((folder) => folder.collectionId === collection.id);
   const foldersById = new Map(collectionFolders.map((folder) => [folder.id, folder]));
+  const folderPaths = exportFolderPaths(collectionFolders);
+  const requestNamesByPath = new Map<string, Set<string>>();
   root.file(
     "collection.invoke.yaml",
     yaml.dump({
@@ -99,12 +101,13 @@ export async function exportCollectionZip(collection: Collection, requests: Save
     })
   );
   for (const folder of sortFoldersForExport(collectionFolders)) {
-    root.folder(folderPath(folder, foldersById))!.file("folder.invoke.yaml", yaml.dump(folderDocument(folder)));
+    root.folder(folderPaths.get(folder.id) ?? folderPath(folder, foldersById))!.file("folder.invoke.yaml", yaml.dump(folderDocument(folder)));
   }
   for (const request of requests.filter((item) => item.collectionId === collection.id)) {
     const folder = request.folderId ? foldersById.get(request.folderId) : undefined;
-    const target = folder ? root.folder(folderPath(folder, foldersById))! : root;
-    target.file(`${slug(request.name)}.invoke.yaml`, yaml.dump(flatRequestDocument(request)));
+    const path = folder ? folderPaths.get(folder.id) ?? folderPath(folder, foldersById) : "";
+    const target = path ? root.folder(path)! : root;
+    target.file(uniqueRequestFileName(request.name, path, requestNamesByPath), yaml.dump(flatRequestDocument(request)));
   }
   return zip.generateAsync({ type: "blob" });
 }
@@ -190,6 +193,132 @@ export function importPostmanCollection(doc: any) {
   };
   visit(doc?.item ?? []);
   return { collection, folders, requests };
+}
+
+export function importInsomniaExport(doc: any) {
+  const resources = Array.isArray(doc?.resources) ? doc.resources : [];
+  const now = Date.now();
+  const workspace = resources.find((item: any) => item?._type === "workspace");
+  const collection: Collection = {
+    id: id(),
+    name: workspace?.name ?? doc?.name ?? "Insomnia import",
+    variables: [],
+    sortOrder: now,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  const folderMap = new Map<string, Folder>();
+  const groupResources = resources.filter((item: any) => item?._type === "request_group");
+  for (const group of groupResources) {
+    folderMap.set(group._id, {
+      id: id(),
+      collectionId: collection.id,
+      parentFolderId: null,
+      name: group.name ?? "Imported folder",
+      variables: [],
+      sortOrder: now + folderMap.size,
+      createdAt: now,
+      updatedAt: now
+    });
+  }
+  for (const group of groupResources) {
+    const folder = folderMap.get(group._id);
+    if (!folder) continue;
+    folder.parentFolderId = group.parentId && folderMap.has(group.parentId) ? folderMap.get(group.parentId)!.id : null;
+  }
+
+  const requests: SavedRequest[] = resources
+    .filter((item: any) => item?._type === "request")
+    .map((item: any, index: number) => {
+      const body = insomniaBody(item.body);
+      const request = toRequestConfig({
+        ...emptyRequest(),
+        method: (item.method ?? "GET").toUpperCase() as HttpMethod,
+        url: item.url ?? "",
+        headers: (item.headers ?? []).map((header: any) => ({
+          key: header.name ?? header.key ?? "",
+          value: header.value ?? "",
+          enabled: !header.disabled
+        })),
+        auth: insomniaAuth(item.authentication),
+        bodyMode: body.mode,
+        body: body.content
+      });
+      return {
+        id: id(),
+        collectionId: collection.id,
+        folderId: item.parentId && folderMap.has(item.parentId) ? folderMap.get(item.parentId)!.id : null,
+        name: item.name ?? `${request.method} ${request.url}`,
+        protocol: "rest",
+        request,
+        sortOrder: now + index,
+        createdAt: now,
+        updatedAt: now
+      };
+    });
+
+  const environments = resources
+    .filter((item: any) => item?._type === "environment" && item.name && item.data && Object.keys(item.data).length > 0)
+    .map((item: any, index: number): Environment => ({
+      id: id(),
+      name: item.name,
+      variables: recordToKeyValues(item.data),
+      createdAt: now + index,
+      updatedAt: now + index
+    }));
+
+  return { collection, folders: [...folderMap.values()], requests, environments };
+}
+
+export function importHoppscotchCollection(doc: any) {
+  const now = Date.now();
+  const rootCollection = Array.isArray(doc?.collections) ? doc.collections[0] : doc;
+  const collection: Collection = {
+    id: id(),
+    name: rootCollection?.name ?? doc?.name ?? "Hoppscotch import",
+    variables: [],
+    sortOrder: now,
+    createdAt: now,
+    updatedAt: now
+  };
+  const folders: Folder[] = [];
+  const requests: SavedRequest[] = [];
+
+  const visitFolder = (node: any, parentFolderId: string | null = null) => {
+    const folder: Folder = {
+      id: id(),
+      collectionId: collection.id,
+      parentFolderId,
+      name: node?.name ?? "Imported folder",
+      variables: [],
+      sortOrder: now + folders.length,
+      createdAt: now,
+      updatedAt: now
+    };
+    folders.push(folder);
+    visitRequests(node?.requests ?? [], folder.id);
+    for (const child of node?.folders ?? []) visitFolder(child, folder.id);
+  };
+
+  const visitRequests = (items: any[], folderId: string | null) => {
+    for (const item of items ?? []) requests.push(hoppscotchRequest(collection.id, folderId, item, now + requests.length));
+  };
+
+  visitRequests(rootCollection?.requests ?? doc?.requests ?? [], null);
+  for (const folder of rootCollection?.folders ?? doc?.folders ?? []) visitFolder(folder, null);
+
+  const environments = (doc?.environments ?? doc?.envs ?? [])
+    .filter((env: any) => env?.name)
+    .map((env: any, index: number): Environment => ({
+      id: id(),
+      name: env.name,
+      variables: hoppscotchVariables(env),
+      createdAt: now + index,
+      updatedAt: now + index
+    }));
+
+  return { collection, folders, requests, environments };
 }
 
 export async function importOpenApiSpec(input: string | Record<string, unknown>, sourceName = "OpenAPI import") {
@@ -464,6 +593,104 @@ function savedRequestFromWrappedDocument(
   };
 }
 
+function insomniaBody(body: any): { mode: BodyMode; content: string } {
+  if (!body || !body.mimeType) return { mode: "none", content: "" };
+  const content = body.text ?? "";
+  if (!content) return { mode: "none", content: "" };
+  if (String(body.mimeType).includes("json")) return { mode: "json", content };
+  if (String(body.mimeType).includes("x-www-form-urlencoded")) return { mode: "urlencoded", content };
+  return { mode: "raw", content };
+}
+
+function insomniaAuth(authentication: any): AuthConfig {
+  if (!authentication?.type) return { type: "none" };
+  if (authentication.type === "bearer") return { type: "bearer", token: authentication.token ?? "" };
+  if (authentication.type === "basic") {
+    return { type: "basic", username: authentication.username ?? "", password: authentication.password ?? "" };
+  }
+  if (authentication.type === "apikey") {
+    return {
+      type: "api-key",
+      apiKeyName: authentication.key ?? "",
+      apiKeyValue: authentication.value ?? "",
+      apiKeyIn: authentication.addTo === "queryParams" ? "query" : "header"
+    };
+  }
+  return { type: "none" };
+}
+
+function hoppscotchRequest(collectionId: string, folderId: string | null, item: any, sortOrder: number): SavedRequest {
+  const now = Date.now();
+  const body = hoppscotchBody(item);
+  const request = toRequestConfig({
+    ...emptyRequest(),
+    method: (item.method ?? "GET").toUpperCase() as HttpMethod,
+    url: item.endpoint ?? item.url ?? "",
+    params: (item.params ?? item.queryParams ?? []).map((param: any) => ({
+      key: param.key ?? param.name ?? "",
+      value: param.value ?? "",
+      enabled: param.active !== false && param.enabled !== false
+    })),
+    headers: (item.headers ?? []).map((header: any) => ({
+      key: header.key ?? header.name ?? "",
+      value: header.value ?? "",
+      enabled: header.active !== false && header.enabled !== false
+    })),
+    auth: hoppscotchAuth(item.auth),
+    bodyMode: body.mode,
+    body: body.content
+  });
+  return {
+    id: id(),
+    collectionId,
+    folderId,
+    name: item.name ?? `${request.method} ${request.url}`,
+    protocol: "rest",
+    request,
+    sortOrder,
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
+function hoppscotchBody(item: any): { mode: BodyMode; content: string } {
+  const body = item.body ?? item.requestBody;
+  if (!body) return { mode: "none", content: "" };
+  const content = typeof body === "string" ? body : body.body ?? body.content ?? "";
+  if (!content) return { mode: "none", content: "" };
+  const contentType = String(body.contentType ?? item.contentType ?? "");
+  if (contentType.includes("json")) return { mode: "json", content };
+  if (contentType.includes("x-www-form-urlencoded")) return { mode: "urlencoded", content };
+  return { mode: "raw", content };
+}
+
+function hoppscotchAuth(auth: any): AuthConfig {
+  if (!auth?.authType || auth.authType === "none") return { type: "none" };
+  if (auth.authType === "bearer") return { type: "bearer", token: auth.authToken ?? auth.token ?? "" };
+  if (auth.authType === "basic") return { type: "basic", username: auth.username ?? "", password: auth.password ?? "" };
+  if (auth.authType === "api-key") {
+    return {
+      type: "api-key",
+      apiKeyName: auth.key ?? "",
+      apiKeyValue: auth.value ?? "",
+      apiKeyIn: auth.addTo === "queryParams" ? "query" : "header"
+    };
+  }
+  return { type: "none" };
+}
+
+function hoppscotchVariables(env: any) {
+  const variables = env.variables ?? env.envVars ?? [];
+  if (Array.isArray(variables)) {
+    return variables.map((variable: any) => ({
+      key: variable.key ?? variable.name ?? "",
+      value: variable.value ?? "",
+      enabled: variable.active !== false && variable.enabled !== false
+    }));
+  }
+  return recordToKeyValues(variables);
+}
+
 function postmanAuth(auth: any): RequestConfig["auth"] {
   if (!auth?.type) return { type: "none" };
   const values = Object.fromEntries((auth[auth.type] ?? []).map((item: any) => [item.key, item.value]));
@@ -560,6 +787,55 @@ function folderPath(folder: Folder, foldersById: Map<string, Folder>) {
     current = current.parentFolderId ? foldersById.get(current.parentFolderId) : undefined;
   }
   return parts.join("/");
+}
+
+function exportFolderPaths(folders: Folder[]) {
+  const foldersById = new Map(folders.map((folder) => [folder.id, folder]));
+  const siblings = new Map<string, Folder[]>();
+  for (const folder of folders) {
+    const parentKey = folder.parentFolderId ?? "root";
+    siblings.set(parentKey, [...(siblings.get(parentKey) ?? []), folder]);
+  }
+  const slugById = new Map<string, string>();
+  for (const group of siblings.values()) {
+    const used = new Set<string>();
+    for (const folder of group.sort(sortByOrderThenName)) {
+      slugById.set(folder.id, uniqueSlug(folder.name, used));
+    }
+  }
+  return new Map(folders.map((folder) => [folder.id, folderExportPath(folder, foldersById, slugById)]));
+}
+
+function folderExportPath(folder: Folder, foldersById: Map<string, Folder>, slugById: Map<string, string>) {
+  const parts = [slugById.get(folder.id) ?? slug(folder.name)];
+  let current = folder.parentFolderId ? foldersById.get(folder.parentFolderId) : undefined;
+  while (current) {
+    parts.unshift(slugById.get(current.id) ?? slug(current.name));
+    current = current.parentFolderId ? foldersById.get(current.parentFolderId) : undefined;
+  }
+  return parts.join("/");
+}
+
+function uniqueRequestFileName(name: string, path: string, usedByPath: Map<string, Set<string>>) {
+  const used = usedByPath.get(path) ?? new Set<string>();
+  usedByPath.set(path, used);
+  return `${uniqueSlug(name, used)}.invoke.yaml`;
+}
+
+function uniqueSlug(name: string, used: Set<string>) {
+  const base = slug(name);
+  let candidate = base;
+  let index = 2;
+  while (used.has(candidate)) {
+    candidate = `${base}-${index}`;
+    index += 1;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+function sortByOrderThenName(left: Folder, right: Folder) {
+  return (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.name.localeCompare(right.name);
 }
 
 function folderForTag(collectionId: string, folders: Map<string, Folder>, tag: string, sortOrder: number) {
