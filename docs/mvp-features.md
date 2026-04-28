@@ -567,6 +567,8 @@ The first matching format is returned. If no format matches, the user is prompte
 
 **How it works:** The parser reads the OpenAPI spec (JSON or YAML), iterates through `paths`, and creates one request per operation (path + method combination). Operations with tags are placed in folders named after the tag. Path/query/header parameters become request params/headers. Request bodies get example payloads generated from schemas (using `example`, `examples`, or type-based synthesis). Security schemes map to auth configs. Servers become environments.
 
+**MVP limitation:** External `$ref` targets are not supported in the browser importer. Local component refs such as `#/components/schemas/...` are resolved, but remote URL refs require a server-side fetch step because of browser CORS constraints.
+
 #### cURL Import
 
 **What it does:** Parses cURL command strings into requests.

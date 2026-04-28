@@ -7,6 +7,7 @@ option go_package = "github.com/brendatama/invoke/executor/internal/executorpb";
 service HttpExecutor {
   rpc Ping(PingRequest) returns (PingResponse);
   rpc Execute(HttpRequest) returns (HttpResponse);
+  rpc ExecuteStream(HttpRequest) returns (stream ResponseChunk);
 }
 
 message PingRequest {}
@@ -101,4 +102,11 @@ message HttpResponse {
   int64 response_size = 9;
   string error = 10;
   repeated TimingAttempt attempts = 11;
+}
+
+message ResponseChunk {
+  bytes body = 1;
+  HttpResponse final_response = 2;
+  bool done = 3;
+  string error = 4;
 }

@@ -1,15 +1,20 @@
 import Dexie, { type Table } from "dexie";
 import type {
+  CachedGraphQLSchema,
   Collection,
   Environment,
   Folder,
   HistoryEntry,
+  ProtocolRequestConfig,
   RequestConfig,
   RequestDraft,
   RequestProtocol,
   SavedRequest
 } from "./types";
-import { clonePlain, id, toRequestConfig } from "./request";
+import { searchHistory as filterHistory } from "./history";
+import { clonePlain, id, inferProtocol, isGraphQLRequestConfig, toRequestConfig } from "./request";
+
+const HISTORY_LIMIT = 10000;
 
 class InvokeDB extends Dexie {
   collections!: Table<Collection, string>;
@@ -147,37 +152,67 @@ export class InvokeStore {
     return this.db.folders.orderBy("sortOrder").toArray();
   }
 
-  async createFolder(collectionId: string, name: string, parentFolderId: string | null = null) {
+  async createFolder(collectionId: string, name: string, parentFolderId: string | null = null, data: Partial<Folder> = {}) {
     const now = Date.now();
     const folder: Folder = {
-      id: id(),
+      ...data,
+      id: data.id ?? id(),
       collectionId,
       parentFolderId,
       name,
-      variables: [],
-      sortOrder: now,
-      createdAt: now,
+      variables: data.variables ?? [],
+      sortOrder: data.sortOrder ?? now,
+      createdAt: data.createdAt ?? now,
       updatedAt: now
     };
     await this.db.folders.add(folder);
     return folder;
   }
 
+  async updateFolder(folder: Folder) {
+    const updated: Folder = {
+      ...folder,
+      parentFolderId: folder.parentFolderId ?? null,
+      variables: folder.variables ?? [],
+      updatedAt: Date.now()
+    };
+    await this.db.folders.put(clonePlain(updated));
+    return updated;
+  }
+
+  async deleteFolder(folderId: string) {
+    await this.db.transaction("rw", this.db.folders, this.db.requests, async () => {
+      const allFolders = await this.db.folders.toArray();
+      const ids = collectFolderIds(allFolders, folderId);
+      await this.db.requests.where("folderId").anyOf(ids).delete();
+      await this.db.folders.bulkDelete(ids);
+    });
+  }
+
+  async moveRequest(requestId: string, folderId: string | null) {
+    const request = await this.db.requests.get(requestId);
+    if (!request) return undefined;
+    const updated = { ...request, folderId, updatedAt: Date.now() };
+    await this.db.requests.put(clonePlain(updated));
+    return updated;
+  }
+
   async saveRequest(
-    request: RequestConfig | RequestDraft,
+    request: ProtocolRequestConfig | RequestDraft,
     name: string,
     collectionId: string,
     options: { id?: string; folderId?: string | null; protocol?: RequestProtocol; sortOrder?: number; createdAt?: number } = {}
   ) {
     const now = Date.now();
     const draft = request as RequestDraft;
+    const protocol = options.protocol ?? inferProtocol(request, draft.protocol ?? "rest");
     const saved: SavedRequest = {
       id: options.id ?? draft.id ?? id(),
       collectionId,
       folderId: options.folderId ?? draft.folderId ?? null,
       name,
-      protocol: options.protocol ?? draft.protocol ?? "rest",
-      request: clonePlain(toRequestConfig(request)),
+      protocol,
+      request: clonePlain(isGraphQLRequestConfig(request) ? request : toRequestConfig(request as RequestConfig | RequestDraft)),
       sortOrder: options.sortOrder ?? draft.sortOrder ?? now,
       createdAt: options.createdAt ?? (request as Partial<SavedRequest>).createdAt ?? now,
       updatedAt: now
@@ -221,6 +256,23 @@ export class InvokeStore {
     await this.db.meta.put({ key: "activeEnvironment", value: environmentId });
   }
 
+  async getMeta<T>(key: string): Promise<T | undefined> {
+    return (await this.db.meta.get(key))?.value as T | undefined;
+  }
+
+  async setMeta(key: string, value: unknown) {
+    await this.db.meta.put({ key, value: clonePlain(value) });
+  }
+
+  async getGraphQLSchema(endpoint: string) {
+    return this.getMeta<CachedGraphQLSchema>(schemaCacheKey(endpoint));
+  }
+
+  async saveGraphQLSchema(schema: CachedGraphQLSchema) {
+    await this.setMeta(schemaCacheKey(schema.endpoint), schema);
+    return schema;
+  }
+
   async addHistory(entry: Omit<HistoryEntry, "id" | "createdAt">) {
     const request = entry.request as RequestDraft;
     const saved: HistoryEntry = {
@@ -233,8 +285,8 @@ export class InvokeStore {
     };
     await this.db.history.add(saved);
     const count = await this.db.history.count();
-    if (count > 1000) {
-      const stale = await this.db.history.orderBy("createdAt").limit(count - 1000).primaryKeys();
+    if (count > HISTORY_LIMIT) {
+      const stale = await this.db.history.orderBy("createdAt").limit(count - HISTORY_LIMIT).primaryKeys();
       await this.db.history.bulkDelete(stale as string[]);
     }
     return saved;
@@ -243,4 +295,27 @@ export class InvokeStore {
   async listHistory(limit = 100) {
     return this.db.history.orderBy("createdAt").reverse().limit(limit).toArray();
   }
+
+  async searchHistory(query: string, limit = 100) {
+    return filterHistory(await this.listHistory(HISTORY_LIMIT), query, limit);
+  }
+}
+
+function schemaCacheKey(endpoint: string) {
+  return `graphql-schema:${endpoint.trim()}`;
+}
+
+function collectFolderIds(folders: Folder[], rootId: string) {
+  const ids = new Set<string>([rootId]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const folder of folders) {
+      if (folder.parentFolderId && ids.has(folder.parentFolderId) && !ids.has(folder.id)) {
+        ids.add(folder.id);
+        changed = true;
+      }
+    }
+  }
+  return [...ids];
 }

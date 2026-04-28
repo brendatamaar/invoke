@@ -1,5 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const webServer = process.env.PW_SKIP_WEB_SERVER
+  ? undefined
+  : {
+      command: "node tests/e2e/dev-server.mjs",
+      url: "http://127.0.0.1:3000",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000
+    };
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 45_000,
@@ -18,10 +27,5 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] }
     }
   ],
-  webServer: {
-    command: "node tests/e2e/dev-server.mjs",
-    url: "http://127.0.0.1:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000
-  }
+  webServer
 });
