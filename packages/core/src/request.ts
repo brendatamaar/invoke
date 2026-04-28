@@ -1,5 +1,6 @@
 import { v7 as uuidv7 } from "uuid";
 import type { GraphQLRequestConfig, ProtocolRequestConfig, RequestConfig, RequestDraft, RequestProtocol } from "./types";
+import { normalizeExtractionRules } from "./variables";
 
 export const id = () => uuidv7();
 
@@ -13,6 +14,8 @@ export const emptyRequest = (): RequestDraft => ({
   auth: { type: "none" },
   timeoutMs: 30000,
   variables: [],
+  assertions: [],
+  extractionRules: [],
   protocol: "rest"
 });
 
@@ -23,7 +26,9 @@ export const emptyGraphQLRequest = (): GraphQLRequestConfig => ({
   query: "query {\n  __typename\n}",
   variables: "{}",
   operationName: "",
-  timeoutMs: 30000
+  timeoutMs: 30000,
+  assertions: [],
+  extractionRules: []
 });
 
 export function toRequestConfig(request: RequestConfig | RequestDraft): RequestConfig {
@@ -38,6 +43,8 @@ export function toRequestConfig(request: RequestConfig | RequestDraft): RequestC
     auth: draft.auth ?? { type: "none" },
     timeoutMs: draft.timeoutMs ?? 30000,
     variables: draft.variables ?? [],
+    assertions: draft.assertions ?? [],
+    extractionRules: normalizeExtractionRules(draft.extractionRules),
     options: draft.options
   };
 }
