@@ -5,9 +5,11 @@ import type {
   ExecuteResponse,
   ExtractionRule,
   ExtractionSource,
+  GrpcRequestConfig,
   GraphQLRequestConfig,
   KeyValue,
-  RequestConfig
+  RequestConfig,
+  WebSocketRequestConfig
 } from "./types";
 
 export interface VariableScope {
@@ -74,8 +76,18 @@ export function resolveRequest(
       password: resolve(request.auth.password ?? ""),
       token: resolve(request.auth.token ?? ""),
       apiKeyName: resolve(request.auth.apiKeyName ?? ""),
-      apiKeyValue: resolve(request.auth.apiKeyValue ?? "")
-    }
+      apiKeyValue: resolve(request.auth.apiKeyValue ?? ""),
+      tokenUrl: resolve(request.auth.tokenUrl ?? ""),
+      clientId: resolve(request.auth.clientId ?? ""),
+      clientSecret: resolve(request.auth.clientSecret ?? ""),
+      scope: resolve(request.auth.scope ?? ""),
+      awsAccessKeyId: resolve(request.auth.awsAccessKeyId ?? ""),
+      awsSecretAccessKey: resolve(request.auth.awsSecretAccessKey ?? ""),
+      awsSessionToken: resolve(request.auth.awsSessionToken ?? ""),
+      awsRegion: resolve(request.auth.awsRegion ?? ""),
+      awsService: resolve(request.auth.awsService ?? "")
+    },
+    options: resolveOptions(request.options, resolve)
   };
   const withAuth = applyAuth(resolvedBase);
   return { request: { ...withAuth, url: buildUrl(withAuth.url, withAuth.params) }, unresolved: [...unresolved] };
@@ -113,8 +125,108 @@ export function resolveGraphQLRequest(
       password: resolve(request.auth.password ?? ""),
       token: resolve(request.auth.token ?? ""),
       apiKeyName: resolve(request.auth.apiKeyName ?? ""),
-      apiKeyValue: resolve(request.auth.apiKeyValue ?? "")
-    }
+      apiKeyValue: resolve(request.auth.apiKeyValue ?? ""),
+      tokenUrl: resolve(request.auth.tokenUrl ?? ""),
+      clientId: resolve(request.auth.clientId ?? ""),
+      clientSecret: resolve(request.auth.clientSecret ?? ""),
+      scope: resolve(request.auth.scope ?? ""),
+      awsAccessKeyId: resolve(request.auth.awsAccessKeyId ?? ""),
+      awsSecretAccessKey: resolve(request.auth.awsSecretAccessKey ?? ""),
+      awsSessionToken: resolve(request.auth.awsSessionToken ?? ""),
+      awsRegion: resolve(request.auth.awsRegion ?? ""),
+      awsService: resolve(request.auth.awsService ?? "")
+    },
+    options: resolveOptions(request.options, resolve)
+  };
+  return { request: resolved, unresolved: [...unresolved] };
+}
+
+export function resolveWebSocketRequest(
+  request: WebSocketRequestConfig,
+  environmentOrScopes?: Environment | VariableScope[],
+  sessionVariables: Record<string, string> = {}
+) {
+  const scopes = Array.isArray(environmentOrScopes)
+    ? environmentOrScopes
+    : [
+        { name: "environment", variables: environmentOrScopes?.variables ?? [] },
+        { name: "request", variables: request.variables ?? [] },
+        { name: "session", variables: sessionVariables }
+      ];
+  const variables = variablesFromScopes(scopes);
+  const unresolved = new Set<string>();
+  const resolve = (value: string) => {
+    const resolved = resolveTemplate(value, variables);
+    resolved.unresolved.forEach((name) => unresolved.add(name));
+    return resolved.value;
+  };
+
+  const resolved: WebSocketRequestConfig = {
+    ...request,
+    url: resolve(request.url),
+    protocols: resolve(request.protocols ?? ""),
+    headers: request.headers.map((header) => ({ ...header, key: resolve(header.key), value: resolve(header.value) })),
+    message: resolve(request.message),
+    auth: {
+      ...request.auth,
+      username: resolve(request.auth.username ?? ""),
+      password: resolve(request.auth.password ?? ""),
+      token: resolve(request.auth.token ?? ""),
+      apiKeyName: resolve(request.auth.apiKeyName ?? ""),
+      apiKeyValue: resolve(request.auth.apiKeyValue ?? ""),
+      tokenUrl: resolve(request.auth.tokenUrl ?? ""),
+      clientId: resolve(request.auth.clientId ?? ""),
+      clientSecret: resolve(request.auth.clientSecret ?? ""),
+      scope: resolve(request.auth.scope ?? ""),
+      awsAccessKeyId: resolve(request.auth.awsAccessKeyId ?? ""),
+      awsSecretAccessKey: resolve(request.auth.awsSecretAccessKey ?? ""),
+      awsSessionToken: resolve(request.auth.awsSessionToken ?? ""),
+      awsRegion: resolve(request.auth.awsRegion ?? ""),
+      awsService: resolve(request.auth.awsService ?? "")
+    },
+    options: resolveOptions(request.options, resolve)
+  };
+  const withAuth = applyAuth({
+    method: "GET",
+    url: resolved.url,
+    params: [],
+    headers: resolved.headers,
+    bodyMode: "none",
+    body: "",
+    auth: resolved.auth,
+    timeoutMs: resolved.timeoutMs ?? 30000
+  });
+  return { request: { ...resolved, url: buildUrl(withAuth.url, withAuth.params), headers: withAuth.headers }, unresolved: [...unresolved] };
+}
+
+export function resolveGrpcRequest(
+  request: GrpcRequestConfig,
+  environmentOrScopes?: Environment | VariableScope[],
+  sessionVariables: Record<string, string> = {}
+) {
+  const scopes = Array.isArray(environmentOrScopes)
+    ? environmentOrScopes
+    : [
+        { name: "environment", variables: environmentOrScopes?.variables ?? [] },
+        { name: "request", variables: request.variables ?? [] },
+        { name: "session", variables: sessionVariables }
+      ];
+  const variables = variablesFromScopes(scopes);
+  const unresolved = new Set<string>();
+  const resolve = (value: string) => {
+    const resolved = resolveTemplate(value, variables);
+    resolved.unresolved.forEach((name) => unresolved.add(name));
+    return resolved.value;
+  };
+
+  const resolved: GrpcRequestConfig = {
+    ...request,
+    address: resolve(request.address),
+    service: resolve(request.service),
+    method: resolve(request.method),
+    metadata: request.metadata.map((header) => ({ ...header, key: resolve(header.key), value: resolve(header.value) })),
+    body: resolve(request.body),
+    options: resolveOptions(request.options, resolve)
   };
   return { request: resolved, unresolved: [...unresolved] };
 }
@@ -170,13 +282,51 @@ function dynamicVariable(name: string) {
       return crypto.randomUUID();
     case "$timestamp":
       return String(Math.floor(Date.now() / 1000));
+    case "$timestampMs":
+      return String(Date.now());
     case "$isoTimestamp":
       return new Date().toISOString();
     case "$randomInt":
       return String(Math.floor(Math.random() * 1000));
+    case "$randomFloat":
+      return String(Math.random());
+    case "$randomUUID":
+      return crypto.randomUUID();
+    case "$randomEmail":
+      return `user.${Math.floor(Math.random() * 100000)}@example.com`;
+    case "$randomString":
+      return Math.random().toString(36).slice(2, 18).padEnd(16, "x");
+    case "$randomBoolean":
+      return String(Math.random() >= 0.5);
     default:
       return `{{${name}}}`;
   }
+}
+
+function resolveOptions<T extends { options?: RequestConfig["options"] }["options"]>(
+  options: T,
+  resolve: (value: string) => string
+): T {
+  if (!options) return options;
+  return {
+    ...options,
+    proxy: options.proxy
+      ? {
+          ...options.proxy,
+          url: resolve(options.proxy.url ?? ""),
+          username: resolve(options.proxy.username ?? ""),
+          password: resolve(options.proxy.password ?? "")
+        }
+      : options.proxy,
+    tlsClientConfig: options.tlsClientConfig
+      ? {
+          clientCertPem: resolve(options.tlsClientConfig.clientCertPem ?? ""),
+          clientKeyPem: resolve(options.tlsClientConfig.clientKeyPem ?? ""),
+          caCertPem: resolve(options.tlsClientConfig.caCertPem ?? ""),
+          serverName: resolve(options.tlsClientConfig.serverName ?? "")
+        }
+      : options.tlsClientConfig
+  } as T;
 }
 
 function variablesFromScope(scope: VariableScope) {

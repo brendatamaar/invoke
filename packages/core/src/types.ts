@@ -1,11 +1,15 @@
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
 export type BodyMode = "none" | "json" | "form-data" | "urlencoded" | "raw";
-export type AuthType = "none" | "basic" | "bearer" | "api-key";
+export type AuthType = "none" | "basic" | "bearer" | "api-key" | "oauth2" | "digest" | "aws-sigv4";
 export type RequestProtocol = "rest" | "graphql" | "websocket" | "grpc";
 export type AssertionType = "status" | "responseTime" | "header" | "bodyJsonPath" | "bodySchema" | "regex";
 export type AssertionMatcher = "equals" | "notEquals" | "exists" | "gt" | "lt" | "contains" | "matches";
 export type ExtractionSource = "body" | "header" | "status";
 export type DiffChangeType = "add" | "remove" | "change";
+export type WebSocketMessageMode = "text" | "json";
+export type FlowStepType = "request" | "delay" | "condition" | "loop";
+export type FlowStatus = "passed" | "failed" | "cancelled";
+export type MockConditionSource = "header" | "query" | "bodyJsonPath";
 
 export interface KeyValue {
   id?: string;
@@ -23,6 +27,15 @@ export interface AuthConfig {
   apiKeyName?: string;
   apiKeyValue?: string;
   apiKeyIn?: "header" | "query";
+  tokenUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
+  scope?: string;
+  awsAccessKeyId?: string;
+  awsSecretAccessKey?: string;
+  awsSessionToken?: string;
+  awsRegion?: string;
+  awsService?: string;
 }
 
 export interface RequestConfig {
@@ -38,18 +51,32 @@ export interface RequestConfig {
   assertions?: Assertion[];
   extractionRules?: ExtractionRule[];
   options?: RequestOptions;
+  scripts?: RequestScripts;
 }
 
 export interface RequestOptions {
   followRedirects?: boolean;
   maxRedirects?: number;
   verifySsl?: boolean;
+  tlsClientConfig?: TlsClientConfig;
   proxy?: {
     type: "http" | "socks5";
     url: string;
     username?: string;
     password?: string;
   };
+}
+
+export interface TlsClientConfig {
+  clientCertPem?: string;
+  clientKeyPem?: string;
+  caCertPem?: string;
+  serverName?: string;
+}
+
+export interface RequestScripts {
+  preRequest?: string;
+  postResponse?: string;
 }
 
 export interface GraphQLRequestConfig {
@@ -63,9 +90,62 @@ export interface GraphQLRequestConfig {
   assertions?: Assertion[];
   extractionRules?: ExtractionRule[];
   options?: RequestOptions;
+  scripts?: RequestScripts;
 }
 
-export type ProtocolRequestConfig = RequestConfig | GraphQLRequestConfig;
+export interface WebSocketRequestConfig {
+  url: string;
+  protocols?: string;
+  headers: KeyValue[];
+  auth: AuthConfig;
+  messageMode: WebSocketMessageMode;
+  message: string;
+  timeoutMs?: number;
+  variables?: KeyValue[];
+  options?: RequestOptions;
+  scripts?: RequestScripts;
+}
+
+export interface GrpcRequestConfig {
+  address: string;
+  service: string;
+  method: string;
+  metadata: KeyValue[];
+  body: string;
+  tls: boolean;
+  timeoutMs: number;
+  variables?: KeyValue[];
+  options?: RequestOptions;
+  scripts?: RequestScripts;
+}
+
+export interface GrpcMethodInfo {
+  service: string;
+  method: string;
+  fullMethod: string;
+  inputType: string;
+  outputType: string;
+  inputJson: string;
+}
+
+export interface GrpcExecuteResponse {
+  bodyJson: string;
+  metadata: KeyValue[];
+  trailers: KeyValue[];
+  statusCode: number;
+  statusMessage: string;
+  durationMs: number;
+  error?: string;
+}
+
+export interface WebSocketRelayMessage {
+  direction: "in" | "out" | "system";
+  type: string;
+  body: string;
+  createdAt: number;
+}
+
+export type ProtocolRequestConfig = RequestConfig | GraphQLRequestConfig | WebSocketRequestConfig | GrpcRequestConfig;
 
 export interface RequestDraft extends RequestConfig {
   id?: string;
@@ -273,4 +353,116 @@ export interface GraphQLIntrospectionTypeRef {
   kind: string;
   name?: string | null;
   ofType?: GraphQLIntrospectionTypeRef | null;
+}
+
+export interface ScriptExecutionResult<TRequest extends ProtocolRequestConfig = ProtocolRequestConfig> {
+  request: TRequest;
+  variables: Record<string, string>;
+  logs: string[];
+  skipped?: boolean;
+  skipReason?: string;
+}
+
+export interface Flow {
+  id: string;
+  name: string;
+  steps: FlowStep[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type FlowStep = FlowRequestStep | FlowDelayStep | FlowConditionStep | FlowLoopStep;
+
+export interface FlowRequestStep {
+  id: string;
+  type: "request";
+  name: string;
+  request: RequestConfig;
+  continueOnFailure?: boolean;
+}
+
+export interface FlowDelayStep {
+  id: string;
+  type: "delay";
+  name: string;
+  delayMs: number;
+}
+
+export interface FlowCondition {
+  source: "variable" | "status" | "bodyJsonPath" | "header";
+  expression: string;
+  matcher: AssertionMatcher;
+  expected: string;
+}
+
+export interface FlowConditionStep {
+  id: string;
+  type: "condition";
+  name: string;
+  condition: FlowCondition;
+  thenSteps: FlowStep[];
+  elseSteps?: FlowStep[];
+}
+
+export interface FlowLoopStep {
+  id: string;
+  type: "loop";
+  name: string;
+  count?: number;
+  condition?: FlowCondition;
+  conditionMode?: "while" | "until";
+  steps: FlowStep[];
+  maxIterations?: number;
+}
+
+export interface FlowStepResult {
+  stepId: string;
+  name: string;
+  type: FlowStepType;
+  status: FlowStatus;
+  startedAt: number;
+  completedAt: number;
+  response?: ExecuteResponse;
+  assertions?: AssertionResult[];
+  error?: string;
+}
+
+export interface FlowResult {
+  flowId: string;
+  status: FlowStatus;
+  startedAt: number;
+  completedAt: number;
+  variables: Record<string, string>;
+  steps: FlowStepResult[];
+}
+
+export interface MockCondition {
+  source: MockConditionSource;
+  expression: string;
+  matcher: AssertionMatcher;
+  expected: string;
+}
+
+export interface MockRoute {
+  id: string;
+  enabled?: boolean;
+  method: HttpMethod;
+  pathPattern: string;
+  status: number;
+  headers: KeyValue[];
+  body: string;
+  latencyMs?: number;
+  conditions?: MockCondition[];
+}
+
+export interface MockLogEntry {
+  id: string;
+  routeId?: string;
+  matched: boolean;
+  method: string;
+  path: string;
+  status: number;
+  headers: KeyValue[];
+  body: string;
+  createdAt: number;
 }

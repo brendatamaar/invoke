@@ -3,6 +3,7 @@ import type {
   CachedGraphQLSchema,
   Collection,
   Environment,
+  Flow,
   Folder,
   HistoryEntry,
   ProtocolRequestConfig,
@@ -12,7 +13,7 @@ import type {
   SavedRequest
 } from "./types";
 import { searchHistory as filterHistory } from "./history";
-import { clonePlain, id, inferProtocol, isGraphQLRequestConfig, toRequestConfig } from "./request";
+import { clonePlain, id, inferProtocol, isGraphQLRequestConfig, isGrpcRequestConfig, isWebSocketRequestConfig, toRequestConfig } from "./request";
 
 const HISTORY_LIMIT = 10000;
 
@@ -22,6 +23,7 @@ class InvokeDB extends Dexie {
   requests!: Table<SavedRequest, string>;
   environments!: Table<Environment, string>;
   history!: Table<HistoryEntry, string>;
+  flows!: Table<Flow, string>;
   meta!: Table<{ key: string; value: unknown }, string>;
 
   constructor() {
@@ -40,6 +42,7 @@ class InvokeDB extends Dexie {
         requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
         environments: "id, name, updatedAt",
         history: "id, createdAt, requestId, collectionId, protocol",
+        flows: "id, name, updatedAt",
         meta: "key"
       })
       .upgrade(async (tx) => {
@@ -99,6 +102,16 @@ class InvokeDB extends Dexie {
             entry.protocol ??= "rest";
           });
       });
+
+    this.version(3).stores({
+      collections: "id, name, updatedAt, sortOrder",
+      folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
+      requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+      environments: "id, name, updatedAt",
+      history: "id, createdAt, requestId, collectionId, protocol",
+      flows: "id, name, updatedAt",
+      meta: "key"
+    });
   }
 }
 
@@ -212,7 +225,7 @@ export class InvokeStore {
       folderId: options.folderId ?? draft.folderId ?? null,
       name,
       protocol,
-      request: clonePlain(isGraphQLRequestConfig(request) ? request : toRequestConfig(request as RequestConfig | RequestDraft)),
+      request: clonePlain(normalizeSavedRequest(request)),
       sortOrder: options.sortOrder ?? draft.sortOrder ?? now,
       createdAt: options.createdAt ?? (request as Partial<SavedRequest>).createdAt ?? now,
       updatedAt: now
@@ -299,6 +312,27 @@ export class InvokeStore {
   async searchHistory(query: string, limit = 100) {
     return filterHistory(await this.listHistory(HISTORY_LIMIT), query, limit);
   }
+
+  async listFlows() {
+    return this.db.flows.orderBy("updatedAt").reverse().toArray();
+  }
+
+  async saveFlow(flow: Partial<Flow> & Pick<Flow, "name" | "steps">) {
+    const now = Date.now();
+    const saved: Flow = {
+      id: flow.id ?? id(),
+      name: flow.name,
+      steps: clonePlain(flow.steps),
+      createdAt: flow.createdAt ?? now,
+      updatedAt: now
+    };
+    await this.db.flows.put(saved);
+    return saved;
+  }
+
+  async deleteFlow(flowId: string) {
+    await this.db.flows.delete(flowId);
+  }
 }
 
 function schemaCacheKey(endpoint: string) {
@@ -318,4 +352,11 @@ function collectFolderIds(folders: Folder[], rootId: string) {
     }
   }
   return [...ids];
+}
+
+function normalizeSavedRequest(request: ProtocolRequestConfig | RequestDraft): ProtocolRequestConfig {
+  if (isGraphQLRequestConfig(request) || isWebSocketRequestConfig(request) || isGrpcRequestConfig(request)) {
+    return request as ProtocolRequestConfig;
+  }
+  return toRequestConfig(request as RequestConfig | RequestDraft);
 }

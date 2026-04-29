@@ -1,8 +1,32 @@
 # invoke
 
-invoke is a privacy-first API development and testing platform: a browser UI, local-first storage, and a Go executor for accurate HTTP timing. Beta 1 covers the daily API workflow: send REST and GraphQL requests, inspect accurate timing, organize collections locally, import OpenAPI specs, export runnable code, and jump around with a command palette.
+invoke is a privacy-first API development and testing platform: a browser UI, local-first storage, and a Go executor for accurate HTTP timing. The v1 local implementation adds scripts, flows, WebSocket testing, gRPC unary calls, mock server routes, mTLS, advanced auth, and the full code export matrix on top of the Beta 2 validation and migration features.
 
 No account. No cloud sync. Your collections, environments, and history live in your browser's IndexedDB.
+
+## V1 Local Scope
+
+Everything from Beta 2, plus:
+
+- **Scripts** - pre-request and post-response JavaScript with a browser Worker sandbox path, `test()`, and `expect()` helpers
+- **Flow runner/editor** - sequential request flows with extraction, conditions, fixed-count and conditional loops, delays, hooks, cancellation, IndexedDB persistence, and a Settings-based visual editor
+- **WebSocket relay** - Go-backed connect/disconnect, custom upgrade headers, TLS/mTLS settings, subprotocols, message composer, and chronological message log
+- **gRPC** - reflection-backed method discovery and unary JSON/protobuf execution with metadata and TLS/mTLS settings
+- **Advanced auth** - OAuth2 client credentials, Digest, AWS SigV4, Basic, Bearer, and API key auth
+- **mTLS/custom CA** - PEM client certificate, key, CA bundle, SNI override, and TLS verification controls for local protocols
+- **Mock server** - browser-managed in-memory routes served by the Node proxy at `/mock/*`, with path params, header/query/bodyJsonPath conditions, dynamic variables, latency, and request logs
+- **Code export** - cURL, fetch, Node fetch, axios, Python requests/httpx, Go, Java, Kotlin, Ruby, PHP, C#, Rust, PowerShell, and HTTPie
+
+## Beta 2 Scope
+
+Everything from Beta 1, plus:
+
+- **Assertions** — define pass/fail rules on status code, headers, and JSON body fields; results shown inline after each request
+- **Response diff** — structural diff between any two saved responses, highlighted side-by-side
+- **SSE streaming** — real-time token-by-token display for Server-Sent Events responses
+- **GraphQL schema autocomplete** — introspects the endpoint on demand and wires CodeMirror completion for fields, args, and types
+- **Insomnia v4 import** — import collections and environments from Insomnia export JSON
+- **Hoppscotch import** — import collections from Hoppscotch JSON export
 
 ## Beta 1 Scope
 
@@ -35,7 +59,7 @@ Vue UI + @invoke/core (browser)
   -> target API
 ```
 
-The browser owns product state and local persistence. The Node server is intentionally thin: it forwards resolved requests to the Go sidecar. The Go executor performs network I/O with `net/http/httptrace` so the UI can show DNS, TCP, TLS, TTFB, transfer, and total timing.
+The browser owns product state and local persistence. The Node server is intentionally thin: it forwards resolved requests to the Go sidecar and proxies SSE streams to the UI. The Go executor performs network I/O with `net/http/httptrace` so the UI can show DNS, TCP, TLS, TTFB, transfer, and total timing.
 
 ## Development
 
@@ -70,7 +94,7 @@ The executor service is defined in `proto/executor.proto`. Generated Go code is 
 pnpm proto:generate
 ```
 
-## Self-Hosted Beta 1
+## Self-Hosted
 
 ```bash
 docker compose up --build
@@ -88,8 +112,10 @@ pnpm e2e
 go test ./executor/...
 ```
 
-`pnpm e2e` starts the Go executor, Hono server, Vite UI, and a local mock target API, then runs the Beta 1 happy paths in Chromium.
+`pnpm e2e` starts the Go executor, Hono server, Vite UI, and a local mock target API, then runs the happy paths in Chromium.
 
-## Beta 1 Status
+## Status
 
-Beta 1 is local-first and browser-owned. Deferred features include WebSocket, gRPC client UI, assertions, response diffing, mock server, GraphQL schema explorer/autocomplete, additional importers, and hosted public deployment. See `docs/beta-1-mvp.md` for the exact scope and acceptance criteria.
+**Current release: `1.0.0-local`**
+
+Remaining before public hosted 1.0: hosted `invoke.dev` threat model, rate limits, SSRF controls, abuse monitoring, and deployment hardening. Not faked locally: NTLM, full OAuth2 browser callback flows, gRPC streaming execution, and drag-and-drop flow canvas polish.

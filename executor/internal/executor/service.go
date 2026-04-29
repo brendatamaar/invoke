@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"net/url"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/brendatama/invoke/executor/internal/executorpb"
@@ -23,11 +25,16 @@ import (
 
 type Service struct {
 	executorpb.UnimplementedHttpExecutorServer
-	startedAt time.Time
+	startedAt     time.Time
+	wsMu          sync.Mutex
+	wsConnections map[string]*wsConnection
 }
 
 func NewService() *Service {
-	return &Service{startedAt: time.Now()}
+	return &Service{
+		startedAt:     time.Now(),
+		wsConnections: make(map[string]*wsConnection),
+	}
 }
 
 func (s *Service) Ping(context.Context, *PingRequest) (*PingResponse, error) {
@@ -246,9 +253,13 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 
 func transportFor(req *HttpRequest) (*http.Transport, error) {
 	verify := req.GetVerifySsl()
+	tlsConfig, err := tlsConfigFor(verify, req.GetTlsClientConfig())
+	if err != nil {
+		return nil, err
+	}
 	transport := &http.Transport{
 		DisableKeepAlives: true,
-		TLSClientConfig:   &tls.Config{InsecureSkipVerify: !verify}, //nolint:gosec
+		TLSClientConfig:   tlsConfig,
 	}
 	if req.GetProxy() != nil && strings.TrimSpace(req.GetProxy().GetUrl()) != "" {
 		proxyURL, err := url.Parse(req.GetProxy().GetUrl())
@@ -278,6 +289,44 @@ func transportFor(req *HttpRequest) (*http.Transport, error) {
 		}
 	}
 	return transport, nil
+}
+
+func tlsConfigFor(verify bool, clientConfig *TlsClientConfig) (*tls.Config, error) {
+	config := &tls.Config{InsecureSkipVerify: !verify} //nolint:gosec
+	if clientConfig == nil {
+		return config, nil
+	}
+
+	if serverName := strings.TrimSpace(clientConfig.GetServerName()); serverName != "" {
+		config.ServerName = serverName
+	}
+
+	clientCert := bytes.TrimSpace(clientConfig.GetClientCertPem())
+	clientKey := bytes.TrimSpace(clientConfig.GetClientKeyPem())
+	if len(clientCert) > 0 || len(clientKey) > 0 {
+		if len(clientCert) == 0 || len(clientKey) == 0 {
+			return nil, errors.New("client certificate and key are both required for mTLS")
+		}
+		cert, err := tls.X509KeyPair(clientCert, clientKey)
+		if err != nil {
+			return nil, fmt.Errorf("invalid client certificate/key: %w", err)
+		}
+		config.Certificates = []tls.Certificate{cert}
+	}
+
+	caCert := bytes.TrimSpace(clientConfig.GetCaCertPem())
+	if len(caCert) > 0 {
+		pool, err := x509.SystemCertPool()
+		if err != nil || pool == nil {
+			pool = x509.NewCertPool()
+		}
+		if !pool.AppendCertsFromPEM(caCert) {
+			return nil, errors.New("invalid CA certificate PEM")
+		}
+		config.RootCAs = pool
+	}
+
+	return config, nil
 }
 
 func headersFromHTTP(values http.Header) []*Header {
