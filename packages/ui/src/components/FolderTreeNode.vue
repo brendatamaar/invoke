@@ -28,6 +28,9 @@ function isExpanded(folderId: string) {
 }
 
 function savedMethod(saved: SavedRequest) {
+  if (saved.protocol === "graphql") return "GQL";
+  if (saved.protocol === "websocket") return "WS";
+  if (saved.protocol === "grpc") return "RPC";
   return (saved.request as RequestConfig).method;
 }
 
