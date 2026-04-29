@@ -16,7 +16,8 @@ test.beforeEach(async ({ page }) => {
   });
   await page.reload();
   await expect(page.getByText(/pong from Go/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Extract" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Extract" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Scripts" })).toBeVisible();
 });
 
 test("sends a REST request and records history", async ({ page }) => {
@@ -100,7 +101,9 @@ test("resolves folder variables from nested requests", async ({ page }) => {
 test("sends and saves a GraphQL request", async ({ page }) => {
   await page.getByTestId("protocol-select").selectOption("graphql");
   await page.getByTestId("graphql-url-input").fill(`${target}/graphql`);
-  await page.getByTestId("graphql-query-input").fill("query { ok }");
+  await page.getByTestId("graphql-query-input").click();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.type("query { ok }");
   await page.getByRole("button", { name: "Variables" }).click();
   await page.getByTestId("graphql-variables-input").fill('{ "code": "ID" }');
   await page.getByTestId("send-request").click();
@@ -178,14 +181,15 @@ test("opens command palette and shortcut help", async ({ page }) => {
   await page.keyboard.press("Control+K");
   await expect(page.getByTestId("command-palette")).toBeVisible();
   await page.getByTestId("command-input").fill("ref");
-  await expect(page.getByTestId("command-result").filter({ hasText: "Reference users" })).toBeVisible();
+  const requestResult = page.getByTestId("command-result").filter({ hasText: "Reference users" });
+  await expect(requestResult).toBeVisible();
   await expect(page.getByTestId("command-result").filter({ hasText: "references" })).toBeVisible();
-  await page.keyboard.press("Enter");
+  await requestResult.click();
   await expect(page.getByTestId("url-input")).toHaveValue(`${target}/users`);
 
   await page.keyboard.press("Control+K");
   await page.getByTestId("command-input").fill("theme");
-  await page.keyboard.press("Enter");
+  await page.getByTestId("command-result").filter({ hasText: "Toggle theme" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
   await page.keyboard.press("Control+/");

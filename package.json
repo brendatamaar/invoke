@@ -1,11 +1,12 @@
 {
   "name": "invoke",
-  "version": "0.2.0-beta.2",
+  "version": "1.0.0-local",
   "private": true,
   "description": "Privacy-first API development and testing platform.",
   "type": "module",
   "scripts": {
     "dev": "pnpm --parallel --filter @invoke/server --filter @invoke/ui dev",
+    "dev:all": "concurrently -n executor,server,ui -c blue,green,magenta \"pnpm executor:dev\" \"pnpm dev:server\" \"pnpm dev:ui\"",
     "dev:server": "pnpm --filter @invoke/server dev",
     "dev:ui": "pnpm --filter @invoke/ui dev",
     "build": "pnpm -r build",
@@ -14,13 +15,14 @@
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "format": "prettier --write .",
-    "executor:dev": "go run ./executor/cmd/executor",
+    "executor:dev": "cd executor && go run ./cmd/executor",
     "executor:test": "cd executor && go test ./..."
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "concurrently": "^9.2.1",
     "eslint": "^8.57.1",
     "eslint-plugin-vue": "^9.33.0",
     "prettier": "^3.6.2",
