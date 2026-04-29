@@ -19,9 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HttpExecutor_Ping_FullMethodName          = "/invoke.executor.HttpExecutor/Ping"
-	HttpExecutor_Execute_FullMethodName       = "/invoke.executor.HttpExecutor/Execute"
-	HttpExecutor_ExecuteStream_FullMethodName = "/invoke.executor.HttpExecutor/ExecuteStream"
+	HttpExecutor_Ping_FullMethodName             = "/invoke.executor.HttpExecutor/Ping"
+	HttpExecutor_Execute_FullMethodName          = "/invoke.executor.HttpExecutor/Execute"
+	HttpExecutor_ExecuteStream_FullMethodName    = "/invoke.executor.HttpExecutor/ExecuteStream"
+	HttpExecutor_WebSocketConnect_FullMethodName = "/invoke.executor.HttpExecutor/WebSocketConnect"
+	HttpExecutor_WebSocketSend_FullMethodName    = "/invoke.executor.HttpExecutor/WebSocketSend"
+	HttpExecutor_WebSocketPoll_FullMethodName    = "/invoke.executor.HttpExecutor/WebSocketPoll"
+	HttpExecutor_WebSocketClose_FullMethodName   = "/invoke.executor.HttpExecutor/WebSocketClose"
+	HttpExecutor_GrpcReflect_FullMethodName      = "/invoke.executor.HttpExecutor/GrpcReflect"
+	HttpExecutor_GrpcExecute_FullMethodName      = "/invoke.executor.HttpExecutor/GrpcExecute"
 )
 
 // HttpExecutorClient is the client API for HttpExecutor service.
@@ -31,6 +37,12 @@ type HttpExecutorClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	Execute(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (*HttpResponse, error)
 	ExecuteStream(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ResponseChunk], error)
+	WebSocketConnect(ctx context.Context, in *WebSocketConnectRequest, opts ...grpc.CallOption) (*WebSocketConnectResponse, error)
+	WebSocketSend(ctx context.Context, in *WebSocketSendRequest, opts ...grpc.CallOption) (*WebSocketSendResponse, error)
+	WebSocketPoll(ctx context.Context, in *WebSocketPollRequest, opts ...grpc.CallOption) (*WebSocketPollResponse, error)
+	WebSocketClose(ctx context.Context, in *WebSocketCloseRequest, opts ...grpc.CallOption) (*WebSocketCloseResponse, error)
+	GrpcReflect(ctx context.Context, in *GrpcReflectRequest, opts ...grpc.CallOption) (*GrpcReflectResponse, error)
+	GrpcExecute(ctx context.Context, in *GrpcExecuteRequest, opts ...grpc.CallOption) (*GrpcExecuteResponse, error)
 }
 
 type httpExecutorClient struct {
@@ -80,6 +92,66 @@ func (c *httpExecutorClient) ExecuteStream(ctx context.Context, in *HttpRequest,
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HttpExecutor_ExecuteStreamClient = grpc.ServerStreamingClient[ResponseChunk]
 
+func (c *httpExecutorClient) WebSocketConnect(ctx context.Context, in *WebSocketConnectRequest, opts ...grpc.CallOption) (*WebSocketConnectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WebSocketConnectResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_WebSocketConnect_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *httpExecutorClient) WebSocketSend(ctx context.Context, in *WebSocketSendRequest, opts ...grpc.CallOption) (*WebSocketSendResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WebSocketSendResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_WebSocketSend_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *httpExecutorClient) WebSocketPoll(ctx context.Context, in *WebSocketPollRequest, opts ...grpc.CallOption) (*WebSocketPollResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WebSocketPollResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_WebSocketPoll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *httpExecutorClient) WebSocketClose(ctx context.Context, in *WebSocketCloseRequest, opts ...grpc.CallOption) (*WebSocketCloseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WebSocketCloseResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_WebSocketClose_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *httpExecutorClient) GrpcReflect(ctx context.Context, in *GrpcReflectRequest, opts ...grpc.CallOption) (*GrpcReflectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GrpcReflectResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_GrpcReflect_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *httpExecutorClient) GrpcExecute(ctx context.Context, in *GrpcExecuteRequest, opts ...grpc.CallOption) (*GrpcExecuteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GrpcExecuteResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_GrpcExecute_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HttpExecutorServer is the server API for HttpExecutor service.
 // All implementations must embed UnimplementedHttpExecutorServer
 // for forward compatibility.
@@ -87,6 +159,12 @@ type HttpExecutorServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	Execute(context.Context, *HttpRequest) (*HttpResponse, error)
 	ExecuteStream(*HttpRequest, grpc.ServerStreamingServer[ResponseChunk]) error
+	WebSocketConnect(context.Context, *WebSocketConnectRequest) (*WebSocketConnectResponse, error)
+	WebSocketSend(context.Context, *WebSocketSendRequest) (*WebSocketSendResponse, error)
+	WebSocketPoll(context.Context, *WebSocketPollRequest) (*WebSocketPollResponse, error)
+	WebSocketClose(context.Context, *WebSocketCloseRequest) (*WebSocketCloseResponse, error)
+	GrpcReflect(context.Context, *GrpcReflectRequest) (*GrpcReflectResponse, error)
+	GrpcExecute(context.Context, *GrpcExecuteRequest) (*GrpcExecuteResponse, error)
 	mustEmbedUnimplementedHttpExecutorServer()
 }
 
@@ -105,6 +183,24 @@ func (UnimplementedHttpExecutorServer) Execute(context.Context, *HttpRequest) (*
 }
 func (UnimplementedHttpExecutorServer) ExecuteStream(*HttpRequest, grpc.ServerStreamingServer[ResponseChunk]) error {
 	return status.Error(codes.Unimplemented, "method ExecuteStream not implemented")
+}
+func (UnimplementedHttpExecutorServer) WebSocketConnect(context.Context, *WebSocketConnectRequest) (*WebSocketConnectResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method WebSocketConnect not implemented")
+}
+func (UnimplementedHttpExecutorServer) WebSocketSend(context.Context, *WebSocketSendRequest) (*WebSocketSendResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method WebSocketSend not implemented")
+}
+func (UnimplementedHttpExecutorServer) WebSocketPoll(context.Context, *WebSocketPollRequest) (*WebSocketPollResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method WebSocketPoll not implemented")
+}
+func (UnimplementedHttpExecutorServer) WebSocketClose(context.Context, *WebSocketCloseRequest) (*WebSocketCloseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method WebSocketClose not implemented")
+}
+func (UnimplementedHttpExecutorServer) GrpcReflect(context.Context, *GrpcReflectRequest) (*GrpcReflectResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GrpcReflect not implemented")
+}
+func (UnimplementedHttpExecutorServer) GrpcExecute(context.Context, *GrpcExecuteRequest) (*GrpcExecuteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GrpcExecute not implemented")
 }
 func (UnimplementedHttpExecutorServer) mustEmbedUnimplementedHttpExecutorServer() {}
 func (UnimplementedHttpExecutorServer) testEmbeddedByValue()                      {}
@@ -174,6 +270,114 @@ func _HttpExecutor_ExecuteStream_Handler(srv interface{}, stream grpc.ServerStre
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HttpExecutor_ExecuteStreamServer = grpc.ServerStreamingServer[ResponseChunk]
 
+func _HttpExecutor_WebSocketConnect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WebSocketConnectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).WebSocketConnect(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_WebSocketConnect_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).WebSocketConnect(ctx, req.(*WebSocketConnectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HttpExecutor_WebSocketSend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WebSocketSendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).WebSocketSend(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_WebSocketSend_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).WebSocketSend(ctx, req.(*WebSocketSendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HttpExecutor_WebSocketPoll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WebSocketPollRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).WebSocketPoll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_WebSocketPoll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).WebSocketPoll(ctx, req.(*WebSocketPollRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HttpExecutor_WebSocketClose_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WebSocketCloseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).WebSocketClose(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_WebSocketClose_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).WebSocketClose(ctx, req.(*WebSocketCloseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HttpExecutor_GrpcReflect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GrpcReflectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).GrpcReflect(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_GrpcReflect_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).GrpcReflect(ctx, req.(*GrpcReflectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HttpExecutor_GrpcExecute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GrpcExecuteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).GrpcExecute(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_GrpcExecute_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).GrpcExecute(ctx, req.(*GrpcExecuteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HttpExecutor_ServiceDesc is the grpc.ServiceDesc for HttpExecutor service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -188,6 +392,30 @@ var HttpExecutor_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Execute",
 			Handler:    _HttpExecutor_Execute_Handler,
+		},
+		{
+			MethodName: "WebSocketConnect",
+			Handler:    _HttpExecutor_WebSocketConnect_Handler,
+		},
+		{
+			MethodName: "WebSocketSend",
+			Handler:    _HttpExecutor_WebSocketSend_Handler,
+		},
+		{
+			MethodName: "WebSocketPoll",
+			Handler:    _HttpExecutor_WebSocketPoll_Handler,
+		},
+		{
+			MethodName: "WebSocketClose",
+			Handler:    _HttpExecutor_WebSocketClose_Handler,
+		},
+		{
+			MethodName: "GrpcReflect",
+			Handler:    _HttpExecutor_GrpcReflect_Handler,
+		},
+		{
+			MethodName: "GrpcExecute",
+			Handler:    _HttpExecutor_GrpcExecute_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

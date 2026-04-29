@@ -8,6 +8,12 @@ service HttpExecutor {
   rpc Ping(PingRequest) returns (PingResponse);
   rpc Execute(HttpRequest) returns (HttpResponse);
   rpc ExecuteStream(HttpRequest) returns (stream ResponseChunk);
+  rpc WebSocketConnect(WebSocketConnectRequest) returns (WebSocketConnectResponse);
+  rpc WebSocketSend(WebSocketSendRequest) returns (WebSocketSendResponse);
+  rpc WebSocketPoll(WebSocketPollRequest) returns (WebSocketPollResponse);
+  rpc WebSocketClose(WebSocketCloseRequest) returns (WebSocketCloseResponse);
+  rpc GrpcReflect(GrpcReflectRequest) returns (GrpcReflectResponse);
+  rpc GrpcExecute(GrpcExecuteRequest) returns (GrpcExecuteResponse);
 }
 
 message PingRequest {}
@@ -30,6 +36,13 @@ message ProxyConfig {
   string password = 4;
 }
 
+message TlsClientConfig {
+  bytes client_cert_pem = 1;
+  bytes client_key_pem = 2;
+  bytes ca_cert_pem = 3;
+  string server_name = 4;
+}
+
 message HttpRequest {
   string method = 1;
   string url = 2;
@@ -40,6 +53,7 @@ message HttpRequest {
   int32 max_redirects = 7;
   bool verify_ssl = 8;
   ProxyConfig proxy = 9;
+  TlsClientConfig tls_client_config = 10;
 }
 
 message Timing {
@@ -109,4 +123,98 @@ message ResponseChunk {
   HttpResponse final_response = 2;
   bool done = 3;
   string error = 4;
+}
+
+message WebSocketConnectRequest {
+  string url = 1;
+  repeated Header headers = 2;
+  repeated string protocols = 3;
+  int64 timeout_ms = 4;
+  bool verify_ssl = 5;
+  TlsClientConfig tls_client_config = 6;
+}
+
+message WebSocketConnectResponse {
+  string connection_id = 1;
+  string error = 2;
+}
+
+message WebSocketSendRequest {
+  string connection_id = 1;
+  string body = 2;
+  bool binary = 3;
+}
+
+message WebSocketSendResponse {
+  string error = 1;
+}
+
+message WebSocketPollRequest {
+  string connection_id = 1;
+  int32 max_messages = 2;
+}
+
+message WebSocketMessage {
+  string direction = 1;
+  string type = 2;
+  string body = 3;
+  int64 created_at = 4;
+}
+
+message WebSocketPollResponse {
+  repeated WebSocketMessage messages = 1;
+  bool connected = 2;
+  string error = 3;
+}
+
+message WebSocketCloseRequest {
+  string connection_id = 1;
+}
+
+message WebSocketCloseResponse {
+  string error = 1;
+}
+
+message GrpcReflectRequest {
+  string address = 1;
+  bool tls = 2;
+  int64 timeout_ms = 3;
+  repeated Header metadata = 4;
+  bool verify_ssl = 5;
+  TlsClientConfig tls_client_config = 6;
+}
+
+message GrpcMethod {
+  string service = 1;
+  string method = 2;
+  string full_method = 3;
+  string input_type = 4;
+  string output_type = 5;
+  string input_json = 6;
+}
+
+message GrpcReflectResponse {
+  repeated GrpcMethod methods = 1;
+  string error = 2;
+}
+
+message GrpcExecuteRequest {
+  string address = 1;
+  bool tls = 2;
+  string full_method = 3;
+  string body_json = 4;
+  int64 timeout_ms = 5;
+  repeated Header metadata = 6;
+  bool verify_ssl = 7;
+  TlsClientConfig tls_client_config = 8;
+}
+
+message GrpcExecuteResponse {
+  string body_json = 1;
+  repeated Header metadata = 2;
+  repeated Header trailers = 3;
+  int32 status_code = 4;
+  string status_message = 5;
+  double duration_ms = 6;
+  string error = 7;
 }

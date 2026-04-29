@@ -237,6 +237,74 @@ func (x *ProxyConfig) GetPassword() string {
 	return ""
 }
 
+type TlsClientConfig struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientCertPem []byte                 `protobuf:"bytes,1,opt,name=client_cert_pem,json=clientCertPem,proto3" json:"client_cert_pem,omitempty"`
+	ClientKeyPem  []byte                 `protobuf:"bytes,2,opt,name=client_key_pem,json=clientKeyPem,proto3" json:"client_key_pem,omitempty"`
+	CaCertPem     []byte                 `protobuf:"bytes,3,opt,name=ca_cert_pem,json=caCertPem,proto3" json:"ca_cert_pem,omitempty"`
+	ServerName    string                 `protobuf:"bytes,4,opt,name=server_name,json=serverName,proto3" json:"server_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TlsClientConfig) Reset() {
+	*x = TlsClientConfig{}
+	mi := &file_executor_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TlsClientConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TlsClientConfig) ProtoMessage() {}
+
+func (x *TlsClientConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TlsClientConfig.ProtoReflect.Descriptor instead.
+func (*TlsClientConfig) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *TlsClientConfig) GetClientCertPem() []byte {
+	if x != nil {
+		return x.ClientCertPem
+	}
+	return nil
+}
+
+func (x *TlsClientConfig) GetClientKeyPem() []byte {
+	if x != nil {
+		return x.ClientKeyPem
+	}
+	return nil
+}
+
+func (x *TlsClientConfig) GetCaCertPem() []byte {
+	if x != nil {
+		return x.CaCertPem
+	}
+	return nil
+}
+
+func (x *TlsClientConfig) GetServerName() string {
+	if x != nil {
+		return x.ServerName
+	}
+	return ""
+}
+
 type HttpRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Method          string                 `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
@@ -248,13 +316,14 @@ type HttpRequest struct {
 	MaxRedirects    int32                  `protobuf:"varint,7,opt,name=max_redirects,json=maxRedirects,proto3" json:"max_redirects,omitempty"`
 	VerifySsl       bool                   `protobuf:"varint,8,opt,name=verify_ssl,json=verifySsl,proto3" json:"verify_ssl,omitempty"`
 	Proxy           *ProxyConfig           `protobuf:"bytes,9,opt,name=proxy,proto3" json:"proxy,omitempty"`
+	TlsClientConfig *TlsClientConfig       `protobuf:"bytes,10,opt,name=tls_client_config,json=tlsClientConfig,proto3" json:"tls_client_config,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
 func (x *HttpRequest) Reset() {
 	*x = HttpRequest{}
-	mi := &file_executor_proto_msgTypes[4]
+	mi := &file_executor_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -266,7 +335,7 @@ func (x *HttpRequest) String() string {
 func (*HttpRequest) ProtoMessage() {}
 
 func (x *HttpRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[4]
+	mi := &file_executor_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -279,7 +348,7 @@ func (x *HttpRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HttpRequest.ProtoReflect.Descriptor instead.
 func (*HttpRequest) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{4}
+	return file_executor_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *HttpRequest) GetMethod() string {
@@ -345,6 +414,13 @@ func (x *HttpRequest) GetProxy() *ProxyConfig {
 	return nil
 }
 
+func (x *HttpRequest) GetTlsClientConfig() *TlsClientConfig {
+	if x != nil {
+		return x.TlsClientConfig
+	}
+	return nil
+}
+
 type Timing struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DnsMs         float64                `protobuf:"fixed64,1,opt,name=dns_ms,json=dnsMs,proto3" json:"dns_ms,omitempty"`
@@ -359,7 +435,7 @@ type Timing struct {
 
 func (x *Timing) Reset() {
 	*x = Timing{}
-	mi := &file_executor_proto_msgTypes[5]
+	mi := &file_executor_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -371,7 +447,7 @@ func (x *Timing) String() string {
 func (*Timing) ProtoMessage() {}
 
 func (x *Timing) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[5]
+	mi := &file_executor_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -384,7 +460,7 @@ func (x *Timing) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Timing.ProtoReflect.Descriptor instead.
 func (*Timing) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{5}
+	return file_executor_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Timing) GetDnsMs() float64 {
@@ -440,7 +516,7 @@ type TimingPhase struct {
 
 func (x *TimingPhase) Reset() {
 	*x = TimingPhase{}
-	mi := &file_executor_proto_msgTypes[6]
+	mi := &file_executor_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -452,7 +528,7 @@ func (x *TimingPhase) String() string {
 func (*TimingPhase) ProtoMessage() {}
 
 func (x *TimingPhase) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[6]
+	mi := &file_executor_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -465,7 +541,7 @@ func (x *TimingPhase) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimingPhase.ProtoReflect.Descriptor instead.
 func (*TimingPhase) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{6}
+	return file_executor_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TimingPhase) GetName() string {
@@ -504,7 +580,7 @@ type Certificate struct {
 
 func (x *Certificate) Reset() {
 	*x = Certificate{}
-	mi := &file_executor_proto_msgTypes[7]
+	mi := &file_executor_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -516,7 +592,7 @@ func (x *Certificate) String() string {
 func (*Certificate) ProtoMessage() {}
 
 func (x *Certificate) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[7]
+	mi := &file_executor_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -529,7 +605,7 @@ func (x *Certificate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Certificate.ProtoReflect.Descriptor instead.
 func (*Certificate) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{7}
+	return file_executor_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Certificate) GetSubject() string {
@@ -592,7 +668,7 @@ type TlsInfo struct {
 
 func (x *TlsInfo) Reset() {
 	*x = TlsInfo{}
-	mi := &file_executor_proto_msgTypes[8]
+	mi := &file_executor_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -604,7 +680,7 @@ func (x *TlsInfo) String() string {
 func (*TlsInfo) ProtoMessage() {}
 
 func (x *TlsInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[8]
+	mi := &file_executor_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +693,7 @@ func (x *TlsInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TlsInfo.ProtoReflect.Descriptor instead.
 func (*TlsInfo) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{8}
+	return file_executor_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *TlsInfo) GetVersion() string {
@@ -654,7 +730,7 @@ type Redirect struct {
 
 func (x *Redirect) Reset() {
 	*x = Redirect{}
-	mi := &file_executor_proto_msgTypes[9]
+	mi := &file_executor_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +742,7 @@ func (x *Redirect) String() string {
 func (*Redirect) ProtoMessage() {}
 
 func (x *Redirect) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[9]
+	mi := &file_executor_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,7 +755,7 @@ func (x *Redirect) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Redirect.ProtoReflect.Descriptor instead.
 func (*Redirect) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{9}
+	return file_executor_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Redirect) GetUrl() string {
@@ -731,7 +807,7 @@ type TimingAttempt struct {
 
 func (x *TimingAttempt) Reset() {
 	*x = TimingAttempt{}
-	mi := &file_executor_proto_msgTypes[10]
+	mi := &file_executor_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -743,7 +819,7 @@ func (x *TimingAttempt) String() string {
 func (*TimingAttempt) ProtoMessage() {}
 
 func (x *TimingAttempt) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[10]
+	mi := &file_executor_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -756,7 +832,7 @@ func (x *TimingAttempt) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimingAttempt.ProtoReflect.Descriptor instead.
 func (*TimingAttempt) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{10}
+	return file_executor_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *TimingAttempt) GetUrl() string {
@@ -820,7 +896,7 @@ type HttpResponse struct {
 
 func (x *HttpResponse) Reset() {
 	*x = HttpResponse{}
-	mi := &file_executor_proto_msgTypes[11]
+	mi := &file_executor_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -832,7 +908,7 @@ func (x *HttpResponse) String() string {
 func (*HttpResponse) ProtoMessage() {}
 
 func (x *HttpResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[11]
+	mi := &file_executor_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -845,7 +921,7 @@ func (x *HttpResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HttpResponse.ProtoReflect.Descriptor instead.
 func (*HttpResponse) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{11}
+	return file_executor_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *HttpResponse) GetStatus() int32 {
@@ -937,7 +1013,7 @@ type ResponseChunk struct {
 
 func (x *ResponseChunk) Reset() {
 	*x = ResponseChunk{}
-	mi := &file_executor_proto_msgTypes[12]
+	mi := &file_executor_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -949,7 +1025,7 @@ func (x *ResponseChunk) String() string {
 func (*ResponseChunk) ProtoMessage() {}
 
 func (x *ResponseChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_executor_proto_msgTypes[12]
+	mi := &file_executor_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -962,7 +1038,7 @@ func (x *ResponseChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResponseChunk.ProtoReflect.Descriptor instead.
 func (*ResponseChunk) Descriptor() ([]byte, []int) {
-	return file_executor_proto_rawDescGZIP(), []int{12}
+	return file_executor_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ResponseChunk) GetBody() []byte {
@@ -993,6 +1069,926 @@ func (x *ResponseChunk) GetError() string {
 	return ""
 }
 
+type WebSocketConnectRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Url             string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Headers         []*Header              `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty"`
+	Protocols       []string               `protobuf:"bytes,3,rep,name=protocols,proto3" json:"protocols,omitempty"`
+	TimeoutMs       int64                  `protobuf:"varint,4,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
+	VerifySsl       bool                   `protobuf:"varint,5,opt,name=verify_ssl,json=verifySsl,proto3" json:"verify_ssl,omitempty"`
+	TlsClientConfig *TlsClientConfig       `protobuf:"bytes,6,opt,name=tls_client_config,json=tlsClientConfig,proto3" json:"tls_client_config,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *WebSocketConnectRequest) Reset() {
+	*x = WebSocketConnectRequest{}
+	mi := &file_executor_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSocketConnectRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSocketConnectRequest) ProtoMessage() {}
+
+func (x *WebSocketConnectRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSocketConnectRequest.ProtoReflect.Descriptor instead.
+func (*WebSocketConnectRequest) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *WebSocketConnectRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *WebSocketConnectRequest) GetHeaders() []*Header {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+func (x *WebSocketConnectRequest) GetProtocols() []string {
+	if x != nil {
+		return x.Protocols
+	}
+	return nil
+}
+
+func (x *WebSocketConnectRequest) GetTimeoutMs() int64 {
+	if x != nil {
+		return x.TimeoutMs
+	}
+	return 0
+}
+
+func (x *WebSocketConnectRequest) GetVerifySsl() bool {
+	if x != nil {
+		return x.VerifySsl
+	}
+	return false
+}
+
+func (x *WebSocketConnectRequest) GetTlsClientConfig() *TlsClientConfig {
+	if x != nil {
+		return x.TlsClientConfig
+	}
+	return nil
+}
+
+type WebSocketConnectResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConnectionId  string                 `protobuf:"bytes,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSocketConnectResponse) Reset() {
+	*x = WebSocketConnectResponse{}
+	mi := &file_executor_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSocketConnectResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSocketConnectResponse) ProtoMessage() {}
+
+func (x *WebSocketConnectResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSocketConnectResponse.ProtoReflect.Descriptor instead.
+func (*WebSocketConnectResponse) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *WebSocketConnectResponse) GetConnectionId() string {
+	if x != nil {
+		return x.ConnectionId
+	}
+	return ""
+}
+
+func (x *WebSocketConnectResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type WebSocketSendRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConnectionId  string                 `protobuf:"bytes,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	Body          string                 `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
+	Binary        bool                   `protobuf:"varint,3,opt,name=binary,proto3" json:"binary,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSocketSendRequest) Reset() {
+	*x = WebSocketSendRequest{}
+	mi := &file_executor_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSocketSendRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSocketSendRequest) ProtoMessage() {}
+
+func (x *WebSocketSendRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSocketSendRequest.ProtoReflect.Descriptor instead.
+func (*WebSocketSendRequest) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *WebSocketSendRequest) GetConnectionId() string {
+	if x != nil {
+		return x.ConnectionId
+	}
+	return ""
+}
+
+func (x *WebSocketSendRequest) GetBody() string {
+	if x != nil {
+		return x.Body
+	}
+	return ""
+}
+
+func (x *WebSocketSendRequest) GetBinary() bool {
+	if x != nil {
+		return x.Binary
+	}
+	return false
+}
+
+type WebSocketSendResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSocketSendResponse) Reset() {
+	*x = WebSocketSendResponse{}
+	mi := &file_executor_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSocketSendResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSocketSendResponse) ProtoMessage() {}
+
+func (x *WebSocketSendResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSocketSendResponse.ProtoReflect.Descriptor instead.
+func (*WebSocketSendResponse) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *WebSocketSendResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type WebSocketPollRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConnectionId  string                 `protobuf:"bytes,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	MaxMessages   int32                  `protobuf:"varint,2,opt,name=max_messages,json=maxMessages,proto3" json:"max_messages,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSocketPollRequest) Reset() {
+	*x = WebSocketPollRequest{}
+	mi := &file_executor_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSocketPollRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSocketPollRequest) ProtoMessage() {}
+
+func (x *WebSocketPollRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSocketPollRequest.ProtoReflect.Descriptor instead.
+func (*WebSocketPollRequest) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *WebSocketPollRequest) GetConnectionId() string {
+	if x != nil {
+		return x.ConnectionId
+	}
+	return ""
+}
+
+func (x *WebSocketPollRequest) GetMaxMessages() int32 {
+	if x != nil {
+		return x.MaxMessages
+	}
+	return 0
+}
+
+type WebSocketMessage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Direction     string                 `protobuf:"bytes,1,opt,name=direction,proto3" json:"direction,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Body          string                 `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSocketMessage) Reset() {
+	*x = WebSocketMessage{}
+	mi := &file_executor_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSocketMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSocketMessage) ProtoMessage() {}
+
+func (x *WebSocketMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSocketMessage.ProtoReflect.Descriptor instead.
+func (*WebSocketMessage) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *WebSocketMessage) GetDirection() string {
+	if x != nil {
+		return x.Direction
+	}
+	return ""
+}
+
+func (x *WebSocketMessage) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *WebSocketMessage) GetBody() string {
+	if x != nil {
+		return x.Body
+	}
+	return ""
+}
+
+func (x *WebSocketMessage) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+type WebSocketPollResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Messages      []*WebSocketMessage    `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	Connected     bool                   `protobuf:"varint,2,opt,name=connected,proto3" json:"connected,omitempty"`
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSocketPollResponse) Reset() {
+	*x = WebSocketPollResponse{}
+	mi := &file_executor_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSocketPollResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSocketPollResponse) ProtoMessage() {}
+
+func (x *WebSocketPollResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSocketPollResponse.ProtoReflect.Descriptor instead.
+func (*WebSocketPollResponse) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *WebSocketPollResponse) GetMessages() []*WebSocketMessage {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
+func (x *WebSocketPollResponse) GetConnected() bool {
+	if x != nil {
+		return x.Connected
+	}
+	return false
+}
+
+func (x *WebSocketPollResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type WebSocketCloseRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConnectionId  string                 `protobuf:"bytes,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSocketCloseRequest) Reset() {
+	*x = WebSocketCloseRequest{}
+	mi := &file_executor_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSocketCloseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSocketCloseRequest) ProtoMessage() {}
+
+func (x *WebSocketCloseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSocketCloseRequest.ProtoReflect.Descriptor instead.
+func (*WebSocketCloseRequest) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *WebSocketCloseRequest) GetConnectionId() string {
+	if x != nil {
+		return x.ConnectionId
+	}
+	return ""
+}
+
+type WebSocketCloseResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WebSocketCloseResponse) Reset() {
+	*x = WebSocketCloseResponse{}
+	mi := &file_executor_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WebSocketCloseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WebSocketCloseResponse) ProtoMessage() {}
+
+func (x *WebSocketCloseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WebSocketCloseResponse.ProtoReflect.Descriptor instead.
+func (*WebSocketCloseResponse) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *WebSocketCloseResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type GrpcReflectRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Address         string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Tls             bool                   `protobuf:"varint,2,opt,name=tls,proto3" json:"tls,omitempty"`
+	TimeoutMs       int64                  `protobuf:"varint,3,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
+	Metadata        []*Header              `protobuf:"bytes,4,rep,name=metadata,proto3" json:"metadata,omitempty"`
+	VerifySsl       bool                   `protobuf:"varint,5,opt,name=verify_ssl,json=verifySsl,proto3" json:"verify_ssl,omitempty"`
+	TlsClientConfig *TlsClientConfig       `protobuf:"bytes,6,opt,name=tls_client_config,json=tlsClientConfig,proto3" json:"tls_client_config,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GrpcReflectRequest) Reset() {
+	*x = GrpcReflectRequest{}
+	mi := &file_executor_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GrpcReflectRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrpcReflectRequest) ProtoMessage() {}
+
+func (x *GrpcReflectRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrpcReflectRequest.ProtoReflect.Descriptor instead.
+func (*GrpcReflectRequest) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GrpcReflectRequest) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *GrpcReflectRequest) GetTls() bool {
+	if x != nil {
+		return x.Tls
+	}
+	return false
+}
+
+func (x *GrpcReflectRequest) GetTimeoutMs() int64 {
+	if x != nil {
+		return x.TimeoutMs
+	}
+	return 0
+}
+
+func (x *GrpcReflectRequest) GetMetadata() []*Header {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *GrpcReflectRequest) GetVerifySsl() bool {
+	if x != nil {
+		return x.VerifySsl
+	}
+	return false
+}
+
+func (x *GrpcReflectRequest) GetTlsClientConfig() *TlsClientConfig {
+	if x != nil {
+		return x.TlsClientConfig
+	}
+	return nil
+}
+
+type GrpcMethod struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Service       string                 `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
+	Method        string                 `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
+	FullMethod    string                 `protobuf:"bytes,3,opt,name=full_method,json=fullMethod,proto3" json:"full_method,omitempty"`
+	InputType     string                 `protobuf:"bytes,4,opt,name=input_type,json=inputType,proto3" json:"input_type,omitempty"`
+	OutputType    string                 `protobuf:"bytes,5,opt,name=output_type,json=outputType,proto3" json:"output_type,omitempty"`
+	InputJson     string                 `protobuf:"bytes,6,opt,name=input_json,json=inputJson,proto3" json:"input_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GrpcMethod) Reset() {
+	*x = GrpcMethod{}
+	mi := &file_executor_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GrpcMethod) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrpcMethod) ProtoMessage() {}
+
+func (x *GrpcMethod) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrpcMethod.ProtoReflect.Descriptor instead.
+func (*GrpcMethod) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *GrpcMethod) GetService() string {
+	if x != nil {
+		return x.Service
+	}
+	return ""
+}
+
+func (x *GrpcMethod) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *GrpcMethod) GetFullMethod() string {
+	if x != nil {
+		return x.FullMethod
+	}
+	return ""
+}
+
+func (x *GrpcMethod) GetInputType() string {
+	if x != nil {
+		return x.InputType
+	}
+	return ""
+}
+
+func (x *GrpcMethod) GetOutputType() string {
+	if x != nil {
+		return x.OutputType
+	}
+	return ""
+}
+
+func (x *GrpcMethod) GetInputJson() string {
+	if x != nil {
+		return x.InputJson
+	}
+	return ""
+}
+
+type GrpcReflectResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Methods       []*GrpcMethod          `protobuf:"bytes,1,rep,name=methods,proto3" json:"methods,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GrpcReflectResponse) Reset() {
+	*x = GrpcReflectResponse{}
+	mi := &file_executor_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GrpcReflectResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrpcReflectResponse) ProtoMessage() {}
+
+func (x *GrpcReflectResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrpcReflectResponse.ProtoReflect.Descriptor instead.
+func (*GrpcReflectResponse) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GrpcReflectResponse) GetMethods() []*GrpcMethod {
+	if x != nil {
+		return x.Methods
+	}
+	return nil
+}
+
+func (x *GrpcReflectResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type GrpcExecuteRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Address         string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Tls             bool                   `protobuf:"varint,2,opt,name=tls,proto3" json:"tls,omitempty"`
+	FullMethod      string                 `protobuf:"bytes,3,opt,name=full_method,json=fullMethod,proto3" json:"full_method,omitempty"`
+	BodyJson        string                 `protobuf:"bytes,4,opt,name=body_json,json=bodyJson,proto3" json:"body_json,omitempty"`
+	TimeoutMs       int64                  `protobuf:"varint,5,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
+	Metadata        []*Header              `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty"`
+	VerifySsl       bool                   `protobuf:"varint,7,opt,name=verify_ssl,json=verifySsl,proto3" json:"verify_ssl,omitempty"`
+	TlsClientConfig *TlsClientConfig       `protobuf:"bytes,8,opt,name=tls_client_config,json=tlsClientConfig,proto3" json:"tls_client_config,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GrpcExecuteRequest) Reset() {
+	*x = GrpcExecuteRequest{}
+	mi := &file_executor_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GrpcExecuteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrpcExecuteRequest) ProtoMessage() {}
+
+func (x *GrpcExecuteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrpcExecuteRequest.ProtoReflect.Descriptor instead.
+func (*GrpcExecuteRequest) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *GrpcExecuteRequest) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *GrpcExecuteRequest) GetTls() bool {
+	if x != nil {
+		return x.Tls
+	}
+	return false
+}
+
+func (x *GrpcExecuteRequest) GetFullMethod() string {
+	if x != nil {
+		return x.FullMethod
+	}
+	return ""
+}
+
+func (x *GrpcExecuteRequest) GetBodyJson() string {
+	if x != nil {
+		return x.BodyJson
+	}
+	return ""
+}
+
+func (x *GrpcExecuteRequest) GetTimeoutMs() int64 {
+	if x != nil {
+		return x.TimeoutMs
+	}
+	return 0
+}
+
+func (x *GrpcExecuteRequest) GetMetadata() []*Header {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *GrpcExecuteRequest) GetVerifySsl() bool {
+	if x != nil {
+		return x.VerifySsl
+	}
+	return false
+}
+
+func (x *GrpcExecuteRequest) GetTlsClientConfig() *TlsClientConfig {
+	if x != nil {
+		return x.TlsClientConfig
+	}
+	return nil
+}
+
+type GrpcExecuteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BodyJson      string                 `protobuf:"bytes,1,opt,name=body_json,json=bodyJson,proto3" json:"body_json,omitempty"`
+	Metadata      []*Header              `protobuf:"bytes,2,rep,name=metadata,proto3" json:"metadata,omitempty"`
+	Trailers      []*Header              `protobuf:"bytes,3,rep,name=trailers,proto3" json:"trailers,omitempty"`
+	StatusCode    int32                  `protobuf:"varint,4,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
+	StatusMessage string                 `protobuf:"bytes,5,opt,name=status_message,json=statusMessage,proto3" json:"status_message,omitempty"`
+	DurationMs    float64                `protobuf:"fixed64,6,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	Error         string                 `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GrpcExecuteResponse) Reset() {
+	*x = GrpcExecuteResponse{}
+	mi := &file_executor_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GrpcExecuteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrpcExecuteResponse) ProtoMessage() {}
+
+func (x *GrpcExecuteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrpcExecuteResponse.ProtoReflect.Descriptor instead.
+func (*GrpcExecuteResponse) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *GrpcExecuteResponse) GetBodyJson() string {
+	if x != nil {
+		return x.BodyJson
+	}
+	return ""
+}
+
+func (x *GrpcExecuteResponse) GetMetadata() []*Header {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *GrpcExecuteResponse) GetTrailers() []*Header {
+	if x != nil {
+		return x.Trailers
+	}
+	return nil
+}
+
+func (x *GrpcExecuteResponse) GetStatusCode() int32 {
+	if x != nil {
+		return x.StatusCode
+	}
+	return 0
+}
+
+func (x *GrpcExecuteResponse) GetStatusMessage() string {
+	if x != nil {
+		return x.StatusMessage
+	}
+	return ""
+}
+
+func (x *GrpcExecuteResponse) GetDurationMs() float64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *GrpcExecuteResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_executor_proto protoreflect.FileDescriptor
 
 const file_executor_proto_rawDesc = "" +
@@ -1010,7 +2006,13 @@ const file_executor_proto_rawDesc = "" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x12\x1a\n" +
 	"\busername\x18\x03 \x01(\tR\busername\x12\x1a\n" +
-	"\bpassword\x18\x04 \x01(\tR\bpassword\"\xc0\x02\n" +
+	"\bpassword\x18\x04 \x01(\tR\bpassword\"\xa0\x01\n" +
+	"\x0fTlsClientConfig\x12&\n" +
+	"\x0fclient_cert_pem\x18\x01 \x01(\fR\rclientCertPem\x12$\n" +
+	"\x0eclient_key_pem\x18\x02 \x01(\fR\fclientKeyPem\x12\x1e\n" +
+	"\vca_cert_pem\x18\x03 \x01(\fR\tcaCertPem\x12\x1f\n" +
+	"\vserver_name\x18\x04 \x01(\tR\n" +
+	"serverName\"\x8e\x03\n" +
 	"\vHttpRequest\x12\x16\n" +
 	"\x06method\x18\x01 \x01(\tR\x06method\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x121\n" +
@@ -1022,7 +2024,9 @@ const file_executor_proto_rawDesc = "" +
 	"\rmax_redirects\x18\a \x01(\x05R\fmaxRedirects\x12\x1d\n" +
 	"\n" +
 	"verify_ssl\x18\b \x01(\bR\tverifySsl\x122\n" +
-	"\x05proxy\x18\t \x01(\v2\x1c.invoke.executor.ProxyConfigR\x05proxy\"\xa2\x01\n" +
+	"\x05proxy\x18\t \x01(\v2\x1c.invoke.executor.ProxyConfigR\x05proxy\x12L\n" +
+	"\x11tls_client_config\x18\n" +
+	" \x01(\v2 .invoke.executor.TlsClientConfigR\x0ftlsClientConfig\"\xa2\x01\n" +
 	"\x06Timing\x12\x15\n" +
 	"\x06dns_ms\x18\x01 \x01(\x01R\x05dnsMs\x12\x15\n" +
 	"\x06tcp_ms\x18\x02 \x01(\x01R\x05tcpMs\x12\x15\n" +
@@ -1080,11 +2084,98 @@ const file_executor_proto_rawDesc = "" +
 	"\x04body\x18\x01 \x01(\fR\x04body\x12D\n" +
 	"\x0efinal_response\x18\x02 \x01(\v2\x1d.invoke.executor.HttpResponseR\rfinalResponse\x12\x12\n" +
 	"\x04done\x18\x03 \x01(\bR\x04done\x12\x14\n" +
-	"\x05error\x18\x04 \x01(\tR\x05error2\xec\x01\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\"\x88\x02\n" +
+	"\x17WebSocketConnectRequest\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x121\n" +
+	"\aheaders\x18\x02 \x03(\v2\x17.invoke.executor.HeaderR\aheaders\x12\x1c\n" +
+	"\tprotocols\x18\x03 \x03(\tR\tprotocols\x12\x1d\n" +
+	"\n" +
+	"timeout_ms\x18\x04 \x01(\x03R\ttimeoutMs\x12\x1d\n" +
+	"\n" +
+	"verify_ssl\x18\x05 \x01(\bR\tverifySsl\x12L\n" +
+	"\x11tls_client_config\x18\x06 \x01(\v2 .invoke.executor.TlsClientConfigR\x0ftlsClientConfig\"U\n" +
+	"\x18WebSocketConnectResponse\x12#\n" +
+	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"g\n" +
+	"\x14WebSocketSendRequest\x12#\n" +
+	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\x12\x12\n" +
+	"\x04body\x18\x02 \x01(\tR\x04body\x12\x16\n" +
+	"\x06binary\x18\x03 \x01(\bR\x06binary\"-\n" +
+	"\x15WebSocketSendResponse\x12\x14\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"^\n" +
+	"\x14WebSocketPollRequest\x12#\n" +
+	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\x12!\n" +
+	"\fmax_messages\x18\x02 \x01(\x05R\vmaxMessages\"w\n" +
+	"\x10WebSocketMessage\x12\x1c\n" +
+	"\tdirection\x18\x01 \x01(\tR\tdirection\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x12\n" +
+	"\x04body\x18\x03 \x01(\tR\x04body\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x04 \x01(\x03R\tcreatedAt\"\x8a\x01\n" +
+	"\x15WebSocketPollResponse\x12=\n" +
+	"\bmessages\x18\x01 \x03(\v2!.invoke.executor.WebSocketMessageR\bmessages\x12\x1c\n" +
+	"\tconnected\x18\x02 \x01(\bR\tconnected\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"<\n" +
+	"\x15WebSocketCloseRequest\x12#\n" +
+	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\".\n" +
+	"\x16WebSocketCloseResponse\x12\x14\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\x81\x02\n" +
+	"\x12GrpcReflectRequest\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x10\n" +
+	"\x03tls\x18\x02 \x01(\bR\x03tls\x12\x1d\n" +
+	"\n" +
+	"timeout_ms\x18\x03 \x01(\x03R\ttimeoutMs\x123\n" +
+	"\bmetadata\x18\x04 \x03(\v2\x17.invoke.executor.HeaderR\bmetadata\x12\x1d\n" +
+	"\n" +
+	"verify_ssl\x18\x05 \x01(\bR\tverifySsl\x12L\n" +
+	"\x11tls_client_config\x18\x06 \x01(\v2 .invoke.executor.TlsClientConfigR\x0ftlsClientConfig\"\xbe\x01\n" +
+	"\n" +
+	"GrpcMethod\x12\x18\n" +
+	"\aservice\x18\x01 \x01(\tR\aservice\x12\x16\n" +
+	"\x06method\x18\x02 \x01(\tR\x06method\x12\x1f\n" +
+	"\vfull_method\x18\x03 \x01(\tR\n" +
+	"fullMethod\x12\x1d\n" +
+	"\n" +
+	"input_type\x18\x04 \x01(\tR\tinputType\x12\x1f\n" +
+	"\voutput_type\x18\x05 \x01(\tR\n" +
+	"outputType\x12\x1d\n" +
+	"\n" +
+	"input_json\x18\x06 \x01(\tR\tinputJson\"b\n" +
+	"\x13GrpcReflectResponse\x125\n" +
+	"\amethods\x18\x01 \x03(\v2\x1b.invoke.executor.GrpcMethodR\amethods\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\xbf\x02\n" +
+	"\x12GrpcExecuteRequest\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x10\n" +
+	"\x03tls\x18\x02 \x01(\bR\x03tls\x12\x1f\n" +
+	"\vfull_method\x18\x03 \x01(\tR\n" +
+	"fullMethod\x12\x1b\n" +
+	"\tbody_json\x18\x04 \x01(\tR\bbodyJson\x12\x1d\n" +
+	"\n" +
+	"timeout_ms\x18\x05 \x01(\x03R\ttimeoutMs\x123\n" +
+	"\bmetadata\x18\x06 \x03(\v2\x17.invoke.executor.HeaderR\bmetadata\x12\x1d\n" +
+	"\n" +
+	"verify_ssl\x18\a \x01(\bR\tverifySsl\x12L\n" +
+	"\x11tls_client_config\x18\b \x01(\v2 .invoke.executor.TlsClientConfigR\x0ftlsClientConfig\"\x9b\x02\n" +
+	"\x13GrpcExecuteResponse\x12\x1b\n" +
+	"\tbody_json\x18\x01 \x01(\tR\bbodyJson\x123\n" +
+	"\bmetadata\x18\x02 \x03(\v2\x17.invoke.executor.HeaderR\bmetadata\x123\n" +
+	"\btrailers\x18\x03 \x03(\v2\x17.invoke.executor.HeaderR\btrailers\x12\x1f\n" +
+	"\vstatus_code\x18\x04 \x01(\x05R\n" +
+	"statusCode\x12%\n" +
+	"\x0estatus_message\x18\x05 \x01(\tR\rstatusMessage\x12\x1f\n" +
+	"\vduration_ms\x18\x06 \x01(\x01R\n" +
+	"durationMs\x12\x14\n" +
+	"\x05error\x18\a \x01(\tR\x05error2\xac\x06\n" +
 	"\fHttpExecutor\x12C\n" +
 	"\x04Ping\x12\x1c.invoke.executor.PingRequest\x1a\x1d.invoke.executor.PingResponse\x12F\n" +
 	"\aExecute\x12\x1c.invoke.executor.HttpRequest\x1a\x1d.invoke.executor.HttpResponse\x12O\n" +
-	"\rExecuteStream\x12\x1c.invoke.executor.HttpRequest\x1a\x1e.invoke.executor.ResponseChunk0\x01B;Z9github.com/brendatama/invoke/executor/internal/executorpbb\x06proto3"
+	"\rExecuteStream\x12\x1c.invoke.executor.HttpRequest\x1a\x1e.invoke.executor.ResponseChunk0\x01\x12g\n" +
+	"\x10WebSocketConnect\x12(.invoke.executor.WebSocketConnectRequest\x1a).invoke.executor.WebSocketConnectResponse\x12^\n" +
+	"\rWebSocketSend\x12%.invoke.executor.WebSocketSendRequest\x1a&.invoke.executor.WebSocketSendResponse\x12^\n" +
+	"\rWebSocketPoll\x12%.invoke.executor.WebSocketPollRequest\x1a&.invoke.executor.WebSocketPollResponse\x12a\n" +
+	"\x0eWebSocketClose\x12&.invoke.executor.WebSocketCloseRequest\x1a'.invoke.executor.WebSocketCloseResponse\x12X\n" +
+	"\vGrpcReflect\x12#.invoke.executor.GrpcReflectRequest\x1a$.invoke.executor.GrpcReflectResponse\x12X\n" +
+	"\vGrpcExecute\x12#.invoke.executor.GrpcExecuteRequest\x1a$.invoke.executor.GrpcExecuteResponseB;Z9github.com/brendatama/invoke/executor/internal/executorpbb\x06proto3"
 
 var (
 	file_executor_proto_rawDescOnce sync.Once
@@ -1098,49 +2189,87 @@ func file_executor_proto_rawDescGZIP() []byte {
 	return file_executor_proto_rawDescData
 }
 
-var file_executor_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_executor_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_executor_proto_goTypes = []any{
-	(*PingRequest)(nil),   // 0: invoke.executor.PingRequest
-	(*PingResponse)(nil),  // 1: invoke.executor.PingResponse
-	(*Header)(nil),        // 2: invoke.executor.Header
-	(*ProxyConfig)(nil),   // 3: invoke.executor.ProxyConfig
-	(*HttpRequest)(nil),   // 4: invoke.executor.HttpRequest
-	(*Timing)(nil),        // 5: invoke.executor.Timing
-	(*TimingPhase)(nil),   // 6: invoke.executor.TimingPhase
-	(*Certificate)(nil),   // 7: invoke.executor.Certificate
-	(*TlsInfo)(nil),       // 8: invoke.executor.TlsInfo
-	(*Redirect)(nil),      // 9: invoke.executor.Redirect
-	(*TimingAttempt)(nil), // 10: invoke.executor.TimingAttempt
-	(*HttpResponse)(nil),  // 11: invoke.executor.HttpResponse
-	(*ResponseChunk)(nil), // 12: invoke.executor.ResponseChunk
+	(*PingRequest)(nil),              // 0: invoke.executor.PingRequest
+	(*PingResponse)(nil),             // 1: invoke.executor.PingResponse
+	(*Header)(nil),                   // 2: invoke.executor.Header
+	(*ProxyConfig)(nil),              // 3: invoke.executor.ProxyConfig
+	(*TlsClientConfig)(nil),          // 4: invoke.executor.TlsClientConfig
+	(*HttpRequest)(nil),              // 5: invoke.executor.HttpRequest
+	(*Timing)(nil),                   // 6: invoke.executor.Timing
+	(*TimingPhase)(nil),              // 7: invoke.executor.TimingPhase
+	(*Certificate)(nil),              // 8: invoke.executor.Certificate
+	(*TlsInfo)(nil),                  // 9: invoke.executor.TlsInfo
+	(*Redirect)(nil),                 // 10: invoke.executor.Redirect
+	(*TimingAttempt)(nil),            // 11: invoke.executor.TimingAttempt
+	(*HttpResponse)(nil),             // 12: invoke.executor.HttpResponse
+	(*ResponseChunk)(nil),            // 13: invoke.executor.ResponseChunk
+	(*WebSocketConnectRequest)(nil),  // 14: invoke.executor.WebSocketConnectRequest
+	(*WebSocketConnectResponse)(nil), // 15: invoke.executor.WebSocketConnectResponse
+	(*WebSocketSendRequest)(nil),     // 16: invoke.executor.WebSocketSendRequest
+	(*WebSocketSendResponse)(nil),    // 17: invoke.executor.WebSocketSendResponse
+	(*WebSocketPollRequest)(nil),     // 18: invoke.executor.WebSocketPollRequest
+	(*WebSocketMessage)(nil),         // 19: invoke.executor.WebSocketMessage
+	(*WebSocketPollResponse)(nil),    // 20: invoke.executor.WebSocketPollResponse
+	(*WebSocketCloseRequest)(nil),    // 21: invoke.executor.WebSocketCloseRequest
+	(*WebSocketCloseResponse)(nil),   // 22: invoke.executor.WebSocketCloseResponse
+	(*GrpcReflectRequest)(nil),       // 23: invoke.executor.GrpcReflectRequest
+	(*GrpcMethod)(nil),               // 24: invoke.executor.GrpcMethod
+	(*GrpcReflectResponse)(nil),      // 25: invoke.executor.GrpcReflectResponse
+	(*GrpcExecuteRequest)(nil),       // 26: invoke.executor.GrpcExecuteRequest
+	(*GrpcExecuteResponse)(nil),      // 27: invoke.executor.GrpcExecuteResponse
 }
 var file_executor_proto_depIdxs = []int32{
 	2,  // 0: invoke.executor.HttpRequest.headers:type_name -> invoke.executor.Header
 	3,  // 1: invoke.executor.HttpRequest.proxy:type_name -> invoke.executor.ProxyConfig
-	7,  // 2: invoke.executor.TlsInfo.certificates:type_name -> invoke.executor.Certificate
-	2,  // 3: invoke.executor.Redirect.headers:type_name -> invoke.executor.Header
-	5,  // 4: invoke.executor.Redirect.timing:type_name -> invoke.executor.Timing
-	6,  // 5: invoke.executor.Redirect.phases:type_name -> invoke.executor.TimingPhase
-	2,  // 6: invoke.executor.TimingAttempt.headers:type_name -> invoke.executor.Header
-	5,  // 7: invoke.executor.TimingAttempt.timing:type_name -> invoke.executor.Timing
-	6,  // 8: invoke.executor.TimingAttempt.phases:type_name -> invoke.executor.TimingPhase
-	2,  // 9: invoke.executor.HttpResponse.headers:type_name -> invoke.executor.Header
-	5,  // 10: invoke.executor.HttpResponse.timing:type_name -> invoke.executor.Timing
-	8,  // 11: invoke.executor.HttpResponse.tls:type_name -> invoke.executor.TlsInfo
-	9,  // 12: invoke.executor.HttpResponse.redirects:type_name -> invoke.executor.Redirect
-	10, // 13: invoke.executor.HttpResponse.attempts:type_name -> invoke.executor.TimingAttempt
-	11, // 14: invoke.executor.ResponseChunk.final_response:type_name -> invoke.executor.HttpResponse
-	0,  // 15: invoke.executor.HttpExecutor.Ping:input_type -> invoke.executor.PingRequest
-	4,  // 16: invoke.executor.HttpExecutor.Execute:input_type -> invoke.executor.HttpRequest
-	4,  // 17: invoke.executor.HttpExecutor.ExecuteStream:input_type -> invoke.executor.HttpRequest
-	1,  // 18: invoke.executor.HttpExecutor.Ping:output_type -> invoke.executor.PingResponse
-	11, // 19: invoke.executor.HttpExecutor.Execute:output_type -> invoke.executor.HttpResponse
-	12, // 20: invoke.executor.HttpExecutor.ExecuteStream:output_type -> invoke.executor.ResponseChunk
-	18, // [18:21] is the sub-list for method output_type
-	15, // [15:18] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	4,  // 2: invoke.executor.HttpRequest.tls_client_config:type_name -> invoke.executor.TlsClientConfig
+	8,  // 3: invoke.executor.TlsInfo.certificates:type_name -> invoke.executor.Certificate
+	2,  // 4: invoke.executor.Redirect.headers:type_name -> invoke.executor.Header
+	6,  // 5: invoke.executor.Redirect.timing:type_name -> invoke.executor.Timing
+	7,  // 6: invoke.executor.Redirect.phases:type_name -> invoke.executor.TimingPhase
+	2,  // 7: invoke.executor.TimingAttempt.headers:type_name -> invoke.executor.Header
+	6,  // 8: invoke.executor.TimingAttempt.timing:type_name -> invoke.executor.Timing
+	7,  // 9: invoke.executor.TimingAttempt.phases:type_name -> invoke.executor.TimingPhase
+	2,  // 10: invoke.executor.HttpResponse.headers:type_name -> invoke.executor.Header
+	6,  // 11: invoke.executor.HttpResponse.timing:type_name -> invoke.executor.Timing
+	9,  // 12: invoke.executor.HttpResponse.tls:type_name -> invoke.executor.TlsInfo
+	10, // 13: invoke.executor.HttpResponse.redirects:type_name -> invoke.executor.Redirect
+	11, // 14: invoke.executor.HttpResponse.attempts:type_name -> invoke.executor.TimingAttempt
+	12, // 15: invoke.executor.ResponseChunk.final_response:type_name -> invoke.executor.HttpResponse
+	2,  // 16: invoke.executor.WebSocketConnectRequest.headers:type_name -> invoke.executor.Header
+	4,  // 17: invoke.executor.WebSocketConnectRequest.tls_client_config:type_name -> invoke.executor.TlsClientConfig
+	19, // 18: invoke.executor.WebSocketPollResponse.messages:type_name -> invoke.executor.WebSocketMessage
+	2,  // 19: invoke.executor.GrpcReflectRequest.metadata:type_name -> invoke.executor.Header
+	4,  // 20: invoke.executor.GrpcReflectRequest.tls_client_config:type_name -> invoke.executor.TlsClientConfig
+	24, // 21: invoke.executor.GrpcReflectResponse.methods:type_name -> invoke.executor.GrpcMethod
+	2,  // 22: invoke.executor.GrpcExecuteRequest.metadata:type_name -> invoke.executor.Header
+	4,  // 23: invoke.executor.GrpcExecuteRequest.tls_client_config:type_name -> invoke.executor.TlsClientConfig
+	2,  // 24: invoke.executor.GrpcExecuteResponse.metadata:type_name -> invoke.executor.Header
+	2,  // 25: invoke.executor.GrpcExecuteResponse.trailers:type_name -> invoke.executor.Header
+	0,  // 26: invoke.executor.HttpExecutor.Ping:input_type -> invoke.executor.PingRequest
+	5,  // 27: invoke.executor.HttpExecutor.Execute:input_type -> invoke.executor.HttpRequest
+	5,  // 28: invoke.executor.HttpExecutor.ExecuteStream:input_type -> invoke.executor.HttpRequest
+	14, // 29: invoke.executor.HttpExecutor.WebSocketConnect:input_type -> invoke.executor.WebSocketConnectRequest
+	16, // 30: invoke.executor.HttpExecutor.WebSocketSend:input_type -> invoke.executor.WebSocketSendRequest
+	18, // 31: invoke.executor.HttpExecutor.WebSocketPoll:input_type -> invoke.executor.WebSocketPollRequest
+	21, // 32: invoke.executor.HttpExecutor.WebSocketClose:input_type -> invoke.executor.WebSocketCloseRequest
+	23, // 33: invoke.executor.HttpExecutor.GrpcReflect:input_type -> invoke.executor.GrpcReflectRequest
+	26, // 34: invoke.executor.HttpExecutor.GrpcExecute:input_type -> invoke.executor.GrpcExecuteRequest
+	1,  // 35: invoke.executor.HttpExecutor.Ping:output_type -> invoke.executor.PingResponse
+	12, // 36: invoke.executor.HttpExecutor.Execute:output_type -> invoke.executor.HttpResponse
+	13, // 37: invoke.executor.HttpExecutor.ExecuteStream:output_type -> invoke.executor.ResponseChunk
+	15, // 38: invoke.executor.HttpExecutor.WebSocketConnect:output_type -> invoke.executor.WebSocketConnectResponse
+	17, // 39: invoke.executor.HttpExecutor.WebSocketSend:output_type -> invoke.executor.WebSocketSendResponse
+	20, // 40: invoke.executor.HttpExecutor.WebSocketPoll:output_type -> invoke.executor.WebSocketPollResponse
+	22, // 41: invoke.executor.HttpExecutor.WebSocketClose:output_type -> invoke.executor.WebSocketCloseResponse
+	25, // 42: invoke.executor.HttpExecutor.GrpcReflect:output_type -> invoke.executor.GrpcReflectResponse
+	27, // 43: invoke.executor.HttpExecutor.GrpcExecute:output_type -> invoke.executor.GrpcExecuteResponse
+	35, // [35:44] is the sub-list for method output_type
+	26, // [26:35] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_executor_proto_init() }
@@ -1154,7 +2283,7 @@ func file_executor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_executor_proto_rawDesc), len(file_executor_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
