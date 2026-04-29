@@ -1,5 +1,13 @@
 import { v7 as uuidv7 } from "uuid";
-import type { GraphQLRequestConfig, ProtocolRequestConfig, RequestConfig, RequestDraft, RequestProtocol } from "./types";
+import type {
+  GrpcRequestConfig,
+  GraphQLRequestConfig,
+  ProtocolRequestConfig,
+  RequestConfig,
+  RequestDraft,
+  RequestProtocol,
+  WebSocketRequestConfig
+} from "./types";
 import { normalizeExtractionRules } from "./variables";
 
 export const id = () => uuidv7();
@@ -16,6 +24,8 @@ export const emptyRequest = (): RequestDraft => ({
   variables: [],
   assertions: [],
   extractionRules: [],
+  options: { followRedirects: true, maxRedirects: 10, verifySsl: true, tlsClientConfig: {} },
+  scripts: { preRequest: "", postResponse: "" },
   protocol: "rest"
 });
 
@@ -28,7 +38,35 @@ export const emptyGraphQLRequest = (): GraphQLRequestConfig => ({
   operationName: "",
   timeoutMs: 30000,
   assertions: [],
-  extractionRules: []
+  extractionRules: [],
+  options: { followRedirects: true, maxRedirects: 10, verifySsl: true, tlsClientConfig: {} },
+  scripts: { preRequest: "", postResponse: "" }
+});
+
+export const emptyWebSocketRequest = (): WebSocketRequestConfig => ({
+  url: "",
+  protocols: "",
+  headers: [],
+  auth: { type: "none" },
+  messageMode: "text",
+  message: "",
+  timeoutMs: 30000,
+  variables: [],
+  options: { verifySsl: true, tlsClientConfig: {} },
+  scripts: { preRequest: "", postResponse: "" }
+});
+
+export const emptyGrpcRequest = (): GrpcRequestConfig => ({
+  address: "",
+  service: "",
+  method: "",
+  metadata: [],
+  body: "{}",
+  tls: true,
+  timeoutMs: 30000,
+  variables: [],
+  options: { verifySsl: true, tlsClientConfig: {} },
+  scripts: { preRequest: "", postResponse: "" }
 });
 
 export function toRequestConfig(request: RequestConfig | RequestDraft): RequestConfig {
@@ -45,7 +83,8 @@ export function toRequestConfig(request: RequestConfig | RequestDraft): RequestC
     variables: draft.variables ?? [],
     assertions: draft.assertions ?? [],
     extractionRules: normalizeExtractionRules(draft.extractionRules),
-    options: draft.options
+    options: draft.options,
+    scripts: draft.scripts ?? { preRequest: "", postResponse: "" }
   };
 }
 
@@ -68,19 +107,32 @@ export function graphQLToRequestConfig(request: GraphQLRequestConfig): RequestCo
     }),
     auth: request.auth,
     timeoutMs: request.timeoutMs,
-    options: request.options
+    options: request.options,
+    scripts: request.scripts
   });
 }
 
 export function inferProtocol(request: ProtocolRequestConfig | RequestDraft, fallback: RequestProtocol = "rest"): RequestProtocol {
   if ((request as RequestDraft).protocol) return (request as RequestDraft).protocol!;
   if (isGraphQLRequestConfig(request)) return "graphql";
+  if (isWebSocketRequestConfig(request)) return "websocket";
+  if (isGrpcRequestConfig(request)) return "grpc";
   return fallback;
 }
 
 export function isGraphQLRequestConfig(request: ProtocolRequestConfig | RequestDraft): request is GraphQLRequestConfig {
   const maybe = request as Partial<GraphQLRequestConfig>;
   return typeof maybe.query === "string" && typeof maybe.variables === "string" && !(request as Partial<RequestConfig>).method;
+}
+
+export function isWebSocketRequestConfig(request: ProtocolRequestConfig | RequestDraft): request is WebSocketRequestConfig {
+  const maybe = request as Partial<WebSocketRequestConfig>;
+  return typeof maybe.messageMode === "string" && typeof maybe.message === "string" && !(request as Partial<RequestConfig>).method;
+}
+
+export function isGrpcRequestConfig(request: ProtocolRequestConfig | RequestDraft): request is GrpcRequestConfig {
+  const maybe = request as Partial<GrpcRequestConfig>;
+  return typeof maybe.address === "string" && typeof maybe.service === "string" && typeof maybe.method === "string";
 }
 
 export function clonePlain<T>(value: T): T {
