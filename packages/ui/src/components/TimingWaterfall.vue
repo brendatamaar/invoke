@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ExecuteResponse, Timing, TimingAttempt, TimingPhaseName } from "@invoke/core";
+import type { AttemptView, PhaseDefinition, PhaseView } from "../types";
 
 const phaseDefinitions = [
   { name: "dns", label: "DNS" },
@@ -8,25 +9,7 @@ const phaseDefinitions = [
   { name: "tls", label: "TLS" },
   { name: "ttfb", label: "TTFB" },
   { name: "transfer", label: "Transfer" }
-] as const;
-
-type PhaseDefinition = (typeof phaseDefinitions)[number];
-
-type PhaseView = PhaseDefinition & {
-  startMs: number;
-  durationMs: number;
-  leftPct: number;
-  widthPct: number;
-};
-
-interface AttemptView {
-  key: string;
-  label: string;
-  url: string;
-  status?: number;
-  totalMs: number;
-  phases: PhaseView[];
-}
+] satisfies PhaseDefinition[];
 
 const props = defineProps<{ response?: ExecuteResponse }>();
 
