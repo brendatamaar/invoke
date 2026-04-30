@@ -89,38 +89,7 @@ import FolderTreeNode from "./components/FolderTreeNode.vue";
 import GraphQLEditor from "./components/GraphQLEditor.vue";
 import KeyValueEditor from "./components/KeyValueEditor.vue";
 import TimingWaterfall from "./components/TimingWaterfall.vue";
-
-interface FolderTreeNodeView {
-  folder: Folder;
-  folders: FolderTreeNodeView[];
-  requests: SavedRequest[];
-  depth: number;
-}
-
-type ContextTarget =
-  | { type: "collection"; collection: Collection }
-  | { type: "folder"; folder: Folder }
-  | { type: "request"; request: SavedRequest };
-
-type PaletteKind = "command" | "collection" | "folder" | "request" | "environment" | "history";
-
-interface PaletteItem {
-  id: string;
-  kind: PaletteKind;
-  title: string;
-  subtitle: string;
-  keywords: string;
-  method?: string;
-  run: () => void | Promise<void>;
-}
-
-interface WebSocketLogItem {
-  id: string;
-  direction: "sent" | "received" | "system";
-  type: string;
-  body: string;
-  createdAt: number;
-}
+import type { ContextTarget, FolderTreeNodeView, PaletteItem, SidebarSection, TreeDragPayload, WebSocketLogItem } from "./types";
 
 const store = new InvokeStore();
 const CodeViewer = defineAsyncComponent(() => import("./components/CodeViewer.vue"));
@@ -166,12 +135,15 @@ const selectedCommandIndex = ref(0);
 const commandInput = ref<HTMLInputElement>();
 const showHelp = ref(false);
 const showSettings = ref(false);
+const sidebarCollapsed = ref(false);
+const activeSideSection = ref<SidebarSection>("collections");
 const openApiFileInput = ref<HTMLInputElement>();
 const postmanFileInput = ref<HTMLInputElement>();
 const invokeFileInput = ref<HTMLInputElement>();
 const insomniaFileInput = ref<HTMLInputElement>();
 const hoppscotchFileInput = ref<HTMLInputElement>();
 const theme = ref(localStorage.getItem("theme") ?? "dark");
+const uiFontSize = ref(Number(localStorage.getItem("uiFontSize") ?? 13));
 const showEnvPanel = ref(false);
 const envDraft = ref<Environment | undefined>();
 const saveDialog = reactive({ open: false, name: "", collectionId: "", folderId: "" });
@@ -196,11 +168,14 @@ const diffLeftId = ref("");
 const diffRightId = ref("");
 const diffResult = ref<DiffResult | undefined>();
 const showDiffModal = ref(false);
+const responsePretty = ref(true);
+const responseSearch = ref("");
 const graphqlSchema = ref<GraphQLIntrospectionSchema | undefined>();
 const graphqlSchemaStatus = ref("");
 const expandedGraphQLTypeNames = ref<string[]>([]);
 const gqlEditor = ref<{ insertText: (value: string) => void }>();
 const expandedFolderIds = ref<string[]>([]);
+const treeDrag = ref<TreeDragPayload | undefined>();
 const contextMenu = reactive<{ open: boolean; x: number; y: number; target?: ContextTarget }>({
   open: false,
   x: 0,
@@ -289,6 +264,16 @@ const statusClass = computed(() => {
 });
 const responseContentType = computed(() => response.value?.headers.find((h) => h.key.toLowerCase() === "content-type")?.value ?? "");
 const responseBody = computed(() => prettyBody(response.value?.body ?? "", responseContentType.value));
+const responseDisplayBody = computed(() => {
+  const body = responsePretty.value ? responseBody.value : response.value?.body ?? "";
+  const query = responseSearch.value.trim().toLowerCase();
+  if (!query) return body;
+  const matches = body
+    .split("\n")
+    .filter((line) => line.toLowerCase().includes(query))
+    .join("\n");
+  return matches || body;
+});
 const displayedHistory = computed(() => searchHistory(history.value, debouncedHistoryQuery.value, 100));
 const diffableHistory = computed(() => history.value.filter((entry) => entry.response));
 const diffLeftEntry = computed(() => history.value.find((entry) => entry.id === diffLeftId.value));
@@ -329,6 +314,12 @@ const paletteResults = computed(() => {
   });
   return fuse.search(query).map((result) => result.item).slice(0, 24);
 });
+const activeUrlValue = computed(() => {
+  if (activeProtocol.value === "graphql") return graphqlRequest.value.url;
+  if (activeProtocol.value === "websocket") return websocketRequest.value.url;
+  if (activeProtocol.value === "grpc") return grpcRequest.value.address;
+  return request.value.url;
+});
 const shortcutRows = [
   { keys: "Ctrl/Command K", action: "Command palette" },
   { keys: "Ctrl/Command Enter", action: "Send request" },
@@ -343,6 +334,16 @@ watch(theme, (value) => {
   document.documentElement.dataset.theme = value;
   localStorage.setItem("theme", value);
 });
+
+watch(
+  uiFontSize,
+  (value) => {
+    const next = Number.isFinite(value) ? Math.min(18, Math.max(11, value)) : 13;
+    document.documentElement.style.setProperty("--editor-font-size", `${next}px`);
+    localStorage.setItem("uiFontSize", String(next));
+  },
+  { immediate: true }
+);
 
 watch(historyQuery, (value) => {
   if (historySearchTimer) clearTimeout(historySearchTimer);
@@ -517,6 +518,51 @@ function closeOverlays() {
   commandPaletteOpen.value = false;
   showHelp.value = false;
   showSettings.value = false;
+}
+
+function sidebarCount(section: SidebarSection) {
+  if (section === "collections") return requests.value.length + folders.value.length;
+  if (section === "history") return displayedHistory.value.length;
+  if (section === "environments") return environments.value.length;
+  if (section === "flows") return flows.value.length;
+  return mockRoutes.value.length;
+}
+
+function protocolLabel(protocol: RequestProtocol) {
+  if (protocol === "rest") return "REST";
+  if (protocol === "graphql") return "GraphQL";
+  if (protocol === "websocket") return "WebSocket";
+  return "gRPC";
+}
+
+function methodClass(method?: string) {
+  return `method-${(method || "GET").toLowerCase()}`;
+}
+
+function statusTone(code?: number) {
+  if (!code) return "status-empty";
+  if (code >= 200 && code < 300) return "status-ok";
+  if (code >= 300 && code < 400) return "status-warn";
+  if (code >= 400 && code < 500) return "status-bad";
+  return "status-error";
+}
+
+function urlParts(value = activeUrlValue.value) {
+  const parts: Array<{ text: string; variable: boolean }> = [];
+  const pattern = /\{\{\s*([^}]+?)\s*\}\}/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(value)) !== null) {
+    if (match.index > lastIndex) parts.push({ text: value.slice(lastIndex, match.index), variable: false });
+    parts.push({ text: match[0], variable: true });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < value.length) parts.push({ text: value.slice(lastIndex), variable: false });
+  return parts.length ? parts : [{ text: value, variable: false }];
+}
+
+function ensureProxySettings() {
+  activeOptions.value.proxy ??= { type: "http", url: "" };
 }
 
 function movePaletteSelection(delta: number) {
@@ -1218,6 +1264,32 @@ async function deleteCollection(collection: Collection) {
   closeContextMenu();
 }
 
+async function duplicateCollection(collection: Collection) {
+  const copy = await store.createCollection(`${collection.name} copy`, { variables: clone(collection.variables ?? []) });
+  const folderMap = new Map<string, string>();
+  const sourceFolders = folders.value.filter((folder) => folder.collectionId === collection.id).sort(sortByOrder);
+
+  for (const folder of sourceFolders) {
+    const parentFolderId = folder.parentFolderId ? folderMap.get(folder.parentFolderId) ?? null : null;
+    const saved = await store.createFolder(copy.id, folder.name, parentFolderId, {
+      variables: clone(folder.variables ?? []),
+      sortOrder: folder.sortOrder
+    });
+    folderMap.set(folder.id, saved.id);
+  }
+
+  for (const saved of requests.value.filter((item) => item.collectionId === collection.id).sort(sortByOrder)) {
+    await store.saveRequest(saved.request, saved.name, copy.id, {
+      folderId: saved.folderId ? folderMap.get(saved.folderId) ?? null : null,
+      protocol: saved.protocol,
+      sortOrder: saved.sortOrder
+    });
+  }
+
+  await refreshAll();
+  closeContextMenu();
+}
+
 function openCollectionContext(event: MouseEvent, collection: Collection) {
   openContextMenu(event, { type: "collection", collection });
 }
@@ -1280,6 +1352,41 @@ async function deleteFolder(folder: Folder) {
   closeContextMenu();
 }
 
+async function duplicateFolder(folder: Folder) {
+  const copy = await store.createFolder(folder.collectionId, `${folder.name} copy`, folder.parentFolderId ?? null, {
+    variables: clone(folder.variables ?? [])
+  });
+  await duplicateFolderChildren(folder.id, copy.id);
+  await refreshAll();
+  closeContextMenu();
+}
+
+async function duplicateFolderChildren(sourceFolderId: string, targetFolderId: string) {
+  for (const saved of requests.value.filter((item) => item.folderId === sourceFolderId).sort(sortByOrder)) {
+    await store.saveRequest(saved.request, saved.name, saved.collectionId, {
+      folderId: targetFolderId,
+      protocol: saved.protocol,
+      sortOrder: saved.sortOrder
+    });
+  }
+
+  for (const child of folders.value.filter((folder) => folder.parentFolderId === sourceFolderId).sort(sortByOrder)) {
+    const childCopy = await store.createFolder(child.collectionId, child.name, targetFolderId, {
+      variables: clone(child.variables ?? []),
+      sortOrder: child.sortOrder
+    });
+    await duplicateFolderChildren(child.id, childCopy.id);
+  }
+}
+
+async function moveFolderToParent(folder: Folder) {
+  if (!folder.parentFolderId) return;
+  const parent = folders.value.find((item) => item.id === folder.parentFolderId);
+  await store.updateFolder({ ...folder, parentFolderId: parent?.parentFolderId ?? null });
+  await refreshAll();
+  closeContextMenu();
+}
+
 async function renameCollection(collection: Collection) {
   const name = prompt("Collection name", collection.name);
   if (!name || name === collection.name) return;
@@ -1305,6 +1412,73 @@ async function moveRequestToParent(saved: SavedRequest) {
   if (request.value.id === saved.id) request.value = { ...request.value, folderId: nextFolderId };
   await refreshAll();
   closeContextMenu();
+}
+
+function startTreeDrag(event: DragEvent, payload: TreeDragPayload) {
+  treeDrag.value = payload;
+  event.dataTransfer?.setData("text/plain", `${payload.type}:${payload.id}`);
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+}
+
+function endTreeDrag() {
+  treeDrag.value = undefined;
+}
+
+async function dropOnCollection(event: DragEvent, collectionId: string) {
+  event.preventDefault();
+  const payload = treeDrag.value;
+  if (!payload) return;
+  if (payload.type === "request") {
+    const saved = requests.value.find((item) => item.id === payload.id);
+    if (saved) {
+      await store.saveRequest(saved.request, saved.name, collectionId, {
+        id: saved.id,
+        folderId: null,
+        protocol: saved.protocol,
+        sortOrder: Date.now(),
+        createdAt: saved.createdAt
+      });
+    }
+  } else {
+    const folder = folders.value.find((item) => item.id === payload.id);
+    if (folder && folder.collectionId === collectionId) await store.updateFolder({ ...folder, parentFolderId: null, sortOrder: Date.now() });
+  }
+  endTreeDrag();
+  await refreshAll();
+}
+
+async function dropOnFolder(event: DragEvent, target: Folder) {
+  event.preventDefault();
+  const payload = treeDrag.value;
+  if (!payload) return;
+  if (payload.type === "request") {
+    const saved = requests.value.find((item) => item.id === payload.id);
+    if (saved) await store.moveRequest(saved.id, target.id);
+  } else {
+    const folder = folders.value.find((item) => item.id === payload.id);
+    if (folder && folder.id !== target.id && !folderChain(target.id).some((item) => item.id === folder.id)) {
+      await store.updateFolder({ ...folder, parentFolderId: target.id, sortOrder: Date.now() });
+    }
+  }
+  endTreeDrag();
+  await refreshAll();
+}
+
+async function dropBeforeRequest(event: DragEvent, target: SavedRequest) {
+  event.preventDefault();
+  const payload = treeDrag.value;
+  if (!payload || payload.type !== "request" || payload.id === target.id) return;
+  const saved = requests.value.find((item) => item.id === payload.id);
+  if (!saved) return;
+  await store.saveRequest(saved.request, saved.name, target.collectionId, {
+    id: saved.id,
+    folderId: target.folderId ?? null,
+    protocol: saved.protocol,
+    sortOrder: (target.sortOrder ?? Date.now()) - 0.5,
+    createdAt: saved.createdAt
+  });
+  endTreeDrag();
+  await refreshAll();
 }
 
 function editCollectionVariables(collection: Collection) {
@@ -1350,6 +1524,13 @@ async function saveEnvironment() {
   const saved = await store.saveEnvironment(envDraft.value);
   activeEnvironmentId.value = saved.id;
   await store.setActiveEnvironmentId(saved.id);
+  showEnvPanel.value = false;
+  await refreshAll();
+}
+
+async function deleteEnvironmentDraft() {
+  if (!envDraft.value?.id || !confirm(`Delete ${envDraft.value.name}?`)) return;
+  await store.deleteEnvironment(envDraft.value.id);
   showEnvPanel.value = false;
   await refreshAll();
 }
@@ -1499,6 +1680,12 @@ async function runFlowDraft() {
   } finally {
     flowRunning.value = false;
   }
+}
+
+async function runSavedFlow(flow: Flow) {
+  loadFlow(flow);
+  await nextTick();
+  await runFlowDraft();
 }
 
 function addKeyValue(target: KeyValue[]) {
@@ -1771,147 +1958,263 @@ function download(blob: Blob, filename: string) {
 </script>
 
 <template>
-  <div class="app">
+  <div class="app" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
     <aside class="sidebar">
       <div class="brand">
-        <div>
-          <strong>invoke</strong>
-          <span>beta 2</span>
-        </div>
-        <button data-testid="new-request" title="New request" @click="newRequest">+</button>
+        <button class="brand-main" title="Collapse sidebar" @click="sidebarCollapsed = !sidebarCollapsed">
+          <span class="logo-mark">in</span>
+          <span class="brand-copy"><strong>invoke</strong><small>local-first API client</small></span>
+        </button>
+        <button class="icon-button" data-testid="new-request" title="New request" @click="newRequest">+</button>
       </div>
 
-      <section class="side-section">
-        <div class="side-title">
-          <span>Collections</span>
-          <button @click="createCollection">New</button>
-        </div>
-        <div v-for="group in groupedRequests" :key="group.collection.id" class="collection">
-          <div class="collection-row" data-testid="collection-row" @contextmenu.prevent="openCollectionContext($event, group.collection)">
-            <button class="linkish" @click="selectCollection(group.collection.id)">{{ group.collection.name }}</button>
-            <div>
-              <button title="Export" @click="exportCollection(group.collection)">Export</button>
-              <button title="Delete" @click="deleteCollection(group.collection)">Del</button>
-            </div>
-          </div>
-          <FolderTreeNode
-            v-for="node in group.folders"
-            :key="node.folder.id"
-            :node="node"
-            :active-request-id="request.id"
-            :expanded-folder-ids="expandedFolderIds"
-            @toggle="toggleFolder"
-            @load="loadRequest"
-            @folder-context="openFolderContext"
-            @request-context="openRequestContext"
-          />
-          <button
-            v-for="saved in group.requests"
-            :key="saved.id"
-            class="request-row"
-            :class="{ active: request.id === saved.id }"
-            @click="loadRequest(saved)"
-            @contextmenu.prevent="openRequestContext($event, saved)"
-          >
-            <span :data-method="savedMethod(saved)">{{ savedMethod(saved) }}</span>
-            <strong>{{ saved.name }}</strong>
-            <small @click.stop="deleteRequest(saved)">x</small>
+      <div class="sidebar-layout">
+        <nav class="nav-rail" aria-label="Invoke sections">
+          <button :class="{ active: activeSideSection === 'collections' }" title="Collections" @click="activeSideSection = 'collections'">
+            <span>C</span><small>{{ sidebarCount("collections") }}</small>
           </button>
-        </div>
-      </section>
+          <button :class="{ active: activeSideSection === 'history' }" title="History" @click="activeSideSection = 'history'">
+            <span>H</span><small>{{ sidebarCount("history") }}</small>
+          </button>
+          <button :class="{ active: activeSideSection === 'environments' }" title="Environments" @click="activeSideSection = 'environments'">
+            <span>E</span><small>{{ sidebarCount("environments") }}</small>
+          </button>
+          <button :class="{ active: activeSideSection === 'flows' }" title="Flows" @click="activeSideSection = 'flows'">
+            <span>F</span><small>{{ sidebarCount("flows") }}</small>
+          </button>
+          <button :class="{ active: activeSideSection === 'mocks' }" title="Mock server" @click="activeSideSection = 'mocks'">
+            <span>M</span><small>{{ sidebarCount("mocks") }}</small>
+          </button>
+        </nav>
 
-      <section class="side-section">
-        <div class="side-title"><span>Import</span></div>
-        <label class="file-button">
-          Postman
-          <input ref="postmanFileInput" type="file" accept=".json" @change="importFiles($event, 'postman')" />
-        </label>
-        <label class="file-button">
-          Invoke ZIP
-          <input ref="invokeFileInput" type="file" multiple accept=".zip,.yaml,.yml" @change="importFiles($event, 'yaml')" />
-        </label>
-        <label class="file-button">
-          OpenAPI
-          <input ref="openApiFileInput" type="file" accept=".json,.yaml,.yml" @change="importFiles($event, 'openapi')" />
-        </label>
-        <label class="file-button">
-          Insomnia
-          <input ref="insomniaFileInput" type="file" accept=".json" @change="importFiles($event, 'insomnia')" />
-        </label>
-        <label class="file-button">
-          Hoppscotch
-          <input ref="hoppscotchFileInput" type="file" accept=".json" @change="importFiles($event, 'hoppscotch')" />
-        </label>
-        <div
-          v-if="importPreview.error || importPreview.message"
-          class="import-preview"
-          :class="{ error: importPreview.error }"
-          data-testid="import-preview"
-        >
-          {{ importPreview.error || importPreview.message }}
-        </div>
-      </section>
+        <section v-if="!sidebarCollapsed" class="side-panel">
+          <template v-if="activeSideSection === 'collections'">
+            <div class="side-title">
+              <span>Collections</span>
+              <div>
+                <button @click="createCollection">Collection</button>
+                <button @click="newRequestIn(activeCollection?.id)">Request</button>
+              </div>
+            </div>
+            <div class="import-strip">
+              <label class="file-button">Postman<input ref="postmanFileInput" type="file" accept=".json" @change="importFiles($event, 'postman')" /></label>
+              <label class="file-button">Invoke<input ref="invokeFileInput" type="file" multiple accept=".zip,.yaml,.yml" @change="importFiles($event, 'yaml')" /></label>
+              <label class="file-button">OpenAPI<input ref="openApiFileInput" type="file" accept=".json,.yaml,.yml" @change="importFiles($event, 'openapi')" /></label>
+              <label class="file-button">Insomnia<input ref="insomniaFileInput" type="file" accept=".json" @change="importFiles($event, 'insomnia')" /></label>
+              <label class="file-button">Hoppscotch<input ref="hoppscotchFileInput" type="file" accept=".json" @change="importFiles($event, 'hoppscotch')" /></label>
+            </div>
+            <div
+              v-if="importPreview.error || importPreview.message"
+              class="import-preview"
+              :class="{ error: importPreview.error }"
+              data-testid="import-preview"
+            >
+              {{ importPreview.error || importPreview.message }}
+            </div>
 
-      <section class="side-section history">
-        <div class="side-title"><span>History</span></div>
-        <div class="diff-controls">
-          <select v-model="diffLeftId" data-testid="diff-left">
-            <option value="">Left</option>
-            <option v-for="entry in diffableHistory" :key="`left-${entry.id}`" :value="entry.id">{{ historyMethod(entry) }} {{ entry.response?.status ?? "-" }} {{ new Date(entry.createdAt).toLocaleTimeString() }}</option>
-          </select>
-          <select v-model="diffRightId" data-testid="diff-right">
-            <option value="">Right</option>
-            <option v-for="entry in diffableHistory" :key="`right-${entry.id}`" :value="entry.id">{{ historyMethod(entry) }} {{ entry.response?.status ?? "-" }} {{ new Date(entry.createdAt).toLocaleTimeString() }}</option>
-          </select>
-          <button :disabled="!diffLeftId || !diffRightId || diffLeftId === diffRightId" data-testid="compare-history" @click="compareSelectedHistory">Compare</button>
-        </div>
-        <input v-model="historyQuery" class="history-search" data-testid="history-search" placeholder="Search history" />
-        <button v-for="entry in displayedHistory" :key="entry.id" class="history-row" @click="loadHistory(entry)">
-          <span :data-method="historyMethod(entry)">{{ historyMethod(entry) }}</span>
-          <strong>{{ historyUrl(entry) }}</strong>
-          <small>{{ entry.response?.status ?? "-" }} {{ historyAssertionLabel(entry) }}</small>
-        </button>
-        <p v-if="displayedHistory.length === 0" class="history-empty">No matching history</p>
-      </section>
+            <div
+              v-for="group in groupedRequests"
+              :key="group.collection.id"
+              class="collection"
+              @dragover.prevent
+              @drop="dropOnCollection($event, group.collection.id)"
+            >
+              <div class="collection-row" data-testid="collection-row" @contextmenu.prevent="openCollectionContext($event, group.collection)">
+                <button class="linkish" @click="selectCollection(group.collection.id)">{{ group.collection.name }}</button>
+                <div>
+                  <button title="New folder" @click="createFolderIn(group.collection.id)">Folder</button>
+                  <button title="Export" @click="exportCollection(group.collection)">Export</button>
+                </div>
+              </div>
+              <FolderTreeNode
+                v-for="node in group.folders"
+                :key="node.folder.id"
+                :node="node"
+                :active-request-id="request.id"
+                :expanded-folder-ids="expandedFolderIds"
+                @toggle="toggleFolder"
+                @load="loadRequest"
+                @folder-context="openFolderContext"
+                @request-context="openRequestContext"
+                @drag-start="startTreeDrag"
+                @drag-end="endTreeDrag"
+                @drop-folder="dropOnFolder"
+                @drop-request="dropBeforeRequest"
+              />
+              <button
+                v-for="saved in group.requests"
+                :key="saved.id"
+                class="request-row"
+                :class="{ active: request.id === saved.id }"
+                draggable="true"
+                @click="loadRequest(saved)"
+                @contextmenu.prevent="openRequestContext($event, saved)"
+                @dragstart="startTreeDrag($event, { type: 'request', id: saved.id })"
+                @dragend="endTreeDrag"
+                @dragover.prevent
+                @drop="dropBeforeRequest($event, saved)"
+              >
+                <span :data-method="savedMethod(saved)">{{ savedMethod(saved) }}</span>
+                <strong>{{ saved.name }}</strong>
+                <small @click.stop="deleteRequest(saved)">x</small>
+              </button>
+            </div>
+
+            <section class="inline-history">
+              <div class="side-title inline-title"><span>History</span><button @click="activeSideSection = 'history'">Open</button></div>
+              <input v-model="historyQuery" class="history-search" data-testid="history-search" placeholder="Search history" />
+              <button v-for="entry in displayedHistory.slice(0, 8)" :key="entry.id" class="history-row" @click="loadHistory(entry)">
+                <span :data-method="historyMethod(entry)">{{ historyMethod(entry) }}</span>
+                <strong>{{ historyUrl(entry) }}</strong>
+                <small>{{ entry.response?.status ?? "-" }} {{ historyAssertionLabel(entry) }}</small>
+              </button>
+              <p v-if="displayedHistory.length === 0" class="history-empty">No matching history</p>
+            </section>
+          </template>
+
+          <template v-if="activeSideSection === 'history'">
+            <div class="side-title"><span>History</span><button @click="historyQuery = ''">Clear</button></div>
+            <div class="diff-controls">
+              <select v-model="diffLeftId" data-testid="diff-left">
+                <option value="">Left</option>
+                <option v-for="entry in diffableHistory" :key="`left-${entry.id}`" :value="entry.id">{{ historyMethod(entry) }} {{ entry.response?.status ?? "-" }} {{ new Date(entry.createdAt).toLocaleTimeString() }}</option>
+              </select>
+              <select v-model="diffRightId" data-testid="diff-right">
+                <option value="">Right</option>
+                <option v-for="entry in diffableHistory" :key="`right-${entry.id}`" :value="entry.id">{{ historyMethod(entry) }} {{ entry.response?.status ?? "-" }} {{ new Date(entry.createdAt).toLocaleTimeString() }}</option>
+              </select>
+              <button :disabled="!diffLeftId || !diffRightId || diffLeftId === diffRightId" data-testid="compare-history" @click="compareSelectedHistory">Compare</button>
+            </div>
+            <input v-model="historyQuery" class="history-search" data-testid="history-search" placeholder="Search history" />
+            <button v-for="entry in displayedHistory" :key="entry.id" class="history-row" @click="loadHistory(entry)">
+              <span :data-method="historyMethod(entry)">{{ historyMethod(entry) }}</span>
+              <strong>{{ historyUrl(entry) }}</strong>
+              <small>{{ entry.response?.status ?? "-" }} {{ historyAssertionLabel(entry) }}</small>
+            </button>
+            <p v-if="displayedHistory.length === 0" class="history-empty">No matching history</p>
+          </template>
+
+          <template v-if="activeSideSection === 'environments'">
+            <div class="side-title"><span>Environments</span><button @click="editEnvironment()">New</button></div>
+            <select :value="activeEnvironmentId" @change="setActiveEnvironment(($event.target as HTMLSelectElement).value || undefined)">
+              <option value="">No environment</option>
+              <option v-for="env in environments" :key="env.id" :value="env.id">{{ env.name }}</option>
+            </select>
+            <button :disabled="!activeEnvironment" @click="editEnvironment(activeEnvironment)">Edit selected</button>
+            <div class="env-list">
+              <button v-for="env in environments" :key="env.id" :class="{ active: env.id === activeEnvironmentId }" @click="setActiveEnvironment(env.id)">
+                <strong>{{ env.name }}</strong>
+                <small>{{ env.variables.filter((item) => item.enabled !== false).length }} variables</small>
+              </button>
+              <p v-if="environments.length === 0" class="history-empty">No environments yet</p>
+            </div>
+          </template>
+
+          <template v-if="activeSideSection === 'flows'">
+            <div class="side-title"><span>Flows</span><button @click="newFlow">New</button></div>
+            <div class="flow-quick">
+              <label>Name<input v-model="flowDraft.name" /></label>
+              <div>
+                <button @click="addFlowRequestStep()">Add current</button>
+                <button @click="addFlowDelayStep">Delay</button>
+              </div>
+              <div>
+                <button @click="saveFlowDraft">Save</button>
+                <button :disabled="flowRunning || flowDraft.steps.length === 0" @click="runFlowDraft">{{ flowRunning ? "Running" : "Run" }}</button>
+              </div>
+              <small v-if="flowResult" :class="flowResult.status === 'passed' ? 'ok' : 'bad'">{{ flowResult.status }} · {{ flowResult.steps.length }} steps</small>
+            </div>
+            <div class="flow-list compact-list">
+              <article v-for="flow in flows" :key="flow.id" :class="{ active: flow.id === flowDraft.id }">
+                <button @click="loadFlow(flow)"><strong>{{ flow.name }}</strong><small>{{ flow.steps.length }} steps</small></button>
+                <button :disabled="flowRunning" @click="runSavedFlow(flow)">Run</button>
+              </article>
+              <p v-if="flows.length === 0" class="history-empty">No saved flows</p>
+            </div>
+            <div class="flow-log">
+              <article v-for="entry in flowLog.slice(0, 6)" :key="entry">{{ entry }}</article>
+            </div>
+          </template>
+
+          <template v-if="activeSideSection === 'mocks'">
+            <div class="side-title"><span>Mock Server</span><button @click="addMockRoute">Route</button></div>
+            <p class="mock-status"><span :class="mockRoutes.length ? 'ok-dot' : 'warn-dot'"></span>{{ mockStatus || "Not synced" }}</p>
+            <div class="mock-actions">
+              <button @click="saveMockRoutes">Sync</button>
+              <button @click="refreshMockLogs">Logs</button>
+              <button @click="clearMockServerLogs">Clear</button>
+            </div>
+            <article v-for="(route, index) in mockRoutes" :key="route.id" class="mock-route compact-route">
+              <label class="check"><input v-model="route.enabled" type="checkbox" /> on</label>
+              <select v-model="route.method">
+                <option v-for="method in methods" :key="method" :value="method">{{ method }}</option>
+              </select>
+              <input v-model="route.pathPattern" placeholder="/users/:id" />
+              <input v-model.number="route.status" type="number" min="100" max="599" />
+              <button @click="removeAt(mockRoutes, index)">Remove</button>
+            </article>
+            <div class="mock-logs">
+              <article v-for="entry in mockLogs.slice(0, 12)" :key="entry.id">
+                <span :data-method="entry.method">{{ entry.method }}</span>
+                <strong>{{ entry.path }}</strong>
+                <small>{{ entry.status }}</small>
+              </article>
+              <p v-if="mockLogs.length === 0" class="history-empty">No mock traffic</p>
+            </div>
+          </template>
+        </section>
+      </div>
     </aside>
 
     <main class="workspace">
-      <header class="topbar">
-        <select :value="activeEnvironmentId" @change="setActiveEnvironment(($event.target as HTMLSelectElement).value || undefined)">
-          <option value="">No environment</option>
-          <option v-for="env in environments" :key="env.id" :value="env.id">{{ env.name }}</option>
-        </select>
-        <button data-testid="edit-env" @click="editEnvironment(activeEnvironment)">Edit env</button>
-        <button data-testid="new-env" @click="editEnvironment()">New env</button>
-        <button data-testid="open-command-palette" @click="openCommandPalette()">Command</button>
-        <button data-testid="open-help" @click="showHelp = true">?</button>
-        <button @click="theme = theme === 'dark' ? 'light' : 'dark'">{{ theme === "dark" ? "Light" : "Dark" }}</button>
-        <span class="status">{{ status }}</span>
-      </header>
-
-      <section class="request-line">
-        <select :value="activeProtocol" data-testid="protocol-select" @change="setProtocol(($event.target as HTMLSelectElement).value as RequestProtocol)">
-          <option v-for="protocol in protocols" :key="protocol" :value="protocol">{{ protocol.toUpperCase() }}</option>
-        </select>
-        <select v-if="activeProtocol === 'rest'" v-model="request.method" data-testid="method-select">
+      <header class="request-line">
+        <div class="protocol-tabs">
+          <select class="protocol-select-shadow" :value="activeProtocol" data-testid="protocol-select" @change="setProtocol(($event.target as HTMLSelectElement).value as RequestProtocol)">
+            <option v-for="protocol in protocols" :key="protocol" :value="protocol">{{ protocolLabel(protocol) }}</option>
+          </select>
+          <button v-for="protocol in protocols" :key="protocol" :class="{ active: activeProtocol === protocol }" @click="setProtocol(protocol)">
+            {{ protocolLabel(protocol) }}
+          </button>
+        </div>
+        <select v-if="activeProtocol === 'rest'" v-model="request.method" class="method-select" :class="methodClass(request.method)" data-testid="method-select">
           <option v-for="method in methods" :key="method" :value="method">{{ method }}</option>
         </select>
-        <input
-          v-if="activeProtocol === 'rest'"
-          v-model="request.url"
-          data-testid="url-input"
-          placeholder="https://api.example.com/users or paste cURL"
-          @blur="maybeParseCurl"
-        />
-        <input v-if="activeProtocol === 'graphql'" v-model="graphqlRequest.url" data-testid="graphql-url-input" placeholder="https://api.example.com/graphql" />
-        <input v-if="activeProtocol === 'websocket'" v-model="websocketRequest.url" data-testid="websocket-url-input" placeholder="wss://echo.websocket.events" />
-        <input v-if="activeProtocol === 'grpc'" v-model="grpcRequest.address" data-testid="grpc-address-input" placeholder="localhost:50051" />
+        <div class="url-shell">
+          <input
+            v-if="activeProtocol === 'rest'"
+            v-model="request.url"
+            data-testid="url-input"
+            placeholder="https://api.example.com/users or paste cURL"
+            @blur="maybeParseCurl"
+          />
+          <input v-if="activeProtocol === 'graphql'" v-model="graphqlRequest.url" data-testid="graphql-url-input" placeholder="https://api.example.com/graphql" />
+          <input v-if="activeProtocol === 'websocket'" v-model="websocketRequest.url" data-testid="websocket-url-input" placeholder="wss://echo.websocket.events" />
+          <input v-if="activeProtocol === 'grpc'" v-model="grpcRequest.address" data-testid="grpc-address-input" placeholder="localhost:50051" />
+          <div v-if="urlParts().some((part) => part.variable)" class="url-vars" aria-hidden="true">
+            <template v-for="(part, index) in urlParts()" :key="index">
+              <span :class="{ variable: part.variable }">{{ part.text }}</span>
+            </template>
+          </div>
+        </div>
         <label v-if="activeProtocol !== 'websocket' && activeProtocol !== 'grpc'" class="stream-toggle"><input v-model="streamMode" type="checkbox" /> Stream</label>
         <button class="send" data-testid="send-request" :disabled="loading || websocketState === 'connecting'" @click="send">
           {{ activeProtocol === "websocket" ? (websocketState === "connected" ? "Disconnect" : "Connect") : activeProtocol === "grpc" ? (loading ? "Invoking" : "Invoke") : loading ? "Sending" : "Send" }}
         </button>
         <button v-if="streaming" data-testid="stop-stream" @click="stopStream">Stop</button>
         <button data-testid="save-request" @click="openSave">Save</button>
+        <button class="kbd-button" data-testid="open-command-palette" title="Command palette" @click="openCommandPalette()">⌘K</button>
+        <button class="icon-button" title="Toggle theme" @click="theme = theme === 'dark' ? 'light' : 'dark'">{{ theme === "dark" ? "sun" : "moon" }}</button>
+        <button class="icon-button" data-testid="open-help" title="Help" @click="showHelp = true">?</button>
+        <button class="icon-button" title="Settings" @click="showSettings = true">gear</button>
+      </header>
+
+      <section class="request-meta">
+        <span class="status">{{ status }}</span>
+        <span>Environment: {{ activeEnvironment?.name ?? "No environment" }}</span>
+        <button data-testid="new-env" @click="editEnvironment()">New env</button>
+        <button data-testid="edit-env" :disabled="!activeEnvironment" @click="editEnvironment(activeEnvironment)">Edit env</button>
+        <span>Protocol: {{ protocolLabel(activeProtocol) }}</span>
+        <button :disabled="!diffResult" @click="showDiffModal = true">Compare response</button>
       </section>
 
       <section v-if="resolution.unresolved.length" class="warning">
@@ -2206,13 +2509,18 @@ function download(blob: Blob, filename: string) {
           </div>
         </div>
 
-        <div class="panel response">
+        <div class="panel response response-pane">
           <div class="response-head">
-            <strong :class="statusClass" data-testid="response-status">{{ response?.status ? `${response.status} ${response.statusText}` : "No response" }}</strong>
-            <span>{{ response?.timing?.totalMs ? `${Math.round(response.timing.totalMs)} ms` : "" }}</span>
-            <span>{{ response?.responseSize ? `${response.responseSize} bytes` : "" }}</span>
-            <span v-if="streaming" class="streaming-badge">streaming... {{ streamBytes }} bytes</span>
-            <span v-if="assertionSummary.total" :class="assertionSummary.failed ? 'bad' : 'ok'">{{ assertionSummary.passed }}/{{ assertionSummary.total }} assertions passed</span>
+            <div>
+              <strong :class="[statusClass, statusTone(response?.status)]" data-testid="response-status">{{ response?.status ? `${response.status} ${response.statusText}` : "No response" }}</strong>
+              <span>{{ response?.timing?.totalMs ? `${Math.round(response.timing.totalMs)} ms` : "" }}</span>
+              <span>{{ response?.responseSize ? `${response.responseSize} bytes` : "" }}</span>
+            </div>
+            <div>
+              <span v-if="streaming" class="streaming-badge">streaming... {{ streamBytes }} bytes</span>
+              <span v-if="assertionSummary.total" :class="assertionSummary.failed ? 'bad' : 'ok'">{{ assertionSummary.passed }}/{{ assertionSummary.total }} assertions passed</span>
+              <button :disabled="!diffResult" @click="showDiffModal = true">Compare</button>
+            </div>
           </div>
           <nav class="tabs">
             <button :class="{ active: responseTab === 'body' }" @click="responseTab = 'body'">Body</button>
@@ -2222,8 +2530,16 @@ function download(blob: Blob, filename: string) {
             <button :class="{ active: responseTab === 'assertions' }" @click="responseTab = 'assertions'">Assertions</button>
             <button :class="{ active: responseTab === 'code' }" @click="responseTab = 'code'">Code</button>
           </nav>
-          <!-- CodeMirror response rendering is deferred with the editor work above; Alpha keeps a plain pre. -->
-          <pre v-if="responseTab === 'body'" class="body-view" data-testid="response-body">{{ response?.error || responseBody }}</pre>
+          <div v-if="responseTab === 'body'" class="response-body-panel">
+            <div class="response-tools">
+              <div class="segmented-control">
+                <button :class="{ active: responsePretty }" @click="responsePretty = true">Pretty</button>
+                <button :class="{ active: !responsePretty }" @click="responsePretty = false">Raw</button>
+              </div>
+              <input v-model="responseSearch" placeholder="Search response" />
+            </div>
+            <pre class="body-view" data-testid="response-body">{{ response?.error || responseDisplayBody }}</pre>
+          </div>
           <table v-if="responseTab === 'headers'">
             <tbody><tr v-for="header in response?.headers ?? []" :key="header.key"><th>{{ header.key }}</th><td>{{ header.value }}</td></tr></tbody>
           </table>
@@ -2314,13 +2630,33 @@ function download(blob: Blob, filename: string) {
           <h2>Settings</h2>
           <button @click="showSettings = false">Close</button>
         </header>
-        <label>
-          Theme
-          <select v-model="theme">
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-          </select>
-        </label>
+        <div class="settings-grid">
+          <label>
+            Theme
+            <select v-model="theme">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </label>
+          <label v-if="activeProtocol === 'rest'">Default timeout<input v-model.number="request.timeoutMs" type="number" min="100" step="500" /></label>
+          <label v-if="activeProtocol === 'graphql'">Default timeout<input v-model.number="graphqlRequest.timeoutMs" type="number" min="100" step="500" /></label>
+          <label v-if="activeProtocol === 'websocket'">Default timeout<input v-model.number="websocketRequest.timeoutMs" type="number" min="1000" step="1000" /></label>
+          <label v-if="activeProtocol === 'grpc'">Default timeout<input v-model.number="grpcRequest.timeoutMs" type="number" min="1000" step="1000" /></label>
+          <label>Editor font size<input v-model.number="uiFontSize" type="number" min="11" max="18" /></label>
+          <label class="check"><input v-model="activeOptions.verifySsl" type="checkbox" /> Verify TLS certificates</label>
+        </div>
+        <section class="proxy-settings">
+          <header>
+            <h3>Proxy</h3>
+            <button @click="ensureProxySettings">Configure</button>
+          </header>
+          <div v-if="activeOptions.proxy" class="settings-grid">
+            <label>Type<select v-model="activeOptions.proxy.type"><option value="http">HTTP</option><option value="socks5">SOCKS5</option></select></label>
+            <label>URL<input v-model="activeOptions.proxy.url" placeholder="http://127.0.0.1:8080" /></label>
+            <label>Username<input v-model="activeOptions.proxy.username" /></label>
+            <label>Password<input v-model="activeOptions.proxy.password" type="password" /></label>
+          </div>
+        </section>
         <dl class="settings-stats">
           <div><dt>Collections</dt><dd>{{ collections.length }}</dd></div>
           <div><dt>Requests</dt><dd>{{ requests.length }}</dd></div>
@@ -2464,6 +2800,7 @@ function download(blob: Blob, filename: string) {
         <button data-testid="context-new-request" @click="newRequestIn(contextMenu.target.collection.id)">New request</button>
         <button data-testid="context-edit-vars" @click="editCollectionVariables(contextMenu.target.collection)">Variables</button>
         <button @click="renameCollection(contextMenu.target.collection)">Rename</button>
+        <button @click="duplicateCollection(contextMenu.target.collection)">Duplicate</button>
         <button @click="exportCollection(contextMenu.target.collection)">Export</button>
         <button @click="deleteCollection(contextMenu.target.collection)">Delete</button>
       </template>
@@ -2472,6 +2809,8 @@ function download(blob: Blob, filename: string) {
         <button data-testid="context-new-request" @click="newRequestIn(contextMenu.target.folder.collectionId, contextMenu.target.folder.id)">New request</button>
         <button data-testid="context-edit-vars" @click="editFolderVariables(contextMenu.target.folder)">Variables</button>
         <button @click="renameFolder(contextMenu.target.folder)">Rename</button>
+        <button @click="duplicateFolder(contextMenu.target.folder)">Duplicate</button>
+        <button :disabled="!contextMenu.target.folder.parentFolderId" @click="moveFolderToParent(contextMenu.target.folder)">Move up one folder</button>
         <button @click="deleteFolder(contextMenu.target.folder)">Delete</button>
       </template>
       <template v-if="contextMenu.target.type === 'request'">
@@ -2521,7 +2860,11 @@ function download(blob: Blob, filename: string) {
         <button @click="removeAt(envDraft!.variables, index)">Remove</button>
       </div>
       <button data-testid="add-env-var" @click="addKeyValue(envDraft!.variables)">Add variable</button>
-      <footer><button @click="showEnvPanel = false">Cancel</button><button data-testid="save-env" @click="saveEnvironment">Save</button></footer>
+      <footer>
+        <button v-if="envDraft?.id" @click="deleteEnvironmentDraft">Delete</button>
+        <button @click="showEnvPanel = false">Cancel</button>
+        <button data-testid="save-env" @click="saveEnvironment">Save</button>
+      </footer>
     </aside>
   </div>
 </template>
