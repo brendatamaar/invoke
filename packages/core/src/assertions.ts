@@ -1,18 +1,11 @@
 import Ajv, { type ErrorObject } from "ajv";
 import { JSONPath } from "jsonpath-plus";
-import type { Assertion, AssertionMatcher, AssertionResult, ExecuteResponse, KeyValue } from "./types";
+import type { Assertion, AssertionEvaluation, AssertionMatcher, AssertionResult, ExecuteResponse, KeyValue } from "./types";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 
 export function runAssertions(response: ExecuteResponse, assertions: Assertion[] = []): AssertionResult[] {
   return assertions.filter((assertion) => assertion.enabled !== false).map((assertion) => runAssertion(response, assertion));
-}
-
-interface AssertionEvaluation {
-  actual: unknown;
-  expected: unknown;
-  schemaPassed?: boolean;
-  details?: ErrorObject[];
 }
 
 function runAssertion(response: ExecuteResponse, assertion: Assertion): AssertionResult {

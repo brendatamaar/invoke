@@ -1,29 +1,4 @@
-import type { KeyValue, RequestConfig } from "./types";
-
-export type CodeExportTarget =
-  | "curl"
-  | "fetch"
-  | "python-requests"
-  | "node-axios"
-  | "node-fetch"
-  | "python-httpx"
-  | "go-net-http"
-  | "java-okhttp"
-  | "kotlin-okhttp"
-  | "ruby-net-http"
-  | "php-guzzle"
-  | "csharp-httpclient"
-  | "rust-reqwest"
-  | "powershell"
-  | "httpie";
-
-export interface CodeSnippet {
-  target: CodeExportTarget;
-  label: string;
-  language: "shell" | "javascript" | "python";
-  filename: string;
-  code: string;
-}
+import type { CodeExportTarget, CodeSnippet, KeyValue, RequestConfig } from "./types";
 
 export const CODE_EXPORT_TARGETS: Array<Omit<CodeSnippet, "code">> = [
   { target: "curl", label: "cURL", language: "shell", filename: "request.sh" },

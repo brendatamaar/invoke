@@ -10,52 +10,17 @@ import type {
   Environment,
   Folder,
   GraphQLRequestConfig,
+  FlatRequestDocument,
+  FolderDocument,
   HttpMethod,
   KeyValue,
   RequestConfig,
-  SavedRequest
+  SavedRequest,
+  YamlBodyType
 } from "./types";
 
 const INVOKE_YAML_VERSION = "1.0";
 const EXTERNAL_REF_ERROR = "external $ref not supported in browser context";
-
-type FlatRequestDocument = {
-  invoke_version: string;
-  type: "request";
-  id?: string;
-  name: string;
-  protocol: "rest" | "graphql";
-  folderId?: string | null;
-  method?: HttpMethod;
-  url: string;
-  params?: Record<string, string>;
-  headers?: Record<string, string>;
-  auth?: AuthConfig;
-  body?: {
-    type: "none" | "json" | "text" | "form-data" | "form-urlencoded";
-    content?: string;
-  };
-  graphql?: {
-    query: string;
-    variables?: string;
-    operationName?: string;
-  };
-  variables?: Record<string, string>;
-  timeoutMs?: number;
-};
-
-type FolderDocument = {
-  invoke_version: string;
-  type: "folder";
-  id: string;
-  name: string;
-  parentFolderId?: string | null;
-  description?: string;
-  variables?: Record<string, string>;
-  sortOrder?: number;
-};
-
-type YamlBodyType = NonNullable<FlatRequestDocument["body"]>["type"];
 
 export function parseCurl(command: string): Partial<RequestConfig> {
   const tokens = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map(stripQuotes) ?? [];

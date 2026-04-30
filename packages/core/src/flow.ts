@@ -1,6 +1,6 @@
 import { JSONPath } from "jsonpath-plus";
 import { runAssertions } from "./assertions";
-import { extractVariables, resolveRequest, type VariableScope } from "./variables";
+import { extractVariables, resolveRequest } from "./variables";
 import type {
   AssertionMatcher,
   ExecuteResponse,
@@ -10,22 +10,8 @@ import type {
   FlowStatus,
   FlowStep,
   FlowStepResult,
-  RequestConfig
+  FlowRunnerOptions
 } from "./types";
-
-export interface FlowRunnerOptions {
-  execute: (request: RequestConfig) => Promise<ExecuteResponse>;
-  scopes?: VariableScope[];
-  hooks?: FlowHooks;
-}
-
-export interface FlowHooks {
-  onStepStart?: (step: FlowStep) => void | Promise<void>;
-  onStepComplete?: (result: FlowStepResult) => void | Promise<void>;
-  onVariableExtracted?: (name: string, value: string, step: FlowStep) => void | Promise<void>;
-  onError?: (error: Error, step: FlowStep) => void | Promise<void>;
-  onFlowComplete?: (result: FlowResult) => void | Promise<void>;
-}
 
 export class FlowRunner {
   private cancelled = false;
