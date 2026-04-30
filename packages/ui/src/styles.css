@@ -367,21 +367,165 @@ small {
   gap: 10px;
 }
 
+.websocket-editor,
+.grpc-editor,
+.script-editor,
+.mock-manager {
+  display: grid;
+  gap: 10px;
+}
+
+.flow-manager {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
 .graphql-editor label,
-.graphql-toolbar {
+.graphql-toolbar,
+.websocket-toolbar,
+.grpc-toolbar,
+.grpc-editor label,
+.script-editor label {
   display: grid;
   gap: 6px;
   color: var(--muted);
 }
 
-.graphql-toolbar {
+.graphql-toolbar,
+.websocket-toolbar,
+.grpc-toolbar {
   grid-template-columns: minmax(180px, 1fr) auto minmax(140px, 1fr);
   align-items: end;
+}
+
+.websocket-compose,
+.mock-manager header,
+.mock-logs header,
+.flow-manager header,
+.flow-actions,
+.flow-result {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.websocket-log,
+.mock-logs {
+  display: grid;
+  gap: 6px;
+}
+
+.websocket-log article,
+.mock-logs article,
+.mock-route {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.websocket-log article {
+  grid-template-columns: 72px 64px minmax(0, 1fr);
+}
+
+.websocket-log pre {
+  grid-column: 1 / -1;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ws-sent {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line)) !important;
+}
+
+.ws-received {
+  border-color: color-mix(in srgb, var(--ok) 45%, var(--line)) !important;
+}
+
+.mock-route {
+  grid-template-columns: auto 100px minmax(160px, 1fr) 90px 120px auto;
+}
+
+.mock-route textarea {
+  grid-column: 1 / -1;
+  min-height: 120px;
+}
+
+.mock-logs article {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.flow-layout {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) 180px;
+  gap: 10px;
+}
+
+.flow-list,
+.flow-builder,
+.flow-palette,
+.flow-log {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.flow-list button,
+.flow-palette button,
+.flow-step {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  text-align: left;
+}
+
+.flow-list button.active {
+  border-color: var(--accent);
+}
+
+.flow-step header,
+.flow-request-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.flow-step header {
+  justify-content: space-between;
+}
+
+.flow-request-line input {
+  min-width: 0;
+  flex: 1;
+}
+
+.flow-log article {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
 }
 
 .graphql-workbench {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 10px;
+}
+
+.grpc-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 10px;
 }
 
@@ -395,6 +539,28 @@ small {
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--panel-2);
+}
+
+.grpc-methods {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  max-height: 460px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.grpc-methods button {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.grpc-methods small {
+  overflow-wrap: anywhere;
 }
 
 .schema-explorer section {
@@ -452,6 +618,21 @@ small {
 .drawer label {
   display: grid;
   gap: 6px;
+}
+
+.tls-client-settings {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.tls-client-settings textarea {
+  min-height: 110px;
+  font-family: var(--mono);
+  font-size: 12px;
 }
 
 .response-head {
@@ -904,6 +1085,12 @@ small {
   gap: 14px;
 }
 
+.settings-modal {
+  width: min(900px, calc(100vw - 32px));
+  max-height: 86vh;
+  overflow: auto;
+}
+
 .help-modal header,
 .settings-modal header,
 .diff-modal header {
@@ -1060,7 +1247,12 @@ small {
   }
 
   .graphql-toolbar,
+  .websocket-toolbar,
+  .grpc-toolbar,
+  .mock-route,
   .graphql-workbench,
+  .grpc-workbench,
+  .flow-layout,
   .diff-panes {
     grid-template-columns: 1fr;
   }

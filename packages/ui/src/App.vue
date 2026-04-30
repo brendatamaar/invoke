@@ -2,11 +2,14 @@
 import {
   CODE_EXPORT_TARGETS,
   compareResponses,
+  emptyGrpcRequest,
   emptyGraphQLRequest,
+  emptyWebSocketRequest,
   emptyRequest,
   exportCollectionZip,
   extractVariables,
   formatGraphQLTypeRef,
+  FlowRunner,
   generateCodeSnippet,
   graphQLFieldSnippet,
   GRAPHQL_INTROSPECTION_QUERY,
@@ -23,10 +26,17 @@ import {
   publicGraphQLTypes,
   normalizeExtractionRules,
   resolveGraphQLRequest,
+  resolveGrpcRequest,
   resolveRequest,
+  resolveWebSocketRequest,
   rootGraphQLTypes,
+  runPostResponseScript,
+  runPreRequestScript,
   runAssertions,
   searchHistory,
+  signAwsSigV4Request,
+  toRequestConfig,
+  variablesFromScopes,
   type Assertion,
   type AssertionResult,
   type AuthConfig,
@@ -38,6 +48,10 @@ import {
   type ExecuteResponse,
   type ExtractionRule,
   type Folder,
+  type Flow,
+  type FlowResult,
+  type GrpcMethodInfo,
+  type GrpcRequestConfig,
   type GraphQLRequestConfig,
   type GraphQLIntrospectionField,
   type GraphQLIntrospectionSchema,
@@ -45,15 +59,32 @@ import {
   type HistoryEntry,
   type HttpMethod,
   type KeyValue,
+  type MockLogEntry,
+  type MockRoute,
   type ProtocolRequestConfig,
   type RequestConfig,
   type RequestDraft,
   type RequestProtocol,
-  type SavedRequest
+  type SavedRequest,
+  type WebSocketRequestConfig
 } from "@invoke/core";
 import Fuse from "fuse.js";
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
-import { execute, executeStream, ping } from "./lib/api";
+import {
+  clearMockLogs,
+  execute,
+  executeStream,
+  grpcExecute,
+  grpcReflect,
+  loadMockRoutes,
+  oauth2ClientCredentials,
+  ping,
+  syncMockRoutes,
+  webSocketClose,
+  webSocketConnect,
+  webSocketPoll,
+  webSocketSend
+} from "./lib/api";
 import FolderTreeNode from "./components/FolderTreeNode.vue";
 import GraphQLEditor from "./components/GraphQLEditor.vue";
 import KeyValueEditor from "./components/KeyValueEditor.vue";
@@ -83,19 +114,29 @@ interface PaletteItem {
   run: () => void | Promise<void>;
 }
 
+interface WebSocketLogItem {
+  id: string;
+  direction: "sent" | "received" | "system";
+  type: string;
+  body: string;
+  createdAt: number;
+}
+
 const store = new InvokeStore();
 const CodeViewer = defineAsyncComponent(() => import("./components/CodeViewer.vue"));
 
 const methods: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 const bodyModes: BodyMode[] = ["none", "json", "form-data", "urlencoded", "raw"];
-const authTypes: AuthConfig["type"][] = ["none", "basic", "bearer", "api-key"];
-const protocols: RequestProtocol[] = ["rest", "graphql"];
+const authTypes: AuthConfig["type"][] = ["none", "basic", "bearer", "api-key", "oauth2", "digest", "aws-sigv4"];
+const protocols: RequestProtocol[] = ["rest", "graphql", "websocket", "grpc"];
 const assertionTypes: Assertion["type"][] = ["status", "responseTime", "header", "bodyJsonPath", "bodySchema", "regex"];
 const assertionMatchers: Assertion["matcher"][] = ["equals", "notEquals", "exists", "gt", "lt", "contains", "matches"];
 const extractionSources: NonNullable<ExtractionRule["source"]>[] = ["body", "header", "status"];
 
 const request = ref<RequestDraft>(emptyRequest());
 const graphqlRequest = ref<GraphQLRequestConfig>(emptyGraphQLRequest());
+const websocketRequest = ref<WebSocketRequestConfig>(emptyWebSocketRequest());
+const grpcRequest = ref<GrpcRequestConfig>(emptyGrpcRequest());
 const collections = ref<Collection[]>([]);
 const folders = ref<Folder[]>([]);
 const requests = ref<SavedRequest[]>([]);
@@ -105,7 +146,7 @@ const history = ref<HistoryEntry[]>([]);
 const response = ref<ExecuteResponse | undefined>();
 const assertionRules = ref<Assertion[]>([]);
 const assertionResults = ref<AssertionResult[]>([]);
-const selectedTab = ref<"params" | "headers" | "auth" | "body" | "graphql" | "graphqlVariables" | "assertions" | "extract">("params");
+const selectedTab = ref<"params" | "headers" | "auth" | "body" | "graphql" | "graphqlVariables" | "websocket" | "grpc" | "assertions" | "extract" | "scripts">("params");
 const responseTab = ref<"body" | "headers" | "timing" | "tls" | "assertions" | "code">("body");
 const loading = ref(false);
 const streaming = ref(false);
@@ -137,6 +178,20 @@ const saveDialog = reactive({ open: false, name: "", collectionId: "", folderId:
 const extractRules = ref<ExtractionRule[]>([]);
 const sessionVariables = ref<Record<string, string>>({});
 const showExtractTab = true;
+const scriptLogs = ref<string[]>([]);
+const websocketState = ref<"disconnected" | "connecting" | "connected">("disconnected");
+const websocketLog = ref<WebSocketLogItem[]>([]);
+const websocketConnectionId = ref("");
+const grpcMethods = ref<GrpcMethodInfo[]>([]);
+const grpcStatus = ref("");
+const mockRoutes = ref<MockRoute[]>([]);
+const mockLogs = ref<MockLogEntry[]>([]);
+const mockStatus = ref("");
+const flows = ref<Flow[]>([]);
+const flowDraft = ref<Flow>(emptyFlow());
+const flowResult = ref<FlowResult | undefined>();
+const flowRunning = ref(false);
+const flowLog = ref<string[]>([]);
 const diffLeftId = ref("");
 const diffRightId = ref("");
 const diffResult = ref<DiffResult | undefined>();
@@ -152,7 +207,9 @@ const contextMenu = reactive<{ open: boolean; x: number; y: number; target?: Con
   y: 0
 });
 let historySearchTimer: ReturnType<typeof setTimeout> | undefined;
+let websocketPollTimer: ReturnType<typeof setInterval> | undefined;
 let codeGenerationRun = 0;
+const oauth2TokenCache = new Map<string, { token: string; expiresAt: number }>();
 const variableEditor = reactive<{
   open: boolean;
   kind?: "collection" | "folder";
@@ -165,6 +222,24 @@ const variableEditor = reactive<{
   variables: []
 });
 
+function activeProtocolTarget(): { options?: RequestConfig["options"] } {
+  if (activeProtocol.value === "graphql") return graphqlRequest.value;
+  if (activeProtocol.value === "websocket") return websocketRequest.value;
+  if (activeProtocol.value === "grpc") return grpcRequest.value;
+  return request.value;
+}
+
+function ensureRequestOptions(target: { options?: RequestConfig["options"] }): NonNullable<RequestConfig["options"]> {
+  target.options = {
+    followRedirects: target.options?.followRedirects ?? true,
+    maxRedirects: target.options?.maxRedirects ?? 10,
+    verifySsl: target.options?.verifySsl ?? true,
+    proxy: target.options?.proxy,
+    tlsClientConfig: { ...(target.options?.tlsClientConfig ?? {}) }
+  };
+  return target.options;
+}
+
 const activeEnvironment = computed(() => environments.value.find((env) => env.id === activeEnvironmentId.value));
 const groupedRequests = computed(() =>
   collections.value.map((collection) => ({
@@ -176,16 +251,35 @@ const groupedRequests = computed(() =>
 const activeCollection = computed(() => collections.value.find((collection) => collection.id === request.value.collectionId));
 const activeFolderChain = computed(() => folderChain(request.value.folderId));
 const activeProtocol = computed(() => request.value.protocol ?? "rest");
+const activeOptions = computed(() => ensureRequestOptions(activeProtocolTarget()));
+const activeAuthTypes = computed(() =>
+  activeProtocol.value === "websocket" ? authTypes.filter((type) => type !== "digest" && type !== "aws-sigv4") : authTypes
+);
 const resolutionScopes = computed(() => [
   { name: "environment", variables: activeEnvironment.value?.variables ?? [] },
   { name: "collection", variables: activeCollection.value?.variables ?? [] },
   ...activeFolderChain.value.map((folder) => ({ name: `folder:${folder.name}`, variables: folder.variables ?? [] })),
-  { name: "request", variables: request.value.variables ?? [] },
+  {
+    name: "request",
+    variables:
+      activeProtocol.value === "websocket"
+        ? websocketRequest.value.variables ?? []
+        : activeProtocol.value === "grpc"
+          ? grpcRequest.value.variables ?? []
+          : request.value.variables ?? []
+  },
   { name: "session", variables: sessionVariables.value }
 ]);
 const restResolution = computed(() => resolveRequest(request.value, resolutionScopes.value));
 const graphqlResolution = computed(() => resolveGraphQLRequest(graphqlRequest.value, resolutionScopes.value));
-const resolution = computed(() => (activeProtocol.value === "graphql" ? graphqlResolution.value : restResolution.value));
+const websocketResolution = computed(() => resolveWebSocketRequest(websocketRequest.value, resolutionScopes.value));
+const grpcResolution = computed(() => resolveGrpcRequest(grpcRequest.value, resolutionScopes.value));
+const resolution = computed(() => {
+  if (activeProtocol.value === "graphql") return graphqlResolution.value;
+  if (activeProtocol.value === "websocket") return websocketResolution.value;
+  if (activeProtocol.value === "grpc") return grpcResolution.value;
+  return restResolution.value;
+});
 const folderOptions = computed(() => folders.value.filter((folder) => folder.collectionId === saveDialog.collectionId).sort(sortByOrder));
 const statusClass = computed(() => {
   const code = response.value?.status ?? 0;
@@ -206,9 +300,15 @@ const assertionSummary = computed(() => {
 });
 const graphqlRootTypes = computed(() => rootGraphQLTypes(graphqlSchema.value));
 const graphqlPublicTypes = computed(() => publicGraphQLTypes(graphqlSchema.value));
-const codeExportRequest = computed(() => {
+const codeExportRequest = computed<RequestConfig>(() => {
   if (activeProtocol.value === "graphql") {
     return resolveRequest(graphQLToRequestConfig(graphqlResolution.value.request as GraphQLRequestConfig)).request;
+  }
+  if (activeProtocol.value === "websocket") {
+    return { ...emptyRequest(), method: "GET" as HttpMethod, url: websocketResolution.value.request.url, headers: websocketResolution.value.request.headers };
+  }
+  if (activeProtocol.value === "grpc") {
+    return { ...emptyRequest(), method: "POST" as HttpMethod, url: grpcResolution.value.request.address, bodyMode: "json", body: grpcResolution.value.request.body };
   }
   return restResolution.value.request;
 });
@@ -282,6 +382,7 @@ watch(
 onMounted(async () => {
   document.documentElement.dataset.theme = theme.value;
   await refreshAll();
+  await refreshMockRoutes();
   await loadCachedGraphQLSchema();
   try {
     const pong = await pingWithRetry();
@@ -297,6 +398,8 @@ onUnmounted(() => {
   window.removeEventListener("keydown", handleShortcut);
   window.removeEventListener("click", closeContextMenu);
   if (historySearchTimer) clearTimeout(historySearchTimer);
+  if (websocketPollTimer) clearInterval(websocketPollTimer);
+  if (websocketConnectionId.value) void webSocketClose(websocketConnectionId.value);
 });
 
 async function pingWithRetry() {
@@ -320,6 +423,8 @@ async function refreshAll() {
   activeEnvironmentId.value = await store.getActiveEnvironmentId();
   expandedFolderIds.value = (await store.getMeta<string[]>("expandedFolders")) ?? [];
   history.value = await store.listHistory(10000);
+  flows.value = await store.listFlows();
+  if (flowDraft.value.id && !flows.value.some((flow) => flow.id === flowDraft.value.id)) flowDraft.value = emptyFlow();
   if (collections.value.length === 0) {
     const collection = await store.createCollection("Scratch");
     collections.value = [collection];
@@ -547,12 +652,13 @@ function folderPaletteItem(folder: Folder): PaletteItem {
 function requestPaletteItem(saved: SavedRequest): PaletteItem {
   const collection = collections.value.find((item) => item.id === saved.collectionId);
   const chain = folderChain(saved.folderId);
+  const url = requestUrl(saved.request);
   return {
     id: `request:${saved.id}`,
     kind: "request",
     title: saved.name,
-    subtitle: [collection?.name, ...chain.map((item) => item.name), saved.request.url].filter(Boolean).join(" / "),
-    keywords: `${saved.name} ${saved.request.url} ${savedMethod(saved)} ${collection?.name ?? ""} ${chain.map((item) => item.name).join(" ")}`,
+    subtitle: [collection?.name, ...chain.map((item) => item.name), url].filter(Boolean).join(" / "),
+    keywords: `${saved.name} ${url} ${savedMethod(saved)} ${collection?.name ?? ""} ${chain.map((item) => item.name).join(" ")}`,
     method: savedMethod(saved),
     run: () => loadRequest(saved)
   };
@@ -584,6 +690,7 @@ function historyPaletteItem(entry: HistoryEntry): PaletteItem {
 function currentRestRequest(): RequestDraft {
   return {
     ...request.value,
+    scripts: request.value.scripts ?? { preRequest: "", postResponse: "" },
     assertions: clone(assertionRules.value),
     extractionRules: clone(extractRules.value)
   };
@@ -592,23 +699,80 @@ function currentRestRequest(): RequestDraft {
 function currentGraphQLRequest(): GraphQLRequestConfig {
   return {
     ...graphqlRequest.value,
+    scripts: graphqlRequest.value.scripts ?? { preRequest: "", postResponse: "" },
     assertions: clone(assertionRules.value),
     extractionRules: clone(extractRules.value)
   };
 }
 
+function currentWebSocketRequest(): WebSocketRequestConfig {
+  return {
+    ...websocketRequest.value,
+    scripts: websocketRequest.value.scripts ?? { preRequest: "", postResponse: "" }
+  };
+}
+
+function currentGrpcRequest(): GrpcRequestConfig {
+  return {
+    ...grpcRequest.value,
+    scripts: grpcRequest.value.scripts ?? { preRequest: "", postResponse: "" }
+  };
+}
+
+async function withOAuth2Token<T extends ProtocolRequestConfig>(source: T): Promise<T> {
+  const auth = (source as { auth?: AuthConfig }).auth;
+  if (auth?.type !== "oauth2") return source;
+  if (!auth.tokenUrl || !auth.clientId) return source;
+
+  const cacheKey = JSON.stringify({ tokenUrl: auth.tokenUrl, clientId: auth.clientId, scope: auth.scope ?? "" });
+  const cached = oauth2TokenCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now() + 30000) {
+    return { ...source, auth: { ...auth, token: cached.token } } as T;
+  }
+
+  const token = await oauth2ClientCredentials(auth);
+  if (token.error || !token.accessToken) throw new Error(token.error || "OAuth2 token response did not include access_token");
+  oauth2TokenCache.set(cacheKey, {
+    token: token.accessToken,
+    expiresAt: Date.now() + Math.max((token.expiresIn ?? 3600) - 30, 30) * 1000
+  });
+  return { ...source, auth: { ...auth, token: token.accessToken } } as T;
+}
+
+async function withAwsSigV4(requestConfig: RequestConfig): Promise<RequestConfig> {
+  return signAwsSigV4Request(requestConfig);
+}
+
 async function send() {
+  if (activeProtocol.value === "websocket") {
+    await connectWebSocket();
+    return;
+  }
+  if (activeProtocol.value === "grpc") {
+    await sendGrpc();
+    return;
+  }
   loading.value = true;
   streamBytes.value = 0;
   assertionResults.value = [];
   response.value = undefined;
-  const source = activeProtocol.value === "graphql" ? currentGraphQLRequest() : currentRestRequest();
-  const resolved =
-    activeProtocol.value === "graphql"
-      ? resolveGraphQLRequest(source as GraphQLRequestConfig, resolutionScopes.value)
-      : resolveRequest(source as RequestConfig, resolutionScopes.value);
-  const executable = activeProtocol.value === "graphql" ? graphQLToRequestConfig(resolved.request as GraphQLRequestConfig) : (resolved.request as RequestConfig);
   try {
+    const initialSource = activeProtocol.value === "graphql" ? currentGraphQLRequest() : currentRestRequest();
+    const variables = variablesFromScopes(resolutionScopes.value);
+    const scriptResult = await runPreRequestScript(initialSource, variables, initialSource.scripts?.preRequest ?? "");
+    scriptLogs.value = scriptResult.logs;
+    sessionVariables.value = { ...sessionVariables.value, ...changedVariables(variables, scriptResult.variables) };
+    if (scriptResult.skipped) {
+      status.value = scriptResult.skipReason || "Skipped by script";
+      return;
+    }
+    const source = await withOAuth2Token(scriptResult.request);
+    const resolved =
+      activeProtocol.value === "graphql"
+        ? resolveGraphQLRequest(source as GraphQLRequestConfig, resolutionScopes.value)
+        : resolveRequest(source as RequestConfig, resolutionScopes.value);
+    let executable = activeProtocol.value === "graphql" ? graphQLToRequestConfig(resolved.request as GraphQLRequestConfig) : (resolved.request as RequestConfig);
+    executable = await withAwsSigV4(executable);
     if (resolved.unresolved.length > 0) {
       status.value = `Unresolved: ${resolved.unresolved.join(", ")}`;
     }
@@ -654,11 +818,57 @@ async function sendStreaming(executable: RequestConfig, source: ProtocolRequestC
   });
 }
 
+async function sendGrpc() {
+  loading.value = true;
+  assertionResults.value = [];
+  response.value = undefined;
+  try {
+    const initialSource = currentGrpcRequest();
+    const variables = variablesFromScopes(resolutionScopes.value);
+    const scriptResult = await runPreRequestScript(initialSource, variables, initialSource.scripts?.preRequest ?? "");
+    scriptLogs.value = scriptResult.logs;
+    sessionVariables.value = { ...sessionVariables.value, ...changedVariables(variables, scriptResult.variables) };
+    if (scriptResult.skipped) {
+      status.value = scriptResult.skipReason || "Skipped by script";
+      return;
+    }
+    const source = scriptResult.request as GrpcRequestConfig;
+    const resolved = resolveGrpcRequest(source, resolutionScopes.value);
+    if (resolved.unresolved.length > 0) status.value = `Unresolved: ${resolved.unresolved.join(", ")}`;
+    const result = await grpcExecute(resolved.request);
+    const body = result.bodyJson || "";
+    await finishResponse(
+      {
+        status: result.statusCode,
+        statusText: result.statusMessage || (result.error ? "gRPC error" : "OK"),
+        headers: [...(result.metadata ?? []), ...(result.trailers ?? []).map((header) => ({ ...header, key: `trailer-${header.key}` }))],
+        body,
+        timing: { dnsMs: 0, tcpMs: 0, tlsMs: 0, ttfbMs: 0, transferMs: 0, totalMs: result.durationMs ?? 0 },
+        requestSize: resolved.request.body.length,
+        responseSize: body.length,
+        error: result.error
+      },
+      source
+    );
+  } catch (error) {
+    status.value = String(error);
+  } finally {
+    loading.value = false;
+  }
+}
+
 async function finishResponse(result: ExecuteResponse, source: ProtocolRequestConfig) {
   response.value = result;
   assertionResults.value = runAssertions(result, assertionRules.value);
   const extracted = extractVariables(result, extractRules.value);
   sessionVariables.value = { ...sessionVariables.value, ...extracted };
+  const postScript = (source as RequestConfig | GraphQLRequestConfig).scripts?.postResponse ?? "";
+  if (postScript.trim()) {
+    const variables = variablesFromScopes([...resolutionScopes.value, { name: "session", variables: sessionVariables.value }]);
+    const scriptResult = await runPostResponseScript(source, result, variables, postScript);
+    scriptLogs.value = [...scriptLogs.value, ...scriptResult.logs];
+    sessionVariables.value = { ...sessionVariables.value, ...changedVariables(variables, scriptResult.variables) };
+  }
   await store.addHistory({
     request: source,
     response: result,
@@ -675,6 +885,33 @@ async function finishResponse(result: ExecuteResponse, source: ProtocolRequestCo
   status.value = result.error ? result.error : `Completed in ${Math.round(result.timing?.totalMs ?? 0)} ms${assertionLabel}`;
 }
 
+async function reflectGrpcMethods() {
+  grpcStatus.value = "Reflecting...";
+  try {
+    const resolved = resolveGrpcRequest(currentGrpcRequest(), resolutionScopes.value);
+    if (resolved.unresolved.length) grpcStatus.value = `Unresolved: ${resolved.unresolved.join(", ")}`;
+    const result = await grpcReflect(resolved.request);
+    if (result.error) {
+      grpcStatus.value = result.error;
+      return;
+    }
+    grpcMethods.value = result.methods ?? [];
+    grpcStatus.value = `${grpcMethods.value.length} methods`;
+  } catch (error) {
+    grpcStatus.value = error instanceof Error ? error.message : String(error);
+  }
+}
+
+function selectGrpcMethod(method: GrpcMethodInfo) {
+  grpcRequest.value = {
+    ...grpcRequest.value,
+    service: method.service,
+    method: method.method,
+    body: method.inputJson || grpcRequest.value.body || "{}"
+  };
+  grpcStatus.value = `${method.fullMethod} selected`;
+}
+
 function stopStream() {
   streamController.value?.abort();
   streaming.value = false;
@@ -682,13 +919,132 @@ function stopStream() {
   status.value = "Stream stopped";
 }
 
+async function connectWebSocket() {
+  if (websocketState.value === "connected") {
+    await disconnectWebSocket();
+    return;
+  }
+  try {
+    const initial = currentWebSocketRequest();
+    const variables = variablesFromScopes(resolutionScopes.value);
+    const scriptResult = await runPreRequestScript(initial, variables, initial.scripts?.preRequest ?? "");
+    scriptLogs.value = scriptResult.logs;
+    sessionVariables.value = { ...sessionVariables.value, ...changedVariables(variables, scriptResult.variables) };
+    if (scriptResult.skipped) {
+      status.value = scriptResult.skipReason || "Skipped by script";
+      return;
+    }
+    const source = await withOAuth2Token(scriptResult.request as WebSocketRequestConfig);
+    const resolved = resolveWebSocketRequest(source, resolutionScopes.value);
+    if (resolved.unresolved.length) status.value = `Unresolved: ${resolved.unresolved.join(", ")}`;
+    if (websocketConnectionId.value) await disconnectWebSocket();
+    websocketState.value = "connecting";
+    websocketLog.value = [];
+    appendWebSocketLog("system", "open", `Connecting to ${resolved.request.url}`);
+    const connection = await webSocketConnect(resolved.request);
+    if (connection.error) throw new Error(connection.error);
+    websocketConnectionId.value = connection.connectionId;
+    websocketState.value = "connected";
+    status.value = "WebSocket connected";
+    appendWebSocketLog("system", "open", "Connected");
+    startWebSocketPolling();
+  } catch (error) {
+    websocketState.value = "disconnected";
+    status.value = error instanceof Error ? error.message : String(error);
+  }
+}
+
+async function disconnectWebSocket() {
+  if (websocketPollTimer) {
+    clearInterval(websocketPollTimer);
+    websocketPollTimer = undefined;
+  }
+  const connectionId = websocketConnectionId.value;
+  websocketConnectionId.value = "";
+  websocketState.value = "disconnected";
+  if (connectionId) {
+    const result = await webSocketClose(connectionId);
+    if (result.error) status.value = result.error;
+  }
+  appendWebSocketLog("system", "close", "Closed");
+}
+
+async function sendWebSocketMessage() {
+  const connectionId = websocketConnectionId.value;
+  if (!connectionId || websocketState.value !== "connected") {
+    status.value = "WebSocket is not connected";
+    return;
+  }
+  const resolved = resolveWebSocketRequest(currentWebSocketRequest(), resolutionScopes.value);
+  let payload = resolved.request.message;
+  try {
+    if (resolved.request.messageMode === "json") {
+      payload = JSON.stringify(JSON.parse(payload));
+    }
+  } catch (error) {
+    status.value = `Invalid JSON message: ${error instanceof Error ? error.message : String(error)}`;
+    return;
+  }
+  const result = await webSocketSend(connectionId, payload, false);
+  if (result.error) {
+    status.value = result.error;
+    appendWebSocketLog("system", "error", result.error);
+  }
+}
+
+function appendWebSocketLog(direction: WebSocketLogItem["direction"], type: string, body: string) {
+  websocketLog.value = [...websocketLog.value, { id: crypto.randomUUID(), direction, type, body, createdAt: Date.now() }].slice(-500);
+}
+
+function startWebSocketPolling() {
+  if (websocketPollTimer) clearInterval(websocketPollTimer);
+  websocketPollTimer = setInterval(() => {
+    void pollWebSocketMessages();
+  }, 800);
+  void pollWebSocketMessages();
+}
+
+async function pollWebSocketMessages() {
+  const connectionId = websocketConnectionId.value;
+  if (!connectionId) return;
+  try {
+    const result = await webSocketPoll(connectionId);
+    if (result.error) {
+      appendWebSocketLog("system", "error", result.error);
+      status.value = result.error;
+      await disconnectWebSocket();
+      return;
+    }
+    for (const message of result.messages ?? []) {
+      appendWebSocketLog(webSocketDirection(message.direction), message.type, message.body);
+    }
+    if (!result.connected) {
+      websocketState.value = "disconnected";
+      if (websocketPollTimer) clearInterval(websocketPollTimer);
+      websocketPollTimer = undefined;
+      appendWebSocketLog("system", "close", "Connection closed");
+    }
+  } catch (error) {
+    status.value = error instanceof Error ? error.message : String(error);
+  }
+}
+
+function webSocketDirection(direction: string): WebSocketLogItem["direction"] {
+  if (direction === "in") return "received";
+  if (direction === "out") return "sent";
+  return "system";
+}
+
 function newRequest() {
   request.value = emptyRequest();
   graphqlRequest.value = emptyGraphQLRequest();
+  websocketRequest.value = emptyWebSocketRequest();
+  grpcRequest.value = emptyGrpcRequest();
   response.value = undefined;
   assertionRules.value = [];
   assertionResults.value = [];
   extractRules.value = [];
+  scriptLogs.value = [];
 }
 
 function newRequestIn(collectionId?: string, folderId: string | null = null) {
@@ -698,10 +1054,13 @@ function newRequestIn(collectionId?: string, folderId: string | null = null) {
     folderId
   };
   graphqlRequest.value = emptyGraphQLRequest();
+  websocketRequest.value = emptyWebSocketRequest();
+  grpcRequest.value = emptyGrpcRequest();
   response.value = undefined;
   assertionRules.value = [];
   assertionResults.value = [];
   extractRules.value = [];
+  scriptLogs.value = [];
   closeContextMenu();
 }
 
@@ -710,10 +1069,14 @@ function selectCollection(collectionId: string) {
 }
 
 function setProtocol(protocol: RequestProtocol) {
-  if (protocol !== "rest" && protocol !== "graphql") return;
+  if (!protocols.includes(protocol)) return;
   request.value = { ...request.value, protocol };
   if (protocol === "graphql" && selectedTab.value === "params") selectedTab.value = "graphql";
-  if (protocol === "rest" && (selectedTab.value === "graphql" || selectedTab.value === "graphqlVariables")) selectedTab.value = "params";
+  if (protocol === "websocket") selectedTab.value = "websocket";
+  if (protocol === "grpc") selectedTab.value = "grpc";
+  if (protocol === "rest" && (selectedTab.value === "graphql" || selectedTab.value === "graphqlVariables" || selectedTab.value === "websocket" || selectedTab.value === "grpc")) {
+    selectedTab.value = "params";
+  }
 }
 
 async function createCollection() {
@@ -732,7 +1095,15 @@ function openSave() {
 
 async function saveRequest() {
   if (!saveDialog.name || !saveDialog.collectionId) return;
-  const saved = await store.saveRequest(activeProtocol.value === "graphql" ? currentGraphQLRequest() : currentRestRequest(), saveDialog.name, saveDialog.collectionId, {
+  const payload =
+    activeProtocol.value === "graphql"
+      ? currentGraphQLRequest()
+      : activeProtocol.value === "websocket"
+        ? currentWebSocketRequest()
+        : activeProtocol.value === "grpc"
+          ? currentGrpcRequest()
+          : currentRestRequest();
+  const saved = await store.saveRequest(payload, saveDialog.name, saveDialog.collectionId, {
     folderId: saveDialog.folderId || null,
     protocol: activeProtocol.value
   });
@@ -750,6 +1121,7 @@ function loadRequest(saved: SavedRequest) {
 function requestDraftFromSaved(saved: SavedRequest): RequestDraft {
   return {
     ...(JSON.parse(JSON.stringify(saved.request)) as RequestConfig),
+    scripts: (saved.request as RequestConfig).scripts ?? { preRequest: "", postResponse: "" },
     id: saved.id,
     collectionId: saved.collectionId,
     folderId: saved.folderId,
@@ -760,10 +1132,10 @@ function requestDraftFromSaved(saved: SavedRequest): RequestDraft {
 }
 
 function applySavedRequest(saved: SavedRequest) {
-  assertionRules.value = clone(saved.request.assertions ?? []);
-  extractRules.value = normalizeExtractionRules(saved.request.extractionRules);
+  assertionRules.value = "assertions" in saved.request ? clone(saved.request.assertions ?? []) : [];
+  extractRules.value = "extractionRules" in saved.request ? normalizeExtractionRules(saved.request.extractionRules) : [];
   if (saved.protocol === "graphql") {
-    graphqlRequest.value = JSON.parse(JSON.stringify(saved.request)) as GraphQLRequestConfig;
+    graphqlRequest.value = { ...emptyGraphQLRequest(), ...(JSON.parse(JSON.stringify(saved.request)) as GraphQLRequestConfig) };
     request.value = {
       ...emptyRequest(),
       id: saved.id,
@@ -776,21 +1148,60 @@ function applySavedRequest(saved: SavedRequest) {
     selectedTab.value = "graphql";
     return;
   }
+  if (saved.protocol === "websocket") {
+    websocketRequest.value = { ...emptyWebSocketRequest(), ...(JSON.parse(JSON.stringify(saved.request)) as WebSocketRequestConfig) };
+    request.value = {
+      ...emptyRequest(),
+      id: saved.id,
+      collectionId: saved.collectionId,
+      folderId: saved.folderId,
+      name: saved.name,
+      protocol: "websocket",
+      sortOrder: saved.sortOrder
+    };
+    selectedTab.value = "websocket";
+    return;
+  }
+  if (saved.protocol === "grpc") {
+    grpcRequest.value = { ...emptyGrpcRequest(), ...(JSON.parse(JSON.stringify(saved.request)) as GrpcRequestConfig) };
+    request.value = {
+      ...emptyRequest(),
+      id: saved.id,
+      collectionId: saved.collectionId,
+      folderId: saved.folderId,
+      name: saved.name,
+      protocol: "grpc",
+      sortOrder: saved.sortOrder
+    };
+    selectedTab.value = "grpc";
+    return;
+  }
 
   request.value = requestDraftFromSaved(saved);
 }
 
 function savedMethod(saved: SavedRequest) {
   if (saved.protocol === "graphql") return "GQL";
+  if (saved.protocol === "websocket") return "WS";
+  if (saved.protocol === "grpc") return "RPC";
   return (saved.request as RequestConfig).method;
 }
 
 function historyMethod(entry: HistoryEntry) {
-  return entry.protocol === "graphql" ? "GQL" : (entry.request as RequestConfig).method;
+  if (entry.protocol === "graphql") return "GQL";
+  if (entry.protocol === "websocket") return "WS";
+  if (entry.protocol === "grpc") return "RPC";
+  return (entry.request as RequestConfig).method;
 }
 
 function historyUrl(entry: HistoryEntry) {
-  return entry.request.url || "Untitled";
+  return requestUrl(entry.request) || "Untitled";
+}
+
+function requestUrl(item: ProtocolRequestConfig) {
+  if ("url" in item) return item.url;
+  if ("address" in item) return `${item.address}/${item.service}/${item.method}`;
+  return "";
 }
 
 async function deleteRequest(saved: SavedRequest) {
@@ -946,6 +1357,148 @@ async function saveEnvironment() {
 async function setActiveEnvironment(id?: string) {
   activeEnvironmentId.value = id;
   await store.setActiveEnvironmentId(id);
+}
+
+async function refreshMockRoutes() {
+  mockRoutes.value = (await store.getMeta<MockRoute[]>("mockRoutes")) ?? [];
+  try {
+    const remote = await loadMockRoutes();
+    mockLogs.value = remote.logs;
+    if (mockRoutes.value.length) await syncMockRoutes(mockRoutes.value);
+    mockStatus.value = mockRoutes.value.length ? `${mockRoutes.value.length} routes synced at /mock` : "No mock routes";
+  } catch (error) {
+    mockStatus.value = `Mock server unavailable: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+function addMockRoute() {
+  mockRoutes.value.push({
+    id: crypto.randomUUID(),
+    enabled: true,
+    method: "GET",
+    pathPattern: "/users/:id",
+    status: 200,
+    headers: [{ key: "Content-Type", value: "application/json", enabled: true }],
+    body: '{ "id": "{{param.id}}", "mock": true, "requestId": "{{$uuid}}" }',
+    latencyMs: 0
+  });
+}
+
+async function saveMockRoutes() {
+  await store.setMeta("mockRoutes", mockRoutes.value);
+  const remote = await syncMockRoutes(mockRoutes.value);
+  mockRoutes.value = remote.routes;
+  mockStatus.value = `${remote.count} routes synced at /mock`;
+}
+
+async function refreshMockLogs() {
+  const remote = await loadMockRoutes();
+  mockLogs.value = remote.logs;
+}
+
+async function clearMockServerLogs() {
+  await clearMockLogs();
+  mockLogs.value = [];
+}
+
+function emptyFlow(): Flow {
+  return {
+    id: crypto.randomUUID(),
+    name: "New flow",
+    steps: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+}
+
+function newFlow() {
+  flowDraft.value = emptyFlow();
+  flowResult.value = undefined;
+  flowLog.value = [];
+}
+
+function loadFlow(flow: Flow) {
+  flowDraft.value = clone(flow);
+  flowResult.value = undefined;
+  flowLog.value = [];
+}
+
+async function saveFlowDraft() {
+  const saved = await store.saveFlow(flowDraft.value);
+  flowDraft.value = clone(saved);
+  flows.value = await store.listFlows();
+  status.value = `Saved flow ${saved.name}`;
+}
+
+async function deleteFlowDraft() {
+  if (!flowDraft.value.id || !confirm(`Delete ${flowDraft.value.name}?`)) return;
+  await store.deleteFlow(flowDraft.value.id);
+  flowDraft.value = emptyFlow();
+  flows.value = await store.listFlows();
+  flowResult.value = undefined;
+}
+
+function addFlowRequestStep(saved?: SavedRequest) {
+  const source =
+    saved?.protocol === "graphql"
+      ? graphQLToRequestConfig(saved.request as GraphQLRequestConfig)
+      : saved?.protocol === "rest"
+        ? toRequestConfig(saved.request as RequestConfig)
+        : activeProtocol.value === "graphql"
+          ? graphQLToRequestConfig(currentGraphQLRequest())
+          : currentRestRequest();
+  flowDraft.value.steps.push({
+    id: crypto.randomUUID(),
+    type: "request",
+    name: saved?.name ?? request.value.name ?? (source.url || "Request"),
+    request: clone(toRequestConfig(source)),
+    continueOnFailure: false
+  });
+}
+
+function addFlowDelayStep() {
+  flowDraft.value.steps.push({
+    id: crypto.randomUUID(),
+    type: "delay",
+    name: "Delay",
+    delayMs: 1000
+  });
+}
+
+function moveFlowStep(index: number, delta: number) {
+  const nextIndex = index + delta;
+  if (nextIndex < 0 || nextIndex >= flowDraft.value.steps.length) return;
+  const [item] = flowDraft.value.steps.splice(index, 1);
+  flowDraft.value.steps.splice(nextIndex, 0, item);
+}
+
+async function runFlowDraft() {
+  flowRunning.value = true;
+  flowResult.value = undefined;
+  flowLog.value = [];
+  try {
+    const runner = new FlowRunner();
+    flowResult.value = await runner.run(clone(flowDraft.value), {
+      execute,
+      scopes: resolutionScopes.value,
+      hooks: {
+        onStepStart(step) {
+          flowLog.value = [`Started ${step.name}`, ...flowLog.value].slice(0, 50);
+        },
+        onStepComplete(result) {
+          flowLog.value = [`${result.status.toUpperCase()} ${result.name}`, ...flowLog.value].slice(0, 50);
+        },
+        onVariableExtracted(name, value) {
+          flowLog.value = [`Set ${name}=${value}`, ...flowLog.value].slice(0, 50);
+        }
+      }
+    });
+    status.value = `Flow ${flowResult.value.status} in ${Math.round(flowResult.value.completedAt - flowResult.value.startedAt)} ms`;
+  } catch (error) {
+    status.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    flowRunning.value = false;
+  }
 }
 
 function addKeyValue(target: KeyValue[]) {
@@ -1130,11 +1683,11 @@ async function importFiles(event: Event, kind: "yaml" | "postman" | "openapi" | 
 }
 
 function loadHistory(entry: HistoryEntry) {
-  assertionRules.value = clone(entry.request.assertions ?? []);
-  extractRules.value = normalizeExtractionRules(entry.request.extractionRules);
+  assertionRules.value = "assertions" in entry.request ? clone(entry.request.assertions ?? []) : [];
+  extractRules.value = "extractionRules" in entry.request ? normalizeExtractionRules(entry.request.extractionRules) : [];
   assertionResults.value = clone(entry.assertions ?? []);
   if (entry.protocol === "graphql") {
-    graphqlRequest.value = JSON.parse(JSON.stringify(entry.request)) as GraphQLRequestConfig;
+    graphqlRequest.value = { ...emptyGraphQLRequest(), ...(JSON.parse(JSON.stringify(entry.request)) as GraphQLRequestConfig) };
     request.value = {
       ...emptyRequest(),
       id: entry.requestId,
@@ -1143,8 +1696,28 @@ function loadHistory(entry: HistoryEntry) {
       name: "History GraphQL request"
     };
     selectedTab.value = "graphql";
+  } else if (entry.protocol === "websocket") {
+    websocketRequest.value = { ...emptyWebSocketRequest(), ...(JSON.parse(JSON.stringify(entry.request)) as WebSocketRequestConfig) };
+    request.value = {
+      ...emptyRequest(),
+      id: entry.requestId,
+      collectionId: entry.collectionId,
+      protocol: "websocket",
+      name: "History WebSocket request"
+    };
+    selectedTab.value = "websocket";
+  } else if (entry.protocol === "grpc") {
+    grpcRequest.value = { ...emptyGrpcRequest(), ...(JSON.parse(JSON.stringify(entry.request)) as GrpcRequestConfig) };
+    request.value = {
+      ...emptyRequest(),
+      id: entry.requestId,
+      collectionId: entry.collectionId,
+      protocol: "grpc",
+      name: "History gRPC request"
+    };
+    selectedTab.value = "grpc";
   } else {
-    request.value = JSON.parse(JSON.stringify(entry.request));
+    request.value = { ...emptyRequest(), ...(JSON.parse(JSON.stringify(entry.request)) as RequestConfig) };
   }
   response.value = entry.response;
 }
@@ -1181,6 +1754,10 @@ async function persistImported(imported: { collection: Collection; folders?: Fol
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function changedVariables(before: Record<string, string>, after: Record<string, string>) {
+  return Object.fromEntries(Object.entries(after).filter(([key, value]) => before[key] !== value));
 }
 
 function download(blob: Blob, filename: string) {
@@ -1326,9 +1903,13 @@ function download(blob: Blob, filename: string) {
           placeholder="https://api.example.com/users or paste cURL"
           @blur="maybeParseCurl"
         />
-        <input v-else v-model="graphqlRequest.url" data-testid="graphql-url-input" placeholder="https://api.example.com/graphql" />
-        <label class="stream-toggle"><input v-model="streamMode" type="checkbox" /> Stream</label>
-        <button class="send" data-testid="send-request" :disabled="loading" @click="send">{{ loading ? "Sending" : "Send" }}</button>
+        <input v-if="activeProtocol === 'graphql'" v-model="graphqlRequest.url" data-testid="graphql-url-input" placeholder="https://api.example.com/graphql" />
+        <input v-if="activeProtocol === 'websocket'" v-model="websocketRequest.url" data-testid="websocket-url-input" placeholder="wss://echo.websocket.events" />
+        <input v-if="activeProtocol === 'grpc'" v-model="grpcRequest.address" data-testid="grpc-address-input" placeholder="localhost:50051" />
+        <label v-if="activeProtocol !== 'websocket' && activeProtocol !== 'grpc'" class="stream-toggle"><input v-model="streamMode" type="checkbox" /> Stream</label>
+        <button class="send" data-testid="send-request" :disabled="loading || websocketState === 'connecting'" @click="send">
+          {{ activeProtocol === "websocket" ? (websocketState === "connected" ? "Disconnect" : "Connect") : activeProtocol === "grpc" ? (loading ? "Invoking" : "Invoke") : loading ? "Sending" : "Send" }}
+        </button>
         <button v-if="streaming" data-testid="stop-stream" @click="stopStream">Stop</button>
         <button data-testid="save-request" @click="openSave">Save</button>
       </section>
@@ -1341,8 +1922,8 @@ function download(blob: Blob, filename: string) {
         <div class="panel">
           <nav class="tabs">
             <button v-if="activeProtocol === 'rest'" :class="{ active: selectedTab === 'params' }" @click="selectedTab = 'params'">Params</button>
-            <button :class="{ active: selectedTab === 'headers' }" @click="selectedTab = 'headers'">Headers</button>
-            <button :class="{ active: selectedTab === 'auth' }" @click="selectedTab = 'auth'">Auth</button>
+            <button :class="{ active: selectedTab === 'headers' }" @click="selectedTab = 'headers'">{{ activeProtocol === "grpc" ? "Metadata" : "Headers" }}</button>
+            <button v-if="activeProtocol !== 'grpc'" :class="{ active: selectedTab === 'auth' }" @click="selectedTab = 'auth'">Auth</button>
             <button v-if="activeProtocol === 'rest'" :class="{ active: selectedTab === 'body' }" @click="selectedTab = 'body'">Body</button>
             <button v-if="activeProtocol === 'graphql'" :class="{ active: selectedTab === 'graphql' }" @click="selectedTab = 'graphql'">Query</button>
             <button
@@ -1352,8 +1933,11 @@ function download(blob: Blob, filename: string) {
             >
               Variables
             </button>
-            <button :class="{ active: selectedTab === 'assertions' }" @click="selectedTab = 'assertions'">Assertions</button>
-            <button v-if="showExtractTab" :class="{ active: selectedTab === 'extract' }" @click="selectedTab = 'extract'">Extract</button>
+            <button v-if="activeProtocol === 'websocket'" :class="{ active: selectedTab === 'websocket' }" @click="selectedTab = 'websocket'">Messages</button>
+            <button v-if="activeProtocol === 'grpc'" :class="{ active: selectedTab === 'grpc' }" @click="selectedTab = 'grpc'">RPC</button>
+            <button v-if="activeProtocol !== 'websocket'" :class="{ active: selectedTab === 'assertions' }" @click="selectedTab = 'assertions'">Assertions</button>
+            <button v-if="showExtractTab && activeProtocol !== 'websocket'" :class="{ active: selectedTab === 'extract' }" @click="selectedTab = 'extract'">Extract</button>
+            <button :class="{ active: selectedTab === 'scripts' }" @click="selectedTab = 'scripts'">Scripts</button>
           </nav>
 
           <div v-if="activeProtocol === 'rest' && selectedTab === 'params'" class="editor">
@@ -1367,21 +1951,46 @@ function download(blob: Blob, filename: string) {
               @remove="removeAt(request.headers, $event)"
             />
             <KeyValueEditor
-              v-else
+              v-else-if="activeProtocol === 'graphql'"
               :items="graphqlRequest.headers"
               @add="addKeyValue(graphqlRequest.headers)"
               @remove="removeAt(graphqlRequest.headers, $event)"
             />
+            <KeyValueEditor
+              v-else-if="activeProtocol === 'websocket'"
+              :items="websocketRequest.headers"
+              @add="addKeyValue(websocketRequest.headers)"
+              @remove="removeAt(websocketRequest.headers, $event)"
+            />
+            <KeyValueEditor
+              v-else
+              :items="grpcRequest.metadata"
+              @add="addKeyValue(grpcRequest.metadata)"
+              @remove="removeAt(grpcRequest.metadata, $event)"
+            />
           </div>
           <div v-if="selectedTab === 'auth'" class="editor form-grid">
             <template v-if="activeProtocol === 'rest'">
-              <label>Type<select v-model="request.auth.type" data-testid="auth-type"><option v-for="type in authTypes" :key="type" :value="type">{{ type }}</option></select></label>
-              <template v-if="request.auth.type === 'basic'">
+              <label>Type<select v-model="request.auth.type" data-testid="auth-type"><option v-for="type in activeAuthTypes" :key="type" :value="type">{{ type }}</option></select></label>
+              <template v-if="request.auth.type === 'basic' || request.auth.type === 'digest'">
                 <label>Username<input v-model="request.auth.username" /></label>
                 <label>Password<input v-model="request.auth.password" type="password" /></label>
               </template>
               <template v-if="request.auth.type === 'bearer'">
                 <label>Token<input v-model="request.auth.token" data-testid="bearer-token" /></label>
+              </template>
+              <template v-if="request.auth.type === 'oauth2'">
+                <label>Token URL<input v-model="request.auth.tokenUrl" placeholder="https://auth.example.com/oauth/token" /></label>
+                <label>Client ID<input v-model="request.auth.clientId" /></label>
+                <label>Client Secret<input v-model="request.auth.clientSecret" type="password" /></label>
+                <label>Scope<input v-model="request.auth.scope" placeholder="read write" /></label>
+              </template>
+              <template v-if="request.auth.type === 'aws-sigv4'">
+                <label>Access key<input v-model="request.auth.awsAccessKeyId" /></label>
+                <label>Secret key<input v-model="request.auth.awsSecretAccessKey" type="password" /></label>
+                <label>Session token<input v-model="request.auth.awsSessionToken" /></label>
+                <label>Region<input v-model="request.auth.awsRegion" placeholder="us-east-1" /></label>
+                <label>Service<input v-model="request.auth.awsService" placeholder="execute-api" /></label>
               </template>
               <template v-if="request.auth.type === 'api-key'">
                 <label>Name<input v-model="request.auth.apiKeyName" /></label>
@@ -1389,14 +1998,27 @@ function download(blob: Blob, filename: string) {
                 <label>Location<select v-model="request.auth.apiKeyIn"><option value="header">header</option><option value="query">query</option></select></label>
               </template>
             </template>
-            <template v-else>
-              <label>Type<select v-model="graphqlRequest.auth.type" data-testid="auth-type"><option v-for="type in authTypes" :key="type" :value="type">{{ type }}</option></select></label>
-              <template v-if="graphqlRequest.auth.type === 'basic'">
+            <template v-else-if="activeProtocol === 'graphql'">
+              <label>Type<select v-model="graphqlRequest.auth.type" data-testid="auth-type"><option v-for="type in activeAuthTypes" :key="type" :value="type">{{ type }}</option></select></label>
+              <template v-if="graphqlRequest.auth.type === 'basic' || graphqlRequest.auth.type === 'digest'">
                 <label>Username<input v-model="graphqlRequest.auth.username" /></label>
                 <label>Password<input v-model="graphqlRequest.auth.password" type="password" /></label>
               </template>
               <template v-if="graphqlRequest.auth.type === 'bearer'">
                 <label>Token<input v-model="graphqlRequest.auth.token" data-testid="bearer-token" /></label>
+              </template>
+              <template v-if="graphqlRequest.auth.type === 'oauth2'">
+                <label>Token URL<input v-model="graphqlRequest.auth.tokenUrl" placeholder="https://auth.example.com/oauth/token" /></label>
+                <label>Client ID<input v-model="graphqlRequest.auth.clientId" /></label>
+                <label>Client Secret<input v-model="graphqlRequest.auth.clientSecret" type="password" /></label>
+                <label>Scope<input v-model="graphqlRequest.auth.scope" placeholder="read write" /></label>
+              </template>
+              <template v-if="graphqlRequest.auth.type === 'aws-sigv4'">
+                <label>Access key<input v-model="graphqlRequest.auth.awsAccessKeyId" /></label>
+                <label>Secret key<input v-model="graphqlRequest.auth.awsSecretAccessKey" type="password" /></label>
+                <label>Session token<input v-model="graphqlRequest.auth.awsSessionToken" /></label>
+                <label>Region<input v-model="graphqlRequest.auth.awsRegion" placeholder="us-east-1" /></label>
+                <label>Service<input v-model="graphqlRequest.auth.awsService" placeholder="execute-api" /></label>
               </template>
               <template v-if="graphqlRequest.auth.type === 'api-key'">
                 <label>Name<input v-model="graphqlRequest.auth.apiKeyName" /></label>
@@ -1404,6 +2026,41 @@ function download(blob: Blob, filename: string) {
                 <label>Location<select v-model="graphqlRequest.auth.apiKeyIn"><option value="header">header</option><option value="query">query</option></select></label>
               </template>
             </template>
+            <template v-else-if="activeProtocol === 'websocket'">
+              <label>Type<select v-model="websocketRequest.auth.type" data-testid="auth-type"><option v-for="type in activeAuthTypes" :key="type" :value="type">{{ type }}</option></select></label>
+              <template v-if="websocketRequest.auth.type === 'basic' || websocketRequest.auth.type === 'digest'">
+                <label>Username<input v-model="websocketRequest.auth.username" /></label>
+                <label>Password<input v-model="websocketRequest.auth.password" type="password" /></label>
+              </template>
+              <template v-if="websocketRequest.auth.type === 'bearer'">
+                <label>Token<input v-model="websocketRequest.auth.token" data-testid="bearer-token" /></label>
+              </template>
+              <template v-if="websocketRequest.auth.type === 'oauth2'">
+                <label>Token URL<input v-model="websocketRequest.auth.tokenUrl" placeholder="https://auth.example.com/oauth/token" /></label>
+                <label>Client ID<input v-model="websocketRequest.auth.clientId" /></label>
+                <label>Client Secret<input v-model="websocketRequest.auth.clientSecret" type="password" /></label>
+                <label>Scope<input v-model="websocketRequest.auth.scope" placeholder="read write" /></label>
+              </template>
+              <template v-if="websocketRequest.auth.type === 'aws-sigv4'">
+                <label>Access key<input v-model="websocketRequest.auth.awsAccessKeyId" /></label>
+                <label>Secret key<input v-model="websocketRequest.auth.awsSecretAccessKey" type="password" /></label>
+                <label>Session token<input v-model="websocketRequest.auth.awsSessionToken" /></label>
+                <label>Region<input v-model="websocketRequest.auth.awsRegion" placeholder="us-east-1" /></label>
+                <label>Service<input v-model="websocketRequest.auth.awsService" placeholder="execute-api" /></label>
+              </template>
+              <template v-if="websocketRequest.auth.type === 'api-key'">
+                <label>Name<input v-model="websocketRequest.auth.apiKeyName" /></label>
+                <label>Value<input v-model="websocketRequest.auth.apiKeyValue" /></label>
+                <label>Location<select v-model="websocketRequest.auth.apiKeyIn"><option value="header">header</option><option value="query">query</option></select></label>
+              </template>
+            </template>
+            <section class="tls-client-settings">
+              <label class="check"><input v-model="activeOptions.verifySsl" type="checkbox" /> Verify TLS certificates</label>
+              <label>Server name<input v-model="activeOptions.tlsClientConfig!.serverName" placeholder="api.example.com" /></label>
+              <label>Client cert PEM<textarea v-model="activeOptions.tlsClientConfig!.clientCertPem" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----" /></label>
+              <label>Client key PEM<textarea v-model="activeOptions.tlsClientConfig!.clientKeyPem" spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----" /></label>
+              <label>CA cert PEM<textarea v-model="activeOptions.tlsClientConfig!.caCertPem" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----" /></label>
+            </section>
           </div>
           <div v-if="activeProtocol === 'rest' && selectedTab === 'body'" class="editor">
             <select v-model="request.bodyMode" data-testid="body-mode">
@@ -1448,6 +2105,58 @@ function download(blob: Blob, filename: string) {
           <div v-if="activeProtocol === 'graphql' && selectedTab === 'graphqlVariables'" class="editor graphql-editor">
             <textarea v-model="graphqlRequest.variables" data-testid="graphql-variables-input" spellcheck="false" placeholder="{ }" />
           </div>
+          <div v-if="activeProtocol === 'websocket' && selectedTab === 'websocket'" class="editor websocket-editor">
+            <div class="websocket-toolbar">
+              <label>Protocols<input v-model="websocketRequest.protocols" placeholder="graphql-ws, json" /></label>
+              <label>Timeout<input v-model.number="websocketRequest.timeoutMs" type="number" min="1000" step="1000" /></label>
+              <strong :class="websocketState === 'connected' ? 'ok' : websocketState === 'connecting' ? 'warn' : 'bad'">{{ websocketState }}</strong>
+            </div>
+            <div class="websocket-compose">
+              <select v-model="websocketRequest.messageMode">
+                <option value="text">text</option>
+                <option value="json">json</option>
+              </select>
+              <button :disabled="websocketState !== 'connected'" data-testid="websocket-send" @click="sendWebSocketMessage">Send message</button>
+            </div>
+            <textarea v-model="websocketRequest.message" data-testid="websocket-message" spellcheck="false" placeholder="{ }" />
+            <div class="websocket-log" data-testid="websocket-log">
+              <article v-for="item in websocketLog" :key="item.id" :class="`ws-${item.direction}`">
+                <strong>{{ item.direction }}</strong>
+                <span>{{ item.type }}</span>
+                <small>{{ new Date(item.createdAt).toLocaleTimeString() }}</small>
+                <pre>{{ item.body }}</pre>
+              </article>
+            </div>
+          </div>
+          <div v-if="activeProtocol === 'grpc' && selectedTab === 'grpc'" class="editor grpc-editor">
+            <div class="grpc-toolbar">
+              <label class="check"><input v-model="grpcRequest.tls" type="checkbox" /> TLS</label>
+              <label class="check"><input v-model="activeOptions.verifySsl" type="checkbox" /> Verify TLS certificates</label>
+              <label>Timeout<input v-model.number="grpcRequest.timeoutMs" type="number" min="1000" step="1000" /></label>
+              <button data-testid="grpc-reflect" :disabled="!grpcRequest.address || loading" @click="reflectGrpcMethods">Reflect</button>
+              <small>{{ grpcStatus }}</small>
+            </div>
+            <div class="form-grid">
+              <label>Service<input v-model="grpcRequest.service" data-testid="grpc-service-input" placeholder="package.Service" /></label>
+              <label>Method<input v-model="grpcRequest.method" data-testid="grpc-method-input" placeholder="MethodName" /></label>
+              <label>Server name<input v-model="activeOptions.tlsClientConfig!.serverName" placeholder="Override TLS SNI" /></label>
+            </div>
+            <div class="grpc-workbench">
+              <textarea v-model="grpcRequest.body" data-testid="grpc-body-input" spellcheck="false" placeholder="{ }" />
+              <aside class="grpc-methods">
+                <strong>Methods</strong>
+                <button v-for="method in grpcMethods" :key="method.fullMethod" @click="selectGrpcMethod(method)">
+                  <span>{{ method.service }}/{{ method.method }}</span>
+                  <small>{{ method.inputType }} -> {{ method.outputType }}</small>
+                </button>
+              </aside>
+            </div>
+            <section class="tls-client-settings">
+              <label>Client cert PEM<textarea v-model="activeOptions.tlsClientConfig!.clientCertPem" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----" /></label>
+              <label>Client key PEM<textarea v-model="activeOptions.tlsClientConfig!.clientKeyPem" spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----" /></label>
+              <label>CA cert PEM<textarea v-model="activeOptions.tlsClientConfig!.caCertPem" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----" /></label>
+            </section>
+          </div>
           <div v-if="selectedTab === 'assertions'" class="editor assertion-editor">
             <div v-for="(assertion, index) in assertionRules" :key="assertion.id" class="assertion-row">
               <label class="check"><input v-model="assertion.enabled" type="checkbox" /> on</label>
@@ -1476,6 +2185,24 @@ function download(blob: Blob, filename: string) {
             </div>
             <button @click="addExtraction">Add extraction</button>
             <pre class="session-vars">{{ sessionVariables }}</pre>
+          </div>
+          <div v-if="selectedTab === 'scripts'" class="editor script-editor">
+            <template v-if="activeProtocol === 'rest'">
+              <label>Pre-request<textarea v-model="request.scripts!.preRequest" spellcheck="false" placeholder="invoke.setHeader('X-Trace', invoke.uuid())" /></label>
+              <label>Post-response<textarea v-model="request.scripts!.postResponse" spellcheck="false" placeholder="variables.set('token', response.body)" /></label>
+            </template>
+            <template v-if="activeProtocol === 'graphql'">
+              <label>Pre-request<textarea v-model="graphqlRequest.scripts!.preRequest" spellcheck="false" placeholder="variables.set('trace', invoke.uuid())" /></label>
+              <label>Post-response<textarea v-model="graphqlRequest.scripts!.postResponse" spellcheck="false" placeholder="variables.set('token', response.body)" /></label>
+            </template>
+            <template v-if="activeProtocol === 'websocket'">
+              <label>Pre-connect<textarea v-model="websocketRequest.scripts!.preRequest" spellcheck="false" placeholder="invoke.request.message = JSON.stringify({ ping: invoke.uuid() })" /></label>
+            </template>
+            <template v-if="activeProtocol === 'grpc'">
+              <label>Pre-invoke<textarea v-model="grpcRequest.scripts!.preRequest" spellcheck="false" placeholder="invoke.request.body = JSON.stringify({ id: variables.get('id') })" /></label>
+              <label>Post-response<textarea v-model="grpcRequest.scripts!.postResponse" spellcheck="false" placeholder="variables.set('grpc_status', response.status)" /></label>
+            </template>
+            <pre class="session-vars">{{ scriptLogs }}</pre>
           </div>
         </div>
 
@@ -1599,6 +2326,104 @@ function download(blob: Blob, filename: string) {
           <div><dt>Requests</dt><dd>{{ requests.length }}</dd></div>
           <div><dt>History</dt><dd>{{ history.length }}</dd></div>
         </dl>
+        <section class="mock-manager">
+          <header>
+            <h3>Mock Server</h3>
+            <div>
+              <button @click="addMockRoute">Add route</button>
+              <button @click="saveMockRoutes">Sync</button>
+              <button @click="refreshMockLogs">Logs</button>
+            </div>
+          </header>
+          <small>{{ mockStatus }}</small>
+          <article v-for="(route, index) in mockRoutes" :key="route.id" class="mock-route">
+            <label class="check"><input v-model="route.enabled" type="checkbox" /> on</label>
+            <select v-model="route.method">
+              <option v-for="method in methods" :key="method" :value="method">{{ method }}</option>
+            </select>
+            <input v-model="route.pathPattern" placeholder="/users/:id" />
+            <input v-model.number="route.status" type="number" min="100" max="599" />
+            <input v-model.number="route.latencyMs" type="number" min="0" placeholder="latency ms" />
+            <button @click="removeAt(mockRoutes, index)">Remove</button>
+            <textarea v-model="route.body" spellcheck="false" />
+          </article>
+          <div class="mock-logs">
+            <header>
+              <strong>Requests</strong>
+              <button @click="clearMockServerLogs">Clear</button>
+            </header>
+            <article v-for="entry in mockLogs.slice(0, 20)" :key="entry.id">
+              <span :data-method="entry.method">{{ entry.method }}</span>
+              <strong>{{ entry.path }}</strong>
+              <small>{{ entry.status }} {{ new Date(entry.createdAt).toLocaleTimeString() }}</small>
+            </article>
+          </div>
+        </section>
+        <section class="flow-manager">
+          <header>
+            <h3>Flows</h3>
+            <div>
+              <button @click="newFlow">New</button>
+              <button @click="saveFlowDraft">Save</button>
+              <button :disabled="flowRunning || flowDraft.steps.length === 0" @click="runFlowDraft">{{ flowRunning ? "Running" : "Run" }}</button>
+              <button :disabled="flows.length === 0" @click="deleteFlowDraft">Delete</button>
+            </div>
+          </header>
+          <div class="flow-layout">
+            <aside class="flow-list">
+              <button v-for="flow in flows" :key="flow.id" :class="{ active: flow.id === flowDraft.id }" @click="loadFlow(flow)">
+                <strong>{{ flow.name }}</strong>
+                <small>{{ flow.steps.length }} steps</small>
+              </button>
+              <p v-if="flows.length === 0" class="muted">No saved flows</p>
+            </aside>
+            <div class="flow-builder">
+              <label>Name<input v-model="flowDraft.name" /></label>
+              <div class="flow-actions">
+                <button @click="addFlowRequestStep()">Add current request</button>
+                <button @click="addFlowDelayStep">Add delay</button>
+              </div>
+              <article v-for="(step, index) in flowDraft.steps" :key="step.id" class="flow-step">
+                <header>
+                  <strong>{{ index + 1 }}. {{ step.type }}</strong>
+                  <div>
+                    <button :disabled="index === 0" @click="moveFlowStep(index, -1)">Up</button>
+                    <button :disabled="index === flowDraft.steps.length - 1" @click="moveFlowStep(index, 1)">Down</button>
+                    <button @click="removeAt(flowDraft.steps, index)">Remove</button>
+                  </div>
+                </header>
+                <label>Name<input v-model="step.name" /></label>
+                <template v-if="step.type === 'request'">
+                  <div class="flow-request-line">
+                    <select v-model="step.request.method">
+                      <option v-for="method in methods" :key="method" :value="method">{{ method }}</option>
+                    </select>
+                    <input v-model="step.request.url" placeholder="https://api.example.com" />
+                  </div>
+                  <label class="check"><input v-model="step.continueOnFailure" type="checkbox" /> Continue on failure</label>
+                </template>
+                <template v-if="step.type === 'delay'">
+                  <label>Delay ms<input v-model.number="step.delayMs" type="number" min="0" step="100" /></label>
+                </template>
+              </article>
+            </div>
+            <aside class="flow-palette">
+              <strong>Add saved request</strong>
+              <button v-for="saved in requests.filter((item) => item.protocol === 'rest' || item.protocol === 'graphql').slice(0, 12)" :key="saved.id" @click="addFlowRequestStep(saved)">
+                <span>{{ savedMethod(saved) }}</span>
+                <small>{{ saved.name }}</small>
+              </button>
+            </aside>
+          </div>
+          <div v-if="flowResult" class="flow-result">
+            <strong :class="flowResult.status === 'passed' ? 'ok' : 'bad'">{{ flowResult.status }}</strong>
+            <span>{{ flowResult.steps.length }} completed steps</span>
+            <span>{{ Object.keys(flowResult.variables).length }} variables</span>
+          </div>
+          <div class="flow-log">
+            <article v-for="entry in flowLog" :key="entry">{{ entry }}</article>
+          </div>
+        </section>
       </section>
     </div>
 
