@@ -1962,7 +1962,7 @@ function download(blob: Blob, filename: string) {
     <aside class="sidebar">
       <div class="brand">
         <button class="brand-main" title="Collapse sidebar" @click="sidebarCollapsed = !sidebarCollapsed">
-          <span class="logo-mark">in</span>
+          <img class="logo-mark" src="/assets/logo-mark.svg" alt="" aria-hidden="true" />
           <span class="brand-copy"><strong>invoke</strong><small>local-first API client</small></span>
         </button>
         <button class="icon-button" data-testid="new-request" title="New request" @click="newRequest">+</button>
