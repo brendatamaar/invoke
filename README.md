@@ -144,13 +144,13 @@ Code export targets include:
 
 ## Screenshots
 
-![GraphQL editor](docs/assets/readme/graphql-editor.png)
+| GraphQL editor | Timing waterfall |
+| --- | --- |
+| ![GraphQL request editor with query input and endpoint controls](docs/assets/readme/graphql-editor.png) | ![Response timing waterfall with DNS, TCP, TLS, TTFB, and transfer phases](docs/assets/readme/timing-waterfall.png) |
 
-![Timing waterfall](docs/assets/readme/timing-waterfall.png)
-
-![Command palette](docs/assets/readme/command-palette.png)
-
-![OpenAPI import preview](docs/assets/readme/openapi-import.png)
+| Command palette | Import options |
+| --- | --- |
+| ![Command palette for quickly opening invoke actions](docs/assets/readme/command-palette.png) | ![Import menu with supported collection and API formats](docs/assets/readme/openapi-import.png) |
 
 ## Architecture
 
