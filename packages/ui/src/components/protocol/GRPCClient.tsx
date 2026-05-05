@@ -22,7 +22,7 @@ export function GRPCClient() {
     try {
       const res = await grpcExecute(grpcRequest);
       set({ grpcStatus: "Done" });
-      useStore.getState().set({ response: { status: 200, statusText: "OK", headers: {}, body: res.bodyJson ?? "", timing: { total: res.durationMs ?? 0 }, size: 0 } as Parameters<typeof set>[0]["response"] });
+      set({ response: { status: 200, statusText: "OK", headers: [], body: res.bodyJson ?? "", timing: { dnsMs: 0, tcpMs: 0, tlsMs: 0, ttfbMs: 0, transferMs: 0, totalMs: res.durationMs ?? 0 }, requestSize: 0, responseSize: 0 } });
     } catch (e) { set({ grpcStatus: "Error" }); addToast("error", String(e)); }
   };
 

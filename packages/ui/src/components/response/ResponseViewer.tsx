@@ -46,10 +46,10 @@ export function ResponseViewer() {
           <StatusBadge status={response.status} />
           <span className="text-xs text-[var(--text-2)] font-mono">{response.statusText}</span>
           <span className="ml-auto text-2xs text-[var(--text-3)] flex items-center gap-1">
-            <Clock size={11} /> {fmt(response.timing?.total ?? 0)}
+            <Clock size={11} /> {fmt(response.timing?.totalMs ?? 0)}
           </span>
           <span className="text-2xs text-[var(--text-3)] flex items-center gap-1">
-            <HardDrive size={11} /> {fmtSize(response.size ?? 0)}
+            <HardDrive size={11} /> {fmtSize(response.responseSize ?? 0)}
           </span>
           {totalCount > 0 && (
             <span className={`text-2xs flex items-center gap-1 ${passedCount === totalCount ? "text-emerald-600" : "text-red-600"}`}>
@@ -103,7 +103,7 @@ function BodyTab() {
   const { response, responsePretty, set } = useStore();
   if (!response) return null;
 
-  const ct = response.headers?.["content-type"] ?? "";
+  const ct = (Array.isArray(response.headers) ? response.headers.find(h => h.key.toLowerCase() === "content-type")?.value : "") ?? "";
   const isJson = ct.includes("json") || (() => { try { JSON.parse(response.body); return true; } catch { return false; } })();
   const lang = isJson ? "json" : ct.includes("xml") || ct.includes("html") ? "xml" : "text";
   const displayBody = (isJson && responsePretty)
@@ -132,16 +132,16 @@ function BodyTab() {
 function HeadersTab() {
   const { response } = useStore();
   if (!response) return null;
-  const entries = Object.entries(response.headers ?? {});
+  const headers = Array.isArray(response.headers) ? response.headers : [];
   return (
     <div className="divide-y divide-[var(--border)]">
-      {entries.map(([k, v]) => (
-        <div key={k} className="flex items-start gap-4 px-3 py-2 hover:bg-[var(--surface-2)]">
-          <span className="text-xs font-mono font-medium text-[var(--text-1)] w-48 shrink-0 truncate">{k}</span>
-          <span className="text-xs font-mono text-[var(--text-2)] break-all">{v}</span>
+      {headers.map((h, i) => (
+        <div key={i} className="flex items-start gap-4 px-3 py-2 hover:bg-[var(--surface-2)]">
+          <span className="text-xs font-mono font-medium text-[var(--text-1)] w-48 shrink-0 truncate">{h.key}</span>
+          <span className="text-xs font-mono text-[var(--text-2)] break-all">{h.value}</span>
         </div>
       ))}
-      {!entries.length && <p className="p-4 text-xs text-[var(--text-3)]">No headers</p>}
+      {!headers.length && <p className="p-4 text-xs text-[var(--text-3)]">No headers</p>}
     </div>
   );
 }
@@ -149,22 +149,22 @@ function HeadersTab() {
 // ── Timing tab ───────────────────────────────────────────────
 
 const PHASES = [
-  { key: "dns",       label: "DNS Lookup",      color: "bg-purple-400" },
-  { key: "tcp",       label: "TCP Connection",  color: "bg-blue-400" },
-  { key: "tls",       label: "TLS Handshake",   color: "bg-yellow-400" },
-  { key: "ttfb",      label: "Time to First Byte", color: "bg-orange-400" },
-  { key: "transfer",  label: "Transfer",        color: "bg-emerald-400" }
+  { key: "dnsMs",      label: "DNS Lookup",         color: "bg-purple-400" },
+  { key: "tcpMs",      label: "TCP Connection",     color: "bg-blue-400" },
+  { key: "tlsMs",      label: "TLS Handshake",      color: "bg-yellow-400" },
+  { key: "ttfbMs",     label: "Time to First Byte", color: "bg-orange-400" },
+  { key: "transferMs", label: "Transfer",           color: "bg-emerald-400" }
 ] as const;
 
 function TimingTab() {
   const { response } = useStore();
   if (!response?.timing) return <p className="p-4 text-xs text-[var(--text-3)]">No timing data</p>;
-  const t = response.timing as Record<string, number>;
-  const total = t.total || 1;
+  const t = response.timing as unknown as Record<string, number>;
+  const total = t.totalMs || 1;
 
   return (
     <div className="p-4 flex flex-col gap-3">
-      <p className="text-xs text-[var(--text-2)] font-medium">Total: {fmt(total)}</p>
+      <p className="text-xs text-[var(--text-2)] font-medium">Total: {fmt(response.timing.totalMs)}</p>
       {PHASES.map(({ key, label, color }) => {
         const val = t[key] ?? 0;
         const pct = (val / total) * 100;
@@ -242,10 +242,10 @@ function AssertionsTab() {
 // ── Code tab ─────────────────────────────────────────────────
 
 const CODE_TARGETS = [
-  "curl", "fetch", "node-fetch", "axios",
+  "curl", "fetch", "node-fetch", "node-axios",
   "python-requests", "python-httpx",
-  "go", "java-okhttp", "kotlin-okhttp",
-  "ruby", "php-guzzle", "csharp",
+  "go-net-http", "java-okhttp", "kotlin-okhttp",
+  "ruby-net-http", "php-guzzle", "csharp-httpclient",
   "rust-reqwest", "powershell", "httpie"
 ] as const;
 

@@ -34,12 +34,17 @@ export function CommandPalette() {
   }, [commandPaletteOpen, selectedIndex]); // eslint-disable-line
 
   const allItems: PaletteItem[] = [
-    ...requests.map((r) => ({
-      id: r.id, kind: "request" as const, title: r.name || r.url,
-      subtitle: r.url, keywords: `${r.method} ${r.url} ${r.name}`,
-      method: r.method,
-      run: () => setRequest({ method: r.method as Parameters<typeof setRequest>[0]["method"], url: r.url, name: r.name })
-    })),
+    ...requests.map((r) => {
+      const req = r.request as { method?: string; url?: string } | undefined;
+      return {
+        id: r.id, kind: "request" as const,
+        title: r.name || req?.url || "Untitled",
+        subtitle: req?.url || "",
+        keywords: `${req?.method ?? ""} ${req?.url ?? ""} ${r.name}`,
+        method: req?.method,
+        run: () => setRequest({ method: (req?.method ?? "GET") as Parameters<typeof setRequest>[0]["method"], url: req?.url ?? "", name: r.name })
+      };
+    }),
     ...environments.map((e) => ({
       id: e.id, kind: "environment" as const, title: e.name,
       subtitle: `${e.variables?.length ?? 0} variables`, keywords: e.name,

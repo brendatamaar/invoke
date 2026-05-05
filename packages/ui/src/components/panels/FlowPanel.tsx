@@ -1,10 +1,12 @@
+import { useRef } from "react";
 import { Play, Square, Plus, Trash2 } from "lucide-react";
 import { useStore, coreStore } from "../../store";
-import { FlowRunner, type Flow } from "@invoke/core";
+import { FlowRunner, type Flow, type VariableScope } from "@invoke/core";
+import { execute } from "../../lib/api";
 
 export function FlowPanel() {
   const { flows, flowDraft, flowResult, flowRunning, flowLog, set, addToast, environments, activeEnvironmentId, sessionVariables } = useStore();
-  const runner = new FlowRunner(coreStore);
+  const runner = useRef(new FlowRunner());
 
   const selectFlow = (flow: Flow) => set({ flowDraft: { ...flow } });
 
@@ -12,12 +14,8 @@ export function FlowPanel() {
 
   const saveFlow = async () => {
     try {
-      if (flowDraft.id) {
-        await coreStore.flows.update(flowDraft.id, flowDraft);
-      } else {
-        await coreStore.flows.create(flowDraft);
-      }
-      const fs = await coreStore.flows.list();
+      await coreStore.saveFlow(flowDraft);
+      const fs = await coreStore.listFlows();
       set({ flows: fs });
       addToast("success", "Flow saved");
     } catch (e) { addToast("error", String(e)); }
@@ -26,8 +24,8 @@ export function FlowPanel() {
   const deleteFlow = async (id: string) => {
     if (!confirm("Delete this flow?")) return;
     try {
-      await coreStore.flows.delete(id);
-      const fs = await coreStore.flows.list();
+      await coreStore.deleteFlow(id);
+      const fs = await coreStore.listFlows();
       set({ flows: fs, flowDraft: { id: "", name: "New Flow", steps: [] } as unknown as Flow });
     } catch (e) { addToast("error", String(e)); }
   };
@@ -36,19 +34,24 @@ export function FlowPanel() {
     if (!flowDraft.steps?.length) { addToast("warn", "Flow has no steps"); return; }
     set({ flowRunning: true, flowResult: undefined, flowLog: [] });
     const env = environments.find((e) => e.id === activeEnvironmentId);
+    const scopes: VariableScope[] = [];
+    if (env?.variables?.length) scopes.push({ name: "environment", variables: env.variables });
+    if (Object.keys(sessionVariables).length) scopes.push({ name: "session", variables: sessionVariables });
     try {
-      const result = await runner.run(flowDraft, {
-        environment: env,
-        sessionVariables,
-        onStepStart: (step) => set((s) => ({ flowLog: [...s.flowLog, `▶ ${step.name ?? step.id}`] })),
-        onStepComplete: (step, res) => set((s) => ({ flowLog: [...s.flowLog, `${res.passed ? "✓" : "✗"} ${step.name ?? step.id}`] }))
+      const result = await runner.current.run(flowDraft, {
+        execute,
+        scopes,
+        hooks: {
+          onStepStart: (step) => set((s) => ({ flowLog: [...s.flowLog, `▶ ${step.name ?? step.id}`] })),
+          onStepComplete: (res) => set((s) => ({ flowLog: [...s.flowLog, `${res.status === "passed" ? "✓" : "✗"} ${res.name ?? res.stepId}`] }))
+        }
       });
       set({ flowResult: result });
     } catch (e) { addToast("error", String(e)); }
     finally { set({ flowRunning: false }); }
   };
 
-  const stopFlow = () => { runner.cancel(); set({ flowRunning: false }); };
+  const stopFlow = () => { runner.current.cancel(); set({ flowRunning: false }); };
 
   return (
     <div className="flex flex-col h-full">
@@ -96,8 +99,8 @@ export function FlowPanel() {
           <span key={i} className={`${line.startsWith("✓") ? "text-emerald-600" : line.startsWith("✗") ? "text-red-600" : "text-[var(--text-2)]"}`}>{line}</span>
         ))}
         {flowResult && (
-          <div className={`mt-2 p-2 rounded text-xs ${flowResult.passed ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
-            Flow {flowResult.passed ? "passed" : "failed"} in {flowResult.durationMs}ms
+          <div className={`mt-2 p-2 rounded text-xs ${flowResult.status === "passed" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+            Flow {flowResult.status} in {flowResult.completedAt - flowResult.startedAt}ms
           </div>
         )}
       </div>

@@ -1,47 +1,31 @@
 import { useState } from "react";
-import {
-  ChevronRight,
-  ChevronDown,
-  Folder,
-  FolderOpen,
-  Plus,
-  MoreHorizontal,
-  Trash2,
-  Edit3,
-  Download,
-  Copy
-} from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, FolderOpen, Plus, MoreHorizontal, Trash2, Edit3, Download, Copy } from "lucide-react";
 import { useStore, coreStore } from "../../store";
 import { MethodBadge } from "../shared/MethodBadge";
 import type { Collection, SavedRequest, Folder as FolderType } from "@invoke/core";
 
+function MenuItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button onClick={onClick} className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--surface-2)] ${danger ? "text-[var(--danger)]" : "text-[var(--text-1)]"}`}>
+      {icon} {label}
+    </button>
+  );
+}
+
 function RequestNode({ request, collectionId }: { request: SavedRequest; collectionId: string }) {
-  const { set, addToast } = useStore();
+  const { set, setRequest, addToast } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const open = () => {
-    const { request: req } = useStore.getState();
-    set({
-      request: {
-        ...req,
-        id: request.id,
-        name: request.name,
-        method: request.method as typeof req.method,
-        url: request.url,
-        headers: request.headers ?? [],
-        params: request.params ?? [],
-        body: request.body ?? "",
-        bodyMode: request.bodyMode as typeof req.bodyMode ?? "none",
-        auth: request.auth ?? req.auth
-      }
-    });
+    const draft = request.request as Parameters<typeof setRequest>[0];
+    setRequest({ ...draft, id: request.id, name: request.name });
   };
 
   const del = async () => {
     if (!confirm(`Delete "${request.name}"?`)) return;
     try {
-      await coreStore.requests.delete(request.id);
-      const reqs = await coreStore.requests.list(collectionId);
+      await coreStore.deleteRequest(request.id);
+      const reqs = await coreStore.listRequests(collectionId);
       set({ requests: reqs });
       addToast("success", "Request deleted");
     } catch (e) { addToast("error", String(e)); }
@@ -50,13 +34,10 @@ function RequestNode({ request, collectionId }: { request: SavedRequest; collect
 
   return (
     <div className="group relative flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1" onClick={open}>
-      <MethodBadge method={request.method} />
-      <span className="flex-1 text-xs text-[var(--text-1)] truncate">{request.name || request.url || "Untitled"}</span>
-      <div className="opacity-0 group-hover:opacity-100 relative">
-        <button
-          onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
-          className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
-        >
+      <MethodBadge method={(request.request as { method?: string })?.method ?? "GET"} />
+      <span className="flex-1 text-xs text-[var(--text-1)] truncate">{request.name || (request.request as { url?: string })?.url || "Untitled"}</span>
+      <div className="opacity-0 group-hover:opacity-100 relative" onClick={(e) => e.stopPropagation()}>
+        <button onClick={() => setMenuOpen((v) => !v)} className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]">
           <MoreHorizontal size={13} />
         </button>
         {menuOpen && (
@@ -77,10 +58,7 @@ function FolderNode({ folder, collectionId }: { folder: FolderType; collectionId
 
   return (
     <div>
-      <div
-        className="flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 text-[var(--text-2)]"
-        onClick={() => toggleFolder(folder.id)}
-      >
+      <div className="flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 text-[var(--text-2)]" onClick={() => toggleFolder(folder.id)}>
         {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         {expanded ? <FolderOpen size={13} /> : <Folder size={13} />}
         <span className="flex-1 text-xs truncate">{folder.name}</span>
@@ -98,37 +76,49 @@ function CollectionNode({ collection }: { collection: Collection }) {
   const { expandedFolderIds, toggleFolder, folders, requests, set, addToast } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const expanded = expandedFolderIds.includes(collection.id);
-  const colFolders = folders.filter((f) => f.collectionId === collection.id && !f.parentId);
+  const colFolders = folders.filter((f) => f.collectionId === collection.id && !f.parentFolderId);
   const colRequests = requests.filter((r) => r.collectionId === collection.id && !r.folderId);
 
   const del = async () => {
     if (!confirm(`Delete collection "${collection.name}"?`)) return;
     try {
-      await coreStore.collections.delete(collection.id);
-      const cols = await coreStore.collections.list();
-      set({ collections: cols });
+      await coreStore.deleteCollection(collection.id);
+      const cols = await coreStore.listCollections();
+      set({ collections: cols, requests: requests.filter((r) => r.collectionId !== collection.id), folders: folders.filter((f) => f.collectionId !== collection.id) });
       addToast("success", "Collection deleted");
     } catch (e) { addToast("error", String(e)); }
     setMenuOpen(false);
   };
 
   const addRequest = async () => {
-    try {
-      const req = await coreStore.requests.create({ collectionId: collection.id, name: "New Request", method: "GET", url: "" });
-      const reqs = await coreStore.requests.list(collection.id);
-      set({ requests: reqs });
-      expandedFolderIds.includes(collection.id) || toggleFolder(collection.id);
-      useStore.getState().set({ request: { ...useStore.getState().request, id: req.id, name: req.name, method: "GET", url: "" } });
-    } catch (e) { addToast("error", String(e)); }
     setMenuOpen(false);
+    const name = prompt("Request name:", "New Request");
+    if (!name?.trim()) return;
+    try {
+      await coreStore.saveRequest({ method: "GET", url: "", params: [], headers: [], bodyMode: "none", body: "", auth: { type: "none" }, timeoutMs: 30000 }, name.trim(), collection.id);
+      const reqs = await coreStore.listRequests();
+      set({ requests: reqs });
+      if (!expandedFolderIds.includes(collection.id)) toggleFolder(collection.id);
+    } catch (e) { addToast("error", String(e)); }
+  };
+
+  const rename = async () => {
+    setMenuOpen(false);
+    const name = prompt("New name:", collection.name);
+    if (!name?.trim() || name === collection.name) return;
+    try {
+      await coreStore.updateCollection({ ...collection, name: name.trim() });
+      const cols = await coreStore.listCollections();
+      set({ collections: cols });
+    } catch (e) { addToast("error", String(e)); }
   };
 
   return (
-    <div className="mb-1">
+    <div className="mb-0.5">
       <div className="group flex items-center gap-1.5 px-3 py-1.5 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1" onClick={() => toggleFolder(collection.id)}>
         {expanded ? <ChevronDown size={13} className="text-[var(--text-3)]" /> : <ChevronRight size={13} className="text-[var(--text-3)]" />}
         <span className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate">{collection.name}</span>
-        <span className="text-2xs text-[var(--text-3)]">{colRequests.length + (folders.filter((f) => f.collectionId === collection.id).length > 0 ? 1 : 0)}</span>
+        <span className="text-2xs text-[var(--text-3)]">{colRequests.length}</span>
         <div className="opacity-0 group-hover:opacity-100 relative ml-1" onClick={(e) => e.stopPropagation()}>
           <button onClick={() => setMenuOpen((v) => !v)} className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]">
             <MoreHorizontal size={13} />
@@ -136,7 +126,7 @@ function CollectionNode({ collection }: { collection: Collection }) {
           {menuOpen && (
             <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[160px]">
               <MenuItem icon={<Plus size={12} />} label="New Request" onClick={addRequest} />
-              <MenuItem icon={<Edit3 size={12} />} label="Rename" onClick={() => setMenuOpen(false)} />
+              <MenuItem icon={<Edit3 size={12} />} label="Rename" onClick={rename} />
               <MenuItem icon={<Download size={12} />} label="Export" onClick={() => setMenuOpen(false)} />
               <div className="h-px bg-[var(--border)] my-1" />
               <MenuItem icon={<Trash2 size={12} />} label="Delete" onClick={del} danger />
@@ -155,17 +145,6 @@ function CollectionNode({ collection }: { collection: Collection }) {
   );
 }
 
-function MenuItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--surface-2)] ${danger ? "text-[var(--danger)]" : "text-[var(--text-1)]"}`}
-    >
-      {icon} {label}
-    </button>
-  );
-}
-
 export function CollectionTree() {
   const { collections, addToast, set } = useStore();
 
@@ -173,8 +152,8 @@ export function CollectionTree() {
     const name = prompt("Collection name:");
     if (!name?.trim()) return;
     try {
-      await coreStore.collections.create({ name: name.trim() });
-      const cols = await coreStore.collections.list();
+      await coreStore.createCollection(name.trim());
+      const cols = await coreStore.listCollections();
       set({ collections: cols });
     } catch (e) { addToast("error", String(e)); }
   };
@@ -183,9 +162,7 @@ export function CollectionTree() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 px-4 text-center">
         <p className="text-xs text-[var(--text-3)]">No collections yet</p>
-        <button onClick={newCollection} className="btn text-xs">
-          <Plus size={13} /> New Collection
-        </button>
+        <button onClick={newCollection} className="btn text-xs"><Plus size={13} /> New Collection</button>
       </div>
     );
   }
@@ -194,9 +171,7 @@ export function CollectionTree() {
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
         <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">Collections</span>
-        <button onClick={newCollection} className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 rounded hover:bg-[var(--surface-2)]">
-          <Plus size={13} />
-        </button>
+        <button onClick={newCollection} className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 rounded hover:bg-[var(--surface-2)]"><Plus size={13} /></button>
       </div>
       <div className="flex-1 overflow-y-auto py-1">
         {collections.map((c) => <CollectionNode key={c.id} collection={c} />)}

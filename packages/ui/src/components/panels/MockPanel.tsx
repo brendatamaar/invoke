@@ -49,7 +49,7 @@ export function MockPanel() {
           {mockRoutes.map((r, i) => (
             <div key={i} className="flex items-center gap-2 px-3 py-1.5 hover:bg-[var(--surface-2)] border-b border-[var(--border)] last:border-0">
               <MethodBadge method={r.method} />
-              <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">{r.path}</span>
+              <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">{r.pathPattern}</span>
               <span className="text-2xs text-[var(--text-3)]">{r.status}</span>
             </div>
           ))}
@@ -65,7 +65,7 @@ export function MockPanel() {
       <div className="flex-1 overflow-y-auto font-mono text-2xs">
         {mockLogs.map((log, i) => (
           <div key={i} className="flex items-center gap-2 px-3 py-1 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]">
-            <span className="text-[var(--text-3)] shrink-0">{fmt(log.timestamp)}</span>
+            <span className="text-[var(--text-3)] shrink-0">{fmt(log.createdAt)}</span>
             <MethodBadge method={log.method} />
             <span className="flex-1 text-[var(--text-1)] truncate">{log.path}</span>
             <span className={`shrink-0 ${log.status >= 400 ? "text-red-600" : "text-emerald-600"}`}>{log.status}</span>

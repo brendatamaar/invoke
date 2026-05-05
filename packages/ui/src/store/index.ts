@@ -136,7 +136,7 @@ interface AppState {
   toasts: Toast[];
 
   // ── Actions ──────────────────────────────────────────────
-  set: (partial: Partial<AppState>) => void;
+  set: (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
   setRequest: (partial: Partial<RequestDraft>) => void;
   setGraphqlRequest: (partial: Partial<GraphQLRequestConfig>) => void;
   setWebsocketRequest: (partial: Partial<WebSocketRequestConfig>) => void;
@@ -239,7 +239,10 @@ export const useStore = create<AppState>((set, get) => ({
   toasts: [],
 
   // ── Actions ──────────────────────────────────────────────
-  set: (partial) => set(partial),
+  set: (partial) => {
+    if (typeof partial === "function") set((s) => (partial as (s: AppState) => Partial<AppState>)(s));
+    else set(partial);
+  },
 
   setRequest: (partial) =>
     set((s) => ({ request: { ...s.request, ...partial } })),

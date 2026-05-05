@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  compareResponses,
   extractVariables,
   generateCodeSnippet,
-  InvokeStore,
-  parseCurl,
   resolveRequest,
   runPostResponseScript,
   runPreRequestScript,
   runAssertions,
-  searchHistory,
   variablesFromScopes,
-  type RequestConfig
+  type RequestConfig,
+  type VariableScope
 } from "@invoke/core";
 import { useStore, coreStore } from "./store";
 import { TopBar } from "./components/layout/TopBar";
@@ -54,7 +51,7 @@ function useResize(initial: number) {
 
 export default function App() {
   const {
-    request, graphqlRequest, environments, activeEnvironmentId,
+    request, environments, activeEnvironmentId,
     sessionVariables, assertionRules, extractRules,
     streamMode, codeTarget, response,
     set, addToast, loading, streaming
@@ -67,20 +64,34 @@ export default function App() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [cols, envs, hist, fls] = await Promise.all([
-          coreStore.collections.list(),
-          coreStore.environments.list(),
-          coreStore.history.list({ limit: 200 }),
-          coreStore.flows.list().catch(() => [])
+        const [cols, envs, hist, fls, activeEnvId] = await Promise.all([
+          coreStore.listCollections(),
+          coreStore.listEnvironments(),
+          coreStore.listHistory(200),
+          coreStore.listFlows(),
+          coreStore.getActiveEnvironmentId()
         ]);
-        // load requests for all collections
-        const reqs = (await Promise.all(cols.map((c) => coreStore.requests.list(c.id)))).flat();
-        const folds = (await Promise.all(cols.map((c) => coreStore.folders?.list?.(c.id).catch(() => []) ?? []))).flat();
-        set({ collections: cols, environments: envs, history: hist, flows: fls, requests: reqs, folders: folds });
+        const reqs = await coreStore.listRequests();
+        const folds = await coreStore.listFolders();
+        set({
+          collections: cols,
+          environments: envs,
+          history: hist,
+          flows: fls,
+          requests: reqs,
+          folders: folds,
+          activeEnvironmentId: activeEnvId
+        });
       } catch (e) { addToast("error", `Failed to load data: ${e}`); }
     };
     load();
   }, []); // eslint-disable-line
+
+  // ── Persist active environment ────────────────────────────
+
+  useEffect(() => {
+    coreStore.setActiveEnvironmentId(activeEnvironmentId).catch(() => {});
+  }, [activeEnvironmentId]);
 
   // ── Code generation ──────────────────────────────────────
 
@@ -91,10 +102,9 @@ export default function App() {
     (async () => {
       try {
         const env = environments.find((e) => e.id === activeEnvironmentId);
-        const vars = variablesFromScopes({ environment: env, sessionVariables });
-        const resolved = resolveRequest(request as RequestConfig, vars);
+        const { request: resolved } = resolveRequest(request as RequestConfig, env, sessionVariables);
         const snippet = await generateCodeSnippet(resolved, codeTarget);
-        if (!cancelled) set({ codeSnippet: snippet, codeLoading: false });
+        if (!cancelled) set({ codeSnippet: snippet.code, codeLoading: false });
       } catch { if (!cancelled) set({ codeSnippet: "", codeLoading: false }); }
     })();
     return () => { cancelled = true; };
@@ -106,30 +116,29 @@ export default function App() {
     if (loading || streaming || !request.url.trim()) return;
 
     const env = environments.find((e) => e.id === activeEnvironmentId);
-    const vars = variablesFromScopes({ environment: env, sessionVariables });
+    const varScopes: VariableScope[] = [
+      { name: "environment", variables: env?.variables ?? [] },
+      { name: "session", variables: sessionVariables }
+    ];
+    const vars = variablesFromScopes(varScopes);
 
     // Pre-request script
     let resolved: RequestConfig;
     try {
-      const scriptCtx = await runPreRequestScript(request as RequestConfig, vars);
-      resolved = resolveRequest(scriptCtx.request ?? request as RequestConfig, vars);
+      const scriptCtx = await runPreRequestScript(request as RequestConfig, vars, request.scripts?.preRequest ?? "");
+      const { request: r } = resolveRequest((scriptCtx.request ?? request) as RequestConfig, env, sessionVariables);
+      resolved = r;
     } catch {
-      resolved = resolveRequest(request as RequestConfig, vars);
+      const { request: r } = resolveRequest(request as RequestConfig, env, sessionVariables);
+      resolved = r;
     }
 
-    // OAuth2 token fetch
+    // OAuth2 client credentials auto-fetch
     if (resolved.auth?.type === "oauth2") {
       try {
-        const cache = useStore.getState() as unknown as { _oauth2Cache?: Map<string, { token: string; expiresAt: number }> };
-        const key = `${resolved.auth.tokenUrl}:${resolved.auth.clientId}`;
-        const cached = (cache._oauth2Cache ?? new Map()).get(key);
-        if (cached && Date.now() < cached.expiresAt) {
-          resolved = { ...resolved, auth: { ...resolved.auth, type: "bearer", token: cached.token } };
-        } else {
-          const tok = await oauth2ClientCredentials(resolved.auth);
-          if (tok.accessToken) {
-            resolved = { ...resolved, auth: { ...resolved.auth, type: "bearer", token: tok.accessToken } };
-          }
+        const tok = await oauth2ClientCredentials(resolved.auth);
+        if (tok.accessToken) {
+          resolved = { ...resolved, auth: { ...resolved.auth, type: "bearer", token: tok.accessToken } };
         }
       } catch (e) { addToast("warn", `OAuth2: ${e}`); }
     }
@@ -139,12 +148,12 @@ export default function App() {
       set({ streaming: true, loading: false, response: undefined, streamBytes: 0, streamController: controller });
       try {
         await executeStream(resolved, {
-          onChunk: (chunk) => set((s) => ({ streamBytes: s.streamBytes + chunk.length })),
+          onChunk: (chunk) => set((s: { streamBytes: number }) => ({ streamBytes: s.streamBytes + chunk.length })),
           onFinal: async (res) => {
             const results = runAssertions(res, assertionRules);
             const extracted = extractVariables(res, extractRules);
-            await coreStore.history.add({ method: resolved.method, url: resolved.url, status: res.status, requestBody: resolved.body ?? "", requestHeaders: resolved.headers, response: res, timestamp: Date.now() });
-            const hist = await coreStore.history.list({ limit: 200 });
+            await coreStore.addHistory({ request: resolved, response: res, protocol: "rest" });
+            const hist = await coreStore.listHistory(200);
             set({ response: res, assertionResults: results, sessionVariables: { ...sessionVariables, ...extracted }, streaming: false, history: hist });
           },
           signal: controller.signal
@@ -158,13 +167,12 @@ export default function App() {
       try {
         const res = await execute(resolved);
 
-        // Post-response script
-        try { await runPostResponseScript(res, resolved, vars); } catch { /* ignore script errors */ }
+        try { await runPostResponseScript(resolved, res, vars, request.scripts?.postResponse ?? ""); } catch { /* ignore script errors */ }
 
         const results = runAssertions(res, assertionRules);
         const extracted = extractVariables(res, extractRules);
-        await coreStore.history.add({ method: resolved.method, url: resolved.url, status: res.status, requestBody: resolved.body ?? "", requestHeaders: resolved.headers, response: res, timestamp: Date.now() });
-        const hist = await coreStore.history.list({ limit: 200 });
+        await coreStore.addHistory({ request: resolved, response: res, protocol: "rest" });
+        const hist = await coreStore.listHistory(200);
         set({ response: res, assertionResults: results, sessionVariables: { ...sessionVariables, ...extracted }, loading: false, history: hist });
       } catch (e) {
         addToast("error", String(e));
@@ -197,10 +205,7 @@ export default function App() {
           </div>
 
           {/* Resize handle */}
-          <div
-            className="resize-handle-v"
-            onMouseDown={onResizeMouseDown}
-          />
+          <div className="resize-handle-v" onMouseDown={onResizeMouseDown} />
 
           {/* Response pane */}
           <div className="flex-1 overflow-hidden">

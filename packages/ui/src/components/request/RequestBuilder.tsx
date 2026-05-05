@@ -188,10 +188,10 @@ function AuthPanel() {
 
       {auth.type === "api-key" && (
         <>
-          <Field label="Key"><input className="input text-xs py-1" value={auth.key ?? ""} onChange={(e) => setRequest({ auth: { ...auth, key: e.target.value } })} /></Field>
-          <Field label="Value"><input className="input text-xs py-1 font-mono" value={auth.value ?? ""} onChange={(e) => setRequest({ auth: { ...auth, value: e.target.value } })} /></Field>
+          <Field label="Key"><input className="input text-xs py-1" value={auth.apiKeyName ?? ""} onChange={(e) => setRequest({ auth: { ...auth, apiKeyName: e.target.value } })} /></Field>
+          <Field label="Value"><input className="input text-xs py-1 font-mono" value={auth.apiKeyValue ?? ""} onChange={(e) => setRequest({ auth: { ...auth, apiKeyValue: e.target.value } })} /></Field>
           <Field label="Add to">
-            <select className="input text-xs py-1" value={auth.in ?? "header"} onChange={(e) => setRequest({ auth: { ...auth, in: e.target.value as "header" | "query" } })}>
+            <select className="input text-xs py-1" value={auth.apiKeyIn ?? "header"} onChange={(e) => setRequest({ auth: { ...auth, apiKeyIn: e.target.value as "header" | "query" } })}>
               <option value="header">Header</option>
               <option value="query">Query param</option>
             </select>
@@ -217,10 +217,10 @@ function AuthPanel() {
 
       {auth.type === "aws-sigv4" && (
         <>
-          <Field label="Access Key"><input className="input text-xs py-1 font-mono" value={auth.accessKeyId ?? ""} onChange={(e) => setRequest({ auth: { ...auth, accessKeyId: e.target.value } })} /></Field>
-          <Field label="Secret Key"><input className="input text-xs py-1 font-mono" type="password" value={auth.secretAccessKey ?? ""} onChange={(e) => setRequest({ auth: { ...auth, secretAccessKey: e.target.value } })} /></Field>
-          <Field label="Region"><input className="input text-xs py-1" value={auth.region ?? ""} onChange={(e) => setRequest({ auth: { ...auth, region: e.target.value } })} /></Field>
-          <Field label="Service"><input className="input text-xs py-1" value={auth.service ?? ""} onChange={(e) => setRequest({ auth: { ...auth, service: e.target.value } })} /></Field>
+          <Field label="Access Key"><input className="input text-xs py-1 font-mono" value={auth.awsAccessKeyId ?? ""} onChange={(e) => setRequest({ auth: { ...auth, awsAccessKeyId: e.target.value } })} /></Field>
+          <Field label="Secret Key"><input className="input text-xs py-1 font-mono" type="password" value={auth.awsSecretAccessKey ?? ""} onChange={(e) => setRequest({ auth: { ...auth, awsSecretAccessKey: e.target.value } })} /></Field>
+          <Field label="Region"><input className="input text-xs py-1" value={auth.awsRegion ?? ""} onChange={(e) => setRequest({ auth: { ...auth, awsRegion: e.target.value } })} /></Field>
+          <Field label="Service"><input className="input text-xs py-1" value={auth.awsService ?? ""} onChange={(e) => setRequest({ auth: { ...auth, awsService: e.target.value } })} /></Field>
         </>
       )}
     </div>
@@ -257,7 +257,11 @@ function BodyPanel() {
           <CodeEditor value={request.body ?? ""} onChange={(v) => setRequest({ body: v })} lang={mode === "json" ? "json" : "text"} />
         )}
         {(mode === "form-data" || mode === "urlencoded") && (
-          <KeyValueEditor rows={request.formData ?? []} onChange={(rows) => setRequest({ formData: rows as KeyValue[] })} keyPlaceholder="key" valuePlaceholder="value" />
+          <KeyValueEditor
+            rows={(() => { try { return JSON.parse(request.body || "[]") as KeyValue[]; } catch { return []; } })()}
+            onChange={(rows) => setRequest({ body: JSON.stringify(rows) })}
+            keyPlaceholder="key" valuePlaceholder="value"
+          />
         )}
       </div>
     </div>
@@ -335,8 +339,8 @@ function ScriptsPanel() {
       </div>
       <div className="flex-1 overflow-hidden">
         <CodeEditor
-          value={activeScript === "pre" ? (request.preRequestScript ?? "") : (request.postResponseScript ?? "")}
-          onChange={(v) => setRequest(activeScript === "pre" ? { preRequestScript: v } : { postResponseScript: v })}
+          value={activeScript === "pre" ? (request.scripts?.preRequest ?? "") : (request.scripts?.postResponse ?? "")}
+          onChange={(v) => setRequest({ scripts: { ...(request.scripts ?? {}), ...(activeScript === "pre" ? { preRequest: v } : { postResponse: v }) } })}
           lang="javascript"
           minHeight="200px"
         />
@@ -356,7 +360,7 @@ function ScriptsPanel() {
 
 function AssertionsPanel() {
   const { assertionRules, assertionResults, set } = useStore();
-  const add = () => set({ assertionRules: [...assertionRules, { type: "status", matcher: "equals", expected: "200" } as Parameters<typeof set>[0]["assertionRules"][0]] });
+  const add = () => set({ assertionRules: [...assertionRules, { id: Math.random().toString(36).slice(2), type: "status" as const, expression: "", matcher: "equals" as const, expected: "200", enabled: true }] });
   const remove = (i: number) => set({ assertionRules: assertionRules.filter((_, idx) => idx !== i) });
   const update = (i: number, patch: object) => set({ assertionRules: assertionRules.map((r, idx) => idx === i ? { ...r, ...patch } : r) });
 
@@ -389,7 +393,7 @@ function AssertionsPanel() {
 
 function ExtractPanel() {
   const { extractRules, set } = useStore();
-  const add = () => set({ extractRules: [...extractRules, { variable: "", source: "body", expression: "" }] });
+  const add = () => set({ extractRules: [...extractRules, { variableName: "", source: "body" as const, expression: "" }] });
   const remove = (i: number) => set({ extractRules: extractRules.filter((_, idx) => idx !== i) });
   const update = (i: number, patch: object) => set({ extractRules: extractRules.map((r, idx) => idx === i ? { ...r, ...patch } : r) });
 
@@ -397,7 +401,7 @@ function ExtractPanel() {
     <div className="p-3 flex flex-col gap-2">
       {extractRules.map((rule, i) => (
         <div key={i} className="flex items-center gap-2 border border-[var(--border)] rounded p-2">
-          <input value={rule.variable ?? ""} onChange={(e) => update(i, { variable: e.target.value })} placeholder="variableName" className="input py-0.5 text-2xs w-32 font-mono" />
+          <input value={rule.variableName ?? ""} onChange={(e) => update(i, { variableName: e.target.value })} placeholder="variableName" className="input py-0.5 text-2xs w-32 font-mono" />
           <select value={rule.source ?? "body"} onChange={(e) => update(i, { source: e.target.value })} className="input py-0.5 text-2xs w-24">
             {["body","header","status"].map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
