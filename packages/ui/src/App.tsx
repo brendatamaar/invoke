@@ -17,6 +17,11 @@ import { RequestBuilder } from "./components/request/RequestBuilder";
 import { ResponseViewer } from "./components/response/ResponseViewer";
 import { CommandPalette } from "./components/palette/CommandPalette";
 import { Toasts } from "./components/shared/Toast";
+import { DiffModal } from "./components/modals/DiffModal";
+import { VariableEditorModal } from "./components/modals/VariableEditorModal";
+import { HelpModal } from "./components/modals/HelpModal";
+import { ClearHistoryModal } from "./components/modals/ClearHistoryModal";
+import { SettingsPanel } from "./components/layout/SettingsPanel";
 import { execute, executeStream, oauth2ClientCredentials } from "./lib/api";
 
 // ── Resize hook ──────────────────────────────────────────────
@@ -53,9 +58,14 @@ export default function App() {
   const {
     request, environments, activeEnvironmentId,
     sessionVariables, assertionRules, extractRules,
-    streamMode, codeTarget, response,
+    streamMode, codeTarget, response, uiFontSize,
     set, addToast, loading, streaming
   } = useStore();
+
+  // Apply persisted font size on mount
+  useEffect(() => {
+    document.documentElement.style.setProperty("--ui-font-size", `${uiFontSize}px`);
+  }, []); // eslint-disable-line
 
   const { size: requestHeight, onMouseDown: onResizeMouseDown } = useResize(320);
 
@@ -216,6 +226,11 @@ export default function App() {
 
       <CommandPalette />
       <Toasts />
+      <DiffModal />
+      <VariableEditorModal />
+      <HelpModal />
+      <ClearHistoryModal />
+      <SettingsPanel />
     </div>
   );
 }

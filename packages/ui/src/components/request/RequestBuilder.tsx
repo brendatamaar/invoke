@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { ChevronRight, ChevronDown, Unplug, Plug, RefreshCw } from "lucide-react";
 import { useStore } from "../../store";
 import { URLBar } from "./URLBar";
 import { KeyValueEditor } from "../shared/KeyValueEditor";
 import { CodeEditor } from "../editors/CodeEditor";
 import { WebSocketClient } from "../protocol/WebSocketClient";
 import { GRPCClient } from "../protocol/GRPCClient";
+import {
+  GRAPHQL_INTROSPECTION_QUERY,
+  parseGraphQLIntrospection,
+  publicGraphQLTypes,
+  formatGraphQLTypeRef,
+} from "@invoke/core";
+import { webSocketConnect, webSocketPoll, webSocketClose, grpcReflect, grpcExecute } from "../../lib/api";
 import type { RequestTab } from "../../lib/types";
 import type { KeyValue, RequestProtocol } from "@invoke/core";
 
@@ -40,30 +48,12 @@ export function RequestBuilder({ onSend }: Props) {
   const protocol = (request.protocol ?? "rest") as RequestProtocol;
 
   const tabs = protocol === "graphql" ? GQL_TABS : REST_TABS;
-
-  // WebSocket and gRPC have their own full-pane UIs
-  if (protocol === "websocket") {
-    return (
-      <div className="flex flex-col h-full">
-        <ProtocolBar protocol={protocol} onSend={onSend} loading={loading} />
-        <div className="flex-1 overflow-hidden"><WebSocketClient /></div>
-      </div>
-    );
-  }
-
-  if (protocol === "grpc") {
-    return (
-      <div className="flex flex-col h-full">
-        <ProtocolBar protocol={protocol} onSend={onSend} loading={loading} />
-        <div className="flex-1 overflow-hidden"><GRPCClient /></div>
-      </div>
-    );
-  }
+  const showTabs = protocol === "rest" || protocol === "graphql";
 
   return (
     <div className="flex flex-col h-full">
+      {/* Header row: protocol pills + URL bar */}
       <div className="flex items-center border-b border-[var(--border)]">
-        {/* Protocol pills */}
         <div className="flex items-center gap-0.5 px-2 py-1.5 border-r border-[var(--border)]">
           {PROTOCOLS.map((p) => (
             <button
@@ -75,80 +65,162 @@ export function RequestBuilder({ onSend }: Props) {
             </button>
           ))}
         </div>
-        {/* URL bar fills remaining space */}
         <div className="flex-1">
-          <URLBar onSend={onSend} loading={loading} />
+          {(protocol === "rest" || protocol === "graphql") && <URLBar onSend={onSend} loading={loading} />}
+          {protocol === "websocket" && <WebSocketBar />}
+          {protocol === "grpc" && <GRPCBar />}
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)]">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => set({ requestTab: tab.id })}
-            className={`tab-btn ${requestTab === tab.id ? "active" : ""}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Tabs (REST and GraphQL only) */}
+      {showTabs && (
+        <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)]">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => set({ requestTab: tab.id })}
+              className={`tab-btn ${requestTab === tab.id ? "active" : ""}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Tab content */}
-      <div className="flex-1 overflow-auto">
-        {requestTab === "params" && (
-          <KeyValueEditor
-            rows={request.params ?? []}
-            onChange={(rows) => setRequest({ params: rows as KeyValue[] })}
-            keyPlaceholder="param"
-            valuePlaceholder="value"
-          />
-        )}
-        {requestTab === "headers" && (
-          <KeyValueEditor
-            rows={request.headers ?? []}
-            onChange={(rows) => setRequest({ headers: rows as KeyValue[] })}
-            keyPlaceholder="Header-Name"
-            valuePlaceholder="value"
-          />
-        )}
-        {requestTab === "auth"            && <AuthPanel />}
-        {requestTab === "body"            && <BodyPanel />}
-        {requestTab === "graphql"         && <GraphQLQueryPanel />}
-        {requestTab === "graphqlVariables"&& <GraphQLVariablesPanel />}
-        {requestTab === "scripts"         && <ScriptsPanel />}
-        {requestTab === "assertions"      && <AssertionsPanel />}
-        {requestTab === "extract"         && <ExtractPanel />}
-      </div>
+      {/* Content */}
+      {protocol === "websocket" ? (
+        <div className="flex-1 overflow-hidden"><WebSocketClient /></div>
+      ) : protocol === "grpc" ? (
+        <div className="flex-1 overflow-hidden"><GRPCClient /></div>
+      ) : (
+        <div className="flex-1 overflow-auto">
+          {requestTab === "params" && (
+            <KeyValueEditor
+              rows={request.params ?? []}
+              onChange={(rows) => setRequest({ params: rows as KeyValue[] })}
+              keyPlaceholder="param"
+              valuePlaceholder="value"
+            />
+          )}
+          {requestTab === "headers" && (
+            <KeyValueEditor
+              rows={request.headers ?? []}
+              onChange={(rows) => setRequest({ headers: rows as KeyValue[] })}
+              keyPlaceholder="Header-Name"
+              valuePlaceholder="value"
+            />
+          )}
+          {requestTab === "auth"            && <AuthPanel />}
+          {requestTab === "body"            && <BodyPanel />}
+          {requestTab === "graphql"         && <GraphQLQueryPanel />}
+          {requestTab === "graphqlVariables"&& <GraphQLVariablesPanel />}
+          {requestTab === "scripts"         && <ScriptsPanel />}
+          {requestTab === "assertions"      && <AssertionsPanel />}
+          {requestTab === "extract"         && <ExtractPanel />}
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Protocol bar (for WS / gRPC — replaces URL bar) ──────────
+// ── WebSocket URL bar ─────────────────────────────────────────
 
-function ProtocolBar({ protocol, onSend, loading }: { protocol: RequestProtocol; onSend: () => void; loading: boolean }) {
-  const { setRequest, request } = useStore();
+function WebSocketBar() {
+  const { websocketRequest, setWebsocketRequest, websocketState, websocketConnectionId, set, addToast } = useStore();
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const pollMessages = async (id: string) => {
+    try {
+      const { messages, connected } = await webSocketPoll(id);
+      if (!connected) { disconnect(); return; }
+      if (messages.length) {
+        set((s) => ({
+          websocketLog: [
+            ...s.websocketLog,
+            ...messages.map((m) => ({ id: Math.random().toString(36).slice(2), direction: "received" as const, type: m.type, body: m.body, createdAt: Date.now() }))
+          ]
+        }));
+      }
+    } catch { /* connection might be gone */ }
+  };
+
+  const connect = async () => {
+    set({ websocketState: "connecting", websocketLog: [] });
+    try {
+      const { connectionId, error } = await webSocketConnect(websocketRequest);
+      if (error) throw new Error(error);
+      set({ websocketState: "connected", websocketConnectionId: connectionId });
+      pollRef.current = setInterval(() => pollMessages(connectionId), 1000);
+    } catch (e) { set({ websocketState: "disconnected" }); addToast("error", String(e)); }
+  };
+
+  const disconnect = async () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    if (websocketConnectionId) await webSocketClose(websocketConnectionId).catch(() => {});
+    set({ websocketState: "disconnected", websocketConnectionId: "" });
+  };
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+
+  const stateColor = { disconnected: "bg-red-500", connecting: "bg-yellow-400 animate-pulse", connected: "bg-emerald-500" }[websocketState];
+
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)]">
-      <div className="flex items-center gap-0.5 border-r border-[var(--border)] pr-2 mr-1">
-        {PROTOCOLS.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => setRequest({ protocol: p.id })}
-            className={`tab-btn text-2xs ${protocol === p.id ? "active" : ""}`}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-      {protocol === "grpc" && (
-        <input
-          value={(request as { address?: string }).address ?? ""}
-          onChange={(e) => setRequest({ address: e.target.value } as Parameters<typeof setRequest>[0])}
-          placeholder="localhost:50051"
-          className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono outline-none focus:border-[var(--accent)]"
-        />
-      )}
+    <div className="flex items-center gap-2 px-3 py-2">
+      <div className={`w-2 h-2 rounded-full shrink-0 ${stateColor}`} />
+      <input
+        value={websocketRequest.url}
+        onChange={(e) => setWebsocketRequest({ url: e.target.value })}
+        placeholder="wss://echo.websocket.org"
+        disabled={websocketState === "connected"}
+        className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] transition-colors"
+      />
+      {websocketState === "connected"
+        ? <button onClick={disconnect} className="btn btn-danger text-xs gap-1"><Unplug size={12} /> Disconnect</button>
+        : <button onClick={connect} disabled={websocketState === "connecting"} className="btn btn-primary text-xs gap-1"><Plug size={12} /> Connect</button>
+      }
+    </div>
+  );
+}
+
+// ── gRPC URL bar ──────────────────────────────────────────────
+
+function GRPCBar() {
+  const { grpcRequest, setGrpcRequest, set, addToast } = useStore();
+
+  const reflect = async () => {
+    set({ grpcStatus: "Reflecting…" });
+    try {
+      const { methods, error } = await grpcReflect(grpcRequest);
+      if (error) throw new Error(error);
+      set({ grpcMethods: methods, grpcStatus: `${methods.length} methods found` });
+    } catch (e) { set({ grpcStatus: "Error" }); addToast("error", String(e)); }
+  };
+
+  const execute = async () => {
+    set({ grpcStatus: "Executing…" });
+    try {
+      const res = await grpcExecute(grpcRequest);
+      set({
+        grpcStatus: "Done",
+        response: { status: 200, statusText: "OK", headers: [], body: res.bodyJson ?? "", timing: { dnsMs: 0, tcpMs: 0, tlsMs: 0, ttfbMs: 0, transferMs: 0, totalMs: res.durationMs ?? 0 }, requestSize: 0, responseSize: 0 }
+      });
+    } catch (e) { set({ grpcStatus: "Error" }); addToast("error", String(e)); }
+  };
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-2">
+      <input
+        value={grpcRequest.address}
+        onChange={(e) => setGrpcRequest({ address: e.target.value })}
+        placeholder="localhost:50051"
+        className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] transition-colors"
+      />
+      <label className="flex items-center gap-1 text-xs text-[var(--text-2)] shrink-0 cursor-pointer">
+        <input type="checkbox" checked={grpcRequest.tls ?? false} onChange={(e) => setGrpcRequest({ tls: e.target.checked })} className="accent-[var(--accent)]" />
+        TLS
+      </label>
+      <button onClick={reflect} className="btn text-xs gap-1"><RefreshCw size={12} /> Reflect</button>
+      <button onClick={execute} className="btn btn-primary text-xs">Invoke</button>
     </div>
   );
 }
@@ -271,22 +343,46 @@ function BodyPanel() {
 // ── GraphQL panels ────────────────────────────────────────────
 
 function GraphQLQueryPanel() {
-  const { graphqlRequest, setGraphqlRequest, set, graphqlSchemaStatus } = useStore();
+  const { graphqlRequest, setGraphqlRequest, set, graphqlSchema, graphqlSchemaStatus, expandedGraphQLTypeNames } = useStore();
 
   const introspect = async () => {
     if (!graphqlRequest.url) return;
     set({ graphqlSchemaStatus: "Fetching schema…" });
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      graphqlRequest.headers?.forEach((h) => { if (h.enabled !== false && h.key) headers[h.key] = h.value; });
       const res = await fetch(graphqlRequest.url, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(graphqlRequest.headers?.reduce((acc: Record<string, string>, h) => { if (h.enabled !== false) acc[h.key] = h.value; return acc; }, {})) },
-        body: JSON.stringify({ query: "{ __schema { types { name } } }" })
+        headers,
+        body: JSON.stringify({ query: GRAPHQL_INTROSPECTION_QUERY })
       });
-      const data = await res.json() as { data?: { __schema?: unknown } };
-      if (data.data?.__schema) set({ graphqlSchemaStatus: "Schema loaded" });
-      else set({ graphqlSchemaStatus: "Schema unavailable" });
-    } catch { set({ graphqlSchemaStatus: "Failed to fetch schema" }); }
+      const data = await res.json() as { data?: unknown };
+      if (data.data) {
+        const schema = parseGraphQLIntrospection(JSON.stringify(data.data));
+        set({ graphqlSchema: schema, graphqlSchemaStatus: "Schema loaded" });
+      } else {
+        set({ graphqlSchemaStatus: "Schema unavailable" });
+      }
+    } catch (e) {
+      set({ graphqlSchemaStatus: `Failed: ${String(e).slice(0, 40)}` });
+    }
   };
+
+  const toggleType = (name: string) => {
+    set((s) => ({
+      expandedGraphQLTypeNames: s.expandedGraphQLTypeNames.includes(name)
+        ? s.expandedGraphQLTypeNames.filter((n) => n !== name)
+        : [...s.expandedGraphQLTypeNames, name]
+    }));
+  };
+
+  const insertField = (fieldName: string) => {
+    const current = graphqlRequest.query ?? "";
+    const suffix = current && !current.endsWith("\n") ? "\n" : "";
+    setGraphqlRequest({ query: current + suffix + `  ${fieldName}\n` });
+  };
+
+  const schemaTypes = graphqlSchema ? publicGraphQLTypes(graphqlSchema) : [];
 
   return (
     <div className="flex flex-col h-full">
@@ -298,15 +394,55 @@ function GraphQLQueryPanel() {
           className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-mono outline-none focus:border-[var(--accent)]"
         />
         <button onClick={introspect} className="btn text-2xs py-0.5 px-2">Fetch Schema</button>
-        {graphqlSchemaStatus && <span className="text-2xs text-[var(--text-3)]">{graphqlSchemaStatus}</span>}
+        {graphqlSchemaStatus && (
+          <span className={`text-2xs ${graphqlSchemaStatus.startsWith("Failed") ? "text-[var(--danger)]" : "text-[var(--text-3)]"}`}>
+            {graphqlSchemaStatus}
+          </span>
+        )}
       </div>
-      <div className="flex-1 overflow-auto">
-        <CodeEditor
-          value={graphqlRequest.query ?? ""}
-          onChange={(v) => setGraphqlRequest({ query: v })}
-          lang="javascript"
-          minHeight="200px"
-        />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto">
+          <CodeEditor
+            value={graphqlRequest.query ?? ""}
+            onChange={(v) => setGraphqlRequest({ query: v })}
+            lang="javascript"
+            minHeight="200px"
+          />
+        </div>
+        {graphqlSchema && (
+          <div className="w-52 border-l border-[var(--border)] flex flex-col overflow-hidden bg-[var(--surface-2)]">
+            <div className="px-2 py-1.5 border-b border-[var(--border)] shrink-0">
+              <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">Schema</span>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {schemaTypes.map((type) => {
+                const expanded = expandedGraphQLTypeNames.includes(type.name);
+                return (
+                  <div key={type.name}>
+                    <button
+                      onClick={() => toggleType(type.name)}
+                      className="w-full flex items-center gap-1 px-2 py-1 hover:bg-[var(--border)] text-left"
+                    >
+                      {expanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+                      <span className="text-2xs font-mono text-[var(--accent)] truncate">{type.name}</span>
+                    </button>
+                    {expanded && type.fields?.map((field) => (
+                      <button
+                        key={field.name}
+                        onClick={() => insertField(field.name)}
+                        className="w-full flex items-center gap-1 pl-5 pr-2 py-0.5 hover:bg-[var(--border)] text-left"
+                        title={`${field.name}: ${formatGraphQLTypeRef(field.type)}`}
+                      >
+                        <span className="text-2xs font-mono text-[var(--text-1)] truncate flex-1">{field.name}</span>
+                        <span className="text-2xs text-[var(--text-3)] truncate ml-1">{formatGraphQLTypeRef(field.type)}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

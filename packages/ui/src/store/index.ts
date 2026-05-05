@@ -129,6 +129,8 @@ interface AppState {
   saveDialog: { open: boolean; name: string; collectionId: string; folderId: string };
   showSettings: boolean;
   showHelp: boolean;
+  showClearHistoryModal: boolean;
+  uiFontSize: number;
   commandPaletteOpen: boolean;
   commandQuery: string;
 
@@ -232,6 +234,8 @@ export const useStore = create<AppState>((set, get) => ({
   saveDialog: { open: false, name: "", collectionId: "", folderId: "" },
   showSettings: false,
   showHelp: false,
+  showClearHistoryModal: false,
+  uiFontSize: Number(localStorage.getItem("uiFontSize") ?? 13),
   commandPaletteOpen: false,
   commandQuery: "",
 

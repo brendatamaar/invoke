@@ -1,4 +1,4 @@
-import { Search, RotateCcw, Trash2 } from "lucide-react";
+import { Search, RotateCcw, Trash2, ArrowLeftRight } from "lucide-react";
 import { useStore } from "../../store";
 import { MethodBadge } from "../shared/MethodBadge";
 import { StatusBadge } from "../shared/StatusBadge";
@@ -25,10 +25,7 @@ export function HistoryPanel() {
     addToast("info", "Request restored");
   };
 
-  const clearAll = () => {
-    if (!confirm("Clear all history?")) return;
-    set({ history: [] });
-  };
+  const clearAll = () => set({ showClearHistoryModal: true });
 
   const fmt = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
@@ -36,6 +33,7 @@ export function HistoryPanel() {
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)]">
         <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider flex-1">History</span>
+        <button onClick={() => set({ showDiffModal: true })} className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5" title="Compare responses"><ArrowLeftRight size={12} /></button>
         <button onClick={clearAll} className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5" title="Clear history"><Trash2 size={12} /></button>
       </div>
       <div className="px-3 py-2 border-b border-[var(--border)]">

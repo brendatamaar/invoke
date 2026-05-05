@@ -2,7 +2,8 @@ import { useStore } from "../../store";
 import { CodeEditor } from "../editors/CodeEditor";
 import { StatusBadge } from "../shared/StatusBadge";
 import type { ResponseTab } from "../../lib/types";
-import { Clock, HardDrive, Shield, Cookie, CheckCircle, Code2, List } from "lucide-react";
+import type { TimingPhaseName, Timing, TimingAttempt } from "@invoke/core";
+import { Clock, HardDrive, Shield, CheckCircle, Code2, List } from "lucide-react";
 
 const TABS: { id: ResponseTab; label: string; icon?: React.ReactNode }[] = [
   { id: "body",       label: "Body" },
@@ -148,33 +149,110 @@ function HeadersTab() {
 
 // ── Timing tab ───────────────────────────────────────────────
 
-const PHASES = [
-  { key: "dnsMs",      label: "DNS Lookup",         color: "bg-purple-400" },
-  { key: "tcpMs",      label: "TCP Connection",     color: "bg-blue-400" },
-  { key: "tlsMs",      label: "TLS Handshake",      color: "bg-yellow-400" },
-  { key: "ttfbMs",     label: "Time to First Byte", color: "bg-orange-400" },
-  { key: "transferMs", label: "Transfer",           color: "bg-emerald-400" }
-] as const;
+const PHASE_DEFS: { name: TimingPhaseName; label: string; color: string }[] = [
+  { name: "dns",      label: "DNS",      color: "#a78bfa" },
+  { name: "tcp",      label: "TCP",      color: "#60a5fa" },
+  { name: "tls",      label: "TLS",      color: "#fbbf24" },
+  { name: "ttfb",     label: "TTFB",     color: "#f97316" },
+  { name: "transfer", label: "Transfer", color: "#34d399" },
+];
+
+function syntheticPhases(timing: Timing) {
+  const phases = new Map<TimingPhaseName, { startMs: number; durationMs: number }>();
+  let cursor = 0;
+  for (const { name } of PHASE_DEFS) {
+    const key = `${name}Ms` as keyof Timing;
+    const durationMs = Math.max(0, timing[key] ?? 0);
+    phases.set(name, { startMs: cursor, durationMs });
+    cursor += durationMs;
+  }
+  return phases;
+}
+
+interface PhaseBar { name: TimingPhaseName; label: string; color: string; startMs: number; durationMs: number; leftPct: number; widthPct: number }
+
+function buildAttemptBars(attempt: TimingAttempt): PhaseBar[] {
+  const byName = new Map((attempt.phases ?? []).map((p) => [p.name, p]));
+  const synthetic = syntheticPhases(attempt.timing);
+  const total = Math.max(attempt.timing?.totalMs ?? 0, 1);
+
+  return PHASE_DEFS.map(({ name, label, color }) => {
+    const phase = byName.get(name) ?? synthetic.get(name) ?? { startMs: 0, durationMs: 0 };
+    const clamp = (v: number) => Math.min(100, Math.max(0, Number.isFinite(v) ? v : 0));
+    return {
+      name, label, color,
+      startMs: phase.startMs,
+      durationMs: phase.durationMs,
+      leftPct: clamp((phase.startMs / total) * 100),
+      widthPct: clamp((phase.durationMs / total) * 100),
+    };
+  });
+}
+
+function fmtMs(ms: number) {
+  const safe = Math.max(0, ms);
+  if (safe < 1 && safe > 0) return `${safe.toFixed(2)}ms`;
+  if (safe < 100) return `${safe.toFixed(1)}ms`;
+  return `${Math.round(safe)}ms`;
+}
 
 function TimingTab() {
   const { response } = useStore();
   if (!response?.timing) return <p className="p-4 text-xs text-[var(--text-3)]">No timing data</p>;
-  const t = response.timing as unknown as Record<string, number>;
-  const total = t.totalMs || 1;
+
+  const attempts: TimingAttempt[] = response.attempts?.length
+    ? response.attempts
+    : [{ url: "", status: response.status, headers: response.headers, timing: response.timing, phases: [], redirect: false }];
 
   return (
-    <div className="p-4 flex flex-col gap-3">
-      <p className="text-xs text-[var(--text-2)] font-medium">Total: {fmt(response.timing.totalMs)}</p>
-      {PHASES.map(({ key, label, color }) => {
-        const val = t[key] ?? 0;
-        const pct = (val / total) * 100;
+    <div className="p-4 flex flex-col gap-5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-[var(--text-2)]">
+          {attempts.length > 1 ? `${attempts.length} hops` : "Single request"}
+        </span>
+        <span className="text-xs font-mono text-[var(--text-3)]">Total: {fmtMs(response.timing.totalMs)}</span>
+      </div>
+
+      {attempts.map((attempt, idx) => {
+        const bars = buildAttemptBars(attempt);
+        const total = Math.max(attempt.timing?.totalMs ?? 0, 1);
+        const label = attempt.redirect ? `Redirect ${idx + 1}` : attempts.length > 1 ? "Final" : "Request";
         return (
-          <div key={key} className="flex items-center gap-3">
-            <span className="text-xs text-[var(--text-2)] w-36 shrink-0">{label}</span>
-            <div className="flex-1 h-2 bg-[var(--surface-2)] rounded-full overflow-hidden">
-              <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.max(pct, 0.5)}%` }} />
+          <div key={idx} className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-[var(--text-1)]">{label}</span>
+              {attempt.status && <StatusBadge status={attempt.status} />}
+              {attempt.url && <span className="text-2xs font-mono text-[var(--text-3)] truncate">{attempt.url}</span>}
             </div>
-            <span className="text-xs font-mono text-[var(--text-3)] w-16 text-right">{fmt(val)}</span>
+
+            {/* Waterfall track */}
+            <div className="relative h-6 bg-[var(--surface-2)] rounded overflow-hidden border border-[var(--border)]">
+              <span className="absolute left-1 top-0 bottom-0 flex items-center text-2xs text-[var(--text-3)] z-10">0</span>
+              <span className="absolute right-1 top-0 bottom-0 flex items-center text-2xs text-[var(--text-3)] z-10">{fmtMs(total)}</span>
+              {bars.filter((b) => b.durationMs > 0).map((bar) => (
+                <div
+                  key={bar.name}
+                  className="absolute top-0 bottom-0 flex items-center overflow-hidden"
+                  style={{ left: `${bar.leftPct}%`, width: `${Math.max(bar.widthPct, 0.5)}%`, backgroundColor: bar.color, opacity: 0.85 }}
+                  title={`${bar.label}: ${fmtMs(bar.durationMs)} (starts ${fmtMs(bar.startMs)})`}
+                >
+                  {bar.widthPct >= 10 && (
+                    <span className="text-2xs text-white font-medium px-1 truncate">{bar.label}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Legend chips */}
+            <div className="flex flex-wrap gap-2">
+              {bars.map((bar) => (
+                <span key={bar.name} className="flex items-center gap-1 text-2xs text-[var(--text-2)]">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: bar.color }} />
+                  {bar.label}
+                  <strong className="font-mono">{fmtMs(bar.durationMs)}</strong>
+                </span>
+              ))}
+            </div>
           </div>
         );
       })}

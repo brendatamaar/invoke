@@ -29,7 +29,7 @@ export function TopBar() {
           <select
             value={activeEnvironmentId ?? ""}
             onChange={(e) => set({ activeEnvironmentId: e.target.value || undefined })}
-            className="appearance-none bg-[var(--surface-2)] border border-[var(--border)] rounded px-2.5 py-1 pr-6 text-xs text-[var(--text-1)] cursor-pointer outline-none focus:border-[var(--accent)]"
+            className="appearance-none bg-none bg-[var(--surface-2)] border border-[var(--border)] rounded px-2.5 py-1 pr-6 text-xs text-[var(--text-1)] cursor-pointer outline-none focus:border-[var(--accent)]"
           >
             <option value="">No environment</option>
             {environments.map((env) => (
@@ -47,6 +47,7 @@ export function TopBar() {
           <Settings size={15} />
         </button>
         <button
+          onClick={() => set({ showHelp: true })}
           className="p-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
           title="Help"
         >

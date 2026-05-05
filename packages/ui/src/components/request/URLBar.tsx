@@ -30,7 +30,7 @@ export function URLBar({ onSend, loading }: Props) {
         <select
           value={request.method}
           onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
-          className={`appearance-none bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1.5 pr-6 text-xs font-semibold font-mono cursor-pointer outline-none focus:border-[var(--accent)] ${color}`}
+          className={`appearance-none bg-none bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1.5 pr-6 text-xs font-semibold font-mono cursor-pointer outline-none focus:border-[var(--accent)] ${color}`}
         >
           {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>

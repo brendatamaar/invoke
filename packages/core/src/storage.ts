@@ -305,6 +305,10 @@ export class InvokeStore {
     return saved;
   }
 
+  async clearHistory() {
+    await this.db.history.clear();
+  }
+
   async listHistory(limit = 100) {
     return this.db.history.orderBy("createdAt").reverse().limit(limit).toArray();
   }
