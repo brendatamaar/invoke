@@ -123,8 +123,7 @@ export function RequestBuilder({ onSend }: Props) {
   );
 }
 
-// ── WebSocket URL bar ─────────────────────────────────────────
-
+// WebSocket URL bar
 function WebSocketBar() {
   const { websocketRequest, setWebsocketRequest, websocketState, websocketConnectionId, set, addToast } = useStore();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -182,8 +181,7 @@ function WebSocketBar() {
   );
 }
 
-// ── gRPC URL bar ──────────────────────────────────────────────
-
+// gRPC URL bar
 function GRPCBar() {
   const { grpcRequest, setGrpcRequest, set, addToast } = useStore();
 
@@ -225,8 +223,7 @@ function GRPCBar() {
   );
 }
 
-// ── Auth panel ───────────────────────────────────────────────
-
+// Auth panel
 function AuthPanel() {
   const { request, setRequest } = useStore();
   const auth = request.auth ?? { type: "none" };
@@ -308,8 +305,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// ── Body panel ───────────────────────────────────────────────
-
+// Body panel
 type BodyMode = "none" | "json" | "form-data" | "urlencoded" | "raw";
 
 function BodyPanel() {
@@ -340,8 +336,7 @@ function BodyPanel() {
   );
 }
 
-// ── GraphQL panels ────────────────────────────────────────────
-
+// GraphQL panels
 function GraphQLQueryPanel() {
   const { graphqlRequest, setGraphqlRequest, set, graphqlSchema, graphqlSchemaStatus, expandedGraphQLTypeNames } = useStore();
 
@@ -461,8 +456,7 @@ function GraphQLVariablesPanel() {
   );
 }
 
-// ── Scripts panel ────────────────────────────────────────────
-
+// Scripts panel
 function ScriptsPanel() {
   const { request, setRequest, scriptLogs } = useStore();
   const [activeScript, setActiveScript] = useState<"pre" | "post">("pre");
@@ -492,8 +486,7 @@ function ScriptsPanel() {
   );
 }
 
-// ── Assertions panel ─────────────────────────────────────────
-
+// Assertions panel
 const EXPR_PLACEHOLDER: Partial<Record<string, string>> = {
   header: "Header-Name",
   bodyJsonPath: "$.path.to.value",
@@ -551,8 +544,7 @@ function AssertionsPanel() {
   );
 }
 
-// ── Extract panel ────────────────────────────────────────────
-
+// Extract panel
 function ExtractPanel() {
   const { extractRules, set } = useStore();
   const add = () => set((s) => ({ extractRules: [...s.extractRules, { variableName: "", source: "body" as const, expression: "" }] }));

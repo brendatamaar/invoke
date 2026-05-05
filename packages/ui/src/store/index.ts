@@ -39,7 +39,7 @@ import type {
 export const coreStore = new CoreStore();
 
 interface AppState {
-  // ── Request ──────────────────────────────────────────────
+  // Request
   request: RequestDraft;
   graphqlRequest: GraphQLRequestConfig;
   websocketRequest: WebSocketRequestConfig;
@@ -49,7 +49,7 @@ interface AppState {
   extractRules: ExtractionRule[];
   scriptLogs: string[];
 
-  // ── Response ─────────────────────────────────────────────
+  // Response
   response: ExecuteResponse | undefined;
   responseTab: ResponseTab;
   assertionResults: AssertionResult[];
@@ -64,7 +64,7 @@ interface AppState {
   streamBytes: number;
   streamController: AbortController | undefined;
 
-  // ── Collections / sidebar ─────────────────────────────────
+  // Collections / sidebar
   collections: Collection[];
   folders: Folder[];
   requests: SavedRequest[];
@@ -74,49 +74,49 @@ interface AppState {
   sidebarWidth: number;
   contextMenu: { open: boolean; x: number; y: number; target?: ContextTarget };
 
-  // ── Environments ─────────────────────────────────────────
+  // Environments
   environments: Environment[];
   activeEnvironmentId: string | undefined;
   sessionVariables: Record<string, string>;
   showEnvPanel: boolean;
   envDraft: Environment | undefined;
 
-  // ── GraphQL ───────────────────────────────────────────────
+  // GraphQL
   graphqlSchema: GraphQLIntrospectionSchema | undefined;
   graphqlSchemaStatus: string;
   expandedGraphQLTypeNames: string[];
 
-  // ── WebSocket ─────────────────────────────────────────────
+  // WebSocket
   websocketState: "disconnected" | "connecting" | "connected";
   websocketLog: WebSocketLogItem[];
   websocketConnectionId: string;
 
-  // ── gRPC ─────────────────────────────────────────────────
+  // gRPC
   grpcMethods: GrpcMethodInfo[];
   grpcStatus: string;
 
-  // ── History ───────────────────────────────────────────────
+  // History
   history: HistoryEntry[];
   historyQuery: string;
 
-  // ── Flows ─────────────────────────────────────────────────
+  // Flows
   flows: Flow[];
   flowDraft: Flow;
   flowResult: FlowResult | undefined;
   flowRunning: boolean;
   flowLog: string[];
 
-  // ── Diff ─────────────────────────────────────────────────
+  // Diff
   diffLeftId: string;
   diffRightId: string;
   showDiffModal: boolean;
 
-  // ── Mock server ───────────────────────────────────────────
+  // Mock server
   mockRoutes: MockRoute[];
   mockLogs: MockLogEntry[];
   mockStatus: string;
 
-  // ── Variable editor ───────────────────────────────────────
+  // Variable editor
   variableEditor: {
     open: boolean;
     kind?: "collection" | "folder";
@@ -125,7 +125,7 @@ interface AppState {
     variables: KeyValue[];
   };
 
-  // ── Dialogs ───────────────────────────────────────────────
+  // Dialogs
   saveDialog: { open: boolean; name: string; collectionId: string; folderId: string };
   showSettings: boolean;
   showHelp: boolean;
@@ -134,10 +134,10 @@ interface AppState {
   commandPaletteOpen: boolean;
   commandQuery: string;
 
-  // ── Toasts ───────────────────────────────────────────────
+  // Toasts
   toasts: Toast[];
 
-  // ── Actions ──────────────────────────────────────────────
+  // Actions
   set: (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
   setRequest: (partial: Partial<RequestDraft>) => void;
   setGraphqlRequest: (partial: Partial<GraphQLRequestConfig>) => void;
@@ -150,7 +150,7 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set, get) => ({
-  // ── Request ──────────────────────────────────────────────
+  // Request
   request: emptyRequest(),
   graphqlRequest: emptyGraphQLRequest(),
   websocketRequest: emptyWebSocketRequest(),
@@ -160,7 +160,7 @@ export const useStore = create<AppState>((set, get) => ({
   extractRules: [],
   scriptLogs: [],
 
-  // ── Response ─────────────────────────────────────────────
+  // Response
   response: undefined,
   responseTab: "body",
   assertionResults: [],
@@ -175,7 +175,7 @@ export const useStore = create<AppState>((set, get) => ({
   streamBytes: 0,
   streamController: undefined,
 
-  // ── Collections ───────────────────────────────────────────
+  // Collections
   collections: [],
   folders: [],
   requests: [],
@@ -185,52 +185,52 @@ export const useStore = create<AppState>((set, get) => ({
   sidebarWidth: 260,
   contextMenu: { open: false, x: 0, y: 0 },
 
-  // ── Environments ─────────────────────────────────────────
+  // Environments
   environments: [],
   activeEnvironmentId: undefined,
   sessionVariables: {},
   showEnvPanel: false,
   envDraft: undefined,
 
-  // ── GraphQL ───────────────────────────────────────────────
+  // GraphQL
   graphqlSchema: undefined,
   graphqlSchemaStatus: "",
   expandedGraphQLTypeNames: [],
 
-  // ── WebSocket ─────────────────────────────────────────────
+  // WebSocket
   websocketState: "disconnected",
   websocketLog: [],
   websocketConnectionId: "",
 
-  // ── gRPC ─────────────────────────────────────────────────
+  // gRPC
   grpcMethods: [],
   grpcStatus: "",
 
-  // ── History ───────────────────────────────────────────────
+  // History
   history: [],
   historyQuery: "",
 
-  // ── Flows ─────────────────────────────────────────────────
+  // Flows
   flows: [],
   flowDraft: { id: "", name: "New Flow", steps: [] } as unknown as Flow,
   flowResult: undefined,
   flowRunning: false,
   flowLog: [],
 
-  // ── Diff ─────────────────────────────────────────────────
+  // Diff
   diffLeftId: "",
   diffRightId: "",
   showDiffModal: false,
 
-  // ── Mock server ───────────────────────────────────────────
+  // Mock server
   mockRoutes: [],
   mockLogs: [],
   mockStatus: "",
 
-  // ── Variable editor ───────────────────────────────────────
+  // Variable editor
   variableEditor: { open: false, name: "", variables: [] },
 
-  // ── Dialogs ───────────────────────────────────────────────
+  // Dialogs
   saveDialog: { open: false, name: "", collectionId: "", folderId: "" },
   showSettings: false,
   showHelp: false,
@@ -239,10 +239,10 @@ export const useStore = create<AppState>((set, get) => ({
   commandPaletteOpen: false,
   commandQuery: "",
 
-  // ── Toasts ───────────────────────────────────────────────
+  // Toasts
   toasts: [],
 
-  // ── Actions ──────────────────────────────────────────────
+  // Actions
   set: (partial) => {
     if (typeof partial === "function") set((s) => (partial as (s: AppState) => Partial<AppState>)(s));
     else set(partial);

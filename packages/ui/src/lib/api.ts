@@ -153,8 +153,7 @@ export async function oauth2ClientCredentials(auth: AuthConfig): Promise<{ acces
   return payload;
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-
+// Helpers
 function buildExecutePayload(req: RequestConfig) {
   return {
     method: req.method,

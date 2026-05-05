@@ -24,8 +24,7 @@ import { ClearHistoryModal } from "./components/modals/ClearHistoryModal";
 import { SettingsPanel } from "./components/layout/SettingsPanel";
 import { execute, executeStream, oauth2ClientCredentials } from "./lib/api";
 
-// ── Resize hook ──────────────────────────────────────────────
-
+// Resize hook
 function useResize(initial: number) {
   const [size, setSize] = useState(initial);
   const dragging = useRef(false);
@@ -69,8 +68,7 @@ export default function App() {
 
   const { size: requestHeight, onMouseDown: onResizeMouseDown } = useResize(320);
 
-  // ── Bootstrap ────────────────────────────────────────────
-
+  // Bootstrap
   useEffect(() => {
     const load = async () => {
       try {
@@ -97,14 +95,12 @@ export default function App() {
     load();
   }, []); // eslint-disable-line
 
-  // ── Persist active environment ────────────────────────────
-
+  // Persist active environment
   useEffect(() => {
     coreStore.setActiveEnvironmentId(activeEnvironmentId).catch(() => {});
   }, [activeEnvironmentId]);
 
-  // ── Code generation ──────────────────────────────────────
-
+  // Code generation
   useEffect(() => {
     if (!response) return;
     let cancelled = false;
@@ -120,8 +116,7 @@ export default function App() {
     return () => { cancelled = true; };
   }, [response, codeTarget]); // eslint-disable-line
 
-  // ── Send handler ─────────────────────────────────────────
-
+  // Send handler
   const handleSend = useCallback(async () => {
     if (loading || streaming || !request.url.trim()) return;
 
@@ -191,8 +186,7 @@ export default function App() {
     }
   }, [request, environments, activeEnvironmentId, sessionVariables, assertionRules, extractRules, streamMode, loading, streaming, addToast, set]); // eslint-disable-line
 
-  // ── Keyboard shortcuts ───────────────────────────────────
-
+  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); handleSend(); }

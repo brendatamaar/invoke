@@ -98,8 +98,7 @@ export function ResponseViewer() {
   );
 }
 
-// ── Body tab ─────────────────────────────────────────────────
-
+// Body tab
 function BodyTab() {
   const { response, responsePretty, set } = useStore();
   if (!response) return null;
@@ -128,8 +127,7 @@ function BodyTab() {
   );
 }
 
-// ── Headers tab ──────────────────────────────────────────────
-
+// Headers tab
 function HeadersTab() {
   const { response } = useStore();
   if (!response) return null;
@@ -147,8 +145,7 @@ function HeadersTab() {
   );
 }
 
-// ── Timing tab ───────────────────────────────────────────────
-
+// Timing tab
 const PHASE_DEFS: { name: TimingPhaseName; label: string; color: string }[] = [
   { name: "dns",      label: "DNS",      color: "#a78bfa" },
   { name: "tcp",      label: "TCP",      color: "#60a5fa" },
@@ -260,8 +257,7 @@ function TimingTab() {
   );
 }
 
-// ── TLS tab ──────────────────────────────────────────────────
-
+// TLS tab
 function TLSTab() {
   const { response } = useStore();
   const tls = (response as unknown as { tls?: { version?: string; cipher?: string; certificates?: { subject: string; issuer: string; validFrom: string; validTo: string }[] } })?.tls;
@@ -292,8 +288,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ── Assertions tab ───────────────────────────────────────────
-
+// Assertions tab
 function AssertionsTab() {
   const { assertionResults, assertionRules } = useStore();
   if (!assertionResults.length) return <p className="p-4 text-xs text-[var(--text-3)]">No assertions configured</p>;
@@ -317,8 +312,7 @@ function AssertionsTab() {
   );
 }
 
-// ── Code tab ─────────────────────────────────────────────────
-
+// Code tab
 const CODE_TARGETS = [
   "curl", "fetch", "node-fetch", "node-axios",
   "python-requests", "python-httpx",

@@ -19,7 +19,7 @@ export function Sidebar() {
   const { sidebarSection, sidebarCollapsed, set } = useStore();
 
   return (
-    <aside className="flex flex-col border-r border-[var(--border)] bg-[var(--surface-2)] overflow-hidden" style={{ width: sidebarCollapsed ? 44 : 220, flexShrink: 0 }}>
+    <aside className="flex flex-col border-r border-[var(--border)] bg-[var(--surface-2)] overflow-hidden" style={{ width: sidebarCollapsed ? 44 : 280, flexShrink: 0 }}>
       {/* Icon nav */}
       <nav className="flex flex-col gap-0.5 p-1.5 border-b border-[var(--border)]">
         {NAV.map(({ id, icon, label }) => (

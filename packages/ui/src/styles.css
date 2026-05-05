@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Design tokens ─────────────────────────────────────────── */
+/* Design tokens */
 :root {
   --surface:        #ffffff;
   --surface-2:      #f9f9f9;
@@ -24,7 +24,7 @@
   --warn-subtle:    #fffbeb;
 }
 
-/* ── Base ──────────────────────────────────────────────────── */
+/* Base */
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body, #root {
@@ -43,13 +43,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Scrollbars ────────────────────────────────────────────── */
+/* Scrollbars */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
 
-/* ── CodeMirror ────────────────────────────────────────────── */
+/* CodeMirror */
 .cm-editor {
   height: 100%;
   font-family: "JetBrains Mono", monospace;
@@ -67,7 +67,7 @@ body {
 .cm-activeLineGutter { background: transparent !important; }
 .cm-activeLine { background: rgba(0,0,0,0.02) !important; }
 
-/* ── Utility classes ───────────────────────────────────────── */
+/* Utility classes */
 .input {
   width: 100%;
   background: var(--surface);
@@ -130,7 +130,7 @@ body {
 .tab-btn:hover { color: var(--text-1); background: var(--surface-2); }
 .tab-btn.active { color: var(--text-1); background: var(--border); }
 
-/* ── Resize handle ─────────────────────────────────────────── */
+/* Resize handle */
 .resize-handle-h {
   flex-shrink: 0;
   width: 1px;
