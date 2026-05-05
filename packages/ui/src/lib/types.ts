@@ -7,6 +7,8 @@ export type ContextTarget =
 
 export type PaletteKind = "command" | "collection" | "folder" | "request" | "environment" | "history";
 export type SidebarSection = "collections" | "history" | "environments" | "flows" | "mocks";
+export type RequestTab = "params" | "headers" | "auth" | "body" | "graphql" | "graphqlVariables" | "websocket" | "grpc" | "assertions" | "extract" | "scripts";
+export type ResponseTab = "body" | "headers" | "timing" | "tls" | "assertions" | "code";
 
 export interface PaletteItem {
   id: string;
@@ -24,4 +26,10 @@ export interface WebSocketLogItem {
   type: string;
   body: string;
   createdAt: number;
+}
+
+export interface Toast {
+  id: string;
+  kind: "success" | "error" | "info" | "warn";
+  message: string;
 }
