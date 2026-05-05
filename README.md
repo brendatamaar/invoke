@@ -1,20 +1,19 @@
 # invoke
 
-invoke is a local-first API development and testing platform for developers who want a fast browser UI, self-hosting, and accurate network timing without mandatory accounts or cloud sync.
+invoke is a local-first API development and testing platform for developers who want a fast browser UI, self-hosting, accurate network timing, and no mandatory account or cloud sync.
 
-It combines a Vue web app, a TypeScript core engine, a thin Node.js proxy, and a Go executor. The browser owns the product state, the core engine handles API-client behavior, and the Go executor performs network I/O with low-level timing data that browser-only tools cannot capture reliably.
+It combines a React web app, a TypeScript core engine, a thin Node.js proxy, and a Go executor. The browser owns the product state, the core engine handles API-client behavior, and the Go executor performs network I/O with low-level timing data that browser-only tools cannot capture reliably.
 
-## Why invoke
+## Overview
 
-invoke is built around a smaller set of principles:
+- **Local-first by default** - collections, environments, history, flows, mock routes, and settings live in browser storage.
+- **No required account** - use the app without sign-up, user management, or a hosted workspace.
+- **Protocol-aware** - build and inspect REST, GraphQL, WebSocket, gRPC, and streaming HTTP requests in one interface.
+- **Accurate execution data** - capture detailed HTTP timing through a Go executor using `net/http/httptrace`.
+- **Repeatable API checks** - run assertions, extraction rules, scripts, and request flows locally.
+- **Portable API work** - import existing API work, export collection data, generate code snippets, and self-host with Docker Compose.
 
-- **Local-first by default** - collections, environments, history, flows, and settings live in the browser.
-- **No required account** - no sign-up, user management, or a hosted workspace.
-- **Protocol-aware** - REST, GraphQL, WebSocket, gRPC, and streaming HTTP workflows are handled in one interface.
-- **Accurate execution data** - HTTP timing is captured by a Go sidecar using `net/http/httptrace`.
-- **Portable API work** - import from common tools, export collection data, and generate code snippets for application use.
-
-## Capabilities
+## Features
 
 ### Request Building
 
@@ -155,16 +154,25 @@ Code export targets include:
 
 ## Architecture
 
-```text
-Vue UI + @invoke/core (browser)
-  -> Hono server (Node.js)
-  -> Go executor (gRPC)
-  -> target API
+```mermaid
+flowchart LR
+  User --> UI[React UI]
+  UI --> Core["@invoke/core"]
+  Core --> Storage[(Browser storage)]
+  Core --> Server[Hono server]
+  Server --> Executor[Go executor]
+  Executor --> API[Target APIs]
+  Server --> Mock[In-memory mock server]
+  Mock --> UI
+  Executor --> Server
+  Server --> UI
 ```
+
+The browser is the source of truth for workspace data. Requests are resolved in the UI and core layer, forwarded through the Node server, executed by the Go sidecar when network access or timing detail is needed, and returned to the response viewer.
 
 ### Browser UI
 
-The Vue app is the main product surface. It renders the request builder, response viewer, collection tree, environment editor, protocol clients, history, flow editor, settings, and import/export tools.
+The React app is the main product surface. It renders the request builder, response viewer, collection tree, environment editor, protocol clients, history, flow editor, settings, and import/export tools.
 
 The UI imports `@invoke/core` directly. That keeps the app responsive and lets most business logic run near the browser-owned data.
 
@@ -239,7 +247,7 @@ Self-hosting keeps the proxy and executor under your control. This is important 
 |-- packages/
 |   |-- core/                 TypeScript core engine
 |   |-- server/               Hono server, proxy routes, streaming, mock host
-|   `-- ui/                   Vue browser application
+|   `-- ui/                   React browser application
 |-- proto/                    Executor protobuf contract
 |-- tests/e2e/                Playwright end-to-end tests
 |-- docs/                     Product and implementation documentation
@@ -474,59 +482,3 @@ When changing persisted data:
 - Keep exported files readable and deterministic.
 - Avoid changing import/export formats without compatibility handling.
 - Test refresh and reload behavior after saving collections, environments, flows, and history.
-
-## Documentation
-
-The `docs/` directory contains deeper product and implementation notes:
-
-- `docs/prd.md` - full product requirements and positioning.
-- `docs/mvp-features.md` - long-form feature catalog.
-- `docs/execution-detail.md` - implementation task breakdown.
-- `docs/dependencies.md` - dependency rationale and setup notes.
-
-The README is the user-facing entry point. Keep detailed planning notes in `docs/` and keep this file focused on what invoke is, what it can do, how it works, and how to run it.
-
-## Troubleshooting
-
-### `pnpm` is blocked in PowerShell
-
-Use:
-
-```powershell
-pnpm.cmd install
-pnpm.cmd dev:all
-```
-
-or adjust the PowerShell execution policy for your environment.
-
-### The UI loads but requests fail
-
-Check that the server and executor are both running. In separate-terminal mode, all three commands are required:
-
-```bash
-pnpm executor:dev
-pnpm dev:server
-pnpm dev:ui
-```
-
-### Protobuf changes are not reflected
-
-Regenerate the protobuf output:
-
-```bash
-pnpm proto:generate
-```
-
-Then rebuild:
-
-```bash
-pnpm build
-```
-
-### Browser data looks stale
-
-invoke stores product data locally in the browser. If you are debugging storage changes, inspect IndexedDB in browser devtools. Clearing site data will remove local collections, environments, history, flows, and settings for that origin.
-
-## License
-
-No license file is currently included in this repository. Add a `LICENSE` file before distributing or accepting external contributions.

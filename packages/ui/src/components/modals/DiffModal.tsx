@@ -21,17 +21,16 @@ export function DiffModal() {
     ? compareResponses(leftEntry.response, rightEntry.response)
     : null;
 
-  const fmt = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const entryLabel = (h: (typeof history)[number]) => {
     const req = h.request as { method?: string; url?: string } | undefined;
-    return `${req?.method ?? "GET"} ${(req?.url ?? "—").slice(0, 60)} (${fmt(h.createdAt)})`;
+    return `${req?.method ?? "GET"} ${(req?.url ?? "—").slice(0, 60)}`;
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={close}>
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
-        style={{ width: "90vw", maxHeight: "88vh" }}
+        style={{ width: "90vw", maxHeight: "100vh", minHeight: "50vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">

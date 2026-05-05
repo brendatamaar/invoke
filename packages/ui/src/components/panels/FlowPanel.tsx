@@ -1,12 +1,14 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Play, Square, Plus, Trash2 } from "lucide-react";
 import { useStore, coreStore } from "../../store";
 import { FlowRunner, type Flow, type VariableScope } from "@invoke/core";
 import { execute } from "../../lib/api";
+import { ConfirmModal } from "../shared/ConfirmModal";
 
 export function FlowPanel() {
   const { flows, flowDraft, flowResult, flowRunning, flowLog, set, addToast, environments, activeEnvironmentId, sessionVariables } = useStore();
   const runner = useRef(new FlowRunner());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const selectFlow = (flow: Flow) => set({ flowDraft: { ...flow } });
 
@@ -22,7 +24,6 @@ export function FlowPanel() {
   };
 
   const deleteFlow = async (id: string) => {
-    if (!confirm("Delete this flow?")) return;
     try {
       await coreStore.deleteFlow(id);
       const fs = await coreStore.listFlows();
@@ -70,7 +71,7 @@ export function FlowPanel() {
           >
             <span className="flex-1 text-xs text-[var(--text-1)] truncate">{flow.name}</span>
             <span className="text-2xs text-[var(--text-3)]">{flow.steps?.length ?? 0} steps</span>
-            <button onClick={(e) => { e.stopPropagation(); deleteFlow(flow.id); }} className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)]">
+            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(flow.id); }} className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)]">
               <Trash2 size={11} />
             </button>
           </div>
@@ -92,6 +93,16 @@ export function FlowPanel() {
           : <button onClick={runFlow} className="btn btn-primary text-2xs py-0.5 px-2"><Play size={11} /> Run</button>
         }
       </div>
+
+      <ConfirmModal
+        open={confirmDeleteId !== null}
+        title="Delete Flow"
+        message="Delete this flow?"
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { if (confirmDeleteId) deleteFlow(confirmDeleteId); setConfirmDeleteId(null); }}
+        onClose={() => setConfirmDeleteId(null)}
+      />
 
       {/* Log */}
       <div className="flex-1 overflow-y-auto p-2 font-mono text-2xs flex flex-col gap-0.5">
