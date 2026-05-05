@@ -21,10 +21,9 @@ export function DiffModal() {
     ? compareResponses(leftEntry.response, rightEntry.response)
     : null;
 
-  const fmt = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const entryLabel = (h: (typeof history)[number]) => {
     const req = h.request as { method?: string; url?: string } | undefined;
-    return `${req?.method ?? "GET"} ${(req?.url ?? "—").slice(0, 60)} (${fmt(h.createdAt)})`;
+    return `${req?.method ?? "GET"} ${(req?.url ?? "—").slice(0, 60)}`;
   };
 
   return (

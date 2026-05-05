@@ -309,6 +309,14 @@ export class InvokeStore {
     await this.db.history.clear();
   }
 
+  async deleteHistoryEntry(id: string) {
+    await this.db.history.delete(id);
+  }
+
+  async deleteHistoryEntries(ids: string[]) {
+    await this.db.history.bulkDelete(ids);
+  }
+
   async listHistory(limit = 100) {
     return this.db.history.orderBy("createdAt").reverse().limit(limit).toArray();
   }
