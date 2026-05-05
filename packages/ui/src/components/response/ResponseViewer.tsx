@@ -151,7 +151,7 @@ function HeadersTab() {
     <div className="divide-y divide-[var(--border)]">
       {headers.map((h, i) => (
         <div key={i} className="flex items-start gap-4 px-3 py-2 hover:bg-[var(--surface-2)]">
-          <span className="text-xs font-mono font-medium text-[var(--text-1)] w-48 shrink-0 truncate">{h.key}</span>
+          <span className="text-xs font-mono font-medium text-[var(--text-1)] w-56 shrink-0 truncate">{h.key}</span>
           <span className="text-xs font-mono text-[var(--text-2)] break-all">{h.value}</span>
         </div>
       ))}
@@ -162,11 +162,11 @@ function HeadersTab() {
 
 // Timing tab
 const PHASE_DEFS: { name: TimingPhaseName; label: string; color: string }[] = [
-  { name: "dns",      label: "DNS",      color: "#a78bfa" },
-  { name: "tcp",      label: "TCP",      color: "#60a5fa" },
-  { name: "tls",      label: "TLS",      color: "#fbbf24" },
-  { name: "ttfb",     label: "TTFB",     color: "#f97316" },
-  { name: "transfer", label: "Transfer", color: "#34d399" },
+  { name: "dns",      label: "DNS",      color: "#5bc0be" },
+  { name: "tcp",      label: "TCP",      color: "#7bd88f" },
+  { name: "tls",      label: "TLS",      color: "#ffd166" },
+  { name: "ttfb",     label: "TTFB",     color: "#b388ff" },
+  { name: "transfer", label: "Transfer", color: "#ff8f70" },
 ];
 
 function syntheticPhases(timing: Timing) {
@@ -216,58 +216,99 @@ function TimingTab() {
     ? response.attempts
     : [{ url: "", status: response.status, headers: response.headers, timing: response.timing, phases: [], redirect: false }];
 
+  const timing = response.timing;
+  const timingRows = [
+    { key: "dns",      label: "DNS",      value: timing.dnsMs },
+    { key: "tcp",      label: "TCP",      value: timing.tcpMs },
+    { key: "tls",      label: "TLS",      value: timing.tlsMs },
+    { key: "ttfb",     label: "TTFB",     value: timing.ttfbMs },
+    { key: "transfer", label: "Transfer", value: timing.transferMs },
+    { key: "total",    label: "Total",    value: timing.totalMs },
+  ];
+
   return (
-    <div className="p-4 flex flex-col gap-5">
+    <div className="p-4 flex flex-col gap-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[var(--text-2)]">
+        <span className="text-xs font-semibold text-[var(--text-1)]">Timing waterfall</span>
+        <span className="text-xs text-[var(--text-3)]">
           {attempts.length > 1 ? `${attempts.length} hops` : "Single request"}
         </span>
-        <span className="text-xs font-mono text-[var(--text-3)]">Total: {fmtMs(response.timing.totalMs)}</span>
       </div>
 
-      {attempts.map((attempt, idx) => {
-        const bars = buildAttemptBars(attempt);
-        const total = Math.max(attempt.timing?.totalMs ?? 0, 1);
-        const label = attempt.redirect ? `Redirect ${idx + 1}` : attempts.length > 1 ? "Final" : "Request";
-        return (
-          <div key={idx} className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-[var(--text-1)]">{label}</span>
-              {attempt.status && <StatusBadge status={attempt.status} />}
-              {attempt.url && <span className="text-2xs font-mono text-[var(--text-3)] truncate">{attempt.url}</span>}
-            </div>
+      {/* Attempt cards */}
+      <div className="flex flex-col gap-3">
+        {attempts.map((attempt, idx) => {
+          const bars = buildAttemptBars(attempt);
+          const total = Math.max(attempt.timing?.totalMs ?? 0, 1);
+          const label = attempt.redirect ? `Redirect ${idx + 1}` : attempts.length > 1 ? "Final" : "Request";
+          return (
+            <div key={idx} className="flex flex-col gap-2.5 p-3 rounded border border-[var(--border)] bg-[var(--surface-2)]">
+              {/* Attempt label row */}
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-semibold text-[var(--text-1)] shrink-0">{label}</span>
+                {attempt.status && <StatusBadge status={attempt.status} />}
+                {attempt.url && (
+                  <span className="text-2xs font-mono text-[var(--text-3)] truncate min-w-0">{attempt.url}</span>
+                )}
+              </div>
 
-            {/* Waterfall track */}
-            <div className="relative h-6 bg-[var(--surface-2)] rounded overflow-hidden border border-[var(--border)]">
-              <span className="absolute left-1 top-0 bottom-0 flex items-center text-2xs text-[var(--text-3)] z-10">0</span>
-              <span className="absolute right-1 top-0 bottom-0 flex items-center text-2xs text-[var(--text-3)] z-10">{fmtMs(total)}</span>
-              {bars.filter((b) => b.durationMs > 0).map((bar) => (
-                <div
-                  key={bar.name}
-                  className="absolute top-0 bottom-0 flex items-center overflow-hidden"
-                  style={{ left: `${bar.leftPct}%`, width: `${Math.max(bar.widthPct, 0.5)}%`, backgroundColor: bar.color, opacity: 0.85 }}
-                  title={`${bar.label}: ${fmtMs(bar.durationMs)} (starts ${fmtMs(bar.startMs)})`}
-                >
-                  {bar.widthPct >= 10 && (
-                    <span className="text-2xs text-white font-medium px-1 truncate">{bar.label}</span>
-                  )}
-                </div>
-              ))}
-            </div>
+              {/* Waterfall track — taller with time labels above, bar below */}
+              <div className="relative h-13 bg-[var(--surface)] rounded border border-[var(--border)]" style={{ height: 52 }}>
+                <span className="absolute left-2 top-1 text-2xs text-[var(--text-3)] z-10 leading-none">0</span>
+                <span className="absolute right-2 top-1 text-2xs text-[var(--text-3)] z-10 leading-none">{fmtMs(total)}</span>
+                {bars.map((bar) =>
+                  bar.durationMs === 0 ? null : (
+                    <div
+                      key={bar.name}
+                      className="absolute flex items-center overflow-hidden rounded-sm"
+                      style={{
+                        left: `${bar.leftPct}%`,
+                        width: `${Math.max(bar.widthPct, 0.5)}%`,
+                        top: 22,
+                        bottom: 6,
+                        backgroundColor: bar.color,
+                      }}
+                      title={`${bar.label}: ${fmtMs(bar.durationMs)} (starts ${fmtMs(bar.startMs)})`}
+                    >
+                      {bar.widthPct >= 10 && (
+                        <span className="text-2xs font-bold px-1.5 truncate" style={{ color: "#061214" }}>
+                          {bar.label} {fmtMs(bar.durationMs)}
+                        </span>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
 
-            {/* Legend chips */}
-            <div className="flex flex-wrap gap-2">
-              {bars.map((bar) => (
-                <span key={bar.name} className="flex items-center gap-1 text-2xs text-[var(--text-2)]">
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: bar.color }} />
-                  {bar.label}
-                  <strong className="font-mono">{fmtMs(bar.durationMs)}</strong>
-                </span>
-              ))}
+              {/* Legend chips */}
+              <div className="flex flex-wrap gap-1.5">
+                {bars.map((bar) => (
+                  <span
+                    key={bar.name}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--surface)] text-2xs text-[var(--text-1)]"
+                    title={`${bar.label}: ${fmtMs(bar.durationMs)} (starts ${fmtMs(bar.startMs)})`}
+                  >
+                    <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: bar.color }} />
+                    {bar.label}
+                    <strong className="text-[var(--text-3)]">{fmtMs(bar.durationMs)}</strong>
+                  </span>
+                ))}
+              </div>
             </div>
+          );
+        })}
+      </div>
+
+      {/* Timing summary grid */}
+      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
+        {timingRows.map((row) => (
+          <div key={row.key} className="flex flex-col gap-0.5 p-2.5 rounded border border-[var(--border)] bg-[var(--surface-2)]">
+            <span className="text-2xs text-[var(--text-3)]">{row.label}</span>
+            <span className="text-xs text-[var(--text-1)]">{fmtMs(row.value ?? 0)}</span>
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
