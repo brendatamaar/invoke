@@ -73,7 +73,7 @@ export function CommandPalette() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/20 backdrop-blur-[1px]" onMouseDown={(e) => { if (e.target === e.currentTarget) set({ commandPaletteOpen: false }); }}>
-      <div className="w-full max-w-lg bg-white border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-lg bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden">
         {/* Search input */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
           <Search size={15} className="text-[var(--text-3)] shrink-0" />
@@ -113,7 +113,7 @@ export function CommandPalette() {
         <div className="flex items-center gap-3 px-4 py-2 border-t border-[var(--border)] bg-[var(--surface-2)]">
           {[["↑↓", "Navigate"], ["↵", "Select"], ["esc", "Close"]].map(([key, label]) => (
             <span key={key} className="flex items-center gap-1.5 text-2xs text-[var(--text-3)]">
-              <kbd className="px-1 py-0.5 rounded bg-white border border-[var(--border)] font-mono">{key}</kbd> {label}
+              <kbd className="px-1 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)] font-mono">{key}</kbd> {label}
             </span>
           ))}
         </div>

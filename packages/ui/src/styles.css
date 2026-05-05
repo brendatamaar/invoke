@@ -24,6 +24,27 @@
   --warn-subtle:    #fffbeb;
 }
 
+/* Dark theme */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --surface:        #111111;
+  --surface-2:      #1a1a1a;
+  --border:         #2a2a2a;
+  --border-strong:  #3a3a3a;
+  --text-1:         #f0f0f0;
+  --text-2:         #a0a0a0;
+  --text-3:         #606060;
+  --accent:         #3b82f6;
+  --accent-subtle:  rgba(59,130,246,0.15);
+  --accent-fg:      #ffffff;
+  --danger:         #ef4444;
+  --danger-subtle:  rgba(239,68,68,0.12);
+  --success:        #22c55e;
+  --success-subtle: rgba(34,197,94,0.12);
+  --warn:           #f59e0b;
+  --warn-subtle:    rgba(245,158,11,0.12);
+}
+
 /* Base */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -74,7 +95,6 @@ body {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 5px 8px;
-  font-size: 13px;
   color: var(--text-1);
   outline: none;
   transition: border-color 0.1s;
@@ -87,7 +107,6 @@ body {
   align-items: center;
   gap: 5px;
   padding: 5px 10px;
-  font-size: 13px;
   font-weight: 500;
   border-radius: 6px;
   border: 1px solid var(--border);

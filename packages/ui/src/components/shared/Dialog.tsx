@@ -26,7 +26,7 @@ export function Dialog({ open, onClose, title, children, width = "480px", footer
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="bg-white border border-[var(--border)] rounded-xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden"
         style={{ width }}
       >
         {/* header */}

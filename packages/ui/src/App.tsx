@@ -57,14 +57,9 @@ export default function App() {
   const {
     request, environments, activeEnvironmentId,
     sessionVariables, assertionRules, extractRules,
-    streamMode, codeTarget, response, uiFontSize,
+    streamMode, codeTarget, response,
     set, addToast, loading, streaming
   } = useStore();
-
-  // Apply persisted font size on mount
-  useEffect(() => {
-    document.documentElement.style.setProperty("--ui-font-size", `${uiFontSize}px`);
-  }, []); // eslint-disable-line
 
   const { size: requestHeight, onMouseDown: onResizeMouseDown } = useResize(320);
 

@@ -21,7 +21,7 @@ export function TopBar() {
       >
         <Search size={12} />
         <span>Search or jump to…</span>
-        <kbd className="ml-auto font-mono text-2xs px-1 py-px bg-white border border-[var(--border)] rounded">⌘K</kbd>
+        <kbd className="ml-auto font-mono text-2xs px-1 py-px bg-[var(--surface-2)] border border-[var(--border)] rounded">⌘K</kbd>
       </button>
 
       <div className="ml-auto flex items-center gap-2">

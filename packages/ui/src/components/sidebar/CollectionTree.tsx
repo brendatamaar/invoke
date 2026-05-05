@@ -54,7 +54,7 @@ function RequestNode({ request, collectionId }: { request: SavedRequest; collect
             <MoreHorizontal size={13} />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]" onClick={(e) => e.stopPropagation()}>
               <MenuItem icon={<Copy size={12} />} label="Duplicate" onClick={() => setMenuOpen(false)} />
               <MenuItem icon={<Trash2 size={12} />} label="Delete" onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} danger />
             </div>
