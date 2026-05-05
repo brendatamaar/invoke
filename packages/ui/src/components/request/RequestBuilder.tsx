@@ -494,29 +494,55 @@ function ScriptsPanel() {
 
 // ── Assertions panel ─────────────────────────────────────────
 
+const EXPR_PLACEHOLDER: Partial<Record<string, string>> = {
+  header: "Header-Name",
+  bodyJsonPath: "$.path.to.value",
+  regex: "regex pattern",
+};
+
 function AssertionsPanel() {
   const { assertionRules, assertionResults, set } = useStore();
-  const add = () => set({ assertionRules: [...assertionRules, { id: Math.random().toString(36).slice(2), type: "status" as const, expression: "", matcher: "equals" as const, expected: "200", enabled: true }] });
-  const remove = (i: number) => set({ assertionRules: assertionRules.filter((_, idx) => idx !== i) });
-  const update = (i: number, patch: object) => set({ assertionRules: assertionRules.map((r, idx) => idx === i ? { ...r, ...patch } : r) });
+  const add = () => set((s) => ({ assertionRules: [...s.assertionRules, { id: Math.random().toString(36).slice(2), type: "status" as const, expression: "", matcher: "equals" as const, expected: "200", enabled: true }] }));
+  const remove = (i: number) => set((s) => ({ assertionRules: s.assertionRules.filter((_, idx) => idx !== i) }));
+  const update = (i: number, patch: object) => set((s) => ({ assertionRules: s.assertionRules.map((r, idx) => idx === i ? { ...r, ...patch } : r) }));
+
+  const needsExpr = (type: string) => type === "header" || type === "bodyJsonPath" || type === "regex";
 
   return (
     <div className="p-3 flex flex-col gap-2">
+      {assertionRules.length > 0 && (
+        <div className="flex items-center gap-2 px-2">
+          <span className="w-28 shrink-0 text-2xs text-[var(--text-3)]">Type</span>
+          <span className="w-48 shrink-0 text-2xs text-[var(--text-3)]">Path / Key</span>
+          <span className="w-28 shrink-0 text-2xs text-[var(--text-3)]">Matcher</span>
+          <span className="flex-1 text-2xs text-[var(--text-3)]">Expected</span>
+        </div>
+      )}
       {assertionRules.map((rule, i) => {
         const result = assertionResults[i];
+        const exprNeeded = needsExpr(rule.type);
         return (
-          <div key={i} className={`flex items-center gap-2 p-2 rounded border text-xs ${result ? (result.passed ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50") : "border-[var(--border)]"}`}>
-            <select value={rule.type} onChange={(e) => update(i, { type: e.target.value })} className="input py-0.5 text-2xs w-28">
-              {["status","responseTime","header","bodyJsonPath","bodySchema","regex"].map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-            {(rule.type === "header" || rule.type === "bodyJsonPath") && (
-              <input value={(rule as { expression?: string }).expression ?? ""} onChange={(e) => update(i, { expression: e.target.value })} placeholder="path" className="input py-0.5 text-2xs w-28 font-mono" />
-            )}
-            <select value={rule.matcher} onChange={(e) => update(i, { matcher: e.target.value })} className="input py-0.5 text-2xs w-28">
-              {["equals","notEquals","contains","exists","gt","lt","matches"].map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-            <input value={String(rule.expected ?? "")} onChange={(e) => update(i, { expected: e.target.value })} placeholder="expected" className="input py-0.5 text-2xs flex-1 font-mono" />
-            <button onClick={() => remove(i)} className="text-[var(--text-3)] hover:text-[var(--danger)]">×</button>
+          <div key={i} className={`flex items-center gap-2 p-2 rounded border ${result ? (result.passed ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50") : "border-[var(--border)]"}`}>
+            <div className="w-28 shrink-0">
+              <select value={rule.type} onChange={(e) => update(i, { type: e.target.value })} className="input py-0.5 text-2xs">
+                {["status","responseTime","header","bodyJsonPath","bodySchema","regex"].map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="w-48 shrink-0">
+              {exprNeeded
+                ? <input value={(rule as { expression?: string }).expression ?? ""} onChange={(e) => update(i, { expression: e.target.value })} placeholder={EXPR_PLACEHOLDER[rule.type] ?? "value"} className="input py-0.5 text-2xs font-mono" />
+                : <span className="text-2xs text-[var(--text-3)] italic px-1">—</span>
+              }
+            </div>
+            <div className="w-28 shrink-0">
+              <select value={rule.matcher} onChange={(e) => update(i, { matcher: e.target.value })} className="input py-0.5 text-2xs">
+                {["equals","notEquals","contains","exists","gt","lt","matches"].map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div className="flex-1 min-w-0">
+              <input value={String(rule.expected ?? "")} onChange={(e) => update(i, { expected: e.target.value })} placeholder="expected value" className="input py-0.5 text-2xs font-mono" />
+            </div>
+            <button onClick={() => remove(i)} className="shrink-0 text-[var(--text-3)] hover:text-[var(--danger)]">×</button>
           </div>
         );
       })}
@@ -529,22 +555,42 @@ function AssertionsPanel() {
 
 function ExtractPanel() {
   const { extractRules, set } = useStore();
-  const add = () => set({ extractRules: [...extractRules, { variableName: "", source: "body" as const, expression: "" }] });
-  const remove = (i: number) => set({ extractRules: extractRules.filter((_, idx) => idx !== i) });
-  const update = (i: number, patch: object) => set({ extractRules: extractRules.map((r, idx) => idx === i ? { ...r, ...patch } : r) });
+  const add = () => set((s) => ({ extractRules: [...s.extractRules, { variableName: "", source: "body" as const, expression: "" }] }));
+  const remove = (i: number) => set((s) => ({ extractRules: s.extractRules.filter((_, idx) => idx !== i) }));
+  const update = (i: number, patch: object) => set((s) => ({ extractRules: s.extractRules.map((r, idx) => idx === i ? { ...r, ...patch } : r) }));
 
   return (
     <div className="p-3 flex flex-col gap-2">
-      {extractRules.map((rule, i) => (
-        <div key={i} className="flex items-center gap-2 border border-[var(--border)] rounded p-2">
-          <input value={rule.variableName ?? ""} onChange={(e) => update(i, { variableName: e.target.value })} placeholder="variableName" className="input py-0.5 text-2xs w-32 font-mono" />
-          <select value={rule.source ?? "body"} onChange={(e) => update(i, { source: e.target.value })} className="input py-0.5 text-2xs w-24">
-            {["body","header","status"].map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <input value={rule.expression ?? ""} onChange={(e) => update(i, { expression: e.target.value })} placeholder="$.path or header-name" className="input py-0.5 text-2xs flex-1 font-mono" />
-          <button onClick={() => remove(i)} className="text-[var(--text-3)] hover:text-[var(--danger)]">×</button>
+      {extractRules.length > 0 && (
+        <div className="flex items-center gap-2 px-2">
+          <span className="w-32 shrink-0 text-2xs text-[var(--text-3)]">Variable</span>
+          <span className="w-24 shrink-0 text-2xs text-[var(--text-3)]">Source</span>
+          <span className="flex-1 text-2xs text-[var(--text-3)]">Expression</span>
         </div>
-      ))}
+      )}
+      {extractRules.map((rule, i) => {
+        const source = rule.source ?? "body";
+        const exprPlaceholder = source === "header" ? "Header-Name" : "$.path.to.value";
+        return (
+          <div key={i} className="flex items-center gap-2 border border-[var(--border)] rounded p-2">
+            <div className="w-32 shrink-0">
+              <input value={rule.variableName ?? ""} onChange={(e) => update(i, { variableName: e.target.value })} placeholder="variableName" className="input py-0.5 text-2xs font-mono" />
+            </div>
+            <div className="w-24 shrink-0">
+              <select value={source} onChange={(e) => update(i, { source: e.target.value })} className="input py-0.5 text-2xs">
+                {["body","header","status"].map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="flex-1 min-w-0">
+              {source !== "status"
+                ? <input value={rule.expression ?? ""} onChange={(e) => update(i, { expression: e.target.value })} placeholder={exprPlaceholder} className="input py-0.5 text-2xs font-mono" />
+                : <span className="text-2xs text-[var(--text-3)] italic px-2">no expression needed</span>
+              }
+            </div>
+            <button onClick={() => remove(i)} className="shrink-0 text-[var(--text-3)] hover:text-[var(--danger)]">×</button>
+          </div>
+        );
+      })}
       <button onClick={add} className="btn text-xs self-start">+ Add rule</button>
     </div>
   );

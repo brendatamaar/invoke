@@ -19,21 +19,22 @@ export function Sidebar() {
   const { sidebarSection, sidebarCollapsed, set } = useStore();
 
   return (
-    <aside className="flex flex-col border-r border-[var(--border)] bg-[var(--surface-2)] overflow-hidden" style={{ width: sidebarCollapsed ? 40 : 260, flexShrink: 0 }}>
+    <aside className="flex flex-col border-r border-[var(--border)] bg-[var(--surface-2)] overflow-hidden" style={{ width: sidebarCollapsed ? 44 : 220, flexShrink: 0 }}>
       {/* Icon nav */}
-      <nav className="flex flex-col items-center gap-0.5 py-2 border-b border-[var(--border)]">
+      <nav className="flex flex-col gap-0.5 p-1.5 border-b border-[var(--border)]">
         {NAV.map(({ id, icon, label }) => (
           <button
             key={id}
-            title={label}
+            title={sidebarCollapsed ? label : undefined}
             onClick={() => set({ sidebarSection: id, sidebarCollapsed: false })}
-            className={`w-8 h-8 flex items-center justify-center rounded mx-auto transition-colors ${
-              !sidebarCollapsed && sidebarSection === id
+            className={`flex items-center gap-2.5 px-2 py-1.5 rounded transition-colors ${sidebarCollapsed ? "justify-center" : ""} ${
+              sidebarSection === id
                 ? "bg-[var(--accent-subtle)] text-[var(--accent)]"
                 : "text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--border)]"
             }`}
           >
-            {icon}
+            <span className="shrink-0">{icon}</span>
+            {!sidebarCollapsed && <span className="text-xs font-medium">{label}</span>}
           </button>
         ))}
       </nav>
@@ -41,7 +42,7 @@ export function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={() => set({ sidebarCollapsed: !sidebarCollapsed })}
-        className="flex items-center justify-center py-1.5 text-[var(--text-3)] hover:text-[var(--text-1)] border-b border-[var(--border)]"
+        className={`flex items-center py-1.5 border-b border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--border)] transition-colors ${sidebarCollapsed ? "justify-center" : "justify-end px-2.5"}`}
       >
         {sidebarCollapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </button>
