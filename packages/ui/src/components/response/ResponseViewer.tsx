@@ -187,16 +187,19 @@ function buildAttemptBars(attempt: TimingAttempt): PhaseBar[] {
   const byName = new Map((attempt.phases ?? []).map((p) => [p.name, p]));
   const synthetic = syntheticPhases(attempt.timing);
   const total = Math.max(attempt.timing?.totalMs ?? 0, 1);
+  const clamp = (v: number) => Math.min(100, Math.max(0, Number.isFinite(v) ? v : 0));
 
+  let cursor = 0;
   return PHASE_DEFS.map(({ name, label, color }) => {
-    const phase = byName.get(name) ?? synthetic.get(name) ?? { startMs: 0, durationMs: 0 };
-    const clamp = (v: number) => Math.min(100, Math.max(0, Number.isFinite(v) ? v : 0));
+    const durationMs = byName.get(name)?.durationMs ?? synthetic.get(name)?.durationMs ?? 0;
+    const startMs = cursor;
+    cursor += durationMs;
     return {
       name, label, color,
-      startMs: phase.startMs,
-      durationMs: phase.durationMs,
-      leftPct: clamp((phase.startMs / total) * 100),
-      widthPct: clamp((phase.durationMs / total) * 100),
+      startMs,
+      durationMs,
+      leftPct: clamp((startMs / total) * 100),
+      widthPct: clamp((durationMs / total) * 100),
     };
   });
 }
