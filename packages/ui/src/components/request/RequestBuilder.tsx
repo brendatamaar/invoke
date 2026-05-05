@@ -98,7 +98,13 @@ export function RequestBuilder({ onSend }: Props) {
           {requestTab === "params" && (
             <KeyValueEditor
               rows={request.params ?? []}
-              onChange={(rows) => setRequest({ params: rows as KeyValue[] })}
+              onChange={(rows) => {
+                const kv = rows as KeyValue[];
+                const base = request.url.split("?")[0];
+                const enabled = kv.filter((r) => r.enabled !== false && r.key);
+                const qs = enabled.map((r) => `${encodeURIComponent(r.key)}=${encodeURIComponent(r.value ?? "")}`).join("&");
+                setRequest({ params: kv, url: qs ? `${base}?${qs}` : base });
+              }}
               keyPlaceholder="param"
               valuePlaceholder="value"
             />

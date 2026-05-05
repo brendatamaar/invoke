@@ -1,7 +1,7 @@
 import { Zap, RefreshCw } from "lucide-react";
 import { useStore } from "../../store";
 import { Select } from "../shared/Select";
-import type { HttpMethod } from "@invoke/core";
+import type { HttpMethod, KeyValue } from "@invoke/core";
 
 const METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 
@@ -40,7 +40,21 @@ export function URLBar({ onSend, loading }: Props) {
       <input
         type="text"
         value={request.url}
-        onChange={(e) => setRequest({ url: e.target.value })}
+        onChange={(e) => {
+          const url = e.target.value;
+          const qIdx = url.indexOf("?");
+          if (qIdx !== -1) {
+            const qs = url.slice(qIdx + 1);
+            const urlParams: KeyValue[] = [];
+            new URLSearchParams(qs).forEach((value, key) => {
+              if (key) urlParams.push({ key, value, enabled: true });
+            });
+            const disabled = request.params.filter((p) => p.enabled === false);
+            setRequest({ url, params: [...urlParams, ...disabled] });
+          } else {
+            setRequest({ url });
+          }
+        }}
         onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) onSend(); }}
         placeholder="https://api.example.com/endpoint"
         className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] focus:bg-white transition-colors"
