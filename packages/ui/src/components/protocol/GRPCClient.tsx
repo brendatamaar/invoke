@@ -1,6 +1,7 @@
 import { useStore } from "../../store";
 import { CodeEditor } from "../editors/CodeEditor";
 import { KeyValueEditor } from "../shared/KeyValueEditor";
+import { Select } from "../shared/Select";
 import type { KeyValue } from "@invoke/core";
 
 export function GRPCClient() {
@@ -15,13 +16,12 @@ export function GRPCClient() {
       {/* Method selector */}
       {grpcMethods.length > 0 && (
         <div className="px-3 py-1.5 border-b border-[var(--border)]">
-          <select
+          <Select
             value={`${grpcRequest.service ?? ""}/${grpcRequest.method ?? ""}`}
             onChange={(e) => {
               const [service, method] = e.target.value.split("/");
               setGrpcRequest({ service, method });
             }}
-            className="input text-xs py-1"
           >
             <option value="/">Select method…</option>
             {grpcMethods.map((m) => (
@@ -29,7 +29,7 @@ export function GRPCClient() {
                 {m.service} / {m.method}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
 

@@ -1,5 +1,6 @@
-import { ChevronDown, Zap, RefreshCw } from "lucide-react";
+import { Zap, RefreshCw } from "lucide-react";
 import { useStore } from "../../store";
+import { Select } from "../shared/Select";
 import type { HttpMethod } from "@invoke/core";
 
 const METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
@@ -26,16 +27,14 @@ export function URLBar({ onSend, loading }: Props) {
   return (
     <div className="flex items-center gap-2 px-3 py-2">
       {/* Method selector */}
-      <div className="relative">
-        <select
-          value={request.method}
-          onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
-          className={`appearance-none bg-none bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1.5 pr-6 text-xs font-semibold font-mono cursor-pointer outline-none focus:border-[var(--accent)] ${color}`}
-        >
-          {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-        </select>
-        <ChevronDown size={11} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none" />
-      </div>
+      <Select
+        size="sm"
+        value={request.method}
+        onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
+        className={`bg-[var(--surface-2)] font-semibold font-mono ${color}`}
+      >
+        {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+      </Select>
 
       {/* URL input */}
       <input

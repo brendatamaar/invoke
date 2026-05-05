@@ -4,6 +4,7 @@ import { compareResponses } from "@invoke/core";
 import { useStore } from "../../store";
 import { StatusBadge } from "../shared/StatusBadge";
 import { CodeEditor } from "../editors/CodeEditor";
+import { Select } from "../shared/Select";
 
 export function DiffModal() {
   const { showDiffModal, history, set } = useStore();
@@ -44,21 +45,21 @@ export function DiffModal() {
         <div className="flex gap-3 px-4 py-3 border-b border-[var(--border)]">
           <div className="flex-1">
             <label className="text-2xs text-[var(--text-3)] block mb-1">Left (baseline)</label>
-            <select value={leftId} onChange={(e) => setLeftId(e.target.value)} className="input text-xs py-1 w-full">
+            <Select value={leftId} onChange={(e) => setLeftId(e.target.value)}>
               <option value="">Select response…</option>
               {history.map((h) => (
                 <option key={h.id} value={h.id}>{entryLabel(h)}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="flex-1">
             <label className="text-2xs text-[var(--text-3)] block mb-1">Right (comparison)</label>
-            <select value={rightId} onChange={(e) => setRightId(e.target.value)} className="input text-xs py-1 w-full">
+            <Select value={rightId} onChange={(e) => setRightId(e.target.value)}>
               <option value="">Select response…</option>
               {history.map((h) => (
                 <option key={h.id} value={h.id}>{entryLabel(h)}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 

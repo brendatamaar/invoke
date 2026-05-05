@@ -1,6 +1,7 @@
 import { useStore } from "../../store";
 import { CodeEditor } from "../editors/CodeEditor";
 import { StatusBadge } from "../shared/StatusBadge";
+import { Select } from "../shared/Select";
 import type { ResponseTab } from "../../lib/types";
 import type { TimingPhaseName, Timing, TimingAttempt } from "@invoke/core";
 import { Clock, HardDrive, Shield, CheckCircle, Code2, List } from "lucide-react";
@@ -326,13 +327,14 @@ function CodeTab() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)]">
-        <select
+        <Select
+          size="2xs"
           value={codeTarget}
           onChange={(e) => set({ codeTarget: e.target.value as typeof codeTarget })}
-          className="input text-2xs py-0.5 w-40"
+          wrapperClassName="w-40"
         >
           {CODE_TARGETS.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
+        </Select>
         {codeLoading && <span className="text-2xs text-[var(--text-3)]">Generating…</span>}
       </div>
       <div className="flex-1 overflow-auto">

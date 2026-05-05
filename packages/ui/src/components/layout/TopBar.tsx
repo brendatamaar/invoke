@@ -1,5 +1,6 @@
-import { ChevronDown, Settings, HelpCircle, Search } from "lucide-react";
+import { Settings, HelpCircle, Search } from "lucide-react";
 import { useStore } from "../../store";
+import { Select } from "../shared/Select";
 
 export function TopBar() {
   const { environments, activeEnvironmentId, set, showSettings } = useStore();
@@ -25,19 +26,16 @@ export function TopBar() {
 
       <div className="ml-auto flex items-center gap-2">
         {/* Environment switcher */}
-        <div className="relative">
-          <select
-            value={activeEnvironmentId ?? ""}
-            onChange={(e) => set({ activeEnvironmentId: e.target.value || undefined })}
-            className="appearance-none bg-none bg-[var(--surface-2)] border border-[var(--border)] rounded px-2.5 py-1 pr-6 text-xs text-[var(--text-1)] cursor-pointer outline-none focus:border-[var(--accent)]"
-          >
-            <option value="">No environment</option>
-            {environments.map((env) => (
-              <option key={env.id} value={env.id}>{env.name}</option>
-            ))}
-          </select>
-          <ChevronDown size={11} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none" />
-        </div>
+        <Select
+          value={activeEnvironmentId ?? ""}
+          onChange={(e) => set({ activeEnvironmentId: e.target.value || undefined })}
+          className="bg-[var(--surface-2)] px-2.5"
+        >
+          <option value="">No environment</option>
+          {environments.map((env) => (
+            <option key={env.id} value={env.id}>{env.name}</option>
+          ))}
+        </Select>
 
         <button
           onClick={() => set({ showSettings: !showSettings })}

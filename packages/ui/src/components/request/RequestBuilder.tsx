@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronRight, ChevronDown, Unplug, Plug, RefreshCw } from "lucide-react";
+import { Select } from "../shared/Select";
 import { useStore } from "../../store";
 import { URLBar } from "./URLBar";
 import { KeyValueEditor } from "../shared/KeyValueEditor";
@@ -231,15 +232,14 @@ function AuthPanel() {
   return (
     <div className="p-3 flex flex-col gap-3">
       <Field label="Type">
-        <select
+        <Select
           value={auth.type}
           onChange={(e) => setRequest({ auth: { type: e.target.value as typeof auth.type } })}
-          className="input text-xs py-1"
         >
           {["none","bearer","basic","api-key","oauth2","digest","aws-sigv4"].map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
-        </select>
+        </Select>
       </Field>
 
       {auth.type === "bearer" && (
@@ -260,10 +260,10 @@ function AuthPanel() {
           <Field label="Key"><input className="input text-xs py-1" value={auth.apiKeyName ?? ""} onChange={(e) => setRequest({ auth: { ...auth, apiKeyName: e.target.value } })} /></Field>
           <Field label="Value"><input className="input text-xs py-1 font-mono" value={auth.apiKeyValue ?? ""} onChange={(e) => setRequest({ auth: { ...auth, apiKeyValue: e.target.value } })} /></Field>
           <Field label="Add to">
-            <select className="input text-xs py-1" value={auth.apiKeyIn ?? "header"} onChange={(e) => setRequest({ auth: { ...auth, apiKeyIn: e.target.value as "header" | "query" } })}>
+            <Select value={auth.apiKeyIn ?? "header"} onChange={(e) => setRequest({ auth: { ...auth, apiKeyIn: e.target.value as "header" | "query" } })}>
               <option value="header">Header</option>
               <option value="query">Query param</option>
-            </select>
+            </Select>
           </Field>
         </>
       )}
@@ -517,9 +517,9 @@ function AssertionsPanel() {
         return (
           <div key={i} className={`flex items-center gap-2 p-2 rounded border ${result ? (result.passed ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50") : "border-[var(--border)]"}`}>
             <div className="w-28 shrink-0">
-              <select value={rule.type} onChange={(e) => update(i, { type: e.target.value })} className="input py-0.5 text-2xs">
+              <Select size="2xs" value={rule.type} onChange={(e) => update(i, { type: e.target.value })}>
                 {["status","responseTime","header","bodyJsonPath","bodySchema","regex"].map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="w-48 shrink-0">
               {exprNeeded
@@ -528,9 +528,9 @@ function AssertionsPanel() {
               }
             </div>
             <div className="w-28 shrink-0">
-              <select value={rule.matcher} onChange={(e) => update(i, { matcher: e.target.value })} className="input py-0.5 text-2xs">
+              <Select size="2xs" value={rule.matcher} onChange={(e) => update(i, { matcher: e.target.value })}>
                 {["equals","notEquals","contains","exists","gt","lt","matches"].map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="flex-1 min-w-0">
               <input value={String(rule.expected ?? "")} onChange={(e) => update(i, { expected: e.target.value })} placeholder="expected value" className="input py-0.5 text-2xs font-mono" />
@@ -569,9 +569,9 @@ function ExtractPanel() {
               <input value={rule.variableName ?? ""} onChange={(e) => update(i, { variableName: e.target.value })} placeholder="variableName" className="input py-0.5 text-2xs font-mono" />
             </div>
             <div className="w-24 shrink-0">
-              <select value={source} onChange={(e) => update(i, { source: e.target.value })} className="input py-0.5 text-2xs">
+              <Select size="2xs" value={source} onChange={(e) => update(i, { source: e.target.value })}>
                 {["body","header","status"].map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="flex-1 min-w-0">
               {source !== "status"
