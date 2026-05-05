@@ -332,7 +332,7 @@ export class InvokeStore {
   async saveFlow(flow: Partial<Flow> & Pick<Flow, "name" | "steps">) {
     const now = Date.now();
     const saved: Flow = {
-      id: flow.id ?? id(),
+      id: flow.id || id(),
       name: flow.name,
       steps: clonePlain(flow.steps),
       createdAt: flow.createdAt ?? now,

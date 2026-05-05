@@ -100,7 +100,7 @@ export function FlowPanel() {
         message="Delete this flow?"
         confirmLabel="Delete"
         danger
-        onConfirm={() => { if (confirmDeleteId) deleteFlow(confirmDeleteId); setConfirmDeleteId(null); }}
+        onConfirm={() => { if (confirmDeleteId !== null) deleteFlow(confirmDeleteId); setConfirmDeleteId(null); }}
         onClose={() => setConfirmDeleteId(null)}
       />
 
