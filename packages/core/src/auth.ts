@@ -1,8 +1,4 @@
-import type { KeyValue, RequestConfig } from "./types";
-
-export interface AwsSigV4SignOptions {
-  now?: Date;
-}
+import type { AwsSigV4SignOptions, KeyValue, RequestConfig } from "./types";
 
 export function applyAuth(request: RequestConfig): RequestConfig {
   const headers = [...request.headers];

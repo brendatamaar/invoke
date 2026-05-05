@@ -9,13 +9,9 @@ import type {
   GraphQLRequestConfig,
   KeyValue,
   RequestConfig,
+  VariableScope,
   WebSocketRequestConfig
 } from "./types";
-
-export interface VariableScope {
-  name?: string;
-  variables: KeyValue[] | Record<string, string>;
-}
 
 export function variablesFromEnvironment(environment?: Environment): Record<string, string> {
   return variablesFromKeyValues(environment?.variables ?? []);

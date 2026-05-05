@@ -1,10 +1,5 @@
-import type { ExecuteResponse, ProtocolRequestConfig, ScriptExecutionResult } from "./types";
+import type { ExecuteResponse, ProtocolRequestConfig, ScriptExecutionResult, ScriptRunOptions } from "./types";
 import { clonePlain } from "./request";
-
-export interface ScriptRunOptions {
-  timeoutMs?: number;
-  response?: ExecuteResponse;
-}
 
 export async function runPreRequestScript<TRequest extends ProtocolRequestConfig>(
   request: TRequest,

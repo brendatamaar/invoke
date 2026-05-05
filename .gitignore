@@ -9,3 +9,5 @@ playwright-report/
 .DS_Store
 executor/bin/
 tmp/
+.design-temp
+packages/ui-backup
