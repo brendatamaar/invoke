@@ -4,9 +4,10 @@ import Fuse from "fuse.js";
 import { useStore } from "../../store";
 import { MethodBadge } from "../shared/MethodBadge";
 import type { PaletteItem } from "../../lib/types";
+import { emptyGraphQLRequest, emptyWebSocketRequest, emptyGrpcRequest } from "@invoke/core";
 
 export function CommandPalette() {
-  const { commandPaletteOpen, commandQuery, set, collections, requests, environments, history, setRequest } = useStore();
+  const { commandPaletteOpen, commandQuery, set, collections, requests, environments, flows, sidebarCollapsed, setRequest, resetRequest } = useStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -34,6 +35,7 @@ export function CommandPalette() {
   }, [commandPaletteOpen, selectedIndex]); // eslint-disable-line
 
   const allItems: PaletteItem[] = [
+    // Saved requests
     ...requests.map((r) => {
       const req = r.request as { method?: string; url?: string } | undefined;
       return {
@@ -45,21 +47,92 @@ export function CommandPalette() {
         run: () => setRequest({ method: (req?.method ?? "GET") as Parameters<typeof setRequest>[0]["method"], url: req?.url ?? "", name: r.name })
       };
     }),
+    // Environments
     ...environments.map((e) => ({
       id: e.id, kind: "environment" as const, title: e.name,
       subtitle: `${e.variables?.length ?? 0} variables`, keywords: e.name,
       run: () => set({ activeEnvironmentId: e.id })
     })),
+    // Flows
+    ...flows.map((f) => ({
+      id: `flow-${f.id}`, kind: "flow" as const, title: f.name,
+      subtitle: `${f.steps?.length ?? 0} steps`, keywords: `flow ${f.name}`,
+      run: () => set({ sidebarSection: "flows", flowDraft: f })
+    })),
+    // Collections
+    ...collections.map((c) => ({
+      id: `col-${c.id}`, kind: "collection" as const, title: c.name,
+      subtitle: "Collection", keywords: `collection ${c.name}`,
+      run: () => set({ sidebarSection: "collections" })
+    })),
+    // New request commands
     {
       id: "new-request", kind: "command" as const, title: "New Request",
-      subtitle: "Start a blank request", keywords: "new request create",
-      run: () => useStore.getState().resetRequest()
+      subtitle: "Start a blank HTTP request", keywords: "new request create http",
+      run: () => resetRequest()
+    },
+    {
+      id: "new-graphql", kind: "command" as const, title: "New GraphQL Request",
+      subtitle: "Start a blank GraphQL request", keywords: "new graphql request create",
+      run: () => { resetRequest(); set({ requestTab: "graphql", graphqlRequest: emptyGraphQLRequest() }); }
+    },
+    {
+      id: "new-websocket", kind: "command" as const, title: "New WebSocket Request",
+      subtitle: "Start a blank WebSocket connection", keywords: "new websocket ws request create",
+      run: () => { resetRequest(); set({ requestTab: "websocket", websocketRequest: emptyWebSocketRequest() }); }
+    },
+    {
+      id: "new-grpc", kind: "command" as const, title: "New gRPC Request",
+      subtitle: "Start a blank gRPC request", keywords: "new grpc request create",
+      run: () => { resetRequest(); set({ requestTab: "grpc", grpcRequest: emptyGrpcRequest() }); }
+    },
+    // Navigation
+    {
+      id: "nav-collections", kind: "command" as const, title: "Go to Collections",
+      subtitle: "Open Collections sidebar", keywords: "go navigate collections sidebar",
+      run: () => set({ sidebarSection: "collections" })
+    },
+    {
+      id: "nav-history", kind: "command" as const, title: "Go to History",
+      subtitle: "Open History sidebar", keywords: "go navigate history sidebar",
+      run: () => set({ sidebarSection: "history" })
+    },
+    {
+      id: "nav-environments", kind: "command" as const, title: "Go to Environments",
+      subtitle: "Open Environments sidebar", keywords: "go navigate environments sidebar",
+      run: () => set({ sidebarSection: "environments" })
+    },
+    {
+      id: "nav-flows", kind: "command" as const, title: "Go to Flows",
+      subtitle: "Open Flows sidebar", keywords: "go navigate flows sidebar",
+      run: () => set({ sidebarSection: "flows" })
+    },
+    {
+      id: "nav-mocks", kind: "command" as const, title: "Go to Mocks",
+      subtitle: "Open Mock server sidebar", keywords: "go navigate mocks mock server sidebar",
+      run: () => set({ sidebarSection: "mocks" })
+    },
+    // UI toggles
+    {
+      id: "toggle-sidebar", kind: "command" as const, title: "Toggle Sidebar",
+      subtitle: sidebarCollapsed ? "Show sidebar" : "Hide sidebar", keywords: "toggle sidebar show hide collapse",
+      run: () => set({ sidebarCollapsed: !sidebarCollapsed })
+    },
+    {
+      id: "open-settings", kind: "command" as const, title: "Open Settings",
+      subtitle: "View and edit settings", keywords: "settings preferences open",
+      run: () => set({ showSettings: true })
+    },
+    {
+      id: "open-help", kind: "command" as const, title: "Open Help",
+      subtitle: "View keyboard shortcuts and tips", keywords: "help shortcuts tips keyboard",
+      run: () => set({ showHelp: true })
     },
     {
       id: "clear-history", kind: "command" as const, title: "Clear History",
-      subtitle: "Remove all history entries", keywords: "clear history delete",
-      run: () => { /* handled elsewhere */ }
-    }
+      subtitle: "Remove all history entries", keywords: "clear history delete remove",
+      run: () => set({ showClearHistoryModal: true })
+    },
   ];
 
   const query = commandQuery.trim();
@@ -68,8 +141,8 @@ export function CommandPalette() {
 
   if (!commandPaletteOpen) return null;
 
-  const KIND_LABELS: Record<string, string> = { request: "Request", environment: "Environment", command: "Command", collection: "Collection" };
-  const KIND_COLORS: Record<string, string> = { request: "text-blue-600", environment: "text-violet-600", command: "text-zinc-600" };
+  const KIND_LABELS: Record<string, string> = { request: "Request", environment: "Env", command: "Command", collection: "Collection", flow: "Flow" };
+  const KIND_COLORS: Record<string, string> = { request: "text-blue-600", environment: "text-violet-600", command: "text-zinc-600", collection: "text-amber-600", flow: "text-emerald-600" };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/20 backdrop-blur-[1px]" onMouseDown={(e) => { if (e.target === e.currentTarget) set({ commandPaletteOpen: false }); }}>
