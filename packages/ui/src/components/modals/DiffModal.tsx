@@ -31,7 +31,7 @@ export function DiffModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={close}>
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
-        style={{ width: "90vw", maxHeight: "88vh" }}
+        style={{ width: "90vw", maxHeight: "100vh", minHeight: "50vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">

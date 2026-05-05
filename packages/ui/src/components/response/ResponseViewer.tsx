@@ -37,6 +37,18 @@ export function ResponseViewer() {
     );
   }
 
+  if (response?.status === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-8">
+        <div className="w-10 h-10 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mb-2">
+          <Code2 size={18} className="text-red-400" />
+        </div>
+        <p className="text-sm text-[var(--text-2)] font-medium">Request failed</p>
+        {response.error && <p className="text-xs text-red-500 font-mono max-w-md break-all">{response.error}</p>}
+      </div>
+    );
+  }
+
   const passedCount = assertionResults.filter((r) => r.passed).length;
   const totalCount = assertionResults.length;
 
@@ -46,13 +58,15 @@ export function ResponseViewer() {
       {response && (
         <div className="flex items-center gap-3 px-3 py-2 border-b border-[var(--border)] bg-[var(--surface-2)]">
           <StatusBadge status={response.status} />
-          <span className="text-xs text-[var(--text-2)] font-mono">{response.statusText}</span>
           <span className="ml-auto text-2xs text-[var(--text-3)] flex items-center gap-1">
             <Clock size={11} /> {fmt(response.timing?.totalMs ?? 0)}
           </span>
           <span className="text-2xs text-[var(--text-3)] flex items-center gap-1">
             <HardDrive size={11} /> {fmtSize(response.responseSize ?? 0)}
           </span>
+          {response.statusText && response.status !== 0 && (
+            <span className="text-2xs text-[var(--text-3)] font-mono">{response.statusText}</span>
+          )}
           {totalCount > 0 && (
             <span className={`text-2xs flex items-center gap-1 ${passedCount === totalCount ? "text-emerald-600" : "text-red-600"}`}>
               <CheckCircle size={11} /> {passedCount}/{totalCount}
