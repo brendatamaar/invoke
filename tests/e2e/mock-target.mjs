@@ -29,7 +29,14 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/echo") {
     let body = "";
     for await (const chunk of req) body += chunk;
-    res.end(JSON.stringify({ method: req.method, url: url.toString(), body, headers: req.headers }));
+    res.end(
+      JSON.stringify({
+        method: req.method,
+        url: url.toString(),
+        body,
+        headers: req.headers,
+      }),
+    );
     return;
   }
 
@@ -37,7 +44,15 @@ const server = createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     const payload = JSON.parse(body || "{}");
-    res.end(JSON.stringify({ data: { ok: true, query: payload.query, variables: payload.variables ?? {} } }));
+    res.end(
+      JSON.stringify({
+        data: {
+          ok: true,
+          query: payload.query,
+          variables: payload.variables ?? {},
+        },
+      }),
+    );
     return;
   }
 

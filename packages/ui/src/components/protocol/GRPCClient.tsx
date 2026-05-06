@@ -10,7 +10,9 @@ export function GRPCClient() {
   return (
     <div className="flex flex-col h-full gap-0">
       {grpcStatus && (
-        <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)] bg-[var(--surface-2)]">{grpcStatus}</div>
+        <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)] bg-[var(--surface-2)]">
+          {grpcStatus}
+        </div>
       )}
 
       {/* Method selector */}
@@ -25,7 +27,10 @@ export function GRPCClient() {
           >
             <option value="/">Select method…</option>
             {grpcMethods.map((m) => (
-              <option key={`${m.service}/${m.method}`} value={`${m.service}/${m.method}`}>
+              <option
+                key={`${m.service}/${m.method}`}
+                value={`${m.service}/${m.method}`}
+              >
                 {m.service} / {m.method}
               </option>
             ))}
@@ -35,15 +40,23 @@ export function GRPCClient() {
 
       {/* Message body */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="border-b border-[var(--border)] px-3 py-1 text-2xs text-[var(--text-3)]">Message (JSON)</div>
+        <div className="border-b border-[var(--border)] px-3 py-1 text-2xs text-[var(--text-3)]">
+          Message (JSON)
+        </div>
         <div className="flex-1 overflow-auto">
-          <CodeEditor value={grpcRequest.body ?? "{}"} onChange={(v) => setGrpcRequest({ body: v })} lang="json" />
+          <CodeEditor
+            value={grpcRequest.body ?? "{}"}
+            onChange={(v) => setGrpcRequest({ body: v })}
+            lang="json"
+          />
         </div>
       </div>
 
       {/* Metadata */}
       <div className="border-t border-[var(--border)]">
-        <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)]">Metadata</div>
+        <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)]">
+          Metadata
+        </div>
         <KeyValueEditor
           rows={(grpcRequest.metadata as KeyValue[] | undefined) ?? []}
           onChange={(rows) => setGrpcRequest({ metadata: rows as KeyValue[] })}

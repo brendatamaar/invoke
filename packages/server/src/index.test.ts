@@ -14,13 +14,30 @@ describe("mock routes", () => {
             method: "POST",
             pathPattern: "/users/:id",
             status: 202,
-            headers: [{ key: "Content-Type", value: "application/json", enabled: true }],
+            headers: [
+              { key: "Content-Type", value: "application/json", enabled: true },
+            ],
             body: '{ "matched": true, "id": "{{param.id}}", "plan": "{{query.plan}}" }',
             conditions: [
-              { source: "header", expression: "x-mode", matcher: "equals", expected: "pro" },
-              { source: "query", expression: "plan", matcher: "equals", expected: "pro" },
-              { source: "bodyJsonPath", expression: "$.role", matcher: "equals", expected: "admin" }
-            ]
+              {
+                source: "header",
+                expression: "x-mode",
+                matcher: "equals",
+                expected: "pro",
+              },
+              {
+                source: "query",
+                expression: "plan",
+                matcher: "equals",
+                expected: "pro",
+              },
+              {
+                source: "bodyJsonPath",
+                expression: "$.role",
+                matcher: "equals",
+                expected: "admin",
+              },
+            ],
           },
           {
             id: "fallback",
@@ -29,24 +46,28 @@ describe("mock routes", () => {
             pathPattern: "/users/:id",
             status: 200,
             headers: [],
-            body: "fallback"
-          }
-        ]
-      })
+            body: "fallback",
+          },
+        ],
+      }),
     });
 
     const matched = await app.request("/mock/users/42?plan=pro", {
       method: "POST",
       headers: { "x-mode": "pro" },
-      body: JSON.stringify({ role: "admin" })
+      body: JSON.stringify({ role: "admin" }),
     });
     expect(matched.status).toBe(202);
-    expect(await matched.json()).toMatchObject({ matched: true, id: "42", plan: "pro" });
+    expect(await matched.json()).toMatchObject({
+      matched: true,
+      id: "42",
+      plan: "pro",
+    });
 
     const fallback = await app.request("/mock/users/42?plan=free", {
       method: "POST",
       headers: { "x-mode": "pro" },
-      body: JSON.stringify({ role: "admin" })
+      body: JSON.stringify({ role: "admin" }),
     });
     expect(fallback.status).toBe(200);
     expect(await fallback.text()).toBe("fallback");

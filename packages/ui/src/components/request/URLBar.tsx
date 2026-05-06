@@ -3,16 +3,24 @@ import { useStore } from "../../store";
 import { Select } from "../shared/Select";
 import type { HttpMethod, KeyValue } from "@invoke/core";
 
-const METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+const METHODS: HttpMethod[] = [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "HEAD",
+  "OPTIONS",
+];
 
 const METHOD_COLORS: Record<string, string> = {
-  GET:     "text-emerald-700",
-  POST:    "text-blue-700",
-  PUT:     "text-amber-700",
-  PATCH:   "text-violet-700",
-  DELETE:  "text-red-700",
-  HEAD:    "text-zinc-600",
-  OPTIONS: "text-zinc-600"
+  GET: "text-emerald-700",
+  POST: "text-blue-700",
+  PUT: "text-amber-700",
+  PATCH: "text-violet-700",
+  DELETE: "text-red-700",
+  HEAD: "text-zinc-600",
+  OPTIONS: "text-zinc-600",
 };
 
 interface Props {
@@ -33,7 +41,11 @@ export function URLBar({ onSend, loading }: Props) {
         onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
         className={`bg-[var(--surface-2)] font-semibold font-mono ${color}`}
       >
-        {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+        {METHODS.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
       </Select>
 
       {/* URL input */}
@@ -55,9 +67,11 @@ export function URLBar({ onSend, loading }: Props) {
             setRequest({ url });
           }
         }}
-        onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) onSend(); }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) onSend();
+        }}
         placeholder="https://api.example.com/endpoint"
-        className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] focus:bg-white transition-colors"
+        className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] focus:bg-[var(--surface)] transition-colors"
         spellCheck={false}
       />
 

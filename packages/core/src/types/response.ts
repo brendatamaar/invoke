@@ -53,7 +53,13 @@ export interface ExecuteResponse {
   timing: Timing;
   attempts?: TimingAttempt[];
   tls?: TlsInfo;
-  redirects?: Array<{ url: string; status: number; headers: KeyValue[]; timing?: Timing; phases?: TimingPhase[] }>;
+  redirects?: Array<{
+    url: string;
+    status: number;
+    headers: KeyValue[];
+    timing?: Timing;
+    phases?: TimingPhase[];
+  }>;
   requestSize: number;
   responseSize: number;
   error?: string;

@@ -3,9 +3,9 @@ import { useStore } from "../../store";
 
 const ICONS = {
   success: <CheckCircle size={14} className="text-[var(--success)]" />,
-  error:   <AlertCircle  size={14} className="text-[var(--danger)]" />,
-  info:    <Info         size={14} className="text-[var(--accent)]" />,
-  warn:    <AlertTriangle size={14} className="text-[var(--warn)]" />
+  error: <AlertCircle size={14} className="text-[var(--danger)]" />,
+  info: <Info size={14} className="text-[var(--accent)]" />,
+  warn: <AlertTriangle size={14} className="text-[var(--warn)]" />,
 };
 
 export function Toasts() {
@@ -16,7 +16,7 @@ export function Toasts() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="pointer-events-auto flex items-center gap-2.5 bg-white border border-[var(--border)] rounded-lg shadow-lg px-3.5 py-2.5 text-sm max-w-sm animate-in fade-in slide-in-from-bottom-2"
+          className="pointer-events-auto flex items-center gap-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg px-3.5 py-2.5 text-sm max-w-sm animate-in fade-in slide-in-from-bottom-2"
         >
           {ICONS[t.kind]}
           <span className="text-[var(--text-1)] flex-1">{t.message}</span>

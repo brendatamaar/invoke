@@ -10,5 +10,10 @@ export function prettyBody(body: string, contentType = "") {
 }
 
 export function slug(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "request";
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "request"
+  );
 }

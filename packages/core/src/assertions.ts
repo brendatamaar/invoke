@@ -1,24 +1,48 @@
 import Ajv, { type ErrorObject } from "ajv";
 import { JSONPath } from "jsonpath-plus";
-import type { Assertion, AssertionEvaluation, AssertionMatcher, AssertionResult, ExecuteResponse, KeyValue } from "./types";
+import type {
+  Assertion,
+  AssertionEvaluation,
+  AssertionMatcher,
+  AssertionResult,
+  ExecuteResponse,
+  KeyValue,
+} from "./types";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 
-export function runAssertions(response: ExecuteResponse, assertions: Assertion[] = []): AssertionResult[] {
-  return assertions.filter((assertion) => assertion.enabled !== false).map((assertion) => runAssertion(response, assertion));
+export function runAssertions(
+  response: ExecuteResponse,
+  assertions: Assertion[] = [],
+): AssertionResult[] {
+  return assertions
+    .filter((assertion) => assertion.enabled !== false)
+    .map((assertion) => runAssertion(response, assertion));
 }
 
-function runAssertion(response: ExecuteResponse, assertion: Assertion): AssertionResult {
+function runAssertion(
+  response: ExecuteResponse,
+  assertion: Assertion,
+): AssertionResult {
   try {
     const evaluation = evaluateAssertion(response, assertion);
     const passed =
-      assertion.type === "bodySchema" ? Boolean(evaluation.schemaPassed) : match(evaluation.actual, assertion.matcher, evaluation.expected);
+      assertion.type === "bodySchema"
+        ? Boolean(evaluation.schemaPassed)
+        : match(evaluation.actual, assertion.matcher, evaluation.expected);
     return {
       assertionId: assertion.id,
       passed,
       actual: evaluation.actual,
       expected: evaluation.expected,
-      message: passed ? "passed" : failureMessage(assertion, evaluation.actual, evaluation.expected, evaluation.details)
+      message: passed
+        ? "passed"
+        : failureMessage(
+            assertion,
+            evaluation.actual,
+            evaluation.expected,
+            evaluation.details,
+          ),
     };
   } catch (error) {
     return {
@@ -26,21 +50,36 @@ function runAssertion(response: ExecuteResponse, assertion: Assertion): Assertio
       passed: false,
       actual: undefined,
       expected: assertion.expected,
-      message: error instanceof Error ? error.message : String(error)
+      message: error instanceof Error ? error.message : String(error),
     };
   }
 }
 
-function evaluateAssertion(response: ExecuteResponse, assertion: Assertion): AssertionEvaluation {
+function evaluateAssertion(
+  response: ExecuteResponse,
+  assertion: Assertion,
+): AssertionEvaluation {
   switch (assertion.type) {
     case "status":
-      return { actual: response.status, expected: numericOrString(assertion.expected) };
+      return {
+        actual: response.status,
+        expected: numericOrString(assertion.expected),
+      };
     case "responseTime":
-      return { actual: response.timing?.totalMs ?? 0, expected: Number(assertion.expected) };
+      return {
+        actual: response.timing?.totalMs ?? 0,
+        expected: Number(assertion.expected),
+      };
     case "header":
-      return { actual: headerValue(response.headers, assertion.expression), expected: assertion.expected };
+      return {
+        actual: headerValue(response.headers, assertion.expression),
+        expected: assertion.expected,
+      };
     case "bodyJsonPath":
-      return { actual: jsonPath(response.body, assertion.expression), expected: parseExpected(assertion.expected) };
+      return {
+        actual: jsonPath(response.body, assertion.expression),
+        expected: parseExpected(assertion.expected),
+      };
     case "regex": {
       const pattern = assertion.expression.trim() || assertion.expected.trim();
       return { actual: response.body, expected: pattern };
@@ -52,7 +91,10 @@ function evaluateAssertion(response: ExecuteResponse, assertion: Assertion): Ass
   }
 }
 
-function evaluateSchemaAssertion(response: ExecuteResponse, assertion: Assertion) {
+function evaluateSchemaAssertion(
+  response: ExecuteResponse,
+  assertion: Assertion,
+) {
   const schemaText = assertion.expected.trim() || assertion.expression.trim();
   if (!schemaText) throw new Error("bodySchema assertion needs a JSON Schema");
 
@@ -64,7 +106,7 @@ function evaluateSchemaAssertion(response: ExecuteResponse, assertion: Assertion
     actual: schemaPassed ? "valid" : formatAjvErrors(validate.errors ?? []),
     expected: schema,
     schemaPassed,
-    details: validate.errors ?? []
+    details: validate.errors ?? [],
   };
 }
 
@@ -81,7 +123,8 @@ function match(actual: unknown, matcher: AssertionMatcher, expected: unknown) {
     case "lt":
       return Number(actual) < Number(expected);
     case "contains":
-      if (Array.isArray(actual)) return actual.some((item) => normalize(item) === normalize(expected));
+      if (Array.isArray(actual))
+        return actual.some((item) => normalize(item) === normalize(expected));
       return String(actual ?? "").includes(String(expected ?? ""));
     case "matches":
       return regexFrom(String(expected ?? "")).test(String(actual ?? ""));
@@ -90,11 +133,17 @@ function match(actual: unknown, matcher: AssertionMatcher, expected: unknown) {
   }
 }
 
-function failureMessage(assertion: Assertion, actual: unknown, expected: unknown, details?: unknown) {
+function failureMessage(
+  assertion: Assertion,
+  actual: unknown,
+  expected: unknown,
+  details?: unknown,
+) {
   if (assertion.type === "bodySchema" && Array.isArray(details)) {
     return `schema mismatch: ${formatAjvErrors(details as ErrorObject[])}`;
   }
-  if (assertion.matcher === "exists") return `expected ${label(assertion)} to exist`;
+  if (assertion.matcher === "exists")
+    return `expected ${label(assertion)} to exist`;
   return `expected ${label(assertion)} ${assertion.matcher} ${stringify(expected)}, got ${stringify(actual)}`;
 }
 
@@ -106,7 +155,9 @@ function label(assertion: Assertion) {
 
 function headerValue(headers: KeyValue[], name: string) {
   const normalized = name.trim().toLowerCase();
-  return headers.find((header) => header.key.trim().toLowerCase() === normalized)?.value;
+  return headers.find(
+    (header) => header.key.trim().toLowerCase() === normalized,
+  )?.value;
 }
 
 function jsonPath(body: string, path: string) {
@@ -152,5 +203,10 @@ function stringify(value: unknown) {
 }
 
 function formatAjvErrors(errors: ErrorObject[]) {
-  return errors.map((error) => `${error.instancePath || "/"} ${error.message ?? "is invalid"}`).join("; ");
+  return errors
+    .map(
+      (error) =>
+        `${error.instancePath || "/"} ${error.message ?? "is invalid"}`,
+    )
+    .join("; ");
 }

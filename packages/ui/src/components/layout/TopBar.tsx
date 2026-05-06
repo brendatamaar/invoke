@@ -10,8 +10,12 @@ export function TopBar() {
     <header className="flex items-center gap-3 px-4 h-10 border-b border-[var(--border)] bg-[var(--surface)] shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2 mr-2">
-        <span className="font-semibold text-sm text-[var(--text-1)] tracking-tight">invoke</span>
-        <span className="text-2xs px-1 py-px bg-[var(--surface-2)] border border-[var(--border)] rounded text-[var(--text-3)]">v1</span>
+        <span className="font-semibold text-sm text-[var(--text-1)] tracking-tight">
+          invoke
+        </span>
+        <span className="text-2xs px-1 py-px bg-[var(--surface-2)] border border-[var(--border)] rounded text-[var(--text-3)]">
+          v1
+        </span>
       </div>
 
       {/* Command palette trigger */}
@@ -21,19 +25,25 @@ export function TopBar() {
       >
         <Search size={12} />
         <span>Search or jump to…</span>
-        <kbd className="ml-auto font-mono text-2xs px-1 py-px bg-white border border-[var(--border)] rounded">⌘K</kbd>
+        <kbd className="ml-auto font-mono text-2xs px-1 py-px bg-[var(--surface-2)] border border-[var(--border)] rounded">
+          ⌘K
+        </kbd>
       </button>
 
       <div className="ml-auto flex items-center gap-2">
         {/* Environment switcher */}
         <Select
           value={activeEnvironmentId ?? ""}
-          onChange={(e) => set({ activeEnvironmentId: e.target.value || undefined })}
+          onChange={(e) =>
+            set({ activeEnvironmentId: e.target.value || undefined })
+          }
           className="bg-[var(--surface-2)] px-2.5"
         >
           <option value="">No environment</option>
           {environments.map((env) => (
-            <option key={env.id} value={env.id}>{env.name}</option>
+            <option key={env.id} value={env.id}>
+              {env.name}
+            </option>
           ))}
         </Select>
 

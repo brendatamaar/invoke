@@ -21,11 +21,11 @@ export default {
         success: "var(--success)",
         "success-subtle": "var(--success-subtle)",
         warn: "var(--warn)",
-        "warn-subtle": "var(--warn-subtle)"
+        "warn-subtle": "var(--warn-subtle)",
       },
       fontFamily: {
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "Cascadia Code", "Consolas", "monospace"]
+        mono: ["JetBrains Mono", "Cascadia Code", "Consolas", "monospace"],
       },
       fontSize: {
         "2xs": ["11px", "16px"],
@@ -33,15 +33,15 @@ export default {
         sm: ["13px", "20px"],
         base: ["14px", "20px"],
         md: ["15px", "22px"],
-        lg: ["16px", "24px"]
+        lg: ["16px", "24px"],
       },
       borderRadius: {
         sm: "4px",
         DEFAULT: "6px",
         md: "8px",
-        lg: "10px"
-      }
-    }
+        lg: "10px",
+      },
+    },
   },
-  plugins: [forms]
+  plugins: [forms],
 } satisfies Config;
