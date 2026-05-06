@@ -3,9 +3,9 @@ import { useStore } from "../../store";
 
 const ICONS = {
   success: <CheckCircle size={14} className="text-[var(--success)]" />,
-  error:   <AlertCircle  size={14} className="text-[var(--danger)]" />,
-  info:    <Info         size={14} className="text-[var(--accent)]" />,
-  warn:    <AlertTriangle size={14} className="text-[var(--warn)]" />
+  error: <AlertCircle size={14} className="text-[var(--danger)]" />,
+  info: <Info size={14} className="text-[var(--accent)]" />,
+  warn: <AlertTriangle size={14} className="text-[var(--warn)]" />,
 };
 
 export function Toasts() {

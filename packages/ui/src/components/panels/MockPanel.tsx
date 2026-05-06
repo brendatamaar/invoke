@@ -6,9 +6,17 @@ import { MethodBadge } from "../shared/MethodBadge";
 import { KeyValueEditor } from "../shared/KeyValueEditor";
 import { Select } from "../shared/Select";
 import { ConfirmModal } from "../shared/ConfirmModal";
-import type { MockRoute } from "@invoke/core";
+import { validateMockRoutes, type MockRoute } from "@invoke/core";
 
-const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
+const HTTP_METHODS = [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "HEAD",
+  "OPTIONS",
+] as const;
 
 function makeRoute(): MockRoute {
   return {
@@ -23,7 +31,15 @@ function makeRoute(): MockRoute {
   };
 }
 
-function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: MockRoute) => void; onClose: () => void }) {
+function RouteModal({
+  route,
+  onSave,
+  onClose,
+}: {
+  route: MockRoute;
+  onSave: (r: MockRoute) => void;
+  onClose: () => void;
+}) {
   const [draft, setDraft] = useState<MockRoute>({ ...route });
 
   const set = <K extends keyof MockRoute>(key: K, value: MockRoute[K]) =>
@@ -32,7 +48,9 @@ function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: 
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-[1px]"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col overflow-hidden"
@@ -51,7 +69,10 @@ function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: 
             />
             Enabled
           </label>
-          <button onClick={onClose} className="text-[var(--text-3)] hover:text-[var(--text-1)] p-1 rounded hover:bg-[var(--surface-2)]">
+          <button
+            onClick={onClose}
+            className="text-[var(--text-3)] hover:text-[var(--text-1)] p-1 rounded hover:bg-[var(--surface-2)]"
+          >
             <X size={14} />
           </button>
         </div>
@@ -60,10 +81,22 @@ function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: 
         <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
           {/* Method + Path */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[var(--text-2)]">Endpoint</label>
+            <label className="text-xs font-medium text-[var(--text-2)]">
+              Endpoint
+            </label>
             <div className="flex gap-2">
-              <Select value={draft.method} onChange={(v) => set("method", v as unknown as MockRoute["method"])} size="sm">
-                {HTTP_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+              <Select
+                value={draft.method}
+                onChange={(v) =>
+                  set("method", v as unknown as MockRoute["method"])
+                }
+                size="sm"
+              >
+                {HTTP_METHODS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
               </Select>
               <input
                 className="input text-xs py-1.5 flex-1"
@@ -77,7 +110,9 @@ function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: 
           {/* Status + Latency */}
           <div className="flex gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[var(--text-2)]">Status code</label>
+              <label className="text-xs font-medium text-[var(--text-2)]">
+                Status code
+              </label>
               <input
                 type="number"
                 className="input text-sm py-1.5 w-28"
@@ -88,7 +123,9 @@ function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: 
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[var(--text-2)]">Latency</label>
+              <label className="text-xs font-medium text-[var(--text-2)]">
+                Latency
+              </label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -96,7 +133,12 @@ function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: 
                   min={0}
                   placeholder="0"
                   value={draft.latencyMs ?? ""}
-                  onChange={(e) => set("latencyMs", e.target.value ? Number(e.target.value) : undefined)}
+                  onChange={(e) =>
+                    set(
+                      "latencyMs",
+                      e.target.value ? Number(e.target.value) : undefined,
+                    )
+                  }
                 />
                 <span className="text-sm text-[var(--text-3)]">ms</span>
               </div>
@@ -105,7 +147,9 @@ function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: 
 
           {/* Response body */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[var(--text-2)]">Response body</label>
+            <label className="text-xs font-medium text-[var(--text-2)]">
+              Response body
+            </label>
             <textarea
               className="input text-sm py-2 font-mono resize-none"
               rows={6}
@@ -117,7 +161,9 @@ function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: 
 
           {/* Headers */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[var(--text-2)]">Response headers</label>
+            <label className="text-xs font-medium text-[var(--text-2)]">
+              Response headers
+            </label>
             <div className="border border-[var(--border)] rounded overflow-hidden">
               <KeyValueEditor
                 rows={draft.headers}
@@ -131,8 +177,18 @@ function RouteModal({ route, onSave, onClose }: { route: MockRoute; onSave: (r: 
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-2)] shrink-0">
-          <button onClick={onClose} className="btn text-xs">Cancel</button>
-          <button onClick={() => { onSave(draft); onClose(); }} className="btn btn-primary text-xs">Save</button>
+          <button onClick={onClose} className="btn text-xs">
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onSave(draft);
+              onClose();
+            }}
+            className="btn btn-primary text-xs"
+          >
+            Save
+          </button>
         </div>
       </div>
     </div>
@@ -148,16 +204,39 @@ export function MockPanel() {
     try {
       const data = await loadMockRoutes();
       set({ mockRoutes: data.routes, mockLogs: data.logs });
-    } catch (e) { addToast("error", String(e)); }
+    } catch (e) {
+      addToast("error", String(e));
+    }
   };
 
   const sync = async () => {
+    const validation = validateMockRoutes(mockRoutes);
+    if (!validation.valid) {
+      const [firstError] = validation.errors;
+      const remaining = validation.errors.length - 1;
+      addToast(
+        "error",
+        `${firstError.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`,
+      );
+      return;
+    }
+    if (validation.warnings.length > 0) {
+      const [firstWarning] = validation.warnings;
+      const remaining = validation.warnings.length - 1;
+      addToast(
+        "warn",
+        `${firstWarning.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`,
+      );
+    }
     try {
       set({ mockStatus: "Syncing…" });
       await syncMockRoutes(mockRoutes);
       set({ mockStatus: "Active" });
       addToast("success", "Routes synced");
-    } catch (e) { set({ mockStatus: "Error" }); addToast("error", String(e)); }
+    } catch (e) {
+      set({ mockStatus: "Error" });
+      addToast("error", String(e));
+    }
   };
 
   const stop = async () => {
@@ -166,33 +245,59 @@ export function MockPanel() {
       await syncMockRoutes([]);
       set({ mockStatus: "Inactive" });
       addToast("success", "Mock server stopped");
-    } catch (e) { set({ mockStatus: "Error" }); addToast("error", String(e)); }
+    } catch (e) {
+      set({ mockStatus: "Error" });
+      addToast("error", String(e));
+    }
   };
 
   const clearLogs = async () => {
-    try { await clearMockLogs(); set({ mockLogs: [] }); } catch (e) { addToast("error", String(e)); }
+    try {
+      await clearMockLogs();
+      set({ mockLogs: [] });
+    } catch (e) {
+      addToast("error", String(e));
+    }
   };
 
   const saveRoute = (route: MockRoute) => {
     const exists = mockRoutes.some((r) => r.id === route.id);
-    set({ mockRoutes: exists ? mockRoutes.map((r) => r.id === route.id ? route : r) : [...mockRoutes, route] });
+    set({
+      mockRoutes: exists
+        ? mockRoutes.map((r) => (r.id === route.id ? route : r))
+        : [...mockRoutes, route],
+    });
   };
 
-  const deleteRoute = (id: string) => set({ mockRoutes: mockRoutes.filter((r) => r.id !== id) });
+  const deleteRoute = (id: string) =>
+    set({ mockRoutes: mockRoutes.filter((r) => r.id !== id) });
 
   const toggleEnabled = (id: string) =>
-    set({ mockRoutes: mockRoutes.map((r) => r.id === id ? { ...r, enabled: !(r.enabled !== false) } : r) });
+    set({
+      mockRoutes: mockRoutes.map((r) =>
+        r.id === id ? { ...r, enabled: !(r.enabled !== false) } : r,
+      ),
+    });
 
-  const fmt = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const fmt = (ts: number) =>
+    new Date(ts).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">Mock Server</span>
+          <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
+            Mock Server
+          </span>
           {mockStatus && (
-            <span className={`text-2xs px-1.5 py-0.5 rounded font-medium ${mockStatus === "Active" ? "bg-emerald-50 text-emerald-700" : mockStatus === "Error" ? "bg-red-50 text-red-600" : "bg-[var(--surface-2)] text-[var(--text-3)]"}`}>
+            <span
+              className={`text-2xs px-1.5 py-0.5 rounded font-medium ${mockStatus === "Active" ? "bg-emerald-50 text-emerald-700" : mockStatus === "Error" ? "bg-red-50 text-red-600" : "bg-[var(--surface-2)] text-[var(--text-3)]"}`}
+            >
               {mockStatus}
             </span>
           )}
@@ -216,11 +321,21 @@ export function MockPanel() {
             Routes {mockRoutes.length > 0 && `· ${mockRoutes.length}`}
           </span>
           <div className="flex items-center gap-1.5">
-            <button onClick={sync} className="btn text-2xs py-0.5 px-2">Sync</button>
+            <button onClick={sync} className="btn text-2xs py-0.5 px-2">
+              Sync
+            </button>
             {mockStatus === "Active" && (
-              <button onClick={stop} className="btn btn-danger text-2xs py-0.5 px-2">Stop</button>
+              <button
+                onClick={stop}
+                className="btn btn-danger text-2xs py-0.5 px-2"
+              >
+                Stop
+              </button>
             )}
-            <button onClick={() => setEditingRoute(makeRoute())} className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5">
+            <button
+              onClick={() => setEditingRoute(makeRoute())}
+              className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
+            >
               <Plus size={13} />
             </button>
           </div>
@@ -236,22 +351,38 @@ export function MockPanel() {
               <input
                 type="checkbox"
                 checked={route.enabled !== false}
-                onChange={(e) => { e.stopPropagation(); toggleEnabled(route.id); }}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  toggleEnabled(route.id);
+                }}
                 onClick={(e) => e.stopPropagation()}
                 className="accent-[var(--accent)] shrink-0"
               />
               <MethodBadge method={route.method} />
-              <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">{route.pathPattern}</span>
-              <span className={`text-2xs shrink-0 ${route.status >= 400 ? "text-red-500" : "text-[var(--text-3)]"}`}>{route.status}</span>
+              <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
+                {route.pathPattern}
+              </span>
+              <span
+                className={`text-2xs shrink-0 ${route.status >= 400 ? "text-red-500" : "text-[var(--text-3)]"}`}
+              >
+                {route.status}
+              </span>
               <button
-                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(route.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDeleteId(route.id);
+                }}
                 className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
               >
                 <Trash2 size={11} />
               </button>
             </div>
           ))}
-          {!mockRoutes.length && <p className="p-4 text-xs text-[var(--text-3)] text-center">No routes yet</p>}
+          {!mockRoutes.length && (
+            <p className="p-4 text-xs text-[var(--text-3)] text-center">
+              No routes yet
+            </p>
+          )}
         </div>
       </div>
 
@@ -261,20 +392,44 @@ export function MockPanel() {
           Request Log {mockLogs.length > 0 && `· ${mockLogs.length}`}
         </span>
         {mockLogs.length > 0 && (
-          <button onClick={clearLogs} className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"><Trash2 size={12} /></button>
+          <button
+            onClick={clearLogs}
+            className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
+          >
+            <Trash2 size={12} />
+          </button>
         )}
       </div>
       <div className="flex-1 overflow-y-auto font-mono text-2xs">
         {mockLogs.map((log) => (
-          <div key={log.id} className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]">
-            <span className="text-[var(--text-3)] shrink-0">{fmt(log.createdAt)}</span>
+          <div
+            key={log.id}
+            className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+          >
+            <span className="text-[var(--text-3)] shrink-0">
+              {fmt(log.createdAt)}
+            </span>
             <MethodBadge method={log.method} />
-            <span className="flex-1 text-[var(--text-1)] truncate">{log.path}</span>
-            <span className={`shrink-0 font-semibold ${log.status >= 400 ? "text-red-500" : "text-emerald-600"}`}>{log.status}</span>
-            {!log.matched && <span className="text-2xs text-amber-500 shrink-0">unmatched</span>}
+            <span className="flex-1 text-[var(--text-1)] truncate">
+              {log.path}
+            </span>
+            <span
+              className={`shrink-0 font-semibold ${log.status >= 400 ? "text-red-500" : "text-emerald-600"}`}
+            >
+              {log.status}
+            </span>
+            {!log.matched && (
+              <span className="text-2xs text-amber-500 shrink-0">
+                unmatched
+              </span>
+            )}
           </div>
         ))}
-        {!mockLogs.length && <p className="p-4 text-xs text-[var(--text-3)] text-center">No requests yet</p>}
+        {!mockLogs.length && (
+          <p className="p-4 text-xs text-[var(--text-3)] text-center">
+            No requests yet
+          </p>
+        )}
       </div>
 
       {editingRoute && (
@@ -291,7 +446,10 @@ export function MockPanel() {
         message="Delete this route?"
         confirmLabel="Delete"
         danger
-        onConfirm={() => { if (confirmDeleteId) deleteRoute(confirmDeleteId); setConfirmDeleteId(null); }}
+        onConfirm={() => {
+          if (confirmDeleteId) deleteRoute(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
         onClose={() => setConfirmDeleteId(null)}
       />
     </div>

@@ -13,18 +13,33 @@ interface Props {
   onClose: () => void;
 }
 
-export function PromptModal({ open, title, label, defaultValue = "", placeholder, multiline, confirmLabel = "OK", onConfirm, onClose }: Props) {
+export function PromptModal({
+  open,
+  title,
+  label,
+  defaultValue = "",
+  placeholder,
+  multiline,
+  confirmLabel = "OK",
+  onConfirm,
+  onClose,
+}: Props) {
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (open) {
       setValue(defaultValue);
-      setTimeout(() => { inputRef.current?.focus(); (inputRef.current as HTMLInputElement)?.select?.(); }, 30);
+      setTimeout(() => {
+        inputRef.current?.focus();
+        (inputRef.current as HTMLInputElement)?.select?.();
+      }, 30);
     }
   }, [open, defaultValue]);
 
-  const submit = () => { if (value.trim()) onConfirm(value.trim()); };
+  const submit = () => {
+    if (value.trim()) onConfirm(value.trim());
+  };
 
   return (
     <Dialog
@@ -34,12 +49,24 @@ export function PromptModal({ open, title, label, defaultValue = "", placeholder
       width="360px"
       footer={
         <>
-          <button className="btn text-xs" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary text-xs" onClick={submit} disabled={!value.trim()}>{confirmLabel}</button>
+          <button className="btn text-xs" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className="btn btn-primary text-xs"
+            onClick={submit}
+            disabled={!value.trim()}
+          >
+            {confirmLabel}
+          </button>
         </>
       }
     >
-      {label && <label className="text-xs text-[var(--text-2)] block mb-1.5">{label}</label>}
+      {label && (
+        <label className="text-xs text-[var(--text-2)] block mb-1.5">
+          {label}
+        </label>
+      )}
       {multiline ? (
         <textarea
           ref={inputRef as React.RefObject<HTMLTextAreaElement>}
@@ -54,7 +81,12 @@ export function PromptModal({ open, title, label, defaultValue = "", placeholder
           ref={inputRef as React.RefObject<HTMLInputElement>}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submit();
+            }
+          }}
           placeholder={placeholder}
           className="input text-xs"
         />

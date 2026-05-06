@@ -4,18 +4,27 @@ import { StatusBadge } from "../shared/StatusBadge";
 import { Select } from "../shared/Select";
 import type { ResponseTab } from "../../lib/types";
 import type { TimingPhaseName, Timing, TimingAttempt } from "@invoke/core";
-import { Clock, HardDrive, Shield, CheckCircle, Code2, List } from "lucide-react";
+import {
+  Clock,
+  HardDrive,
+  Shield,
+  CheckCircle,
+  Code2,
+  List,
+} from "lucide-react";
 
 const TABS: { id: ResponseTab; label: string; icon?: React.ReactNode }[] = [
-  { id: "body",       label: "Body" },
-  { id: "headers",    label: "Headers",    icon: <List size={11} /> },
-  { id: "timing",     label: "Timing",     icon: <Clock size={11} /> },
-  { id: "tls",        label: "TLS",        icon: <Shield size={11} /> },
+  { id: "body", label: "Body" },
+  { id: "headers", label: "Headers", icon: <List size={11} /> },
+  { id: "timing", label: "Timing", icon: <Clock size={11} /> },
+  { id: "tls", label: "TLS", icon: <Shield size={11} /> },
   { id: "assertions", label: "Assertions", icon: <CheckCircle size={11} /> },
-  { id: "code",       label: "Code",       icon: <Code2 size={11} /> }
+  { id: "code", label: "Code", icon: <Code2 size={11} /> },
 ];
 
-function fmt(n: number) { return n < 1000 ? `${n}ms` : `${(n / 1000).toFixed(2)}s`; }
+function fmt(n: number) {
+  return n < 1000 ? `${n}ms` : `${(n / 1000).toFixed(2)}s`;
+}
 function fmtSize(n: number) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
@@ -23,7 +32,14 @@ function fmtSize(n: number) {
 }
 
 export function ResponseViewer() {
-  const { response, responseTab, set, streaming, streamBytes, assertionResults } = useStore();
+  const {
+    response,
+    responseTab,
+    set,
+    streaming,
+    streamBytes,
+    assertionResults,
+  } = useStore();
 
   if (!response && !streaming) {
     return (
@@ -31,8 +47,16 @@ export function ResponseViewer() {
         <div className="w-10 h-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center mb-2">
           <Code2 size={18} className="text-[var(--text-3)]" />
         </div>
-        <p className="text-sm text-[var(--text-2)] font-medium">Send a request to see the response</p>
-        <p className="text-xs text-[var(--text-3)]">Press <kbd className="px-1.5 py-0.5 rounded bg-[var(--surface-2)] border border-[var(--border)] font-mono text-2xs">Ctrl+Enter</kbd> to send</p>
+        <p className="text-sm text-[var(--text-2)] font-medium">
+          Send a request to see the response
+        </p>
+        <p className="text-xs text-[var(--text-3)]">
+          Press{" "}
+          <kbd className="px-1.5 py-0.5 rounded bg-[var(--surface-2)] border border-[var(--border)] font-mono text-2xs">
+            Ctrl+Enter
+          </kbd>{" "}
+          to send
+        </p>
       </div>
     );
   }
@@ -43,8 +67,14 @@ export function ResponseViewer() {
         <div className="w-10 h-10 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mb-2">
           <Code2 size={18} className="text-red-400" />
         </div>
-        <p className="text-sm text-[var(--text-2)] font-medium">Request failed</p>
-        {response.error && <p className="text-xs text-red-500 font-mono max-w-md break-all">{response.error}</p>}
+        <p className="text-sm text-[var(--text-2)] font-medium">
+          Request failed
+        </p>
+        {response.error && (
+          <p className="text-xs text-red-500 font-mono max-w-md break-all">
+            {response.error}
+          </p>
+        )}
       </div>
     );
   }
@@ -65,10 +95,14 @@ export function ResponseViewer() {
             <HardDrive size={11} /> {fmtSize(response.responseSize ?? 0)}
           </span>
           {response.statusText && response.status !== 0 && (
-            <span className="text-2xs text-[var(--text-3)] font-mono">{response.statusText}</span>
+            <span className="text-2xs text-[var(--text-3)] font-mono">
+              {response.statusText}
+            </span>
           )}
           {totalCount > 0 && (
-            <span className={`text-2xs flex items-center gap-1 ${passedCount === totalCount ? "text-emerald-600" : "text-red-600"}`}>
+            <span
+              className={`text-2xs flex items-center gap-1 ${passedCount === totalCount ? "text-emerald-600" : "text-red-600"}`}
+            >
               <CheckCircle size={11} /> {passedCount}/{totalCount}
             </span>
           )}
@@ -77,8 +111,12 @@ export function ResponseViewer() {
 
       {streaming && !response && (
         <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] bg-[var(--accent-subtle)]">
-          <span className="text-xs text-[var(--accent)] animate-pulse">Streaming…</span>
-          <span className="text-2xs text-[var(--text-3)]">{fmtSize(streamBytes)}</span>
+          <span className="text-xs text-[var(--accent)] animate-pulse">
+            Streaming…
+          </span>
+          <span className="text-2xs text-[var(--text-3)]">
+            {fmtSize(streamBytes)}
+          </span>
         </div>
       )}
 
@@ -92,7 +130,9 @@ export function ResponseViewer() {
           >
             {tab.icon} {tab.label}
             {tab.id === "assertions" && totalCount > 0 && (
-              <span className={`ml-0.5 text-2xs px-1 rounded ${passedCount === totalCount ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+              <span
+                className={`ml-0.5 text-2xs px-1 rounded ${passedCount === totalCount ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+              >
                 {passedCount}/{totalCount}
               </span>
             )}
@@ -102,12 +142,12 @@ export function ResponseViewer() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {responseTab === "body"    && <BodyTab />}
+        {responseTab === "body" && <BodyTab />}
         {responseTab === "headers" && <HeadersTab />}
-        {responseTab === "timing"  && <TimingTab />}
-        {responseTab === "tls"     && <TLSTab />}
+        {responseTab === "timing" && <TimingTab />}
+        {responseTab === "tls" && <TLSTab />}
         {responseTab === "assertions" && <AssertionsTab />}
-        {responseTab === "code"    && <CodeTab />}
+        {responseTab === "code" && <CodeTab />}
       </div>
     </div>
   );
@@ -118,19 +158,48 @@ function BodyTab() {
   const { response, responsePretty, set } = useStore();
   if (!response) return null;
 
-  const ct = (Array.isArray(response.headers) ? response.headers.find(h => h.key.toLowerCase() === "content-type")?.value : "") ?? "";
-  const isJson = ct.includes("json") || (() => { try { JSON.parse(response.body); return true; } catch { return false; } })();
-  const lang = isJson ? "json" : ct.includes("xml") || ct.includes("html") ? "xml" : "text";
-  const displayBody = (isJson && responsePretty)
-    ? (() => { try { return JSON.stringify(JSON.parse(response.body), null, 2); } catch { return response.body; } })()
-    : response.body;
+  const ct =
+    (Array.isArray(response.headers)
+      ? response.headers.find((h) => h.key.toLowerCase() === "content-type")
+          ?.value
+      : "") ?? "";
+  const isJson =
+    ct.includes("json") ||
+    (() => {
+      try {
+        JSON.parse(response.body);
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+  const lang = isJson
+    ? "json"
+    : ct.includes("xml") || ct.includes("html")
+      ? "xml"
+      : "text";
+  const displayBody =
+    isJson && responsePretty
+      ? (() => {
+          try {
+            return JSON.stringify(JSON.parse(response.body), null, 2);
+          } catch {
+            return response.body;
+          }
+        })()
+      : response.body;
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)]">
-        <span className="text-2xs text-[var(--text-3)] font-mono">{ct || "text/plain"}</span>
+        <span className="text-2xs text-[var(--text-3)] font-mono">
+          {ct || "text/plain"}
+        </span>
         {isJson && (
-          <button onClick={() => set({ responsePretty: !responsePretty })} className={`ml-auto tab-btn text-2xs ${responsePretty ? "active" : ""}`}>
+          <button
+            onClick={() => set({ responsePretty: !responsePretty })}
+            className={`ml-auto tab-btn text-2xs ${responsePretty ? "active" : ""}`}
+          >
             Pretty
           </button>
         )}
@@ -150,27 +219,39 @@ function HeadersTab() {
   return (
     <div className="divide-y divide-[var(--border)]">
       {headers.map((h, i) => (
-        <div key={i} className="flex items-start gap-4 px-3 py-2 hover:bg-[var(--surface-2)]">
-          <span className="text-xs font-mono font-medium text-[var(--text-1)] w-56 shrink-0 truncate">{h.key}</span>
-          <span className="text-xs font-mono text-[var(--text-2)] break-all">{h.value}</span>
+        <div
+          key={i}
+          className="flex items-start gap-4 px-3 py-2 hover:bg-[var(--surface-2)]"
+        >
+          <span className="text-xs font-mono font-medium text-[var(--text-1)] w-56 shrink-0 truncate">
+            {h.key}
+          </span>
+          <span className="text-xs font-mono text-[var(--text-2)] break-all">
+            {h.value}
+          </span>
         </div>
       ))}
-      {!headers.length && <p className="p-4 text-xs text-[var(--text-3)]">No headers</p>}
+      {!headers.length && (
+        <p className="p-4 text-xs text-[var(--text-3)]">No headers</p>
+      )}
     </div>
   );
 }
 
 // Timing tab
 const PHASE_DEFS: { name: TimingPhaseName; label: string; color: string }[] = [
-  { name: "dns",      label: "DNS",      color: "#5bc0be" },
-  { name: "tcp",      label: "TCP",      color: "#7bd88f" },
-  { name: "tls",      label: "TLS",      color: "#ffd166" },
-  { name: "ttfb",     label: "TTFB",     color: "#b388ff" },
+  { name: "dns", label: "DNS", color: "#5bc0be" },
+  { name: "tcp", label: "TCP", color: "#7bd88f" },
+  { name: "tls", label: "TLS", color: "#ffd166" },
+  { name: "ttfb", label: "TTFB", color: "#b388ff" },
   { name: "transfer", label: "Transfer", color: "#ff8f70" },
 ];
 
 function syntheticPhases(timing: Timing) {
-  const phases = new Map<TimingPhaseName, { startMs: number; durationMs: number }>();
+  const phases = new Map<
+    TimingPhaseName,
+    { startMs: number; durationMs: number }
+  >();
   let cursor = 0;
   for (const { name } of PHASE_DEFS) {
     const key = `${name}Ms` as keyof Timing;
@@ -181,21 +262,33 @@ function syntheticPhases(timing: Timing) {
   return phases;
 }
 
-interface PhaseBar { name: TimingPhaseName; label: string; color: string; startMs: number; durationMs: number; leftPct: number; widthPct: number }
+interface PhaseBar {
+  name: TimingPhaseName;
+  label: string;
+  color: string;
+  startMs: number;
+  durationMs: number;
+  leftPct: number;
+  widthPct: number;
+}
 
 function buildAttemptBars(attempt: TimingAttempt): PhaseBar[] {
   const byName = new Map((attempt.phases ?? []).map((p) => [p.name, p]));
   const synthetic = syntheticPhases(attempt.timing);
   const total = Math.max(attempt.timing?.totalMs ?? 0, 1);
-  const clamp = (v: number) => Math.min(100, Math.max(0, Number.isFinite(v) ? v : 0));
+  const clamp = (v: number) =>
+    Math.min(100, Math.max(0, Number.isFinite(v) ? v : 0));
 
   let cursor = 0;
   return PHASE_DEFS.map(({ name, label, color }) => {
-    const durationMs = byName.get(name)?.durationMs ?? synthetic.get(name)?.durationMs ?? 0;
+    const durationMs =
+      byName.get(name)?.durationMs ?? synthetic.get(name)?.durationMs ?? 0;
     const startMs = cursor;
     cursor += durationMs;
     return {
-      name, label, color,
+      name,
+      label,
+      color,
       startMs,
       durationMs,
       leftPct: clamp((startMs / total) * 100),
@@ -213,27 +306,39 @@ function fmtMs(ms: number) {
 
 function TimingTab() {
   const { response } = useStore();
-  if (!response?.timing) return <p className="p-4 text-xs text-[var(--text-3)]">No timing data</p>;
+  if (!response?.timing)
+    return <p className="p-4 text-xs text-[var(--text-3)]">No timing data</p>;
 
   const attempts: TimingAttempt[] = response.attempts?.length
     ? response.attempts
-    : [{ url: "", status: response.status, headers: response.headers, timing: response.timing, phases: [], redirect: false }];
+    : [
+        {
+          url: "",
+          status: response.status,
+          headers: response.headers,
+          timing: response.timing,
+          phases: [],
+          redirect: false,
+        },
+      ];
 
   const timing = response.timing;
   const timingRows = [
-    { key: "dns",      label: "DNS",      value: timing.dnsMs },
-    { key: "tcp",      label: "TCP",      value: timing.tcpMs },
-    { key: "tls",      label: "TLS",      value: timing.tlsMs },
-    { key: "ttfb",     label: "TTFB",     value: timing.ttfbMs },
+    { key: "dns", label: "DNS", value: timing.dnsMs },
+    { key: "tcp", label: "TCP", value: timing.tcpMs },
+    { key: "tls", label: "TLS", value: timing.tlsMs },
+    { key: "ttfb", label: "TTFB", value: timing.ttfbMs },
     { key: "transfer", label: "Transfer", value: timing.transferMs },
-    { key: "total",    label: "Total",    value: timing.totalMs },
+    { key: "total", label: "Total", value: timing.totalMs },
   ];
 
   return (
     <div className="p-4 flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-[var(--text-1)]">Timing waterfall</span>
+        <span className="text-xs font-semibold text-[var(--text-1)]">
+          Timing waterfall
+        </span>
         <span className="text-xs text-[var(--text-3)]">
           {attempts.length > 1 ? `${attempts.length} hops` : "Single request"}
         </span>
@@ -244,22 +349,40 @@ function TimingTab() {
         {attempts.map((attempt, idx) => {
           const bars = buildAttemptBars(attempt);
           const total = Math.max(attempt.timing?.totalMs ?? 0, 1);
-          const label = attempt.redirect ? `Redirect ${idx + 1}` : attempts.length > 1 ? "Final" : "Request";
+          const label = attempt.redirect
+            ? `Redirect ${idx + 1}`
+            : attempts.length > 1
+              ? "Final"
+              : "Request";
           return (
-            <div key={idx} className="flex flex-col gap-2.5 p-3 rounded border border-[var(--border)] bg-[var(--surface-2)]">
+            <div
+              key={idx}
+              className="flex flex-col gap-2.5 p-3 rounded border border-[var(--border)] bg-[var(--surface-2)]"
+            >
               {/* Attempt label row */}
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-semibold text-[var(--text-1)] shrink-0">{label}</span>
+                <span className="text-xs font-semibold text-[var(--text-1)] shrink-0">
+                  {label}
+                </span>
                 {attempt.status && <StatusBadge status={attempt.status} />}
                 {attempt.url && (
-                  <span className="text-2xs font-mono text-[var(--text-3)] truncate min-w-0">{attempt.url}</span>
+                  <span className="text-2xs font-mono text-[var(--text-3)] truncate min-w-0">
+                    {attempt.url}
+                  </span>
                 )}
               </div>
 
               {/* Waterfall track — taller with time labels above, bar below */}
-              <div className="relative h-13 bg-[var(--surface)] rounded border border-[var(--border)]" style={{ height: 52 }}>
-                <span className="absolute left-2 top-1 text-2xs text-[var(--text-3)] z-10 leading-none">0</span>
-                <span className="absolute right-2 top-1 text-2xs text-[var(--text-3)] z-10 leading-none">{fmtMs(total)}</span>
+              <div
+                className="relative h-13 bg-[var(--surface)] rounded border border-[var(--border)]"
+                style={{ height: 52 }}
+              >
+                <span className="absolute left-2 top-1 text-2xs text-[var(--text-3)] z-10 leading-none">
+                  0
+                </span>
+                <span className="absolute right-2 top-1 text-2xs text-[var(--text-3)] z-10 leading-none">
+                  {fmtMs(total)}
+                </span>
                 {bars.map((bar) =>
                   bar.durationMs === 0 ? null : (
                     <div
@@ -275,12 +398,15 @@ function TimingTab() {
                       title={`${bar.label}: ${fmtMs(bar.durationMs)} (starts ${fmtMs(bar.startMs)})`}
                     >
                       {bar.widthPct >= 10 && (
-                        <span className="text-2xs font-bold px-1.5 truncate" style={{ color: "#061214" }}>
+                        <span
+                          className="text-2xs font-bold px-1.5 truncate"
+                          style={{ color: "#061214" }}
+                        >
                           {bar.label} {fmtMs(bar.durationMs)}
                         </span>
                       )}
                     </div>
-                  )
+                  ),
                 )}
               </div>
 
@@ -292,9 +418,14 @@ function TimingTab() {
                     className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--surface)] text-2xs text-[var(--text-1)]"
                     title={`${bar.label}: ${fmtMs(bar.durationMs)} (starts ${fmtMs(bar.startMs)})`}
                   >
-                    <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: bar.color }} />
+                    <span
+                      className="w-2 h-2 rounded-sm shrink-0"
+                      style={{ backgroundColor: bar.color }}
+                    />
                     {bar.label}
-                    <strong className="text-[var(--text-3)]">{fmtMs(bar.durationMs)}</strong>
+                    <strong className="text-[var(--text-3)]">
+                      {fmtMs(bar.durationMs)}
+                    </strong>
                   </span>
                 ))}
               </div>
@@ -304,11 +435,19 @@ function TimingTab() {
       </div>
 
       {/* Timing summary grid */}
-      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}
+      >
         {timingRows.map((row) => (
-          <div key={row.key} className="flex flex-col gap-0.5 p-2.5 rounded border border-[var(--border)] bg-[var(--surface-2)]">
+          <div
+            key={row.key}
+            className="flex flex-col gap-0.5 p-2.5 rounded border border-[var(--border)] bg-[var(--surface-2)]"
+          >
             <span className="text-2xs text-[var(--text-3)]">{row.label}</span>
-            <span className="text-xs text-[var(--text-1)]">{fmtMs(row.value ?? 0)}</span>
+            <span className="text-xs text-[var(--text-1)]">
+              {fmtMs(row.value ?? 0)}
+            </span>
           </div>
         ))}
       </div>
@@ -319,15 +458,34 @@ function TimingTab() {
 // TLS tab
 function TLSTab() {
   const { response } = useStore();
-  const tls = (response as unknown as { tls?: { version?: string; cipher?: string; certificates?: { subject: string; issuer: string; validFrom: string; validTo: string }[] } })?.tls;
-  if (!tls) return <p className="p-4 text-xs text-[var(--text-3)]">No TLS data</p>;
+  const tls = (
+    response as unknown as {
+      tls?: {
+        version?: string;
+        cipher?: string;
+        certificates?: {
+          subject: string;
+          issuer: string;
+          validFrom: string;
+          validTo: string;
+        }[];
+      };
+    }
+  )?.tls;
+  if (!tls)
+    return <p className="p-4 text-xs text-[var(--text-3)]">No TLS data</p>;
   return (
     <div className="p-4 flex flex-col gap-3">
       <Row label="Protocol" value={tls.version ?? "—"} />
       <Row label="Cipher" value={tls.cipher ?? "—"} />
       {tls.certificates?.map((cert, i) => (
-        <div key={i} className="border border-[var(--border)] rounded p-3 flex flex-col gap-1.5">
-          <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">Certificate {i + 1}</span>
+        <div
+          key={i}
+          className="border border-[var(--border)] rounded p-3 flex flex-col gap-1.5"
+        >
+          <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">
+            Certificate {i + 1}
+          </span>
           <Row label="Subject" value={cert.subject} />
           <Row label="Issuer" value={cert.issuer} />
           <Row label="Valid from" value={cert.validFrom} />
@@ -341,8 +499,12 @@ function TLSTab() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3">
-      <span className="text-xs text-[var(--text-3)] w-24 shrink-0">{label}</span>
-      <span className="text-xs font-mono text-[var(--text-1)] break-all">{value}</span>
+      <span className="text-xs text-[var(--text-3)] w-24 shrink-0">
+        {label}
+      </span>
+      <span className="text-xs font-mono text-[var(--text-1)] break-all">
+        {value}
+      </span>
     </div>
   );
 }
@@ -350,18 +512,36 @@ function Row({ label, value }: { label: string; value: string }) {
 // Assertions tab
 function AssertionsTab() {
   const { assertionResults, assertionRules } = useStore();
-  if (!assertionResults.length) return <p className="p-4 text-xs text-[var(--text-3)]">No assertions configured</p>;
+  if (!assertionResults.length)
+    return (
+      <p className="p-4 text-xs text-[var(--text-3)]">
+        No assertions configured
+      </p>
+    );
   return (
     <div className="divide-y divide-[var(--border)]">
       {assertionResults.map((result, i) => {
         const rule = assertionRules[i];
         return (
-          <div key={i} className={`flex items-start gap-3 px-3 py-2.5 ${result.passed ? "" : "bg-red-50"}`}>
-            <span className={`mt-0.5 text-sm ${result.passed ? "text-emerald-600" : "text-red-600"}`}>{result.passed ? "✓" : "✗"}</span>
+          <div
+            key={i}
+            className={`flex items-start gap-3 px-3 py-2.5 ${result.passed ? "" : "bg-red-50"}`}
+          >
+            <span
+              className={`mt-0.5 text-sm ${result.passed ? "text-emerald-600" : "text-red-600"}`}
+            >
+              {result.passed ? "✓" : "✗"}
+            </span>
             <div className="flex-1">
-              <p className="text-xs text-[var(--text-1)]">{rule ? `${rule.type} ${rule.matcher} ${rule.expected}` : `Assertion ${i + 1}`}</p>
+              <p className="text-xs text-[var(--text-1)]">
+                {rule
+                  ? `${rule.type} ${rule.matcher} ${rule.expected}`
+                  : `Assertion ${i + 1}`}
+              </p>
               {!result.passed && (
-                <p className="text-2xs text-[var(--text-3)] font-mono mt-0.5">got: {String(result.actual)}</p>
+                <p className="text-2xs text-[var(--text-3)] font-mono mt-0.5">
+                  got: {String(result.actual)}
+                </p>
               )}
             </div>
           </div>
@@ -373,11 +553,21 @@ function AssertionsTab() {
 
 // Code tab
 const CODE_TARGETS = [
-  "curl", "fetch", "node-fetch", "node-axios",
-  "python-requests", "python-httpx",
-  "go-net-http", "java-okhttp", "kotlin-okhttp",
-  "ruby-net-http", "php-guzzle", "csharp-httpclient",
-  "rust-reqwest", "powershell", "httpie"
+  "curl",
+  "fetch",
+  "node-fetch",
+  "node-axios",
+  "python-requests",
+  "python-httpx",
+  "go-net-http",
+  "java-okhttp",
+  "kotlin-okhttp",
+  "ruby-net-http",
+  "php-guzzle",
+  "csharp-httpclient",
+  "rust-reqwest",
+  "powershell",
+  "httpie",
 ] as const;
 
 function CodeTab() {
@@ -388,15 +578,27 @@ function CodeTab() {
         <Select
           size="2xs"
           value={codeTarget}
-          onChange={(e) => set({ codeTarget: e.target.value as typeof codeTarget })}
+          onChange={(e) =>
+            set({ codeTarget: e.target.value as typeof codeTarget })
+          }
           wrapperClassName="w-40"
         >
-          {CODE_TARGETS.map((t) => <option key={t} value={t}>{t}</option>)}
+          {CODE_TARGETS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </Select>
-        {codeLoading && <span className="text-2xs text-[var(--text-3)]">Generating…</span>}
+        {codeLoading && (
+          <span className="text-2xs text-[var(--text-3)]">Generating…</span>
+        )}
       </div>
       <div className="flex-1 overflow-auto">
-        <CodeEditor value={codeSnippet} lang={codeTarget === "curl" ? "text" : "text"} readOnly />
+        <CodeEditor
+          value={codeSnippet}
+          lang={codeTarget === "curl" ? "text" : "text"}
+          readOnly
+        />
       </div>
     </div>
   );

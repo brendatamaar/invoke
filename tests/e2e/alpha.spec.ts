@@ -7,12 +7,18 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(async () => {
     localStorage.clear();
     const databases = await indexedDB.databases?.();
-    await Promise.all((databases ?? []).map((db) => db.name && new Promise<void>((resolve) => {
-      const request = indexedDB.deleteDatabase(db.name!);
-      request.onsuccess = () => resolve();
-      request.onerror = () => resolve();
-      request.onblocked = () => resolve();
-    })));
+    await Promise.all(
+      (databases ?? []).map(
+        (db) =>
+          db.name &&
+          new Promise<void>((resolve) => {
+            const request = indexedDB.deleteDatabase(db.name!);
+            request.onsuccess = () => resolve();
+            request.onerror = () => resolve();
+            request.onblocked = () => resolve();
+          }),
+      ),
+    );
   });
   await page.reload();
   await expect(page.getByText(/pong from Go/i)).toBeVisible();
@@ -47,7 +53,9 @@ test("saves and reloads a request", async ({ page }) => {
   await page.getByTestId("save-request").click();
   await page.getByTestId("save-name").fill("List users");
   await page.getByTestId("confirm-save").click();
-  await expect(page.locator(".request-row", { hasText: "List users" })).toBeVisible();
+  await expect(
+    page.locator(".request-row", { hasText: "List users" }),
+  ).toBeVisible();
 
   await page.getByTestId("new-request").click();
   await expect(page.getByTestId("url-input")).toHaveValue("");
@@ -70,7 +78,10 @@ test("resolves environment variables before sending", async ({ page }) => {
 });
 
 test("resolves folder variables from nested requests", async ({ page }) => {
-  await page.getByTestId("collection-row").filter({ hasText: "Scratch" }).click({ button: "right" });
+  await page
+    .getByTestId("collection-row")
+    .filter({ hasText: "Scratch" })
+    .click({ button: "right" });
   page.once("dialog", (dialog) => dialog.accept("api"));
   await page.getByTestId("context-new-folder").click();
   const apiFolder = page.getByTestId("folder-row").filter({ hasText: "api" });
@@ -115,12 +126,16 @@ test("sends and saves a GraphQL request", async ({ page }) => {
   await page.getByTestId("save-request").click();
   await page.getByTestId("save-name").fill("GraphQL ok");
   await page.getByTestId("confirm-save").click();
-  await expect(page.locator(".request-row", { hasText: "GraphQL ok" })).toBeVisible();
+  await expect(
+    page.locator(".request-row", { hasText: "GraphQL ok" }),
+  ).toBeVisible();
 
   await page.getByTestId("new-request").click();
   await page.locator(".request-row", { hasText: "GraphQL ok" }).click();
   await expect(page.getByTestId("protocol-select")).toHaveValue("graphql");
-  await expect(page.getByTestId("graphql-url-input")).toHaveValue(`${target}/graphql`);
+  await expect(page.getByTestId("graphql-url-input")).toHaveValue(
+    `${target}/graphql`,
+  );
 });
 
 test("exports request code snippets", async ({ page }) => {
@@ -137,7 +152,9 @@ test("exports request code snippets", async ({ page }) => {
   await expect(page.getByTestId("code-snippet")).toContainText("--data-raw");
 
   await page.getByTestId("code-target").selectOption("python-requests");
-  await expect(page.getByTestId("code-snippet")).toContainText("response = requests.post(");
+  await expect(page.getByTestId("code-snippet")).toContainText(
+    "response = requests.post(",
+  );
   await page.getByTestId("code-target").selectOption("fetch");
   await expect(page.getByTestId("code-snippet")).toContainText("await fetch(");
   await page.getByTestId("code-target").selectOption("node-axios");
@@ -166,35 +183,51 @@ test("filters history by URL and body text", async ({ page }) => {
 });
 
 test("opens command palette and shortcut help", async ({ page }) => {
-  await page.getByTestId("collection-row").filter({ hasText: "Scratch" }).click({ button: "right" });
+  await page
+    .getByTestId("collection-row")
+    .filter({ hasText: "Scratch" })
+    .click({ button: "right" });
   page.once("dialog", (dialog) => dialog.accept("references"));
   await page.getByTestId("context-new-folder").click();
-  await expect(page.getByTestId("folder-row").filter({ hasText: "references" })).toBeVisible();
+  await expect(
+    page.getByTestId("folder-row").filter({ hasText: "references" }),
+  ).toBeVisible();
 
   await page.getByTestId("url-input").fill(`${target}/users`);
   await page.getByTestId("save-request").click();
   await page.getByTestId("save-name").fill("Reference users");
   await page.getByTestId("confirm-save").click();
-  await expect(page.locator(".request-row", { hasText: "Reference users" })).toBeVisible();
+  await expect(
+    page.locator(".request-row", { hasText: "Reference users" }),
+  ).toBeVisible();
 
   await page.getByTestId("new-request").click();
   await page.keyboard.press("Control+K");
   await expect(page.getByTestId("command-palette")).toBeVisible();
   await page.getByTestId("command-input").fill("ref");
-  const requestResult = page.getByTestId("command-result").filter({ hasText: "Reference users" });
+  const requestResult = page
+    .getByTestId("command-result")
+    .filter({ hasText: "Reference users" });
   await expect(requestResult).toBeVisible();
-  await expect(page.getByTestId("command-result").filter({ hasText: "references" })).toBeVisible();
+  await expect(
+    page.getByTestId("command-result").filter({ hasText: "references" }),
+  ).toBeVisible();
   await requestResult.click();
   await expect(page.getByTestId("url-input")).toHaveValue(`${target}/users`);
 
   await page.keyboard.press("Control+K");
   await page.getByTestId("command-input").fill("theme");
-  await page.getByTestId("command-result").filter({ hasText: "Toggle theme" }).click();
+  await page
+    .getByTestId("command-result")
+    .filter({ hasText: "Toggle theme" })
+    .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
   await page.keyboard.press("Control+/");
   await expect(page.getByTestId("shortcut-help")).toBeVisible();
-  await expect(page.getByTestId("shortcut-help")).toContainText("Command palette");
+  await expect(page.getByTestId("shortcut-help")).toContainText(
+    "Command palette",
+  );
 });
 
 test("applies bearer auth", async ({ page }) => {
@@ -209,7 +242,9 @@ test("applies bearer auth", async ({ page }) => {
 });
 
 test("parses pasted cURL commands", async ({ page }) => {
-  await page.getByTestId("url-input").fill(`curl -H "Authorization: Bearer xyz" ${target}/auth`);
+  await page
+    .getByTestId("url-input")
+    .fill(`curl -H "Authorization: Bearer xyz" ${target}/auth`);
   await page.getByTestId("url-input").blur();
   await expect(page.getByTestId("url-input")).toHaveValue(`${target}/auth`);
   await page.getByRole("button", { name: "Auth" }).click();

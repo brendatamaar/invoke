@@ -4,23 +4,39 @@ import React from "react";
 
 type SelectSize = "2xs" | "xs" | "sm";
 
-interface OptionItem { value: string; label: React.ReactNode; }
+interface OptionItem {
+  value: string;
+  label: React.ReactNode;
+}
 
 function parseOptions(children: React.ReactNode): OptionItem[] {
   const items: OptionItem[] = [];
   React.Children.forEach(children, (child) => {
     if (React.isValidElement(child) && child.type === "option") {
-      const p = child.props as { value?: string | number; children?: React.ReactNode };
-      items.push({ value: String(p.value ?? ""), label: p.children ?? String(p.value ?? "") });
+      const p = child.props as {
+        value?: string | number;
+        children?: React.ReactNode;
+      };
+      items.push({
+        value: String(p.value ?? ""),
+        label: p.children ?? String(p.value ?? ""),
+      });
     }
   });
   return items;
 }
 
-const sizeMap: Record<SelectSize, { trigger: string; item: string; chevron: number }> = {
-  "2xs": { trigger: "py-0.5 text-2xs", item: "px-2 py-1 text-2xs",   chevron: 10 },
-  "xs":  { trigger: "py-1 text-xs",    item: "px-2.5 py-1.5 text-xs", chevron: 11 },
-  "sm":  { trigger: "py-1.5 text-xs",  item: "px-2.5 py-1.5 text-xs", chevron: 11 },
+const sizeMap: Record<
+  SelectSize,
+  { trigger: string; item: string; chevron: number }
+> = {
+  "2xs": {
+    trigger: "py-0.5 text-2xs",
+    item: "px-2 py-1 text-2xs",
+    chevron: 10,
+  },
+  xs: { trigger: "py-1 text-xs", item: "px-2.5 py-1.5 text-xs", chevron: 11 },
+  sm: { trigger: "py-1.5 text-xs", item: "px-2.5 py-1.5 text-xs", chevron: 11 },
 };
 
 interface Props {
@@ -33,7 +49,15 @@ interface Props {
   children?: React.ReactNode;
 }
 
-export function Select({ value, onChange, size = "xs", className = "", wrapperClassName = "", disabled, children }: Props) {
+export function Select({
+  value,
+  onChange,
+  size = "xs",
+  className = "",
+  wrapperClassName = "",
+  disabled,
+  children,
+}: Props) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const s = sizeMap[size];
@@ -43,26 +67,37 @@ export function Select({ value, onChange, size = "xs", className = "", wrapperCl
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
   const pick = (val: string) => {
-    onChange?.({ target: { value: val } } as React.ChangeEvent<HTMLSelectElement>);
+    onChange?.({
+      target: { value: val },
+    } as React.ChangeEvent<HTMLSelectElement>);
     setOpen(false);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") { setOpen(false); return; }
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((o) => !o); return; }
+    if (e.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setOpen((o) => !o);
+      return;
+    }
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       const idx = options.findIndex((o) => o.value === value);
-      const next = e.key === "ArrowDown"
-        ? Math.min(idx + 1, options.length - 1)
-        : Math.max(idx - 1, 0);
+      const next =
+        e.key === "ArrowDown"
+          ? Math.min(idx + 1, options.length - 1)
+          : Math.max(idx - 1, 0);
       pick(options[next]?.value ?? "");
     }
   };
@@ -77,7 +112,9 @@ export function Select({ value, onChange, size = "xs", className = "", wrapperCl
         onKeyDown={onKeyDown}
         className={`flex items-center w-full bg-[var(--surface)] border rounded px-2 pr-6 text-[var(--text-1)] cursor-pointer outline-none transition-colors text-left disabled:opacity-45 disabled:pointer-events-none ${s.trigger} ${open ? "border-[var(--accent)]" : "border-[var(--border)] hover:border-[var(--border-strong)]"} ${className}`}
       >
-        <span className="flex-1 truncate">{selected?.label ?? <span className="text-[var(--text-3)]">—</span>}</span>
+        <span className="flex-1 truncate">
+          {selected?.label ?? <span className="text-[var(--text-3)]">—</span>}
+        </span>
         <ChevronDown
           size={s.chevron}
           className={`absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none transition-transform duration-150 ${open ? "rotate-180" : ""}`}

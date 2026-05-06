@@ -17,9 +17,10 @@ export function DiffModal() {
 
   const leftEntry = history.find((h) => h.id === leftId);
   const rightEntry = history.find((h) => h.id === rightId);
-  const diff = leftEntry?.response && rightEntry?.response
-    ? compareResponses(leftEntry.response, rightEntry.response)
-    : null;
+  const diff =
+    leftEntry?.response && rightEntry?.response
+      ? compareResponses(leftEntry.response, rightEntry.response)
+      : null;
 
   const entryLabel = (h: (typeof history)[number]) => {
     const req = h.request as { method?: string; url?: string } | undefined;
@@ -27,7 +28,10 @@ export function DiffModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={close}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={close}
+    >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
         style={{ width: "90vw", maxHeight: "100vh", minHeight: "50vh" }}
@@ -36,27 +40,41 @@ export function DiffModal() {
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
           <ArrowLeftRight size={15} className="text-[var(--accent)]" />
           <span className="text-sm font-semibold">Compare Responses</span>
-          <button onClick={close} className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]">
+          <button
+            onClick={close}
+            className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
+          >
             <X size={15} />
           </button>
         </div>
 
         <div className="flex gap-3 px-4 py-3 border-b border-[var(--border)]">
           <div className="flex-1">
-            <label className="text-2xs text-[var(--text-3)] block mb-1">Left (baseline)</label>
+            <label className="text-2xs text-[var(--text-3)] block mb-1">
+              Left (baseline)
+            </label>
             <Select value={leftId} onChange={(e) => setLeftId(e.target.value)}>
               <option value="">Select response…</option>
               {history.map((h) => (
-                <option key={h.id} value={h.id}>{entryLabel(h)}</option>
+                <option key={h.id} value={h.id}>
+                  {entryLabel(h)}
+                </option>
               ))}
             </Select>
           </div>
           <div className="flex-1">
-            <label className="text-2xs text-[var(--text-3)] block mb-1">Right (comparison)</label>
-            <Select value={rightId} onChange={(e) => setRightId(e.target.value)}>
+            <label className="text-2xs text-[var(--text-3)] block mb-1">
+              Right (comparison)
+            </label>
+            <Select
+              value={rightId}
+              onChange={(e) => setRightId(e.target.value)}
+            >
               <option value="">Select response…</option>
               {history.map((h) => (
-                <option key={h.id} value={h.id}>{entryLabel(h)}</option>
+                <option key={h.id} value={h.id}>
+                  {entryLabel(h)}
+                </option>
               ))}
             </Select>
           </div>
@@ -67,30 +85,57 @@ export function DiffModal() {
             <div className="flex flex-1 overflow-hidden">
               <div className="flex-1 border-r border-[var(--border)] flex flex-col overflow-hidden">
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] bg-[var(--surface-2)]">
-                  {leftEntry?.response && <StatusBadge status={leftEntry.response.status} />}
-                  <span className="text-2xs text-[var(--text-3)]">Baseline</span>
+                  {leftEntry?.response && (
+                    <StatusBadge status={leftEntry.response.status} />
+                  )}
+                  <span className="text-2xs text-[var(--text-3)]">
+                    Baseline
+                  </span>
                 </div>
                 <div className="flex-1 overflow-auto">
-                  <CodeEditor value={diff.leftText} lang={diff.mode === "json" ? "json" : "text"} readOnly />
+                  <CodeEditor
+                    value={diff.leftText}
+                    lang={diff.mode === "json" ? "json" : "text"}
+                    readOnly
+                  />
                 </div>
               </div>
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] bg-[var(--surface-2)]">
-                  {rightEntry?.response && <StatusBadge status={rightEntry.response.status} />}
-                  <span className="text-2xs text-[var(--text-3)]">Comparison</span>
+                  {rightEntry?.response && (
+                    <StatusBadge status={rightEntry.response.status} />
+                  )}
+                  <span className="text-2xs text-[var(--text-3)]">
+                    Comparison
+                  </span>
                   <span className="ml-auto text-2xs flex items-center gap-2">
-                    <span className="text-emerald-600">+{diff.summary.additions}</span>
-                    <span className="text-red-600">−{diff.summary.deletions}</span>
-                    {diff.summary.changes > 0 && <span className="text-yellow-600">~{diff.summary.changes}</span>}
+                    <span className="text-emerald-600">
+                      +{diff.summary.additions}
+                    </span>
+                    <span className="text-red-600">
+                      −{diff.summary.deletions}
+                    </span>
+                    {diff.summary.changes > 0 && (
+                      <span className="text-yellow-600">
+                        ~{diff.summary.changes}
+                      </span>
+                    )}
                     {diff.responseTimeDeltaMs !== 0 && (
-                      <span className={`font-mono ${diff.responseTimeDeltaMs > 0 ? "text-red-500" : "text-emerald-500"}`}>
-                        {diff.responseTimeDeltaMs > 0 ? "+" : ""}{diff.responseTimeDeltaMs}ms
+                      <span
+                        className={`font-mono ${diff.responseTimeDeltaMs > 0 ? "text-red-500" : "text-emerald-500"}`}
+                      >
+                        {diff.responseTimeDeltaMs > 0 ? "+" : ""}
+                        {diff.responseTimeDeltaMs}ms
                       </span>
                     )}
                   </span>
                 </div>
                 <div className="flex-1 overflow-auto">
-                  <CodeEditor value={diff.rightText} lang={diff.mode === "json" ? "json" : "text"} readOnly />
+                  <CodeEditor
+                    value={diff.rightText}
+                    lang={diff.mode === "json" ? "json" : "text"}
+                    readOnly
+                  />
                 </div>
               </div>
             </div>

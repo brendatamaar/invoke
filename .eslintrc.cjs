@@ -3,12 +3,12 @@ module.exports = {
   env: {
     browser: true,
     es2022: true,
-    node: true
+    node: true,
   },
   ignorePatterns: ["dist", "node_modules", "coverage"],
   parserOptions: {
     ecmaVersion: "latest",
-    sourceType: "module"
+    sourceType: "module",
   },
   overrides: [
     {
@@ -19,8 +19,8 @@ module.exports = {
       rules: {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
-        "no-console": "off"
-      }
+        "no-console": "off",
+      },
     },
     {
       files: ["*.vue", "**/*.vue"],
@@ -28,10 +28,13 @@ module.exports = {
       parserOptions: {
         parser: "@typescript-eslint/parser",
         ecmaVersion: "latest",
-        sourceType: "module"
+        sourceType: "module",
       },
       plugins: ["vue", "@typescript-eslint"],
-      extends: ["plugin:vue/vue3-recommended", "plugin:@typescript-eslint/recommended"],
+      extends: [
+        "plugin:vue/vue3-recommended",
+        "plugin:@typescript-eslint/recommended",
+      ],
       rules: {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
@@ -39,8 +42,8 @@ module.exports = {
         "vue/no-mutating-props": "off",
         "vue/max-attributes-per-line": "off",
         "vue/singleline-html-element-content-newline": "off",
-        "vue/html-self-closing": "off"
-      }
-    }
-  ]
+        "vue/html-self-closing": "off",
+      },
+    },
+  ],
 };

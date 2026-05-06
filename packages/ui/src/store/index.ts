@@ -24,7 +24,7 @@ import {
   type RequestDraft,
   type SavedRequest,
   type WebSocketRequestConfig,
-  type CodeExportTarget
+  type CodeExportTarget,
 } from "@invoke/core";
 import { create } from "zustand";
 import type {
@@ -33,7 +33,7 @@ import type {
   ResponseTab,
   SidebarSection,
   Toast,
-  WebSocketLogItem
+  WebSocketLogItem,
 } from "../lib/types";
 
 export const coreStore = new CoreStore();
@@ -126,7 +126,12 @@ interface AppState {
   };
 
   // Dialogs
-  saveDialog: { open: boolean; name: string; collectionId: string; folderId: string };
+  saveDialog: {
+    open: boolean;
+    name: string;
+    collectionId: string;
+    folderId: string;
+  };
   showSettings: boolean;
   showHelp: boolean;
   showClearHistoryModal: boolean;
@@ -138,7 +143,9 @@ interface AppState {
   toasts: Toast[];
 
   // Actions
-  set: (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
+  set: (
+    partial: Partial<AppState> | ((s: AppState) => Partial<AppState>),
+  ) => void;
   setRequest: (partial: Partial<RequestDraft>) => void;
   setGraphqlRequest: (partial: Partial<GraphQLRequestConfig>) => void;
   setWebsocketRequest: (partial: Partial<WebSocketRequestConfig>) => void;
@@ -244,7 +251,8 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Actions
   set: (partial) => {
-    if (typeof partial === "function") set((s) => (partial as (s: AppState) => Partial<AppState>)(s));
+    if (typeof partial === "function")
+      set((s) => (partial as (s: AppState) => Partial<AppState>)(s));
     else set(partial);
   },
 
@@ -273,7 +281,7 @@ export const useStore = create<AppState>((set, get) => ({
     set((s) => ({
       expandedFolderIds: s.expandedFolderIds.includes(id)
         ? s.expandedFolderIds.filter((x) => x !== id)
-        : [...s.expandedFolderIds, id]
+        : [...s.expandedFolderIds, id],
     })),
 
   resetRequest: () =>
@@ -283,6 +291,6 @@ export const useStore = create<AppState>((set, get) => ({
       assertionResults: [],
       scriptLogs: [],
       requestTab: "params",
-      responseTab: "body"
-    })
+      responseTab: "body",
+    }),
 }));

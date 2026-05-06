@@ -1,7 +1,9 @@
 import type { ExecuteResponse } from "./response";
 import type { ProtocolRequestConfig } from "./protocols";
 
-export interface ScriptExecutionResult<TRequest extends ProtocolRequestConfig = ProtocolRequestConfig> {
+export interface ScriptExecutionResult<
+  TRequest extends ProtocolRequestConfig = ProtocolRequestConfig,
+> {
   request: TRequest;
   variables: Record<string, string>;
   logs: string[];

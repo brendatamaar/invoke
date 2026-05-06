@@ -69,4 +69,8 @@ export interface WebSocketRelayMessage {
   createdAt: number;
 }
 
-export type ProtocolRequestConfig = RequestConfig | GraphQLRequestConfig | WebSocketRequestConfig | GrpcRequestConfig;
+export type ProtocolRequestConfig =
+  | RequestConfig
+  | GraphQLRequestConfig
+  | WebSocketRequestConfig
+  | GrpcRequestConfig;

@@ -13,7 +13,8 @@ export function VariableEditorModal() {
 
   if (!variableEditor.open) return null;
 
-  const close = () => set({ variableEditor: { ...variableEditor, open: false } });
+  const close = () =>
+    set({ variableEditor: { ...variableEditor, open: false } });
 
   const save = async () => {
     try {
@@ -39,28 +40,39 @@ export function VariableEditorModal() {
     }
   };
 
-  const addRow = () => setRows([...rows, { key: "", value: "", enabled: true }]);
+  const addRow = () =>
+    setRows([...rows, { key: "", value: "", enabled: true }]);
   const removeRow = (i: number) => setRows(rows.filter((_, idx) => idx !== i));
   const updateRow = (i: number, patch: Partial<KeyValue>) =>
     setRows(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={close}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={close}
+    >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
         style={{ width: 520, maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
-          <span className="text-sm font-semibold">Variables — {variableEditor.name}</span>
-          <button onClick={close} className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]">
+          <span className="text-sm font-semibold">
+            Variables — {variableEditor.name}
+          </span>
+          <button
+            onClick={close}
+            className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
+          >
             <X size={15} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-1.5 min-h-0">
           {rows.length === 0 && (
-            <p className="text-xs text-[var(--text-3)] text-center py-4">No variables yet</p>
+            <p className="text-xs text-[var(--text-3)] text-center py-4">
+              No variables yet
+            </p>
           )}
           {rows.map((row, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -76,19 +88,32 @@ export function VariableEditorModal() {
                 placeholder="value"
                 className="input text-xs py-1 flex-1 font-mono"
               />
-              <button onClick={() => removeRow(i)} className="text-[var(--text-3)] hover:text-[var(--danger)] p-1">
+              <button
+                onClick={() => removeRow(i)}
+                className="text-[var(--text-3)] hover:text-[var(--danger)] p-1"
+              >
                 <Trash2 size={12} />
               </button>
             </div>
           ))}
-          <button onClick={addRow} className="btn text-xs self-start mt-1 flex items-center gap-1">
+          <button
+            onClick={addRow}
+            className="btn text-xs self-start mt-1 flex items-center gap-1"
+          >
             <Plus size={12} /> Add variable
           </button>
         </div>
 
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
-          <button onClick={close} className="btn text-xs">Cancel</button>
-          <button onClick={save} className="btn text-xs bg-[var(--accent)] text-white hover:opacity-90">Save</button>
+          <button onClick={close} className="btn text-xs">
+            Cancel
+          </button>
+          <button
+            onClick={save}
+            className="btn text-xs bg-[var(--accent)] text-white hover:opacity-90"
+          >
+            Save
+          </button>
         </div>
       </div>
     </div>

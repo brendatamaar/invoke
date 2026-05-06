@@ -9,9 +9,21 @@ interface Props {
   disabled?: boolean;
 }
 
-export function KeyValueEditor({ rows, onChange, keyPlaceholder = "Key", valuePlaceholder = "Value", disabled }: Props) {
-  const update = (i: number, field: keyof KeyValue, value: string | boolean) => {
-    const next = rows.map((r, idx) => idx === i ? { ...r, [field]: value } : r);
+export function KeyValueEditor({
+  rows,
+  onChange,
+  keyPlaceholder = "Key",
+  valuePlaceholder = "Value",
+  disabled,
+}: Props) {
+  const update = (
+    i: number,
+    field: keyof KeyValue,
+    value: string | boolean,
+  ) => {
+    const next = rows.map((r, idx) =>
+      idx === i ? { ...r, [field]: value } : r,
+    );
     onChange(next);
   };
 
@@ -31,7 +43,10 @@ export function KeyValueEditor({ rows, onChange, keyPlaceholder = "Key", valuePl
         </div>
       )}
       {rows.map((row, i) => (
-        <div key={i} className="group flex items-center gap-0 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]">
+        <div
+          key={i}
+          className="group flex items-center gap-0 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+        >
           <span className="w-4 shrink-0 flex items-center justify-center text-[var(--text-3)] opacity-0 group-hover:opacity-100 cursor-grab">
             <GripVertical size={12} />
           </span>

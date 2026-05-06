@@ -10,10 +10,12 @@ import type {
   KeyValue,
   RequestConfig,
   VariableScope,
-  WebSocketRequestConfig
+  WebSocketRequestConfig,
 } from "./types";
 
-export function variablesFromEnvironment(environment?: Environment): Record<string, string> {
+export function variablesFromEnvironment(
+  environment?: Environment,
+): Record<string, string> {
   return variablesFromKeyValues(environment?.variables ?? []);
 }
 
@@ -23,20 +25,26 @@ export function variablesFromScopes(scopes: VariableScope[]) {
   }, {});
 }
 
-export function resolveTemplate(input: string, variables: Record<string, string>) {
+export function resolveTemplate(
+  input: string,
+  variables: Record<string, string>,
+) {
   const unresolved = new Set<string>();
   const resolveOne = (value: string, depth = 0): string => {
     if (depth > 8) return value;
-    return value.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_match, rawName: string) => {
-      const name = rawName.trim();
-      if (name.startsWith("$")) return dynamicVariable(name);
-      const resolved = variables[name];
-      if (resolved == null) {
-        unresolved.add(name);
-        return `{{${name}}}`;
-      }
-      return resolveOne(resolved, depth + 1);
-    });
+    return value.replace(
+      /\{\{\s*([^}]+?)\s*\}\}/g,
+      (_match, rawName: string) => {
+        const name = rawName.trim();
+        if (name.startsWith("$")) return dynamicVariable(name);
+        const resolved = variables[name];
+        if (resolved == null) {
+          unresolved.add(name);
+          return `{{${name}}}`;
+        }
+        return resolveOne(resolved, depth + 1);
+      },
+    );
   };
   return { value: resolveOne(input), unresolved: [...unresolved] };
 }
@@ -44,14 +52,17 @@ export function resolveTemplate(input: string, variables: Record<string, string>
 export function resolveRequest(
   request: RequestConfig,
   environmentOrScopes?: Environment | VariableScope[],
-  sessionVariables: Record<string, string> = {}
+  sessionVariables: Record<string, string> = {},
 ) {
   const scopes = Array.isArray(environmentOrScopes)
     ? environmentOrScopes
     : [
-        { name: "environment", variables: environmentOrScopes?.variables ?? [] },
+        {
+          name: "environment",
+          variables: environmentOrScopes?.variables ?? [],
+        },
         { name: "request", variables: request.variables ?? [] },
-        { name: "session", variables: sessionVariables }
+        { name: "session", variables: sessionVariables },
       ];
   const variables = variablesFromScopes(scopes);
   const unresolved = new Set<string>();
@@ -63,8 +74,16 @@ export function resolveRequest(
   const resolvedBase: RequestConfig = {
     ...request,
     url: resolve(request.url),
-    params: request.params.map((param) => ({ ...param, key: resolve(param.key), value: resolve(param.value) })),
-    headers: request.headers.map((header) => ({ ...header, key: resolve(header.key), value: resolve(header.value) })),
+    params: request.params.map((param) => ({
+      ...param,
+      key: resolve(param.key),
+      value: resolve(param.value),
+    })),
+    headers: request.headers.map((header) => ({
+      ...header,
+      key: resolve(header.key),
+      value: resolve(header.value),
+    })),
     body: resolve(request.body),
     auth: {
       ...request.auth,
@@ -81,24 +100,30 @@ export function resolveRequest(
       awsSecretAccessKey: resolve(request.auth.awsSecretAccessKey ?? ""),
       awsSessionToken: resolve(request.auth.awsSessionToken ?? ""),
       awsRegion: resolve(request.auth.awsRegion ?? ""),
-      awsService: resolve(request.auth.awsService ?? "")
+      awsService: resolve(request.auth.awsService ?? ""),
     },
-    options: resolveOptions(request.options, resolve)
+    options: resolveOptions(request.options, resolve),
   };
   const withAuth = applyAuth(resolvedBase);
-  return { request: { ...withAuth, url: buildUrl(withAuth.url, withAuth.params) }, unresolved: [...unresolved] };
+  return {
+    request: { ...withAuth, url: buildUrl(withAuth.url, withAuth.params) },
+    unresolved: [...unresolved],
+  };
 }
 
 export function resolveGraphQLRequest(
   request: GraphQLRequestConfig,
   environmentOrScopes?: Environment | VariableScope[],
-  sessionVariables: Record<string, string> = {}
+  sessionVariables: Record<string, string> = {},
 ) {
   const scopes = Array.isArray(environmentOrScopes)
     ? environmentOrScopes
     : [
-        { name: "environment", variables: environmentOrScopes?.variables ?? [] },
-        { name: "session", variables: sessionVariables }
+        {
+          name: "environment",
+          variables: environmentOrScopes?.variables ?? [],
+        },
+        { name: "session", variables: sessionVariables },
       ];
   const variables = variablesFromScopes(scopes);
   const unresolved = new Set<string>();
@@ -111,7 +136,11 @@ export function resolveGraphQLRequest(
   const resolved: GraphQLRequestConfig = {
     ...request,
     url: resolve(request.url),
-    headers: request.headers.map((header) => ({ ...header, key: resolve(header.key), value: resolve(header.value) })),
+    headers: request.headers.map((header) => ({
+      ...header,
+      key: resolve(header.key),
+      value: resolve(header.value),
+    })),
     query: resolve(request.query),
     variables: resolve(request.variables),
     operationName: resolve(request.operationName ?? ""),
@@ -130,9 +159,9 @@ export function resolveGraphQLRequest(
       awsSecretAccessKey: resolve(request.auth.awsSecretAccessKey ?? ""),
       awsSessionToken: resolve(request.auth.awsSessionToken ?? ""),
       awsRegion: resolve(request.auth.awsRegion ?? ""),
-      awsService: resolve(request.auth.awsService ?? "")
+      awsService: resolve(request.auth.awsService ?? ""),
     },
-    options: resolveOptions(request.options, resolve)
+    options: resolveOptions(request.options, resolve),
   };
   return { request: resolved, unresolved: [...unresolved] };
 }
@@ -140,14 +169,17 @@ export function resolveGraphQLRequest(
 export function resolveWebSocketRequest(
   request: WebSocketRequestConfig,
   environmentOrScopes?: Environment | VariableScope[],
-  sessionVariables: Record<string, string> = {}
+  sessionVariables: Record<string, string> = {},
 ) {
   const scopes = Array.isArray(environmentOrScopes)
     ? environmentOrScopes
     : [
-        { name: "environment", variables: environmentOrScopes?.variables ?? [] },
+        {
+          name: "environment",
+          variables: environmentOrScopes?.variables ?? [],
+        },
         { name: "request", variables: request.variables ?? [] },
-        { name: "session", variables: sessionVariables }
+        { name: "session", variables: sessionVariables },
       ];
   const variables = variablesFromScopes(scopes);
   const unresolved = new Set<string>();
@@ -161,7 +193,11 @@ export function resolveWebSocketRequest(
     ...request,
     url: resolve(request.url),
     protocols: resolve(request.protocols ?? ""),
-    headers: request.headers.map((header) => ({ ...header, key: resolve(header.key), value: resolve(header.value) })),
+    headers: request.headers.map((header) => ({
+      ...header,
+      key: resolve(header.key),
+      value: resolve(header.value),
+    })),
     message: resolve(request.message),
     auth: {
       ...request.auth,
@@ -178,9 +214,9 @@ export function resolveWebSocketRequest(
       awsSecretAccessKey: resolve(request.auth.awsSecretAccessKey ?? ""),
       awsSessionToken: resolve(request.auth.awsSessionToken ?? ""),
       awsRegion: resolve(request.auth.awsRegion ?? ""),
-      awsService: resolve(request.auth.awsService ?? "")
+      awsService: resolve(request.auth.awsService ?? ""),
     },
-    options: resolveOptions(request.options, resolve)
+    options: resolveOptions(request.options, resolve),
   };
   const withAuth = applyAuth({
     method: "GET",
@@ -190,22 +226,32 @@ export function resolveWebSocketRequest(
     bodyMode: "none",
     body: "",
     auth: resolved.auth,
-    timeoutMs: resolved.timeoutMs ?? 30000
+    timeoutMs: resolved.timeoutMs ?? 30000,
   });
-  return { request: { ...resolved, url: buildUrl(withAuth.url, withAuth.params), headers: withAuth.headers }, unresolved: [...unresolved] };
+  return {
+    request: {
+      ...resolved,
+      url: buildUrl(withAuth.url, withAuth.params),
+      headers: withAuth.headers,
+    },
+    unresolved: [...unresolved],
+  };
 }
 
 export function resolveGrpcRequest(
   request: GrpcRequestConfig,
   environmentOrScopes?: Environment | VariableScope[],
-  sessionVariables: Record<string, string> = {}
+  sessionVariables: Record<string, string> = {},
 ) {
   const scopes = Array.isArray(environmentOrScopes)
     ? environmentOrScopes
     : [
-        { name: "environment", variables: environmentOrScopes?.variables ?? [] },
+        {
+          name: "environment",
+          variables: environmentOrScopes?.variables ?? [],
+        },
         { name: "request", variables: request.variables ?? [] },
-        { name: "session", variables: sessionVariables }
+        { name: "session", variables: sessionVariables },
       ];
   const variables = variablesFromScopes(scopes);
   const unresolved = new Set<string>();
@@ -220,14 +266,21 @@ export function resolveGrpcRequest(
     address: resolve(request.address),
     service: resolve(request.service),
     method: resolve(request.method),
-    metadata: request.metadata.map((header) => ({ ...header, key: resolve(header.key), value: resolve(header.value) })),
+    metadata: request.metadata.map((header) => ({
+      ...header,
+      key: resolve(header.key),
+      value: resolve(header.value),
+    })),
     body: resolve(request.body),
-    options: resolveOptions(request.options, resolve)
+    options: resolveOptions(request.options, resolve),
   };
   return { request: resolved, unresolved: [...unresolved] };
 }
 
-export function extractVariables(response: ExecuteResponse, rules: ExtractionRule[]) {
+export function extractVariables(
+  response: ExecuteResponse,
+  rules: ExtractionRule[],
+) {
   const values: Record<string, string> = {};
   let json: unknown;
   try {
@@ -243,30 +296,44 @@ export function extractVariables(response: ExecuteResponse, rules: ExtractionRul
     if (!variableName.trim()) continue;
     const result = extractValue(response, source, expression, json);
     const value = result ?? rule.fallback;
-    if (value != null) values[variableName.trim()] = typeof value === "string" ? value : JSON.stringify(value);
+    if (value != null)
+      values[variableName.trim()] =
+        typeof value === "string" ? value : JSON.stringify(value);
   }
   return values;
 }
 
-export function normalizeExtractionRules(rules: unknown[] | undefined = []): ExtractionRule[] {
+export function normalizeExtractionRules(
+  rules: unknown[] | undefined = [],
+): ExtractionRule[] {
   return (rules ?? []).map((raw) => {
-    const rule = raw as Partial<ExtractionRule> & { name?: string; jsonPath?: string };
+    const rule = raw as Partial<ExtractionRule> & {
+      name?: string;
+      jsonPath?: string;
+    };
     return {
       id: rule.id,
       variableName: String(rule.variableName ?? rule.name ?? ""),
       source: rule.source ?? "body",
       expression: String(rule.expression ?? rule.jsonPath ?? ""),
       fallback: rule.fallback,
-      enabled: rule.enabled ?? true
+      enabled: rule.enabled ?? true,
     };
   });
 }
 
-function extractValue(response: ExecuteResponse, source: ExtractionSource, expression: string, json?: unknown) {
+function extractValue(
+  response: ExecuteResponse,
+  source: ExtractionSource,
+  expression: string,
+  json?: unknown,
+) {
   if (source === "status") return response.status;
   if (source === "header") {
     const normalized = expression.trim().toLowerCase();
-    return response.headers.find((header) => header.key.trim().toLowerCase() === normalized)?.value;
+    return response.headers.find(
+      (header) => header.key.trim().toLowerCase() === normalized,
+    )?.value;
   }
   if (json == null || !expression.trim()) return undefined;
   return JSONPath({ path: expression, json, wrap: false }) as unknown;
@@ -299,10 +366,9 @@ function dynamicVariable(name: string) {
   }
 }
 
-function resolveOptions<T extends { options?: RequestConfig["options"] }["options"]>(
-  options: T,
-  resolve: (value: string) => string
-): T {
+function resolveOptions<
+  T extends { options?: RequestConfig["options"] }["options"],
+>(options: T, resolve: (value: string) => string): T {
   if (!options) return options;
   return {
     ...options,
@@ -311,7 +377,7 @@ function resolveOptions<T extends { options?: RequestConfig["options"] }["option
           ...options.proxy,
           url: resolve(options.proxy.url ?? ""),
           username: resolve(options.proxy.username ?? ""),
-          password: resolve(options.proxy.password ?? "")
+          password: resolve(options.proxy.password ?? ""),
         }
       : options.proxy,
     tlsClientConfig: options.tlsClientConfig
@@ -319,18 +385,19 @@ function resolveOptions<T extends { options?: RequestConfig["options"] }["option
           clientCertPem: resolve(options.tlsClientConfig.clientCertPem ?? ""),
           clientKeyPem: resolve(options.tlsClientConfig.clientKeyPem ?? ""),
           caCertPem: resolve(options.tlsClientConfig.caCertPem ?? ""),
-          serverName: resolve(options.tlsClientConfig.serverName ?? "")
+          serverName: resolve(options.tlsClientConfig.serverName ?? ""),
         }
-      : options.tlsClientConfig
+      : options.tlsClientConfig,
   } as T;
 }
 
 function variablesFromScope(scope: VariableScope) {
-  if (Array.isArray(scope.variables)) return variablesFromKeyValues(scope.variables);
+  if (Array.isArray(scope.variables))
+    return variablesFromKeyValues(scope.variables);
   return Object.fromEntries(
     Object.entries(scope.variables)
       .filter(([key]) => key.trim())
-      .map(([key, value]) => [key.trim(), String(value)])
+      .map(([key, value]) => [key.trim(), String(value)]),
   );
 }
 
@@ -338,6 +405,6 @@ function variablesFromKeyValues(variables: KeyValue[]) {
   return Object.fromEntries(
     variables
       .filter((item) => item.enabled !== false && item.key.trim())
-      .map((item) => [item.key.trim(), item.value])
+      .map((item) => [item.key.trim(), item.value]),
   );
 }

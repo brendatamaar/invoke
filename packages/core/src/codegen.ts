@@ -1,25 +1,105 @@
-import type { CodeExportTarget, CodeSnippet, KeyValue, RequestConfig } from "./types";
+import type {
+  CodeExportTarget,
+  CodeSnippet,
+  KeyValue,
+  RequestConfig,
+} from "./types";
 
 export const CODE_EXPORT_TARGETS: Array<Omit<CodeSnippet, "code">> = [
   { target: "curl", label: "cURL", language: "shell", filename: "request.sh" },
-  { target: "fetch", label: "JavaScript fetch", language: "javascript", filename: "request.fetch.js" },
-  { target: "node-fetch", label: "Node fetch", language: "javascript", filename: "request.node-fetch.js" },
-  { target: "python-requests", label: "Python requests", language: "python", filename: "request.py" },
-  { target: "python-httpx", label: "Python httpx", language: "python", filename: "request.httpx.py" },
-  { target: "node-axios", label: "Node axios", language: "javascript", filename: "request.axios.js" },
-  { target: "go-net-http", label: "Go net/http", language: "shell", filename: "request.go" },
-  { target: "java-okhttp", label: "Java OkHttp", language: "shell", filename: "Request.java" },
-  { target: "kotlin-okhttp", label: "Kotlin OkHttp", language: "shell", filename: "Request.kt" },
-  { target: "ruby-net-http", label: "Ruby Net::HTTP", language: "shell", filename: "request.rb" },
-  { target: "php-guzzle", label: "PHP Guzzle", language: "shell", filename: "request.php" },
-  { target: "csharp-httpclient", label: "C# HttpClient", language: "shell", filename: "Request.cs" },
-  { target: "rust-reqwest", label: "Rust reqwest", language: "shell", filename: "request.rs" },
-  { target: "powershell", label: "PowerShell", language: "shell", filename: "request.ps1" },
-  { target: "httpie", label: "HTTPie", language: "shell", filename: "request.http" }
+  {
+    target: "fetch",
+    label: "JavaScript fetch",
+    language: "javascript",
+    filename: "request.fetch.js",
+  },
+  {
+    target: "node-fetch",
+    label: "Node fetch",
+    language: "javascript",
+    filename: "request.node-fetch.js",
+  },
+  {
+    target: "python-requests",
+    label: "Python requests",
+    language: "python",
+    filename: "request.py",
+  },
+  {
+    target: "python-httpx",
+    label: "Python httpx",
+    language: "python",
+    filename: "request.httpx.py",
+  },
+  {
+    target: "node-axios",
+    label: "Node axios",
+    language: "javascript",
+    filename: "request.axios.js",
+  },
+  {
+    target: "go-net-http",
+    label: "Go net/http",
+    language: "shell",
+    filename: "request.go",
+  },
+  {
+    target: "java-okhttp",
+    label: "Java OkHttp",
+    language: "shell",
+    filename: "Request.java",
+  },
+  {
+    target: "kotlin-okhttp",
+    label: "Kotlin OkHttp",
+    language: "shell",
+    filename: "Request.kt",
+  },
+  {
+    target: "ruby-net-http",
+    label: "Ruby Net::HTTP",
+    language: "shell",
+    filename: "request.rb",
+  },
+  {
+    target: "php-guzzle",
+    label: "PHP Guzzle",
+    language: "shell",
+    filename: "request.php",
+  },
+  {
+    target: "csharp-httpclient",
+    label: "C# HttpClient",
+    language: "shell",
+    filename: "Request.cs",
+  },
+  {
+    target: "rust-reqwest",
+    label: "Rust reqwest",
+    language: "shell",
+    filename: "request.rs",
+  },
+  {
+    target: "powershell",
+    label: "PowerShell",
+    language: "shell",
+    filename: "request.ps1",
+  },
+  {
+    target: "httpie",
+    label: "HTTPie",
+    language: "shell",
+    filename: "request.http",
+  },
 ];
 
-export async function generateCodeSnippet(request: RequestConfig, target: CodeExportTarget): Promise<CodeSnippet> {
-  const meta = CODE_EXPORT_TARGETS.find((item) => item.target === target) ?? CODE_EXPORT_TARGETS[0];
+export async function generateCodeSnippet(
+  request: RequestConfig,
+  target: CodeExportTarget,
+): Promise<CodeSnippet> {
+  const meta =
+    CODE_EXPORT_TARGETS.find((item) => item.target === target) ??
+    CODE_EXPORT_TARGETS[0];
   const code = await generatorFor(target)(request);
   return { ...meta, code };
 }
@@ -47,7 +127,8 @@ function generatorFor(target: CodeExportTarget) {
     case "php-guzzle":
       return async (request: RequestConfig) => generatePhpGuzzle(request);
     case "csharp-httpclient":
-      return async (request: RequestConfig) => generateCSharpHttpClient(request);
+      return async (request: RequestConfig) =>
+        generateCSharpHttpClient(request);
     case "rust-reqwest":
       return async (request: RequestConfig) => generateRustReqwest(request);
     case "powershell":
@@ -60,7 +141,12 @@ function generatorFor(target: CodeExportTarget) {
 }
 
 function generateCurl(request: RequestConfig) {
-  const parts = ["curl", "-X", shellQuote(request.method), shellQuote(request.url)];
+  const parts = [
+    "curl",
+    "-X",
+    shellQuote(request.method),
+    shellQuote(request.url),
+  ];
   for (const header of enabledHeaders(request.headers)) {
     parts.push("-H", shellQuote(`${header.key}: ${header.value}`));
   }
@@ -76,8 +162,10 @@ function generateCurl(request: RequestConfig) {
 async function generateFetch(request: RequestConfig) {
   const properties = [
     `method: ${jsString(request.method)}`,
-    objectEntries(enabledHeaders(request.headers)).length ? `headers: ${jsObject(enabledHeadersObject(request.headers))}` : "",
-    hasBody(request) ? `body: ${jsBodyExpression(request)}` : ""
+    objectEntries(enabledHeaders(request.headers)).length
+      ? `headers: ${jsObject(enabledHeadersObject(request.headers))}`
+      : "",
+    hasBody(request) ? `body: ${jsBodyExpression(request)}` : "",
   ].filter(Boolean);
   const source = `
 const response = await fetch(${jsString(request.url)}, {
@@ -101,9 +189,16 @@ ${await generateFetch(request)}
 
 function generatePythonRequests(request: RequestConfig) {
   const method = request.method.toLowerCase();
-  const headers = JSON.stringify(enabledHeadersObject(request.headers), null, 2);
+  const headers = JSON.stringify(
+    enabledHeadersObject(request.headers),
+    null,
+    2,
+  );
   const imports = ["import requests"];
-  const lines = [`url = ${JSON.stringify(request.url)}`, `headers = ${headers}`];
+  const lines = [
+    `url = ${JSON.stringify(request.url)}`,
+    `headers = ${headers}`,
+  ];
   const args = ["url", "headers=headers"];
 
   if (hasBody(request)) {
@@ -123,9 +218,16 @@ function generatePythonRequests(request: RequestConfig) {
 
 function generatePythonHttpx(request: RequestConfig) {
   const method = request.method.toLowerCase();
-  const headers = JSON.stringify(enabledHeadersObject(request.headers), null, 2);
+  const headers = JSON.stringify(
+    enabledHeadersObject(request.headers),
+    null,
+    2,
+  );
   const imports = ["import httpx"];
-  const lines = [`url = ${JSON.stringify(request.url)}`, `headers = ${headers}`];
+  const lines = [
+    `url = ${JSON.stringify(request.url)}`,
+    `headers = ${headers}`,
+  ];
   const args = ["url", "headers=headers"];
 
   if (hasBody(request)) {
@@ -147,9 +249,11 @@ async function generateNodeAxios(request: RequestConfig) {
   const properties = [
     `method: ${jsString(request.method)}`,
     `url: ${jsString(request.url)}`,
-    objectEntries(enabledHeaders(request.headers)).length ? `headers: ${jsObject(enabledHeadersObject(request.headers))}` : "",
+    objectEntries(enabledHeaders(request.headers)).length
+      ? `headers: ${jsObject(enabledHeadersObject(request.headers))}`
+      : "",
     hasBody(request) ? `data: ${jsDataExpression(request)}` : "",
-    `timeout: ${request.timeoutMs}`
+    `timeout: ${request.timeoutMs}`,
   ].filter(Boolean);
   const source = `
 import axios from "axios";
@@ -165,9 +269,14 @@ console.log(response.status, response.data);
 
 function generateGoNetHttp(request: RequestConfig) {
   const headers = enabledHeaders(request.headers)
-    .map((header) => `req.Header.Set(${goString(header.key)}, ${goString(header.value)})`)
+    .map(
+      (header) =>
+        `req.Header.Set(${goString(header.key)}, ${goString(header.value)})`,
+    )
     .join("\n\t");
-  const body = hasBody(request) ? `strings.NewReader(${goString(request.body)})` : "nil";
+  const body = hasBody(request)
+    ? `strings.NewReader(${goString(request.body)})`
+    : "nil";
   const imports = ["fmt", "io", "net/http"];
   if (hasBody(request)) imports.push("strings");
   return `package main
@@ -203,7 +312,10 @@ function generateJavaOkHttp(request: RequestConfig) {
   const bodyLine = hasBody(request)
     ? `RequestBody body = RequestBody.create(${javaString(request.body)}, MediaType.parse(${javaString(contentType(request) || "text/plain")}));`
     : "RequestBody body = null;";
-  const headers = enabledHeaders(request.headers).map((header) => `      .addHeader(${javaString(header.key)}, ${javaString(header.value)})`);
+  const headers = enabledHeaders(request.headers).map(
+    (header) =>
+      `      .addHeader(${javaString(header.key)}, ${javaString(header.value)})`,
+  );
   return `import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -232,7 +344,10 @@ function generateKotlinOkHttp(request: RequestConfig) {
   const bodyLine = hasBody(request)
     ? `val body = ${kotlinString(request.body)}.toRequestBody(${kotlinString(contentType(request) || "text/plain")}.toMediaType())`
     : "val body = null";
-  const headers = enabledHeaders(request.headers).map((header) => `    .addHeader(${kotlinString(header.key)}, ${kotlinString(header.value)})`);
+  const headers = enabledHeaders(request.headers).map(
+    (header) =>
+      `    .addHeader(${kotlinString(header.key)}, ${kotlinString(header.value)})`,
+  );
   return `import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.MediaType.Companion.toMediaType
@@ -256,7 +371,12 @@ ${headers.length ? `${headers.join("\n")}\n` : ""}    .method(${kotlinString(req
 
 function generateRubyNetHttp(request: RequestConfig) {
   const requestClass = rubyRequestClass(request.method);
-  const headers = enabledHeaders(request.headers).map((header) => `request[${rubyString(header.key)}] = ${rubyString(header.value)}`).join("\n");
+  const headers = enabledHeaders(request.headers)
+    .map(
+      (header) =>
+        `request[${rubyString(header.key)}] = ${rubyString(header.value)}`,
+    )
+    .join("\n");
   return `require "net/http"
 require "uri"
 
@@ -276,7 +396,10 @@ puts response.body
 
 function generatePhpGuzzle(request: RequestConfig) {
   const options: string[] = [];
-  if (enabledHeaders(request.headers).length) options.push(`'headers' => ${phpArray(enabledHeadersObject(request.headers))}`);
+  if (enabledHeaders(request.headers).length)
+    options.push(
+      `'headers' => ${phpArray(enabledHeadersObject(request.headers))}`,
+    );
   if (hasBody(request)) options.push(`'body' => ${phpString(request.body)}`);
   return `<?php
 
@@ -295,7 +418,10 @@ echo $response->getBody();
 function generateCSharpHttpClient(request: RequestConfig) {
   const headers = enabledHeaders(request.headers)
     .filter((header) => header.key.toLowerCase() !== "content-type")
-    .map((header) => `request.Headers.TryAddWithoutValidation(${csharpString(header.key)}, ${csharpString(header.value)});`)
+    .map(
+      (header) =>
+        `request.Headers.TryAddWithoutValidation(${csharpString(header.key)}, ${csharpString(header.value)});`,
+    )
     .join("\n");
   const content = hasBody(request)
     ? `request.Content = new StringContent(${csharpString(request.body)}, System.Text.Encoding.UTF8, ${csharpString(contentType(request) || "text/plain")});`
@@ -314,7 +440,10 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
 }
 
 function generateRustReqwest(request: RequestConfig) {
-  const headers = enabledHeaders(request.headers).map((header) => `        .header(${rustString(header.key)}, ${rustString(header.value)})`);
+  const headers = enabledHeaders(request.headers).map(
+    (header) =>
+      `        .header(${rustString(header.key)}, ${rustString(header.value)})`,
+  );
   return `#[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
@@ -332,7 +461,9 @@ ${headers.length ? `${headers.join("\n")}\n` : ""}${hasBody(request) ? `        
 
 function generatePowerShell(request: RequestConfig) {
   const headers = enabledHeadersObject(request.headers);
-  const headerLines = Object.entries(headers).map(([key, value]) => `  ${powershellString(key)} = ${powershellString(value)}`);
+  const headerLines = Object.entries(headers).map(
+    ([key, value]) => `  ${powershellString(key)} = ${powershellString(value)}`,
+  );
   return `$headers = @{
 ${headerLines.join("\n")}
 }
@@ -348,7 +479,8 @@ $response
 
 function generateHttpie(request: RequestConfig) {
   const parts = ["http", request.method, shellQuote(request.url)];
-  for (const header of enabledHeaders(request.headers)) parts.push(shellQuote(`${header.key}:${header.value}`));
+  for (const header of enabledHeaders(request.headers))
+    parts.push(shellQuote(`${header.key}:${header.value}`));
   if (hasBody(request)) parts.push(shellQuote(request.body));
   return `${parts.join(" \\\n  ")}\n`;
 }
@@ -358,12 +490,12 @@ async function formatJavaScript(source: string) {
     const [prettier, babelPlugin, estreePlugin] = await Promise.all([
       import("prettier/standalone"),
       import("prettier/plugins/babel"),
-      import("prettier/plugins/estree")
+      import("prettier/plugins/estree"),
     ]);
     return prettier.format(source, {
       parser: "babel",
       plugins: [babelPlugin.default, estreePlugin.default],
-      semi: true
+      semi: true,
     });
   } catch {
     return `${source.trim()}\n`;
@@ -375,15 +507,21 @@ function hasBody(request: RequestConfig) {
 }
 
 function enabledHeaders(headers: KeyValue[]) {
-  return headers.filter((header) => header.enabled !== false && header.key.trim());
+  return headers.filter(
+    (header) => header.enabled !== false && header.key.trim(),
+  );
 }
 
 function enabledHeadersObject(headers: KeyValue[]) {
-  return Object.fromEntries(enabledHeaders(headers).map((header) => [header.key.trim(), header.value]));
+  return Object.fromEntries(
+    enabledHeaders(headers).map((header) => [header.key.trim(), header.value]),
+  );
 }
 
 function objectEntries(headers: KeyValue[]) {
-  return headers.filter((header) => header.enabled !== false && header.key.trim());
+  return headers.filter(
+    (header) => header.enabled !== false && header.key.trim(),
+  );
 }
 
 function jsObject(value: Record<string, string>) {
@@ -398,7 +536,8 @@ function jsBodyExpression(request: RequestConfig) {
 }
 
 function jsDataExpression(request: RequestConfig) {
-  if (request.bodyMode === "json" && isJsonObjectLike(request.body)) return jsonExpression(request.body);
+  if (request.bodyMode === "json" && isJsonObjectLike(request.body))
+    return jsonExpression(request.body);
   return jsString(request.body);
 }
 
@@ -428,7 +567,11 @@ function pythonTimeout(timeoutMs: number) {
 }
 
 function contentType(request: RequestConfig) {
-  return enabledHeaders(request.headers).find((header) => header.key.toLowerCase() === "content-type")?.value ?? "";
+  return (
+    enabledHeaders(request.headers).find(
+      (header) => header.key.toLowerCase() === "content-type",
+    )?.value ?? ""
+  );
 }
 
 function goString(value: string) {
@@ -464,16 +607,27 @@ function powershellString(value: string) {
 }
 
 function rubyRequestClass(method: string) {
-  const normalized = method.charAt(0).toUpperCase() + method.slice(1).toLowerCase();
+  const normalized =
+    method.charAt(0).toUpperCase() + method.slice(1).toLowerCase();
   return normalized === "Delete" ? "Delete" : normalized;
 }
 
 function csharpMethod(method: string) {
-  const names: Record<string, string> = { DELETE: "Delete", GET: "Get", HEAD: "Head", OPTIONS: "Options", PATCH: "Patch", POST: "Post", PUT: "Put" };
+  const names: Record<string, string> = {
+    DELETE: "Delete",
+    GET: "Get",
+    HEAD: "Head",
+    OPTIONS: "Options",
+    PATCH: "Patch",
+    POST: "Post",
+    PUT: "Put",
+  };
   return names[method] ?? "Get";
 }
 
 function phpArray(value: Record<string, string>) {
-  const entries = Object.entries(value).map(([key, val]) => `${phpString(key)} => ${phpString(val)}`);
+  const entries = Object.entries(value).map(
+    ([key, val]) => `${phpString(key)} => ${phpString(val)}`,
+  );
   return `[${entries.join(", ")}]`;
 }

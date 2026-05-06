@@ -10,10 +10,18 @@ import type {
   RequestConfig,
   RequestDraft,
   RequestProtocol,
-  SavedRequest
+  SavedRequest,
 } from "./types";
 import { searchHistory as filterHistory } from "./history";
-import { clonePlain, id, inferProtocol, isGraphQLRequestConfig, isGrpcRequestConfig, isWebSocketRequestConfig, toRequestConfig } from "./request";
+import {
+  clonePlain,
+  id,
+  inferProtocol,
+  isGraphQLRequestConfig,
+  isGrpcRequestConfig,
+  isWebSocketRequestConfig,
+  toRequestConfig,
+} from "./request";
 
 const HISTORY_LIMIT = 10000;
 
@@ -33,17 +41,18 @@ class InvokeDB extends Dexie {
       requests: "id, collectionId, name, updatedAt",
       environments: "id, name, updatedAt",
       history: "id, createdAt",
-      meta: "key"
+      meta: "key",
     });
     this.version(2)
       .stores({
         collections: "id, name, updatedAt, sortOrder",
         folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
-        requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+        requests:
+          "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
         environments: "id, name, updatedAt",
         history: "id, createdAt, requestId, collectionId, protocol",
         flows: "id, name, updatedAt",
-        meta: "key"
+        meta: "key",
       })
       .upgrade(async (tx) => {
         await tx
@@ -75,7 +84,7 @@ class InvokeDB extends Dexie {
               auth: stored.auth ?? { type: "none" },
               timeoutMs: stored.timeoutMs ?? 30000,
               variables: stored.variables ?? [],
-              options: stored.options
+              options: stored.options,
             });
 
             stored.protocol = "rest";
@@ -106,11 +115,12 @@ class InvokeDB extends Dexie {
     this.version(3).stores({
       collections: "id, name, updatedAt, sortOrder",
       folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
-      requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+      requests:
+        "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
       environments: "id, name, updatedAt",
       history: "id, createdAt, requestId, collectionId, protocol",
       flows: "id, name, updatedAt",
-      meta: "key"
+      meta: "key",
     });
   }
 }
@@ -135,37 +145,66 @@ export class InvokeStore {
       variables: data.variables ?? [],
       sortOrder: data.sortOrder ?? now,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     await this.db.collections.add(collection);
     return collection;
   }
 
   async updateCollection(collection: Collection) {
-    const updated = { ...collection, variables: collection.variables ?? [], updatedAt: Date.now() };
+    const updated = {
+      ...collection,
+      variables: collection.variables ?? [],
+      updatedAt: Date.now(),
+    };
     await this.db.collections.put(updated);
     return updated;
   }
 
   async deleteCollection(collectionId: string) {
-    await this.db.transaction("rw", this.db.collections, this.db.folders, this.db.requests, async () => {
-      await this.db.folders.where("collectionId").equals(collectionId).delete();
-      await this.db.requests.where("collectionId").equals(collectionId).delete();
-      await this.db.collections.delete(collectionId);
-    });
+    await this.db.transaction(
+      "rw",
+      this.db.collections,
+      this.db.folders,
+      this.db.requests,
+      async () => {
+        await this.db.folders
+          .where("collectionId")
+          .equals(collectionId)
+          .delete();
+        await this.db.requests
+          .where("collectionId")
+          .equals(collectionId)
+          .delete();
+        await this.db.collections.delete(collectionId);
+      },
+    );
   }
 
   async listRequests(collectionId?: string) {
-    if (collectionId) return this.db.requests.where("collectionId").equals(collectionId).toArray();
+    if (collectionId)
+      return this.db.requests
+        .where("collectionId")
+        .equals(collectionId)
+        .toArray();
     return this.db.requests.orderBy("updatedAt").reverse().toArray();
   }
 
   async listFolders(collectionId?: string) {
-    if (collectionId) return this.db.folders.where("collectionId").equals(collectionId).toArray();
+    if (collectionId)
+      return this.db.folders
+        .where("collectionId")
+        .equals(collectionId)
+        .toArray();
     return this.db.folders.orderBy("sortOrder").toArray();
   }
 
-  async createFolder(collectionId: string, name: string, parentFolderId: string | null = null, data: Partial<Folder> = {}) {
+  async createFolder(
+    collectionId: string,
+    name: string,
+    parentFolderId: string | null = null,
+    data: Partial<Folder> = {},
+  ) {
     const now = Date.now();
     const folder: Folder = {
       ...data,
@@ -176,7 +215,7 @@ export class InvokeStore {
       variables: data.variables ?? [],
       sortOrder: data.sortOrder ?? now,
       createdAt: data.createdAt ?? now,
-      updatedAt: now
+      updatedAt: now,
     };
     await this.db.folders.add(folder);
     return folder;
@@ -187,19 +226,24 @@ export class InvokeStore {
       ...folder,
       parentFolderId: folder.parentFolderId ?? null,
       variables: folder.variables ?? [],
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     };
     await this.db.folders.put(clonePlain(updated));
     return updated;
   }
 
   async deleteFolder(folderId: string) {
-    await this.db.transaction("rw", this.db.folders, this.db.requests, async () => {
-      const allFolders = await this.db.folders.toArray();
-      const ids = collectFolderIds(allFolders, folderId);
-      await this.db.requests.where("folderId").anyOf(ids).delete();
-      await this.db.folders.bulkDelete(ids);
-    });
+    await this.db.transaction(
+      "rw",
+      this.db.folders,
+      this.db.requests,
+      async () => {
+        const allFolders = await this.db.folders.toArray();
+        const ids = collectFolderIds(allFolders, folderId);
+        await this.db.requests.where("folderId").anyOf(ids).delete();
+        await this.db.folders.bulkDelete(ids);
+      },
+    );
   }
 
   async moveRequest(requestId: string, folderId: string | null) {
@@ -214,11 +258,18 @@ export class InvokeStore {
     request: ProtocolRequestConfig | RequestDraft,
     name: string,
     collectionId: string,
-    options: { id?: string; folderId?: string | null; protocol?: RequestProtocol; sortOrder?: number; createdAt?: number } = {}
+    options: {
+      id?: string;
+      folderId?: string | null;
+      protocol?: RequestProtocol;
+      sortOrder?: number;
+      createdAt?: number;
+    } = {},
   ) {
     const now = Date.now();
     const draft = request as RequestDraft;
-    const protocol = options.protocol ?? inferProtocol(request, draft.protocol ?? "rest");
+    const protocol =
+      options.protocol ?? inferProtocol(request, draft.protocol ?? "rest");
     const saved: SavedRequest = {
       id: options.id ?? draft.id ?? id(),
       collectionId,
@@ -227,8 +278,11 @@ export class InvokeStore {
       protocol,
       request: clonePlain(normalizeSavedRequest(request)),
       sortOrder: options.sortOrder ?? draft.sortOrder ?? now,
-      createdAt: options.createdAt ?? (request as Partial<SavedRequest>).createdAt ?? now,
-      updatedAt: now
+      createdAt:
+        options.createdAt ??
+        (request as Partial<SavedRequest>).createdAt ??
+        now,
+      updatedAt: now,
     };
     await this.db.requests.put(clonePlain(saved));
     return saved;
@@ -242,14 +296,16 @@ export class InvokeStore {
     return this.db.environments.orderBy("updatedAt").reverse().toArray();
   }
 
-  async saveEnvironment(environment: Partial<Environment> & Pick<Environment, "name" | "variables">) {
+  async saveEnvironment(
+    environment: Partial<Environment> & Pick<Environment, "name" | "variables">,
+  ) {
     const now = Date.now();
     const saved: Environment = {
       id: environment.id || id(),
       name: environment.name,
       variables: environment.variables,
       createdAt: environment.createdAt ?? now,
-      updatedAt: now
+      updatedAt: now,
     };
     await this.db.environments.put(clonePlain(saved));
     return saved;
@@ -262,7 +318,9 @@ export class InvokeStore {
   }
 
   async getActiveEnvironmentId() {
-    return (await this.db.meta.get("activeEnvironment"))?.value as string | undefined;
+    return (await this.db.meta.get("activeEnvironment"))?.value as
+      | string
+      | undefined;
   }
 
   async setActiveEnvironmentId(environmentId?: string) {
@@ -294,12 +352,15 @@ export class InvokeStore {
       requestId: entry.requestId ?? request.id,
       collectionId: entry.collectionId ?? request.collectionId,
       protocol: entry.protocol ?? request.protocol ?? "rest",
-      createdAt: Date.now()
+      createdAt: Date.now(),
     };
     await this.db.history.add(saved);
     const count = await this.db.history.count();
     if (count > HISTORY_LIMIT) {
-      const stale = await this.db.history.orderBy("createdAt").limit(count - HISTORY_LIMIT).primaryKeys();
+      const stale = await this.db.history
+        .orderBy("createdAt")
+        .limit(count - HISTORY_LIMIT)
+        .primaryKeys();
       await this.db.history.bulkDelete(stale as string[]);
     }
     return saved;
@@ -318,7 +379,11 @@ export class InvokeStore {
   }
 
   async listHistory(limit = 100) {
-    return this.db.history.orderBy("createdAt").reverse().limit(limit).toArray();
+    return this.db.history
+      .orderBy("createdAt")
+      .reverse()
+      .limit(limit)
+      .toArray();
   }
 
   async searchHistory(query: string, limit = 100) {
@@ -336,7 +401,7 @@ export class InvokeStore {
       name: flow.name,
       steps: clonePlain(flow.steps),
       createdAt: flow.createdAt ?? now,
-      updatedAt: now
+      updatedAt: now,
     };
     await this.db.flows.put(saved);
     return saved;
@@ -357,7 +422,11 @@ function collectFolderIds(folders: Folder[], rootId: string) {
   while (changed) {
     changed = false;
     for (const folder of folders) {
-      if (folder.parentFolderId && ids.has(folder.parentFolderId) && !ids.has(folder.id)) {
+      if (
+        folder.parentFolderId &&
+        ids.has(folder.parentFolderId) &&
+        !ids.has(folder.id)
+      ) {
         ids.add(folder.id);
         changed = true;
       }
@@ -366,8 +435,14 @@ function collectFolderIds(folders: Folder[], rootId: string) {
   return [...ids];
 }
 
-function normalizeSavedRequest(request: ProtocolRequestConfig | RequestDraft): ProtocolRequestConfig {
-  if (isGraphQLRequestConfig(request) || isWebSocketRequestConfig(request) || isGrpcRequestConfig(request)) {
+function normalizeSavedRequest(
+  request: ProtocolRequestConfig | RequestDraft,
+): ProtocolRequestConfig {
+  if (
+    isGraphQLRequestConfig(request) ||
+    isWebSocketRequestConfig(request) ||
+    isGrpcRequestConfig(request)
+  ) {
     return request as ProtocolRequestConfig;
   }
   return toRequestConfig(request as RequestConfig | RequestDraft);

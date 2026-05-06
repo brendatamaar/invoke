@@ -19,15 +19,26 @@ interface Props {
 
 function getLangExtension(lang: Lang) {
   switch (lang) {
-    case "json":       return json();
-    case "javascript": return javascript();
-    case "xml":        return xml();
-    case "python":     return python();
-    default:           return [];
+    case "json":
+      return json();
+    case "javascript":
+      return javascript();
+    case "xml":
+      return xml();
+    case "python":
+      return python();
+    default:
+      return [];
   }
 }
 
-export function CodeEditor({ value, onChange, lang = "text", readOnly = false, minHeight = "120px" }: Props) {
+export function CodeEditor({
+  value,
+  onChange,
+  lang = "text",
+  readOnly = false,
+  minHeight = "120px",
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -41,9 +52,9 @@ export function CodeEditor({ value, onChange, lang = "text", readOnly = false, m
       getLangExtension(lang),
       EditorView.theme({
         "&": { minHeight },
-        ".cm-scroller": { fontFamily: "'JetBrains Mono', monospace" }
+        ".cm-scroller": { fontFamily: "'JetBrains Mono', monospace" },
       }),
-      EditorView.lineWrapping
+      EditorView.lineWrapping,
     ];
 
     if (readOnly) {
@@ -54,17 +65,20 @@ export function CodeEditor({ value, onChange, lang = "text", readOnly = false, m
           if (update.docChanged) {
             onChangeRef.current?.(update.state.doc.toString());
           }
-        })
+        }),
       );
     }
 
     const view = new EditorView({
       state: EditorState.create({ doc: value, extensions }),
-      parent: containerRef.current
+      parent: containerRef.current,
     });
     viewRef.current = view;
 
-    return () => { view.destroy(); viewRef.current = null; };
+    return () => {
+      view.destroy();
+      viewRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, readOnly, minHeight]);
 
@@ -74,7 +88,7 @@ export function CodeEditor({ value, onChange, lang = "text", readOnly = false, m
     if (!view) return;
     if (view.state.doc.toString() !== value) {
       view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: value }
+        changes: { from: 0, to: view.state.doc.length, insert: value },
       });
     }
   }, [value]);

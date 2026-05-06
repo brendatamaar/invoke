@@ -1,5 +1,9 @@
 import type { ErrorObject } from "ajv";
-import type { AssertionMatcher, AssertionType, ExtractionSource } from "./common";
+import type {
+  AssertionMatcher,
+  AssertionType,
+  ExtractionSource,
+} from "./common";
 
 export interface ExtractionRule {
   id?: string;

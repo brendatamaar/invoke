@@ -16,14 +16,15 @@ import type {
   KeyValue,
   RequestConfig,
   SavedRequest,
-  YamlBodyType
+  YamlBodyType,
 } from "./types";
 
 const INVOKE_YAML_VERSION = "1.0";
 const EXTERNAL_REF_ERROR = "external $ref not supported in browser context";
 
 export function parseCurl(command: string): Partial<RequestConfig> {
-  const tokens = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map(stripQuotes) ?? [];
+  const tokens =
+    command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map(stripQuotes) ?? [];
   const request = emptyRequest();
   if (tokens[0] !== "curl") return {};
   for (let i = 1; i < tokens.length; i += 1) {
@@ -32,8 +33,14 @@ export function parseCurl(command: string): Partial<RequestConfig> {
       request.method = tokens[++i]?.toUpperCase() as HttpMethod;
     } else if (token === "-H" || token === "--header") {
       const [key, ...rest] = (tokens[++i] ?? "").split(":");
-      request.headers.push({ key: key.trim(), value: rest.join(":").trim(), enabled: true });
-    } else if (["-d", "--data", "--data-raw", "--data-binary"].includes(token)) {
+      request.headers.push({
+        key: key.trim(),
+        value: rest.join(":").trim(),
+        enabled: true,
+      });
+    } else if (
+      ["-d", "--data", "--data-raw", "--data-binary"].includes(token)
+    ) {
       request.method = request.method === "GET" ? "POST" : request.method;
       request.bodyMode = "raw";
       request.body = tokens[++i] ?? "";
@@ -41,18 +48,28 @@ export function parseCurl(command: string): Partial<RequestConfig> {
       request.url = token;
     }
   }
-  const authHeader = request.headers.find((header) => header.key.toLowerCase() === "authorization");
+  const authHeader = request.headers.find(
+    (header) => header.key.toLowerCase() === "authorization",
+  );
   if (authHeader?.value.toLowerCase().startsWith("bearer ")) {
     request.auth = { type: "bearer", token: authHeader.value.slice(7) };
   }
   return request;
 }
 
-export async function exportCollectionZip(collection: Collection, requests: SavedRequest[], folders: Folder[] = []) {
+export async function exportCollectionZip(
+  collection: Collection,
+  requests: SavedRequest[],
+  folders: Folder[] = [],
+) {
   const zip = new JSZip();
   const root = zip.folder(slug(collection.name))!;
-  const collectionFolders = folders.filter((folder) => folder.collectionId === collection.id);
-  const foldersById = new Map(collectionFolders.map((folder) => [folder.id, folder]));
+  const collectionFolders = folders.filter(
+    (folder) => folder.collectionId === collection.id,
+  );
+  const foldersById = new Map(
+    collectionFolders.map((folder) => [folder.id, folder]),
+  );
   const folderPaths = exportFolderPaths(collectionFolders);
   const requestNamesByPath = new Map<string, Set<string>>();
   root.file(
@@ -62,17 +79,28 @@ export async function exportCollectionZip(collection: Collection, requests: Save
       type: "collection",
       name: collection.name,
       description: collection.description ?? "",
-      variables: keyValuesToRecord(collection.variables ?? [])
-    })
+      variables: keyValuesToRecord(collection.variables ?? []),
+    }),
   );
   for (const folder of sortFoldersForExport(collectionFolders)) {
-    root.folder(folderPaths.get(folder.id) ?? folderPath(folder, foldersById))!.file("folder.invoke.yaml", yaml.dump(folderDocument(folder)));
+    root
+      .folder(folderPaths.get(folder.id) ?? folderPath(folder, foldersById))!
+      .file("folder.invoke.yaml", yaml.dump(folderDocument(folder)));
   }
-  for (const request of requests.filter((item) => item.collectionId === collection.id)) {
-    const folder = request.folderId ? foldersById.get(request.folderId) : undefined;
-    const path = folder ? folderPaths.get(folder.id) ?? folderPath(folder, foldersById) : "";
+  for (const request of requests.filter(
+    (item) => item.collectionId === collection.id,
+  )) {
+    const folder = request.folderId
+      ? foldersById.get(request.folderId)
+      : undefined;
+    const path = folder
+      ? (folderPaths.get(folder.id) ?? folderPath(folder, foldersById))
+      : "";
     const target = path ? root.folder(path)! : root;
-    target.file(uniqueRequestFileName(request.name, path, requestNamesByPath), yaml.dump(flatRequestDocument(request)));
+    target.file(
+      uniqueRequestFileName(request.name, path, requestNamesByPath),
+      yaml.dump(flatRequestDocument(request)),
+    );
   }
   return zip.generateAsync({ type: "blob" });
 }
@@ -81,8 +109,12 @@ export async function importInvokeZip(file: Blob) {
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
   const documents = await Promise.all(
     Object.values(zip.files)
-      .filter((entry) => !entry.dir && (entry.name.endsWith(".yaml") || entry.name.endsWith(".yml")))
-      .map(async (entry) => parseYamlDocument(await entry.async("string")))
+      .filter(
+        (entry) =>
+          !entry.dir &&
+          (entry.name.endsWith(".yaml") || entry.name.endsWith(".yml")),
+      )
+      .map(async (entry) => parseYamlDocument(await entry.async("string"))),
   );
   return importedFromDocuments(documents);
 }
@@ -93,8 +125,10 @@ export async function importYamlFiles(files: File[]) {
 
   const parsed = await Promise.all(
     files
-      .filter((file) => file.name.endsWith(".yaml") || file.name.endsWith(".yml"))
-      .map(async (file) => parseYamlDocument(await file.text()))
+      .filter(
+        (file) => file.name.endsWith(".yaml") || file.name.endsWith(".yml"),
+      )
+      .map(async (file) => parseYamlDocument(await file.text())),
   );
   return importedFromDocuments(parsed);
 }
@@ -107,7 +141,7 @@ export function importPostmanCollection(doc: any) {
     variables: [],
     sortOrder: now,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
   const folders: Folder[] = [];
   const requests: SavedRequest[] = [];
@@ -123,7 +157,7 @@ export function importPostmanCollection(doc: any) {
           variables: [],
           sortOrder: now + folders.length,
           createdAt: now,
-          updatedAt: now
+          updatedAt: now,
         };
         folders.push(folder);
         folderId = folder.id;
@@ -131,17 +165,21 @@ export function importPostmanCollection(doc: any) {
       }
       if (!item.request) continue;
       const raw = item.request;
-      const url = typeof raw.url === "string" ? raw.url : raw.url?.raw ?? "";
+      const url = typeof raw.url === "string" ? raw.url : (raw.url?.raw ?? "");
       const body = raw.body?.raw ?? "";
       const requestNow = Date.now();
       const request = toRequestConfig({
         ...emptyRequest(),
         method: (raw.method ?? "GET").toUpperCase() as HttpMethod,
         url,
-        headers: (raw.header ?? []).map((h: any) => ({ key: h.key, value: h.value, enabled: !h.disabled })),
+        headers: (raw.header ?? []).map((h: any) => ({
+          key: h.key,
+          value: h.value,
+          enabled: !h.disabled,
+        })),
         auth: postmanAuth(raw.auth),
         bodyMode: body ? "raw" : "none",
-        body
+        body,
       });
       requests.push({
         id: id(),
@@ -152,7 +190,7 @@ export function importPostmanCollection(doc: any) {
         request,
         sortOrder: requestNow,
         createdAt: requestNow,
-        updatedAt: requestNow
+        updatedAt: requestNow,
       });
     }
   };
@@ -170,11 +208,13 @@ export function importInsomniaExport(doc: any) {
     variables: [],
     sortOrder: now,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
 
   const folderMap = new Map<string, Folder>();
-  const groupResources = resources.filter((item: any) => item?._type === "request_group");
+  const groupResources = resources.filter(
+    (item: any) => item?._type === "request_group",
+  );
   for (const group of groupResources) {
     folderMap.set(group._id, {
       id: id(),
@@ -184,13 +224,16 @@ export function importInsomniaExport(doc: any) {
       variables: [],
       sortOrder: now + folderMap.size,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     });
   }
   for (const group of groupResources) {
     const folder = folderMap.get(group._id);
     if (!folder) continue;
-    folder.parentFolderId = group.parentId && folderMap.has(group.parentId) ? folderMap.get(group.parentId)!.id : null;
+    folder.parentFolderId =
+      group.parentId && folderMap.has(group.parentId)
+        ? folderMap.get(group.parentId)!.id
+        : null;
   }
 
   const requests: SavedRequest[] = resources
@@ -204,48 +247,66 @@ export function importInsomniaExport(doc: any) {
         headers: (item.headers ?? []).map((header: any) => ({
           key: header.name ?? header.key ?? "",
           value: header.value ?? "",
-          enabled: !header.disabled
+          enabled: !header.disabled,
         })),
         auth: insomniaAuth(item.authentication),
         bodyMode: body.mode,
-        body: body.content
+        body: body.content,
       });
       return {
         id: id(),
         collectionId: collection.id,
-        folderId: item.parentId && folderMap.has(item.parentId) ? folderMap.get(item.parentId)!.id : null,
+        folderId:
+          item.parentId && folderMap.has(item.parentId)
+            ? folderMap.get(item.parentId)!.id
+            : null,
         name: item.name ?? `${request.method} ${request.url}`,
         protocol: "rest",
         request,
         sortOrder: now + index,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
       };
     });
 
   const environments = resources
-    .filter((item: any) => item?._type === "environment" && item.name && item.data && Object.keys(item.data).length > 0)
-    .map((item: any, index: number): Environment => ({
-      id: id(),
-      name: item.name,
-      variables: recordToKeyValues(item.data),
-      createdAt: now + index,
-      updatedAt: now + index
-    }));
+    .filter(
+      (item: any) =>
+        item?._type === "environment" &&
+        item.name &&
+        item.data &&
+        Object.keys(item.data).length > 0,
+    )
+    .map(
+      (item: any, index: number): Environment => ({
+        id: id(),
+        name: item.name,
+        variables: recordToKeyValues(item.data),
+        createdAt: now + index,
+        updatedAt: now + index,
+      }),
+    );
 
-  return { collection, folders: [...folderMap.values()], requests, environments };
+  return {
+    collection,
+    folders: [...folderMap.values()],
+    requests,
+    environments,
+  };
 }
 
 export function importHoppscotchCollection(doc: any) {
   const now = Date.now();
-  const rootCollection = Array.isArray(doc?.collections) ? doc.collections[0] : doc;
+  const rootCollection = Array.isArray(doc?.collections)
+    ? doc.collections[0]
+    : doc;
   const collection: Collection = {
     id: id(),
     name: rootCollection?.name ?? doc?.name ?? "Hoppscotch import",
     variables: [],
     sortOrder: now,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
   const folders: Folder[] = [];
   const requests: SavedRequest[] = [];
@@ -259,7 +320,7 @@ export function importHoppscotchCollection(doc: any) {
       variables: [],
       sortOrder: now + folders.length,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     folders.push(folder);
     visitRequests(node?.requests ?? [], folder.id);
@@ -267,32 +328,41 @@ export function importHoppscotchCollection(doc: any) {
   };
 
   const visitRequests = (items: any[], folderId: string | null) => {
-    for (const item of items ?? []) requests.push(hoppscotchRequest(collection.id, folderId, item, now + requests.length));
+    for (const item of items ?? [])
+      requests.push(
+        hoppscotchRequest(collection.id, folderId, item, now + requests.length),
+      );
   };
 
   visitRequests(rootCollection?.requests ?? doc?.requests ?? [], null);
-  for (const folder of rootCollection?.folders ?? doc?.folders ?? []) visitFolder(folder, null);
+  for (const folder of rootCollection?.folders ?? doc?.folders ?? [])
+    visitFolder(folder, null);
 
   const environments = (doc?.environments ?? doc?.envs ?? [])
     .filter((env: any) => env?.name)
-    .map((env: any, index: number): Environment => ({
-      id: id(),
-      name: env.name,
-      variables: hoppscotchVariables(env),
-      createdAt: now + index,
-      updatedAt: now + index
-    }));
+    .map(
+      (env: any, index: number): Environment => ({
+        id: id(),
+        name: env.name,
+        variables: hoppscotchVariables(env),
+        createdAt: now + index,
+        updatedAt: now + index,
+      }),
+    );
 
   return { collection, folders, requests, environments };
 }
 
-export async function importOpenApiSpec(input: string | Record<string, unknown>, sourceName = "OpenAPI import") {
+export async function importOpenApiSpec(
+  input: string | Record<string, unknown>,
+  sourceName = "OpenAPI import",
+) {
   try {
     const rawDoc = typeof input === "string" ? parseYamlDocument(input) : input;
     assertOpenApiDocument(rawDoc);
     assertNoExternalRefs(rawDoc);
     const doc = (await SwaggerParser.dereference(clonePlain(rawDoc), {
-      resolve: { external: false }
+      resolve: { external: false },
     } as SwaggerParser.Options)) as any;
     assertOpenApiDocument(doc);
 
@@ -304,22 +374,48 @@ export async function importOpenApiSpec(input: string | Record<string, unknown>,
       variables: [],
       sortOrder: now,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     const environments = environmentsFromServers(doc, now);
-    const serverUrl = environments.length > 0 ? "{{base_url}}" : normalizeServerUrl("");
+    const serverUrl =
+      environments.length > 0 ? "{{base_url}}" : normalizeServerUrl("");
     const foldersByTag = new Map<string, Folder>();
     const requests: SavedRequest[] = [];
-    const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options"]);
+    const methods = new Set([
+      "get",
+      "post",
+      "put",
+      "patch",
+      "delete",
+      "head",
+      "options",
+    ]);
 
     for (const [rawPath, pathItem] of Object.entries(doc.paths ?? {})) {
       if (!pathItem || typeof pathItem !== "object") continue;
-      for (const [rawMethod, operation] of Object.entries(pathItem as Record<string, any>)) {
-        if (!methods.has(rawMethod) || !operation || typeof operation !== "object") continue;
+      for (const [rawMethod, operation] of Object.entries(
+        pathItem as Record<string, any>,
+      )) {
+        if (
+          !methods.has(rawMethod) ||
+          !operation ||
+          typeof operation !== "object"
+        )
+          continue;
 
         const tag = operation.tags?.[0] ? String(operation.tags[0]) : "";
-        const folder = tag ? folderForTag(collection.id, foldersByTag, tag, now + foldersByTag.size) : undefined;
-        const parameters = [...((pathItem as any).parameters ?? []), ...(operation.parameters ?? [])];
+        const folder = tag
+          ? folderForTag(
+              collection.id,
+              foldersByTag,
+              tag,
+              now + foldersByTag.size,
+            )
+          : undefined;
+        const parameters = [
+          ...((pathItem as any).parameters ?? []),
+          ...(operation.parameters ?? []),
+        ];
         const path = pathWithVariables(rawPath);
         const request = toRequestConfig({
           ...emptyRequest(),
@@ -327,29 +423,51 @@ export async function importOpenApiSpec(input: string | Record<string, unknown>,
           url: `${serverUrl}${path}`,
           params: parameters
             .filter((parameter) => parameter?.in === "query")
-            .map((parameter) => ({ key: parameter.name, value: `{{${parameter.name}}}`, enabled: true })),
+            .map((parameter) => ({
+              key: parameter.name,
+              value: `{{${parameter.name}}}`,
+              enabled: true,
+            })),
           headers: parameters
             .filter((parameter) => parameter?.in === "header")
-            .map((parameter) => ({ key: parameter.name, value: `{{${parameter.name}}}`, enabled: true })),
+            .map((parameter) => ({
+              key: parameter.name,
+              value: `{{${parameter.name}}}`,
+              enabled: true,
+            })),
           bodyMode: operation.requestBody ? "json" : "none",
-          body: operation.requestBody ? JSON.stringify(exampleFromRequestBody(operation.requestBody), null, 2) : "",
-          timeoutMs: 30000
+          body: operation.requestBody
+            ? JSON.stringify(
+                exampleFromRequestBody(operation.requestBody),
+                null,
+                2,
+              )
+            : "",
+          timeoutMs: 30000,
         });
         requests.push({
           id: id(),
           collectionId: collection.id,
           folderId: folder?.id ?? null,
-          name: operation.operationId ?? operation.summary ?? `${request.method} ${rawPath}`,
+          name:
+            operation.operationId ??
+            operation.summary ??
+            `${request.method} ${rawPath}`,
           protocol: "rest",
           request,
           sortOrder: now + requests.length,
           createdAt: now,
-          updatedAt: now
+          updatedAt: now,
         });
       }
     }
 
-    return { collection, folders: [...foldersByTag.values()], requests, environments };
+    return {
+      collection,
+      folders: [...foldersByTag.values()],
+      requests,
+      environments,
+    };
   } catch (error) {
     throw openApiImportError(error);
   }
@@ -371,9 +489,9 @@ function flatRequestDocument(saved: SavedRequest): FlatRequestDocument {
       graphql: {
         query: request.query,
         variables: request.variables,
-        operationName: request.operationName
+        operationName: request.operationName,
       },
-      timeoutMs: request.timeoutMs
+      timeoutMs: request.timeoutMs,
     };
   }
 
@@ -392,10 +510,10 @@ function flatRequestDocument(saved: SavedRequest): FlatRequestDocument {
     auth: request.auth,
     body: {
       type: bodyModeToYaml(request.bodyMode),
-      content: request.body || undefined
+      content: request.body || undefined,
     },
     variables: keyValuesToRecord(request.variables ?? []),
-    timeoutMs: request.timeoutMs
+    timeoutMs: request.timeoutMs,
   };
 }
 
@@ -404,21 +522,29 @@ function importedFromDocuments(documents: any[]) {
   const collectionDoc = documents.find((doc) => doc?.type === "collection");
   const collection: Collection = {
     id: id(),
-    name: collectionDoc?.name ?? collectionDoc?.collection?.name ?? "Imported collection",
-    description: collectionDoc?.description ?? collectionDoc?.collection?.description,
-    variables: recordToKeyValues(collectionDoc?.variables ?? collectionDoc?.collection?.variables ?? {}),
+    name:
+      collectionDoc?.name ??
+      collectionDoc?.collection?.name ??
+      "Imported collection",
+    description:
+      collectionDoc?.description ?? collectionDoc?.collection?.description,
+    variables: recordToKeyValues(
+      collectionDoc?.variables ?? collectionDoc?.collection?.variables ?? {},
+    ),
     sortOrder: now,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
   const { folders, folderIdMap } = foldersFromDocuments(
     documents.filter((doc) => doc?.type === "folder"),
     collection.id,
-    now
+    now,
   );
   const requests = documents
     .filter((doc) => doc?.type === "request")
-    .map((doc, index) => savedRequestFromDocument(doc, collection.id, now + index, folderIdMap));
+    .map((doc, index) =>
+      savedRequestFromDocument(doc, collection.id, now + index, folderIdMap),
+    );
   return { collection, folders, requests };
 }
 
@@ -431,11 +557,15 @@ function folderDocument(folder: Folder): FolderDocument {
     parentFolderId: folder.parentFolderId ?? null,
     description: folder.description,
     variables: keyValuesToRecord(folder.variables ?? []),
-    sortOrder: folder.sortOrder
+    sortOrder: folder.sortOrder,
   };
 }
 
-function foldersFromDocuments(folderDocs: any[], collectionId: string, now: number) {
+function foldersFromDocuments(
+  folderDocs: any[],
+  collectionId: string,
+  now: number,
+) {
   const folderIdMap = new Map<string, string>();
   const originals = folderDocs.map((doc, index) => {
     const sourceId = String(doc.id ?? `folder_${index}`);
@@ -448,14 +578,19 @@ function foldersFromDocuments(folderDocs: any[], collectionId: string, now: numb
       variables: recordToKeyValues(doc.variables ?? {}),
       sortOrder: doc.sortOrder ?? now + index,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     folderIdMap.set(sourceId, folder.id);
-    return { folder, sourceParentId: doc.parentFolderId ? String(doc.parentFolderId) : null };
+    return {
+      folder,
+      sourceParentId: doc.parentFolderId ? String(doc.parentFolderId) : null,
+    };
   });
   const folders = originals.map(({ folder, sourceParentId }) => ({
     ...folder,
-    parentFolderId: sourceParentId ? folderIdMap.get(sourceParentId) ?? null : null
+    parentFolderId: sourceParentId
+      ? (folderIdMap.get(sourceParentId) ?? null)
+      : null,
   }));
   return { folders, folderIdMap };
 }
@@ -470,9 +605,15 @@ function savedRequestFromDocument(
   doc: any,
   collectionId: string,
   sortOrder: number,
-  folderIdMap: Map<string, string> = new Map()
+  folderIdMap: Map<string, string> = new Map(),
 ): SavedRequest {
-  if (doc.request) return savedRequestFromWrappedDocument(doc, collectionId, sortOrder, folderIdMap);
+  if (doc.request)
+    return savedRequestFromWrappedDocument(
+      doc,
+      collectionId,
+      sortOrder,
+      folderIdMap,
+    );
 
   const now = Date.now();
   const folderId = remapFolderId(doc.folderId, folderIdMap);
@@ -484,7 +625,7 @@ function savedRequestFromDocument(
       query: doc.graphql?.query ?? "",
       variables: doc.graphql?.variables ?? "{}",
       operationName: doc.graphql?.operationName ?? "",
-      timeoutMs: doc.timeoutMs ?? 30000
+      timeoutMs: doc.timeoutMs ?? 30000,
     };
     return {
       id: id(),
@@ -495,7 +636,7 @@ function savedRequestFromDocument(
       request,
       sortOrder,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
   }
 
@@ -509,7 +650,7 @@ function savedRequestFromDocument(
     body: doc.body?.content ?? "",
     auth: doc.auth ?? { type: "none" },
     timeoutMs: doc.timeoutMs ?? 30000,
-    variables: recordToKeyValues(doc.variables ?? {})
+    variables: recordToKeyValues(doc.variables ?? {}),
   });
   return {
     id: id(),
@@ -520,7 +661,7 @@ function savedRequestFromDocument(
     request,
     sortOrder,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
 }
 
@@ -528,7 +669,7 @@ function savedRequestFromWrappedDocument(
   doc: any,
   collectionId: string,
   sortOrder: number,
-  folderIdMap: Map<string, string> = new Map()
+  folderIdMap: Map<string, string> = new Map(),
 ): SavedRequest {
   const now = Date.now();
   const wrapped = doc.request;
@@ -541,7 +682,7 @@ function savedRequestFromWrappedDocument(
       protocol: wrapped.protocol ?? "rest",
       sortOrder,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
   }
 
@@ -554,7 +695,7 @@ function savedRequestFromWrappedDocument(
     request: toRequestConfig(wrapped),
     sortOrder,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
 }
 
@@ -563,28 +704,39 @@ function insomniaBody(body: any): { mode: BodyMode; content: string } {
   const content = body.text ?? "";
   if (!content) return { mode: "none", content: "" };
   if (String(body.mimeType).includes("json")) return { mode: "json", content };
-  if (String(body.mimeType).includes("x-www-form-urlencoded")) return { mode: "urlencoded", content };
+  if (String(body.mimeType).includes("x-www-form-urlencoded"))
+    return { mode: "urlencoded", content };
   return { mode: "raw", content };
 }
 
 function insomniaAuth(authentication: any): AuthConfig {
   if (!authentication?.type) return { type: "none" };
-  if (authentication.type === "bearer") return { type: "bearer", token: authentication.token ?? "" };
+  if (authentication.type === "bearer")
+    return { type: "bearer", token: authentication.token ?? "" };
   if (authentication.type === "basic") {
-    return { type: "basic", username: authentication.username ?? "", password: authentication.password ?? "" };
+    return {
+      type: "basic",
+      username: authentication.username ?? "",
+      password: authentication.password ?? "",
+    };
   }
   if (authentication.type === "apikey") {
     return {
       type: "api-key",
       apiKeyName: authentication.key ?? "",
       apiKeyValue: authentication.value ?? "",
-      apiKeyIn: authentication.addTo === "queryParams" ? "query" : "header"
+      apiKeyIn: authentication.addTo === "queryParams" ? "query" : "header",
     };
   }
   return { type: "none" };
 }
 
-function hoppscotchRequest(collectionId: string, folderId: string | null, item: any, sortOrder: number): SavedRequest {
+function hoppscotchRequest(
+  collectionId: string,
+  folderId: string | null,
+  item: any,
+  sortOrder: number,
+): SavedRequest {
   const now = Date.now();
   const body = hoppscotchBody(item);
   const request = toRequestConfig({
@@ -594,16 +746,16 @@ function hoppscotchRequest(collectionId: string, folderId: string | null, item: 
     params: (item.params ?? item.queryParams ?? []).map((param: any) => ({
       key: param.key ?? param.name ?? "",
       value: param.value ?? "",
-      enabled: param.active !== false && param.enabled !== false
+      enabled: param.active !== false && param.enabled !== false,
     })),
     headers: (item.headers ?? []).map((header: any) => ({
       key: header.key ?? header.name ?? "",
       value: header.value ?? "",
-      enabled: header.active !== false && header.enabled !== false
+      enabled: header.active !== false && header.enabled !== false,
     })),
     auth: hoppscotchAuth(item.auth),
     bodyMode: body.mode,
-    body: body.content
+    body: body.content,
   });
   return {
     id: id(),
@@ -614,31 +766,39 @@ function hoppscotchRequest(collectionId: string, folderId: string | null, item: 
     request,
     sortOrder,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
 }
 
 function hoppscotchBody(item: any): { mode: BodyMode; content: string } {
   const body = item.body ?? item.requestBody;
   if (!body) return { mode: "none", content: "" };
-  const content = typeof body === "string" ? body : body.body ?? body.content ?? "";
+  const content =
+    typeof body === "string" ? body : (body.body ?? body.content ?? "");
   if (!content) return { mode: "none", content: "" };
   const contentType = String(body.contentType ?? item.contentType ?? "");
   if (contentType.includes("json")) return { mode: "json", content };
-  if (contentType.includes("x-www-form-urlencoded")) return { mode: "urlencoded", content };
+  if (contentType.includes("x-www-form-urlencoded"))
+    return { mode: "urlencoded", content };
   return { mode: "raw", content };
 }
 
 function hoppscotchAuth(auth: any): AuthConfig {
   if (!auth?.authType || auth.authType === "none") return { type: "none" };
-  if (auth.authType === "bearer") return { type: "bearer", token: auth.authToken ?? auth.token ?? "" };
-  if (auth.authType === "basic") return { type: "basic", username: auth.username ?? "", password: auth.password ?? "" };
+  if (auth.authType === "bearer")
+    return { type: "bearer", token: auth.authToken ?? auth.token ?? "" };
+  if (auth.authType === "basic")
+    return {
+      type: "basic",
+      username: auth.username ?? "",
+      password: auth.password ?? "",
+    };
   if (auth.authType === "api-key") {
     return {
       type: "api-key",
       apiKeyName: auth.key ?? "",
       apiKeyValue: auth.value ?? "",
-      apiKeyIn: auth.addTo === "queryParams" ? "query" : "header"
+      apiKeyIn: auth.addTo === "queryParams" ? "query" : "header",
     };
   }
   return { type: "none" };
@@ -650,7 +810,7 @@ function hoppscotchVariables(env: any) {
     return variables.map((variable: any) => ({
       key: variable.key ?? variable.name ?? "",
       value: variable.value ?? "",
-      enabled: variable.active !== false && variable.enabled !== false
+      enabled: variable.active !== false && variable.enabled !== false,
     }));
   }
   return recordToKeyValues(variables);
@@ -658,15 +818,23 @@ function hoppscotchVariables(env: any) {
 
 function postmanAuth(auth: any): RequestConfig["auth"] {
   if (!auth?.type) return { type: "none" };
-  const values = Object.fromEntries((auth[auth.type] ?? []).map((item: any) => [item.key, item.value]));
-  if (auth.type === "bearer") return { type: "bearer", token: values.token ?? "" };
-  if (auth.type === "basic") return { type: "basic", username: values.username ?? "", password: values.password ?? "" };
+  const values = Object.fromEntries(
+    (auth[auth.type] ?? []).map((item: any) => [item.key, item.value]),
+  );
+  if (auth.type === "bearer")
+    return { type: "bearer", token: values.token ?? "" };
+  if (auth.type === "basic")
+    return {
+      type: "basic",
+      username: values.username ?? "",
+      password: values.password ?? "",
+    };
   if (auth.type === "apikey") {
     return {
       type: "api-key",
       apiKeyName: values.key ?? "",
       apiKeyValue: values.value ?? "",
-      apiKeyIn: values.in === "query" ? "query" : "header"
+      apiKeyIn: values.in === "query" ? "query" : "header",
     };
   }
   return { type: "none" };
@@ -678,13 +846,19 @@ function parseYamlDocument(content: string) {
 
 function keyValuesToRecord(items: KeyValue[] = []) {
   return Object.fromEntries(
-    items.filter((item) => item.enabled !== false && item.key.trim()).map((item) => [item.key.trim(), item.value])
+    items
+      .filter((item) => item.enabled !== false && item.key.trim())
+      .map((item) => [item.key.trim(), item.value]),
   );
 }
 
 function recordToKeyValues(value: Record<string, string> | KeyValue[] = {}) {
   if (Array.isArray(value)) return value;
-  return Object.entries(value).map(([key, raw]) => ({ key, value: String(raw), enabled: true }));
+  return Object.entries(value).map(([key, raw]) => ({
+    key,
+    value: String(raw),
+    enabled: true,
+  }));
 }
 
 function bodyModeToYaml(mode: BodyMode): YamlBodyType {
@@ -712,44 +886,70 @@ function normalizeServerUrl(value: string) {
 function environmentsFromServers(doc: any, now: number): Environment[] {
   const servers = Array.isArray(doc.servers) ? doc.servers : [];
   return servers
-    .filter((server: any) => typeof server?.url === "string" && server.url.trim())
+    .filter(
+      (server: any) => typeof server?.url === "string" && server.url.trim(),
+    )
     .map((server: any, index: number) => ({
       id: id(),
-      name: server.description || `${doc.info?.title ?? "OpenAPI"} server ${index + 1}`,
-      variables: [{ key: "base_url", value: normalizeServerUrl(server.url), enabled: true }],
+      name:
+        server.description ||
+        `${doc.info?.title ?? "OpenAPI"} server ${index + 1}`,
+      variables: [
+        {
+          key: "base_url",
+          value: normalizeServerUrl(server.url),
+          enabled: true,
+        },
+      ],
       createdAt: now + index,
-      updatedAt: now + index
+      updatedAt: now + index,
     }));
 }
 
 function pathWithVariables(path: string) {
-  return path.replace(/\{([^}]+)\}/g, (_match, name: string) => `{{${name.trim()}}}`);
+  return path.replace(
+    /\{([^}]+)\}/g,
+    (_match, name: string) => `{{${name.trim()}}}`,
+  );
 }
 
 function sortFoldersForExport(folders: Folder[]) {
   const foldersById = new Map(folders.map((folder) => [folder.id, folder]));
   return [...folders].sort((left, right) => {
-    const depth = folderDepth(left, foldersById) - folderDepth(right, foldersById);
-    return depth || (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.name.localeCompare(right.name);
+    const depth =
+      folderDepth(left, foldersById) - folderDepth(right, foldersById);
+    return (
+      depth ||
+      (left.sortOrder ?? 0) - (right.sortOrder ?? 0) ||
+      left.name.localeCompare(right.name)
+    );
   });
 }
 
 function folderDepth(folder: Folder, foldersById: Map<string, Folder>) {
   let depth = 0;
-  let current = folder.parentFolderId ? foldersById.get(folder.parentFolderId) : undefined;
+  let current = folder.parentFolderId
+    ? foldersById.get(folder.parentFolderId)
+    : undefined;
   while (current) {
     depth += 1;
-    current = current.parentFolderId ? foldersById.get(current.parentFolderId) : undefined;
+    current = current.parentFolderId
+      ? foldersById.get(current.parentFolderId)
+      : undefined;
   }
   return depth;
 }
 
 function folderPath(folder: Folder, foldersById: Map<string, Folder>) {
   const parts = [slug(folder.name)];
-  let current = folder.parentFolderId ? foldersById.get(folder.parentFolderId) : undefined;
+  let current = folder.parentFolderId
+    ? foldersById.get(folder.parentFolderId)
+    : undefined;
   while (current) {
     parts.unshift(slug(current.name));
-    current = current.parentFolderId ? foldersById.get(current.parentFolderId) : undefined;
+    current = current.parentFolderId
+      ? foldersById.get(current.parentFolderId)
+      : undefined;
   }
   return parts.join("/");
 }
@@ -768,20 +968,37 @@ function exportFolderPaths(folders: Folder[]) {
       slugById.set(folder.id, uniqueSlug(folder.name, used));
     }
   }
-  return new Map(folders.map((folder) => [folder.id, folderExportPath(folder, foldersById, slugById)]));
+  return new Map(
+    folders.map((folder) => [
+      folder.id,
+      folderExportPath(folder, foldersById, slugById),
+    ]),
+  );
 }
 
-function folderExportPath(folder: Folder, foldersById: Map<string, Folder>, slugById: Map<string, string>) {
+function folderExportPath(
+  folder: Folder,
+  foldersById: Map<string, Folder>,
+  slugById: Map<string, string>,
+) {
   const parts = [slugById.get(folder.id) ?? slug(folder.name)];
-  let current = folder.parentFolderId ? foldersById.get(folder.parentFolderId) : undefined;
+  let current = folder.parentFolderId
+    ? foldersById.get(folder.parentFolderId)
+    : undefined;
   while (current) {
     parts.unshift(slugById.get(current.id) ?? slug(current.name));
-    current = current.parentFolderId ? foldersById.get(current.parentFolderId) : undefined;
+    current = current.parentFolderId
+      ? foldersById.get(current.parentFolderId)
+      : undefined;
   }
   return parts.join("/");
 }
 
-function uniqueRequestFileName(name: string, path: string, usedByPath: Map<string, Set<string>>) {
+function uniqueRequestFileName(
+  name: string,
+  path: string,
+  usedByPath: Map<string, Set<string>>,
+) {
   const used = usedByPath.get(path) ?? new Set<string>();
   usedByPath.set(path, used);
   return `${uniqueSlug(name, used)}.invoke.yaml`;
@@ -800,10 +1017,18 @@ function uniqueSlug(name: string, used: Set<string>) {
 }
 
 function sortByOrderThenName(left: Folder, right: Folder) {
-  return (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.name.localeCompare(right.name);
+  return (
+    (left.sortOrder ?? 0) - (right.sortOrder ?? 0) ||
+    left.name.localeCompare(right.name)
+  );
 }
 
-function folderForTag(collectionId: string, folders: Map<string, Folder>, tag: string, sortOrder: number) {
+function folderForTag(
+  collectionId: string,
+  folders: Map<string, Folder>,
+  tag: string,
+  sortOrder: number,
+) {
   const existing = folders.get(tag);
   if (existing) return existing;
   const now = Date.now();
@@ -815,7 +1040,7 @@ function folderForTag(collectionId: string, folders: Map<string, Folder>, tag: s
     variables: [],
     sortOrder,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
   folders.set(tag, folder);
   return folder;
@@ -824,11 +1049,18 @@ function folderForTag(collectionId: string, folders: Map<string, Folder>, tag: s
 function exampleFromRequestBody(requestBody: any) {
   const content = requestBody?.content ?? {};
   const json = content["application/json"] ?? Object.values(content)[0];
-  const firstExample = Object.values(json?.examples ?? {})[0] as { value?: unknown } | undefined;
-  return json?.example ?? firstExample?.value ?? exampleFromSchema(json?.schema);
+  const firstExample = Object.values(json?.examples ?? {})[0] as
+    | { value?: unknown }
+    | undefined;
+  return (
+    json?.example ?? firstExample?.value ?? exampleFromSchema(json?.schema)
+  );
 }
 
-function exampleFromSchema(schema: any, stack = new WeakSet<object>()): unknown {
+function exampleFromSchema(
+  schema: any,
+  stack = new WeakSet<object>(),
+): unknown {
   if (!schema || typeof schema !== "object") return {};
   if (stack.has(schema)) return {};
   stack.add(schema);
@@ -842,9 +1074,14 @@ function exampleFromSchema(schema: any, stack = new WeakSet<object>()): unknown 
       ? schema.allOf.map((part: any) => exampleFromSchema(part, stack))
       : [];
     const ownProperties = Object.fromEntries(
-      Object.entries(schema.properties ?? {}).map(([key, property]) => [key, exampleFromSchema(property, stack)])
+      Object.entries(schema.properties ?? {}).map(([key, property]) => [
+        key,
+        exampleFromSchema(property, stack),
+      ]),
     );
-    const type = schema.type ?? (schema.properties || allOfExamples.length ? "object" : undefined);
+    const type =
+      schema.type ??
+      (schema.properties || allOfExamples.length ? "object" : undefined);
 
     if (type === "object") {
       return mergeExampleObjects([...allOfExamples, ownProperties]);
@@ -864,7 +1101,10 @@ function mergeExampleObjects(values: unknown[]) {
   for (const value of values) {
     if (!isPlainObject(value)) continue;
     for (const [key, raw] of Object.entries(value)) {
-      result[key] = isPlainObject(result[key]) && isPlainObject(raw) ? mergeExampleObjects([result[key], raw]) : raw;
+      result[key] =
+        isPlainObject(result[key]) && isPlainObject(raw)
+          ? mergeExampleObjects([result[key], raw])
+          : raw;
     }
   }
   return result;
@@ -875,10 +1115,18 @@ function firstDefined(values: unknown[]) {
 }
 
 function assertOpenApiDocument(doc: any) {
-  if (!isPlainObject(doc) || typeof doc.openapi !== "string" || !doc.openapi.startsWith("3.")) {
+  if (
+    !isPlainObject(doc) ||
+    typeof doc.openapi !== "string" ||
+    !doc.openapi.startsWith("3.")
+  ) {
     throw new Error("Only OpenAPI 3.x documents are supported");
   }
-  if (!isPlainObject(doc.info) || typeof doc.info.title !== "string" || !doc.info.title.trim()) {
+  if (
+    !isPlainObject(doc.info) ||
+    typeof doc.info.title !== "string" ||
+    !doc.info.title.trim()
+  ) {
     throw new Error("OpenAPI document is missing required info.title");
   }
   if (!isPlainObject(doc.paths)) {
@@ -901,7 +1149,8 @@ function assertNoExternalRefs(value: unknown) {
 
 function openApiImportError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
-  if (message.startsWith("OpenAPI import failed:")) return error instanceof Error ? error : new Error(message);
+  if (message.startsWith("OpenAPI import failed:"))
+    return error instanceof Error ? error : new Error(message);
   return new Error(`OpenAPI import failed: ${message}`);
 }
 
