@@ -378,9 +378,8 @@ export function CollectionTree() {
         />
 
         {!collections.length ? (
-          <div className="flex flex-col items-center justify-center flex-1 gap-3 px-4 text-center">
+          <div className="flex flex-col items-center flex-1 gap-3 p-4 text-center">
             <p className="text-xs text-[var(--text-3)]">No collections yet</p>
-            <button onClick={() => setNewColModal(true)} className="btn text-xs flex items-center gap-1"><Plus size={13} /> New Collection</button>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto py-1">
