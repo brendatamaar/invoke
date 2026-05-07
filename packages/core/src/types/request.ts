@@ -2,6 +2,13 @@ import type { Assertion, ExtractionRule } from "./assertion";
 import type { AuthConfig } from "./auth";
 import type { BodyMode, HttpMethod, KeyValue } from "./common";
 
+export interface RetryPolicy {
+  maxRetries: number;
+  retryOnTimeout: boolean;
+  retryOn5xx: boolean;
+  backoffMs: number;
+}
+
 export interface RequestConfig {
   method: HttpMethod;
   url: string;
@@ -16,6 +23,7 @@ export interface RequestConfig {
   extractionRules?: ExtractionRule[];
   options?: RequestOptions;
   scripts?: RequestScripts;
+  retryPolicy?: RetryPolicy;
 }
 
 export interface RequestOptions {

@@ -2,6 +2,7 @@ import Dexie, { type Table } from "dexie";
 import type {
   CachedGraphQLSchema,
   Collection,
+  DiffIgnoreRule,
   Environment,
   Flow,
   Folder,
@@ -10,7 +11,10 @@ import type {
   RequestConfig,
   RequestDraft,
   RequestProtocol,
+  ResponseExample,
+  RetentionSettings,
   SavedRequest,
+  StoredCookie,
 } from "./types";
 import { searchHistory as filterHistory } from "./history";
 import {
@@ -33,6 +37,7 @@ class InvokeDB extends Dexie {
   history!: Table<HistoryEntry, string>;
   flows!: Table<Flow, string>;
   meta!: Table<{ key: string; value: unknown }, string>;
+  cookies!: Table<StoredCookie, string>;
 
   constructor() {
     super("invoke-alpha");
@@ -121,6 +126,29 @@ class InvokeDB extends Dexie {
       history: "id, createdAt, requestId, collectionId, protocol",
       flows: "id, name, updatedAt",
       meta: "key",
+    });
+
+    this.version(4).stores({
+      collections: "id, name, updatedAt, sortOrder",
+      folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
+      requests:
+        "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+      environments: "id, name, updatedAt",
+      history: "id, createdAt, requestId, collectionId, protocol, pinned",
+      flows: "id, name, updatedAt",
+      meta: "key",
+    });
+
+    this.version(5).stores({
+      collections: "id, name, updatedAt, sortOrder",
+      folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
+      requests:
+        "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+      environments: "id, name, updatedAt",
+      history: "id, createdAt, requestId, collectionId, protocol, pinned",
+      flows: "id, name, updatedAt",
+      meta: "key",
+      cookies: "id, domain, [domain+path+name], updatedAt",
     });
   }
 }
@@ -355,19 +383,96 @@ export class InvokeStore {
       createdAt: Date.now(),
     };
     await this.db.history.add(saved);
-    const count = await this.db.history.count();
-    if (count > HISTORY_LIMIT) {
-      const stale = await this.db.history
-        .orderBy("createdAt")
-        .limit(count - HISTORY_LIMIT)
-        .primaryKeys();
-      await this.db.history.bulkDelete(stale as string[]);
-    }
+    await this._applyRetention();
     return saved;
   }
 
+  private async _applyRetention() {
+    const settings = await this.getRetentionSettings();
+    const maxEntries = settings?.maxEntries ?? HISTORY_LIMIT;
+    const retentionDays = settings?.retentionDays ?? 0;
+
+    if (retentionDays > 0) {
+      const cutoff = Date.now() - retentionDays * 86400000;
+      const staleByAge = await this.db.history
+        .where("createdAt")
+        .below(cutoff)
+        .filter((e) => !e.pinned)
+        .primaryKeys();
+      if (staleByAge.length > 0) await this.db.history.bulkDelete(staleByAge as string[]);
+    }
+
+    const limit = maxEntries > 0 ? maxEntries : HISTORY_LIMIT;
+    const count = await this.db.history.count();
+    if (count > limit) {
+      const stale = await this.db.history
+        .orderBy("createdAt")
+        .filter((e) => !e.pinned)
+        .limit(count - limit)
+        .primaryKeys();
+      if (stale.length > 0) await this.db.history.bulkDelete(stale as string[]);
+    }
+  }
+
+  async pinHistoryEntry(id: string, pinned: boolean) {
+    await this.db.history.where("id").equals(id).modify({ pinned });
+  }
+
+  async setHistoryEntryLabel(id: string, label: string) {
+    await this.db.history.where("id").equals(id).modify({ label: label || undefined });
+  }
+
+  async getRetentionSettings(): Promise<RetentionSettings | undefined> {
+    return this.getMeta<RetentionSettings>("retentionSettings");
+  }
+
+  async setRetentionSettings(settings: RetentionSettings) {
+    await this.setMeta("retentionSettings", settings);
+  }
+
+  async getStorageStats(): Promise<Record<string, number>> {
+    const [collections, folders, requests, environments, history, flows] =
+      await Promise.all([
+        this.db.collections.count(),
+        this.db.folders.count(),
+        this.db.requests.count(),
+        this.db.environments.count(),
+        this.db.history.count(),
+        this.db.flows.count(),
+      ]);
+    return { collections, folders, requests, environments, history, flows };
+  }
+
+  async listResponseExamples(): Promise<ResponseExample[]> {
+    return (await this.getMeta<ResponseExample[]>("responseExamples")) ?? [];
+  }
+
+  async saveResponseExample(example: ResponseExample): Promise<void> {
+    const existing = await this.listResponseExamples();
+    const idx = existing.findIndex((e) => e.id === example.id);
+    if (idx >= 0) existing[idx] = example;
+    else existing.push(example);
+    await this.setMeta("responseExamples", existing);
+  }
+
+  async deleteResponseExample(id: string): Promise<void> {
+    const existing = await this.listResponseExamples();
+    await this.setMeta(
+      "responseExamples",
+      existing.filter((e) => e.id !== id),
+    );
+  }
+
+  async listDiffIgnoreRules(): Promise<DiffIgnoreRule[]> {
+    return (await this.getMeta<DiffIgnoreRule[]>("diffIgnoreRules")) ?? [];
+  }
+
+  async saveDiffIgnoreRules(rules: DiffIgnoreRule[]): Promise<void> {
+    await this.setMeta("diffIgnoreRules", rules);
+  }
+
   async clearHistory() {
-    await this.db.history.clear();
+    await this.db.history.filter((e) => !e.pinned).delete();
   }
 
   async deleteHistoryEntry(id: string) {
@@ -409,6 +514,69 @@ export class InvokeStore {
 
   async deleteFlow(flowId: string) {
     await this.db.flows.delete(flowId);
+  }
+
+  async listCookies(): Promise<StoredCookie[]> {
+    return this.db.cookies.orderBy("domain").toArray();
+  }
+
+  async upsertCookie(cookie: StoredCookie): Promise<void> {
+    const existing = await this.db.cookies
+      .where("[domain+path+name]")
+      .equals([cookie.domain, cookie.path, cookie.name])
+      .first();
+    if (existing) {
+      await this.db.cookies.put({ ...cookie, id: existing.id, createdAt: existing.createdAt });
+    } else {
+      await this.db.cookies.put(cookie);
+    }
+  }
+
+  async upsertCookies(cookies: StoredCookie[]): Promise<void> {
+    await Promise.all(cookies.map((c) => this.upsertCookie(c)));
+  }
+
+  async updateCookie(cookie: StoredCookie): Promise<void> {
+    await this.db.cookies.put({ ...cookie, updatedAt: Date.now() });
+  }
+
+  async deleteCookie(cookieId: string): Promise<void> {
+    await this.db.cookies.delete(cookieId);
+  }
+
+  async clearCookies(domain?: string): Promise<void> {
+    if (domain) {
+      await this.db.cookies.where("domain").equals(domain).delete();
+    } else {
+      await this.db.cookies.clear();
+    }
+  }
+
+  async exportWorkspace() {
+    const [collections, folders, requests, environments, flows] = await Promise.all([
+      this.db.collections.toArray(),
+      this.db.folders.toArray(),
+      this.db.requests.toArray(),
+      this.db.environments.toArray(),
+      this.db.flows.toArray(),
+    ]);
+    return { collections, folders, requests, environments, flows };
+  }
+
+  async importWorkspace(data: {
+    collections: Collection[];
+    folders: Folder[];
+    requests: SavedRequest[];
+    environments: Environment[];
+    flows: Flow[];
+  }): Promise<void> {
+    await Promise.all([
+      this.db.collections.bulkPut(data.collections),
+      this.db.folders.bulkPut(data.folders),
+      this.db.requests.bulkPut(data.requests),
+      this.db.environments.bulkPut(data.environments),
+      this.db.flows.bulkPut(data.flows),
+    ]);
   }
 }
 

@@ -8,15 +8,25 @@ import type {
 export function compareResponses(
   left: ExecuteResponse,
   right: ExecuteResponse,
+  options?: { ignorePaths?: string[] },
 ): DiffResult {
+  const ignorePaths = options?.ignorePaths ?? [];
+  const shouldIgnore = (path: string) =>
+    ignorePaths.some(
+      (p) =>
+        path === p ||
+        path.startsWith(p + ".") ||
+        path.startsWith(p + "["),
+    );
+
   const leftBody = parseMaybeJson(left.body);
   const rightBody = parseMaybeJson(right.body);
   const jsonMode = leftBody.ok && rightBody.ok;
-  const changes = jsonMode
+  const rawChanges = jsonMode
     ? compareValues(leftBody.value, rightBody.value, "body")
     : compareText(left.body, right.body);
 
-  changes.push(
+  rawChanges.push(
     ...compareValues(
       headersToObject(left.headers),
       headersToObject(right.headers),
@@ -24,20 +34,24 @@ export function compareResponses(
     ),
   );
   if (left.status !== right.status)
-    changes.push({
+    rawChanges.push({
       type: "change",
       path: "status",
       oldValue: left.status,
       value: right.status,
     });
   if (left.statusText !== right.statusText) {
-    changes.push({
+    rawChanges.push({
       type: "change",
       path: "statusText",
       oldValue: left.statusText,
       value: right.statusText,
     });
   }
+
+  const changes = ignorePaths.length
+    ? rawChanges.filter((c) => !shouldIgnore(c.path))
+    : rawChanges;
 
   const summary = summarize(changes);
   return {

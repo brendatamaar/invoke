@@ -17,6 +17,14 @@ export interface AuthConfig {
   awsSessionToken?: string;
   awsRegion?: string;
   awsService?: string;
+  // OAuth2 authorization-code flow extras
+  flow?: "client_credentials" | "authorization_code";
+  authUrl?: string;
+  redirectUri?: string;
+  pkce?: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  tokenExpiresAt?: number; // unix ms
 }
 
 export interface AwsSigV4SignOptions {

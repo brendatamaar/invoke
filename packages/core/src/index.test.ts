@@ -9,15 +9,20 @@ import {
   FlowRunner,
   generateCodeSnippet,
   graphQLToRequestConfig,
+  exportCollectionAsOpenApi,
   exportCollectionZip,
   extractVariables,
+  importHarFile,
   importHoppscotchCollection,
   importInsomniaExport,
   importOpenApiSpec,
   importInvokeZip,
   importPostmanCollection,
   importYamlFiles,
+  exportEnvText,
   InvokeStore,
+  isSensitiveVariableName,
+  parseEnvText,
   parseCurl,
   resolveGraphQLRequest,
   resolveRequest,
@@ -60,6 +65,43 @@ describe("variables", () => {
     const result = resolveTemplate("{{missing}}", {});
     expect(result.value).toBe("{{missing}}");
     expect(result.unresolved).toEqual(["missing"]);
+  });
+
+  it("parses and exports .env variables with sensitive defaults", () => {
+    const variables = parseEnvText(`
+      # local config
+      API_URL=https://api.example.com
+      API_TOKEN="secret\\nline"
+      export PUBLIC_NAME=Ada
+    `);
+
+    expect(variables).toEqual([
+      {
+        key: "API_URL",
+        value: "https://api.example.com",
+        enabled: true,
+        sensitive: false,
+      },
+      {
+        key: "API_TOKEN",
+        value: "secret\nline",
+        enabled: true,
+        sensitive: true,
+      },
+      {
+        key: "PUBLIC_NAME",
+        value: "Ada",
+        enabled: true,
+        sensitive: false,
+      },
+    ]);
+    expect(isSensitiveVariableName("CLIENT_SECRET")).toBe(true);
+    expect(exportEnvText(variables)).toBe(
+      "API_URL=https://api.example.com\nPUBLIC_NAME=Ada",
+    );
+    expect(exportEnvText(variables, { includeSensitive: true })).toContain(
+      'API_TOKEN="secret\\nline"',
+    );
   });
 });
 
@@ -149,6 +191,35 @@ describe("mock validation", () => {
       expect.arrayContaining([
         "Route 2: status 204 should not include a response body",
         "Route 2: overlaps route 1 and may never be reached",
+      ]),
+    );
+  });
+
+  it("validates mock response sequences", () => {
+    const result = validateMockRoutes([
+      mockRoute({
+        pathPattern: "/users/:id",
+        sequences: [
+          {
+            status: 204,
+            headers: [
+              { key: "Content-Length", value: "12", enabled: true },
+            ],
+            body: "sequence body",
+            latencyMs: 6000,
+          },
+        ],
+      }),
+    ]);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.map((issue) => issue.message)).toContain(
+      "Route 1, sequence 1, header 1: Content-Length is managed by the server and cannot be set manually",
+    );
+    expect(result.warnings.map((issue) => issue.message)).toEqual(
+      expect.arrayContaining([
+        "Route 1, sequence 1: status 204 should not include a response body",
+        "Route 1, sequence 1: latency above 5000ms may make requests feel stalled",
       ]),
     );
   });
@@ -797,6 +868,177 @@ describe("imports", () => {
       name: "Nori",
       tag: "featured",
     });
+  });
+
+  it("imports HAR entries as REST requests", () => {
+    const imported = importHarFile({
+      log: {
+        creator: { name: "Chrome DevTools" },
+        entries: [
+          {
+            request: {
+              method: "POST",
+              url: "https://api.example.com/login?debug=1",
+              headers: [
+                { name: ":authority", value: "api.example.com" },
+                { name: "Host", value: "api.example.com" },
+                {
+                  name: "Content-Type",
+                  value: "application/x-www-form-urlencoded",
+                },
+                { name: "X-Trace", value: "abc" },
+              ],
+              queryString: [],
+              postData: {
+                mimeType: "application/x-www-form-urlencoded",
+                params: [{ name: "email", value: "ada@example.com" }],
+              },
+            },
+          },
+          {
+            request: {
+              method: "PUT",
+              url: "{{base_url}}/upload?kind=avatar",
+              headers: [
+                { name: "Content-Type", value: "multipart/form-data" },
+              ],
+              postData: {
+                mimeType: "multipart/form-data; boundary=----invoke",
+                params: [{ name: "file", value: "avatar.png" }],
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    expect(imported.collection.name).toBe("Chrome DevTools (HAR)");
+    expect(imported.requests).toHaveLength(2);
+
+    const login = imported.requests[0].request;
+    expect(login.url).toBe("https://api.example.com/login");
+    expect(login.params).toContainEqual({
+      key: "debug",
+      value: "1",
+      enabled: true,
+    });
+    expect(login.headers.map((header) => header.key.toLowerCase())).toEqual([
+      "content-type",
+      "x-trace",
+    ]);
+    expect(login.bodyMode).toBe("urlencoded");
+    expect(JSON.parse(login.body)).toEqual([
+      { key: "email", value: "ada@example.com", enabled: true },
+    ]);
+
+    const upload = imported.requests[1].request;
+    expect(upload.url).toBe("{{base_url}}/upload");
+    expect(upload.params).toContainEqual({
+      key: "kind",
+      value: "avatar",
+      enabled: true,
+    });
+    expect(upload.bodyMode).toBe("form-data");
+  });
+
+  it("exports REST collections as OpenAPI 3.0.3", () => {
+    const now = Date.now();
+    const collection: Collection = {
+      id: "collection-1",
+      name: "Users API",
+      variables: [],
+      sortOrder: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const folder: Folder = {
+      id: "folder-1",
+      collectionId: collection.id,
+      parentId: null,
+      name: "users",
+      variables: [],
+      sortOrder: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const requests: SavedRequest[] = [
+      {
+        id: "request-1",
+        collectionId: collection.id,
+        folderId: folder.id,
+        name: "Get user",
+        protocol: "rest",
+        request: toRequestConfig({
+          ...emptyRequest(),
+          method: "GET",
+          url: "https://api.example.com/users/{{userId}}",
+          params: [{ key: "include", value: "profile", enabled: true }],
+          headers: [
+            { key: "X-Trace", value: "abc", enabled: true },
+            { key: "Authorization", value: "Bearer token", enabled: true },
+          ],
+        }),
+        sortOrder: now,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "request-2",
+        collectionId: collection.id,
+        folderId: folder.id,
+        name: "Create user",
+        protocol: "rest",
+        request: toRequestConfig({
+          ...emptyRequest(),
+          method: "POST",
+          url: "https://api.example.com/users",
+          bodyMode: "json",
+          body: '{ "name": "Ada" }',
+        }),
+        sortOrder: now + 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
+
+    const spec = yaml.load(
+      exportCollectionAsOpenApi(collection, requests, [folder]),
+    ) as any;
+
+    expect(spec.openapi).toBe("3.0.3");
+    expect(spec.info.title).toBe("Users API");
+    expect(spec.tags).toEqual([{ name: "users" }]);
+
+    const getUser = spec.paths["/users/{userId}"].get;
+    expect(getUser.tags).toEqual(["users"]);
+    expect(getUser.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "userId",
+          in: "path",
+          required: true,
+        }),
+        expect.objectContaining({
+          name: "include",
+          in: "query",
+          example: "profile",
+        }),
+        expect.objectContaining({
+          name: "X-Trace",
+          in: "header",
+          example: "abc",
+        }),
+      ]),
+    );
+    expect(
+      getUser.parameters.some(
+        (parameter: any) => parameter.name === "Authorization",
+      ),
+    ).toBe(false);
+
+    expect(
+      spec.paths["/users"].post.requestBody.content["application/json"].example,
+    ).toEqual({ name: "Ada" });
   });
 
   it("resolves local OpenAPI component refs before walking operations", async () => {

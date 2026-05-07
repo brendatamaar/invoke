@@ -134,6 +134,7 @@ export function validateMockRoutes(routes: MockRoute[]): MockValidationResult {
     validateHeaders(route.headers ?? [], routeIndex, add);
     validateBody(route, routeIndex, add);
     validateConditions(route, routeIndex, add);
+    validateSequences(route, routeIndex, add);
 
     if (route.method === "HEAD" && route.body.trim()) {
       add({
@@ -250,12 +251,13 @@ function validateHeaders(
   headers: KeyValue[],
   routeIndex: number,
   add: (issue: MockValidationIssue) => void,
+  owner = `Route ${routeIndex + 1}`,
 ) {
   const enabledNames = new Set<string>();
   headers.forEach((header, headerIndex) => {
     const key = header.key.trim();
     const value = header.value;
-    const prefix = `Route ${routeIndex + 1}, header ${headerIndex + 1}`;
+    const prefix = `${owner}, header ${headerIndex + 1}`;
     if (!key && value.trim())
       add({
         routeIndex,
@@ -311,7 +313,7 @@ function validateBody(
   }
 
   const templateNames = templatePlaceholders(route.body);
-  validateTemplates(route, routeIndex, templateNames, add);
+  validateTemplates(route, routeIndex, route.body, templateNames, add);
 
   const contentType = enabledHeader(route.headers ?? [], "content-type");
   if (!contentType?.toLowerCase().includes("json") || !route.body.trim())
@@ -340,6 +342,7 @@ function validateBody(
 function validateTemplates(
   route: MockRoute,
   routeIndex: number,
+  body: string,
   names: string[],
   add: (issue: MockValidationIssue) => void,
 ) {
@@ -349,8 +352,8 @@ function validateTemplates(
       .filter((segment) => segment.startsWith(":"))
       .map((segment) => segment.slice(1)),
   );
-  const openCount = route.body.match(/\{\{/g)?.length ?? 0;
-  const closeCount = route.body.match(/\}\}/g)?.length ?? 0;
+  const openCount = body.match(/\{\{/g)?.length ?? 0;
+  const closeCount = body.match(/\}\}/g)?.length ?? 0;
   if (openCount !== closeCount) {
     add({
       routeIndex,
@@ -387,6 +390,56 @@ function validateTemplates(
         routeId: route.id,
         level: "warning",
         message: `Route ${routeIndex + 1}: unknown template placeholder {{${name}}} will be returned unchanged`,
+      });
+    }
+  });
+}
+
+function validateSequences(
+  route: MockRoute,
+  routeIndex: number,
+  add: (issue: MockValidationIssue) => void,
+) {
+  const sequences = route.sequences ?? [];
+  sequences.forEach((sequence, sequenceIndex) => {
+    const owner = `Route ${routeIndex + 1}, sequence ${sequenceIndex + 1}`;
+    validateHeaders(sequence.headers ?? [], routeIndex, add, owner);
+
+    const bodyBytes = byteLength(sequence.body);
+    if (bodyBytes > MAX_ROUTE_BODY_BYTES) {
+      add({
+        routeIndex,
+        routeId: route.id,
+        level: "error",
+        message: `${owner}: response body is too large (${formatBytes(bodyBytes)}; max ${formatBytes(MAX_ROUTE_BODY_BYTES)})`,
+      });
+    }
+
+    const templateNames = templatePlaceholders(sequence.body);
+    validateTemplates(route, routeIndex, sequence.body, templateNames, add);
+
+    if (route.method === "HEAD" && sequence.body.trim()) {
+      add({
+        routeIndex,
+        routeId: route.id,
+        level: "warning",
+        message: `${owner}: HEAD responses should not include a body`,
+      });
+    }
+    if (BODYLESS_STATUSES.has(sequence.status) && sequence.body.trim()) {
+      add({
+        routeIndex,
+        routeId: route.id,
+        level: "warning",
+        message: `${owner}: status ${sequence.status} should not include a response body`,
+      });
+    }
+    if ((sequence.latencyMs ?? 0) > 5000) {
+      add({
+        routeIndex,
+        routeId: route.id,
+        level: "warning",
+        message: `${owner}: latency above 5000ms may make requests feel stalled`,
       });
     }
   });

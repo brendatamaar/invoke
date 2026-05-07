@@ -495,7 +495,7 @@ export function importHarFile(doc: any): {
     updatedAt: now,
   };
 
-  const SKIP_HEADERS = new Set([
+  const skipHeaders = new Set([
     "host",
     "content-length",
     "transfer-encoding",
@@ -503,47 +503,53 @@ export function importHarFile(doc: any): {
     ":method",
     ":path",
     ":scheme",
+    ":status",
   ]);
 
   const requests: SavedRequest[] = entries.map((entry: any, i: number) => {
     const req = entry?.request ?? {};
     const rawUrl: string = req.url ?? "";
-    const method: HttpMethod = ((req.method ?? "GET") as string).toUpperCase() as HttpMethod;
-
-    let cleanUrl = rawUrl;
-    try {
-      const parsed = new URL(rawUrl);
-      cleanUrl = parsed.origin + parsed.pathname;
-    } catch {
-      cleanUrl = rawUrl.split("?")[0] ?? rawUrl;
-    }
+    const method = ((req.method ?? "GET") as string).toUpperCase() as HttpMethod;
+    const parsedUrl = safeUrl(rawUrl);
+    const cleanUrl = parsedUrl
+      ? `${parsedUrl.origin}${parsedUrl.pathname}`
+      : (rawUrl.split("?")[0] ?? rawUrl);
 
     const headers: KeyValue[] = (req.headers ?? [])
-      .filter((h: any) => !SKIP_HEADERS.has((h.name ?? "").toLowerCase()))
-      .map((h: any) => ({ key: h.name ?? "", value: h.value ?? "", enabled: true }));
+      .filter((h: any) => {
+        const name = String(h.name ?? "").trim();
+        return name && !skipHeaders.has(name.toLowerCase());
+      })
+      .map((h: any) => ({
+        key: h.name ?? "",
+        value: h.value ?? "",
+        enabled: true,
+      }));
 
-    const params: KeyValue[] = (req.queryString ?? []).map((q: any) => ({
+    const harParams = Array.isArray(req.queryString) ? req.queryString : [];
+    const params: KeyValue[] = (
+      harParams.length > 0
+        ? harParams
+        : parsedUrl
+          ? [...parsedUrl.searchParams.entries()].map(([name, value]) => ({
+              name,
+              value,
+            }))
+          : harQueryParams(rawUrl)
+    ).map((q: any) => ({
       key: q.name ?? "",
       value: q.value ?? "",
       enabled: true,
     }));
 
-    let bodyMode: BodyMode = "none";
-    let body = "";
-    if (req.postData) {
-      const mime: string = req.postData.mimeType ?? "";
-      body = req.postData.text ?? "";
-      if (mime.includes("json")) bodyMode = "json";
-      else if (mime.includes("x-www-form-urlencoded")) bodyMode = "urlencoded";
-      else bodyMode = "raw";
-    }
+    const body = harPostData(req.postData);
 
     const entryNow = now + i;
     return {
       id: id(),
       collectionId: collection.id,
       folderId: null,
-      name: `${method} ${new URL(rawUrl.startsWith("http") ? rawUrl : `http://x${rawUrl}`).pathname || "/"}`,
+      name: `${method} ${harPathName(rawUrl)}`,
       protocol: "rest" as RequestProtocol,
       request: toRequestConfig({
         ...emptyRequest(),
@@ -551,8 +557,8 @@ export function importHarFile(doc: any): {
         url: cleanUrl,
         params,
         headers,
-        bodyMode,
-        body,
+        bodyMode: body.mode,
+        body: body.content,
       }),
       sortOrder: entryNow,
       createdAt: entryNow,
@@ -561,6 +567,59 @@ export function importHarFile(doc: any): {
   });
 
   return { collection, folders: [], requests };
+}
+
+function safeUrl(rawUrl: string) {
+  try {
+    return new URL(rawUrl);
+  } catch {
+    return undefined;
+  }
+}
+
+function harPathName(rawUrl: string) {
+  const parsed = safeUrl(rawUrl.startsWith("http") ? rawUrl : `http://invoke.local${rawUrl}`);
+  if (parsed) return parsed.pathname || "/";
+  const withoutQuery = rawUrl.split("?")[0] ?? rawUrl;
+  return withoutQuery.startsWith("/") ? withoutQuery || "/" : `/${withoutQuery || ""}`;
+}
+
+function harQueryParams(rawUrl: string) {
+  const query = rawUrl.split("?")[1]?.split("#")[0];
+  if (!query) return [];
+  return [...new URLSearchParams(query).entries()].map(([name, value]) => ({
+    name,
+    value,
+  }));
+}
+
+function harPostData(postData: any): { mode: BodyMode; content: string } {
+  if (!postData) return { mode: "none", content: "" };
+  const mime = String(postData.mimeType ?? "").toLowerCase();
+  const params = Array.isArray(postData.params) ? postData.params : [];
+  const paramRows = params.map((param: any) => ({
+    key: param.name ?? "",
+    value: param.value ?? "",
+    enabled: true,
+  }));
+
+  if (mime.includes("json"))
+    return { mode: "json", content: postData.text ?? "" };
+  if (mime.includes("x-www-form-urlencoded")) {
+    return {
+      mode: "urlencoded",
+      content: paramRows.length ? JSON.stringify(paramRows) : (postData.text ?? ""),
+    };
+  }
+  if (mime.includes("multipart/form-data")) {
+    return {
+      mode: "form-data",
+      content: paramRows.length ? JSON.stringify(paramRows) : (postData.text ?? ""),
+    };
+  }
+
+  const content = postData.text ?? "";
+  return { mode: content ? "raw" : "none", content };
 }
 
 export function exportCollectionAsOpenApi(
@@ -588,7 +647,7 @@ export function exportCollectionAsOpenApi(
 
     let urlPath = "/";
     try {
-      urlPath = new URL(req.url).pathname || "/";
+      urlPath = decodeURIComponent(new URL(req.url).pathname || "/");
     } catch {
       urlPath = req.url.startsWith("/") ? req.url : `/${req.url}`;
     }
@@ -601,14 +660,24 @@ export function exportCollectionAsOpenApi(
       ? foldersById.get(saved.folderId)?.name
       : undefined;
 
-    const parameters: unknown[] = (req.params ?? [])
+    const pathParams = pathParameterNames(urlPath);
+    const parameters: unknown[] = pathParams.map((name) => ({
+      name,
+      in: "path",
+      required: true,
+      schema: { type: "string" },
+    }));
+
+    parameters.push(
+      ...(req.params ?? [])
       .filter((p) => p.enabled !== false && p.key)
       .map((p) => ({
         name: p.key,
         in: "query",
         schema: { type: "string" },
         example: p.value,
-      }));
+      })),
+    );
 
     for (const h of (req.headers ?? []).filter(
       (h) => h.enabled !== false && h.key && !SKIP_HEADERS.has(h.key.toLowerCase()),
@@ -623,6 +692,7 @@ export function exportCollectionAsOpenApi(
 
     const operation: Record<string, unknown> = {
       summary: saved.name,
+      operationId: openApiOperationId(saved.name, req.method, urlPath),
       ...(folderName ? { tags: [folderName] } : {}),
       ...(parameters.length ? { parameters } : {}),
       responses: { "200": { description: "OK" } },
@@ -640,7 +710,7 @@ export function exportCollectionAsOpenApi(
         content: {
           [contentType]: {
             schema: { type: "string" },
-            example: req.body,
+            example: openApiBodyExample(req),
           },
         },
       };
@@ -670,6 +740,41 @@ export function exportCollectionAsOpenApi(
   };
 
   return yaml.dump(spec, { lineWidth: 120 });
+}
+
+function pathParameterNames(path: string) {
+  return [...path.matchAll(/\{([^}/]+)\}/g)].map((match) => match[1]);
+}
+
+function openApiOperationId(name: string, method: HttpMethod, path: string) {
+  const base = `${method.toLowerCase()} ${name || path}`
+    .replace(/\{\{?([^}]+)\}?\}/g, "$1")
+    .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr: string) => chr.toUpperCase())
+    .replace(/^[^a-zA-Z]+/, "");
+  return base ? `${base[0].toLowerCase()}${base.slice(1)}` : method.toLowerCase();
+}
+
+function openApiBodyExample(request: RequestConfig) {
+  if (request.bodyMode === "json") {
+    try {
+      return JSON.parse(request.body);
+    } catch {
+      return request.body;
+    }
+  }
+  if (request.bodyMode === "urlencoded" || request.bodyMode === "form-data") {
+    try {
+      const rows = JSON.parse(request.body) as KeyValue[];
+      return Object.fromEntries(
+        rows
+          .filter((row) => row.enabled !== false && row.key)
+          .map((row) => [row.key, row.value]),
+      );
+    } catch {
+      return request.body;
+    }
+  }
+  return request.body;
 }
 
 function flatRequestDocument(saved: SavedRequest): FlatRequestDocument {

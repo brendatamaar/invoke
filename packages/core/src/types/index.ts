@@ -1,5 +1,6 @@
 export * from "./assertion";
 export * from "./auth";
+export * from "./cookie";
 export * from "./codegen";
 export * from "./collection";
 export * from "./common";

@@ -50,6 +50,18 @@ export interface GrpcMethodInfo {
   inputType: string;
   outputType: string;
   inputJson: string;
+  clientStreaming?: boolean;
+  serverStreaming?: boolean;
+}
+
+export interface GrpcStreamMessage {
+  bodyJson: string;
+  done: boolean;
+  error?: string;
+  trailers?: { key: string; value: string }[];
+  statusCode?: number;
+  statusMessage?: string;
+  durationMs?: number;
 }
 
 export interface GrpcExecuteResponse {
