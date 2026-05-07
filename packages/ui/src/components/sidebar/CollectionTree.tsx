@@ -12,6 +12,7 @@ import {
   Copy,
   Upload,
   Variable,
+  FileText,
 } from "lucide-react";
 import {
   exportCollectionZip,
@@ -150,8 +151,10 @@ function FolderNode({
   folder: FolderType;
   collectionId: string;
 }) {
-  const { expandedFolderIds, toggleFolder, requests, set } = useStore();
+  const { expandedFolderIds, toggleFolder, requests, set, addToast } =
+    useStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [descModal, setDescModal] = useState(false);
   const expanded = expandedFolderIds.includes(folder.id);
   const folderRequests = requests.filter((r) => r.folderId === folder.id);
 
@@ -168,44 +171,88 @@ function FolderNode({
     });
   };
 
+  const saveDescription = async (description: string) => {
+    setDescModal(false);
+    try {
+      await coreStore.updateFolder({ ...folder, description });
+      const folds = await coreStore.listFolders();
+      set({ folders: folds });
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
   return (
-    <div>
-      <div
-        className="group flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 text-[var(--text-2)]"
-        onClick={() => toggleFolder(folder.id)}
-      >
-        {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-        {expanded ? <FolderOpen size={13} /> : <Folder size={13} />}
-        <span className="flex-1 text-xs truncate">{folder.name}</span>
+    <>
+      <div>
         <div
-          className="opacity-0 group-hover:opacity-100 relative"
-          onClick={(e) => e.stopPropagation()}
+          className="group flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 text-[var(--text-2)]"
+          onClick={() => toggleFolder(folder.id)}
         >
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
+          {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+          {expanded ? <FolderOpen size={13} /> : <Folder size={13} />}
+          <span
+            className="flex-1 text-xs truncate"
+            title={folder.description || undefined}
           >
-            <MoreHorizontal size={13} />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]">
-              <MenuItem
-                icon={<Variable size={12} />}
-                label="Variables"
-                onClick={openVariableEditor}
-              />
-            </div>
+            {folder.name}
+          </span>
+          {folder.description && (
+            <span title={folder.description} className="shrink-0">
+              <FileText size={11} className="text-[var(--text-3)]" />
+            </span>
           )}
+          <div
+            className="opacity-0 group-hover:opacity-100 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
+            >
+              <MoreHorizontal size={13} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]">
+                <MenuItem
+                  icon={<Variable size={12} />}
+                  label="Variables"
+                  onClick={openVariableEditor}
+                />
+                <MenuItem
+                  icon={<FileText size={12} />}
+                  label="Description"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setDescModal(true);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
+        {expanded && (
+          <div className="ml-3">
+            {folderRequests.map((r) => (
+              <RequestNode key={r.id} request={r} collectionId={collectionId} />
+            ))}
+          </div>
+        )}
       </div>
-      {expanded && (
-        <div className="ml-3">
-          {folderRequests.map((r) => (
-            <RequestNode key={r.id} request={r} collectionId={collectionId} />
-          ))}
-        </div>
-      )}
-    </div>
+
+      <PromptModal
+        open={descModal}
+        title={`Description — ${folder.name}`}
+        label="Description"
+        defaultValue={folder.description ?? ""}
+        placeholder="Describe this folder…"
+        multiline
+        confirmLabel="Save"
+        allowEmpty
+        onConfirm={saveDescription}
+        onClose={() => setDescModal(false)}
+      />
+    </>
   );
 }
 
@@ -216,6 +263,7 @@ function CollectionNode({ collection }: { collection: Collection }) {
   const [addReqModal, setAddReqModal] = useState(false);
   const [renameModal, setRenameModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [descModal, setDescModal] = useState(false);
   const expanded = expandedFolderIds.includes(collection.id);
   const colFolders = folders.filter(
     (f) => f.collectionId === collection.id && !f.parentFolderId,
@@ -278,6 +326,17 @@ function CollectionNode({ collection }: { collection: Collection }) {
     }
   };
 
+  const saveDescription = async (description: string) => {
+    setDescModal(false);
+    try {
+      await coreStore.updateCollection({ ...collection, description });
+      const cols = await coreStore.listCollections();
+      set({ collections: cols });
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
   const exportZip = async () => {
     setMenuOpen(false);
     try {
@@ -329,9 +388,17 @@ function CollectionNode({ collection }: { collection: Collection }) {
           ) : (
             <ChevronRight size={13} className="text-[var(--text-3)]" />
           )}
-          <span className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate">
+          <span
+            className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate"
+            title={collection.description || undefined}
+          >
             {collection.name}
           </span>
+          {collection.description && (
+            <span title={collection.description} className="shrink-0">
+              <FileText size={11} className="text-[var(--text-3)]" />
+            </span>
+          )}
           <span className="text-2xs text-[var(--text-3)]">
             {colRequests.length}
           </span>
@@ -367,6 +434,14 @@ function CollectionNode({ collection }: { collection: Collection }) {
                   icon={<Variable size={12} />}
                   label="Variables"
                   onClick={openVariableEditor}
+                />
+                <MenuItem
+                  icon={<FileText size={12} />}
+                  label="Description"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setDescModal(true);
+                  }}
                 />
                 <MenuItem
                   icon={<Download size={12} />}
@@ -428,6 +503,18 @@ function CollectionNode({ collection }: { collection: Collection }) {
         danger
         onConfirm={del}
         onClose={() => setDeleteModal(false)}
+      />
+      <PromptModal
+        open={descModal}
+        title={`Description — ${collection.name}`}
+        label="Description"
+        defaultValue={collection.description ?? ""}
+        placeholder="Describe this collection…"
+        multiline
+        confirmLabel="Save"
+        allowEmpty
+        onConfirm={saveDescription}
+        onClose={() => setDescModal(false)}
       />
     </>
   );

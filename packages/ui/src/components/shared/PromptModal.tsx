@@ -9,6 +9,7 @@ interface Props {
   placeholder?: string;
   multiline?: boolean;
   confirmLabel?: string;
+  allowEmpty?: boolean;
   onConfirm: (value: string) => void;
   onClose: () => void;
 }
@@ -21,6 +22,7 @@ export function PromptModal({
   placeholder,
   multiline,
   confirmLabel = "OK",
+  allowEmpty,
   onConfirm,
   onClose,
 }: Props) {
@@ -38,7 +40,8 @@ export function PromptModal({
   }, [open, defaultValue]);
 
   const submit = () => {
-    if (value.trim()) onConfirm(value.trim());
+    if (allowEmpty) onConfirm(value);
+    else if (value.trim()) onConfirm(value.trim());
   };
 
   return (
@@ -55,7 +58,7 @@ export function PromptModal({
           <button
             className="btn btn-primary text-xs"
             onClick={submit}
-            disabled={!value.trim()}
+            disabled={!allowEmpty && !value.trim()}
           >
             {confirmLabel}
           </button>
