@@ -94,6 +94,58 @@ export async function clearMockLogs() {
   if (!res.ok) throw new Error(await res.text());
 }
 
+export type WebhookValidationType = "none" | "hmac" | "header";
+export type HmacAlgorithm = "sha256" | "sha1" | "sha512";
+
+export interface WebhookValidationConfig {
+  type: WebhookValidationType;
+  secret?: string;
+  algorithm?: HmacAlgorithm;
+  signatureHeader?: string;
+  signaturePrefix?: string;
+  headerName?: string;
+  headerValue?: string;
+}
+
+export interface WebhookEntry {
+  id: string;
+  method: string;
+  headers: { key: string; value: string }[];
+  body: string;
+  createdAt: number;
+  validationPassed: boolean;
+  validationError?: string;
+}
+
+export async function loadWebhookLogs(webhookId: string): Promise<WebhookEntry[]> {
+  const res = await fetch(`/api/webhook/${webhookId}/logs`);
+  if (!res.ok) throw new Error(await res.text());
+  const data = (await res.json()) as { entries: WebhookEntry[] };
+  return data.entries;
+}
+
+export async function clearWebhookLogs(webhookId: string): Promise<void> {
+  const res = await fetch(`/api/webhook/${webhookId}/logs`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+export async function setWebhookConfig(
+  webhookId: string,
+  config: WebhookValidationConfig,
+): Promise<void> {
+  const res = await fetch(`/api/webhook/${webhookId}/config`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(config),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+export async function deleteWebhookEndpoint(webhookId: string): Promise<void> {
+  const res = await fetch(`/api/webhook/${webhookId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await res.text());
+}
+
 export async function webSocketConnect(
   request: WebSocketRequestConfig,
 ): Promise<{ connectionId: string; error?: string }> {

@@ -1,12 +1,23 @@
-import { useState } from "react";
-import { RefreshCw, Plus, Trash2, X } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { RefreshCw, Plus, Trash2, X, Copy, ChevronDown, ChevronRight } from "lucide-react";
 import { useStore } from "../../store";
-import { loadMockRoutes, syncMockRoutes, clearMockLogs } from "../../lib/api";
+import {
+  loadMockRoutes,
+  syncMockRoutes,
+  clearMockLogs,
+  loadWebhookLogs,
+  clearWebhookLogs,
+  setWebhookConfig,
+  deleteWebhookEndpoint,
+  type WebhookEntry,
+  type WebhookValidationConfig,
+  type HmacAlgorithm,
+} from "../../lib/api";
 import { MethodBadge } from "../shared/MethodBadge";
 import { KeyValueEditor } from "../shared/KeyValueEditor";
 import { Select } from "../shared/Select";
 import { ConfirmModal } from "../shared/ConfirmModal";
-import { validateMockRoutes, type MockRoute } from "@invoke/core";
+import { validateMockRoutes, type MockRoute, type MockSequenceItem } from "@invoke/core";
 
 const HTTP_METHODS = [
   "GET",
@@ -31,6 +42,12 @@ function makeRoute(): MockRoute {
   };
 }
 
+type RouteTab = "response" | "sequences" | "headers";
+
+function makeSequenceItem(): MockSequenceItem {
+  return { status: 200, headers: [], body: "" };
+}
+
 function RouteModal({
   route,
   onSave,
@@ -41,9 +58,17 @@ function RouteModal({
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState<MockRoute>({ ...route });
+  const [tab, setTab] = useState<RouteTab>("response");
 
   const set = <K extends keyof MockRoute>(key: K, value: MockRoute[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
+
+  const sequences = draft.sequences ?? [];
+  const updateSeq = (i: number, patch: Partial<MockSequenceItem>) =>
+    set("sequences", sequences.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  const addSeq = () => set("sequences", [...sequences, makeSequenceItem()]);
+  const removeSeq = (i: number) =>
+    set("sequences", sequences.filter((_, idx) => idx !== i));
 
   return (
     <div
@@ -54,7 +79,7 @@ function RouteModal({
     >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col overflow-hidden"
-        style={{ width: 600, maxHeight: "82vh" }}
+        style={{ width: 620, maxHeight: "84vh" }}
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[var(--border)] shrink-0">
@@ -77,120 +102,501 @@ function RouteModal({
           </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
-          {/* Method + Path */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[var(--text-2)]">
-              Endpoint
-            </label>
-            <div className="flex gap-2">
-              <Select
-                value={draft.method}
-                onChange={(v) =>
-                  set("method", v as unknown as MockRoute["method"])
-                }
-                size="sm"
-              >
-                {HTTP_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </Select>
-              <input
-                className="input text-xs py-1.5 flex-1"
-                placeholder="/api/users"
-                value={draft.pathPattern}
-                onChange={(e) => set("pathPattern", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Status + Latency */}
-          <div className="flex gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[var(--text-2)]">
-                Status code
-              </label>
-              <input
-                type="number"
-                className="input text-sm py-1.5 w-28"
-                min={100}
-                max={599}
-                value={draft.status}
-                onChange={(e) => set("status", Number(e.target.value))}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[var(--text-2)]">
-                Latency
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  className="input text-sm py-1.5 w-28"
-                  min={0}
-                  placeholder="0"
-                  value={draft.latencyMs ?? ""}
-                  onChange={(e) =>
-                    set(
-                      "latencyMs",
-                      e.target.value ? Number(e.target.value) : undefined,
-                    )
-                  }
-                />
-                <span className="text-sm text-[var(--text-3)]">ms</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Response body */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[var(--text-2)]">
-              Response body
-            </label>
-            <textarea
-              className="input text-sm py-2 font-mono resize-none"
-              rows={6}
-              placeholder='{"message": "ok"}'
-              value={draft.body}
-              onChange={(e) => set("body", e.target.value)}
+        {/* Endpoint row */}
+        <div className="px-5 pt-4 pb-3 flex flex-col gap-1.5 shrink-0 border-b border-[var(--border)]">
+          <label className="text-xs font-medium text-[var(--text-2)]">Endpoint</label>
+          <div className="flex gap-2">
+            <Select
+              value={draft.method}
+              onChange={(v) => set("method", v as unknown as MockRoute["method"])}
+              size="sm"
+            >
+              {HTTP_METHODS.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </Select>
+            <input
+              className="input text-xs py-1.5 flex-1"
+              placeholder="/api/users"
+              value={draft.pathPattern}
+              onChange={(e) => set("pathPattern", e.target.value)}
             />
           </div>
+        </div>
 
-          {/* Headers */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[var(--text-2)]">
-              Response headers
-            </label>
-            <div className="border border-[var(--border)] rounded overflow-hidden">
-              <KeyValueEditor
-                rows={draft.headers}
-                onChange={(rows) => set("headers", rows)}
-                keyPlaceholder="Content-Type"
-                valuePlaceholder="application/json"
-              />
+        {/* Tabs */}
+        <div className="flex gap-0 px-5 border-b border-[var(--border)] shrink-0">
+          {(["response", "sequences", "headers"] as RouteTab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-3 py-2 text-xs capitalize border-b-2 -mb-px transition-colors ${tab === t ? "border-[var(--accent)] text-[var(--accent)]" : "border-transparent text-[var(--text-3)] hover:text-[var(--text-1)]"}`}
+            >
+              {t}
+              {t === "sequences" && sequences.length > 0 && (
+                <span className="ml-1 text-2xs bg-[var(--accent-subtle)] text-[var(--accent)] rounded px-1">{sequences.length}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+          {tab === "response" && (
+            <>
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-[var(--text-2)]">Status code</label>
+                  <input
+                    type="number"
+                    className="input text-sm py-1.5 w-28"
+                    min={100}
+                    max={599}
+                    value={draft.status}
+                    onChange={(e) => set("status", Number(e.target.value))}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-[var(--text-2)]">Latency</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      className="input text-sm py-1.5 w-28"
+                      min={0}
+                      placeholder="0"
+                      value={draft.latencyMs ?? ""}
+                      onChange={(e) =>
+                        set("latencyMs", e.target.value ? Number(e.target.value) : undefined)
+                      }
+                    />
+                    <span className="text-sm text-[var(--text-3)]">ms</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-[var(--text-2)]">Response body</label>
+                <textarea
+                  className="input text-sm py-2 font-mono resize-none"
+                  rows={8}
+                  placeholder='{"message": "ok"}'
+                  value={draft.body}
+                  onChange={(e) => set("body", e.target.value)}
+                />
+              </div>
+              {sequences.length > 0 && (
+                <p className="text-2xs text-amber-600 bg-amber-50 px-3 py-2 rounded">
+                  Sequences are active — this default response is overridden. Switch to Sequences tab to manage.
+                </p>
+              )}
+            </>
+          )}
+
+          {tab === "sequences" && (
+            <>
+              <p className="text-xs text-[var(--text-3)]">
+                When sequences are set, each call to this route returns the next item in order, wrapping around. Overrides the default response.
+              </p>
+              {sequences.map((seq, i) => (
+                <div key={i} className="border border-[var(--border)] rounded-lg p-3 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[var(--text-2)]">Response {i + 1}</span>
+                    <button
+                      onClick={() => removeSeq(i)}
+                      className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-2xs text-[var(--text-3)]">Status</label>
+                      <input
+                        type="number"
+                        className="input text-xs py-1 w-20"
+                        min={100}
+                        max={599}
+                        value={seq.status}
+                        onChange={(e) => updateSeq(i, { status: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-2xs text-[var(--text-3)]">Latency</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          className="input text-xs py-1 w-20"
+                          min={0}
+                          placeholder="0"
+                          value={seq.latencyMs ?? ""}
+                          onChange={(e) =>
+                            updateSeq(i, { latencyMs: e.target.value ? Number(e.target.value) : undefined })
+                          }
+                        />
+                        <span className="text-2xs text-[var(--text-3)]">ms</span>
+                      </div>
+                    </div>
+                  </div>
+                  <textarea
+                    className="input text-xs py-1.5 font-mono resize-none"
+                    rows={3}
+                    placeholder='{"message": "ok"}'
+                    value={seq.body}
+                    onChange={(e) => updateSeq(i, { body: e.target.value })}
+                  />
+                </div>
+              ))}
+              <button
+                onClick={addSeq}
+                className="flex items-center gap-1.5 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] self-start"
+              >
+                <Plus size={12} /> Add response
+              </button>
+            </>
+          )}
+
+          {tab === "headers" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-[var(--text-2)]">Response headers</label>
+              <div className="border border-[var(--border)] rounded overflow-hidden">
+                <KeyValueEditor
+                  rows={draft.headers}
+                  onChange={(rows) => set("headers", rows)}
+                  keyPlaceholder="Content-Type"
+                  valuePlaceholder="application/json"
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-2)] shrink-0">
-          <button onClick={onClose} className="btn text-xs">
-            Cancel
-          </button>
+          <button onClick={onClose} className="btn text-xs">Cancel</button>
           <button
-            onClick={() => {
-              onSave(draft);
-              onClose();
-            }}
+            onClick={() => { onSave(draft); onClose(); }}
             className="btn btn-primary text-xs"
           >
             Save
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface WebhookEndpoint {
+  id: string;
+  label: string;
+  validation: WebhookValidationConfig;
+}
+
+const DEFAULT_VALIDATION: WebhookValidationConfig = { type: "none" };
+
+function ValidationConfigForm({
+  config,
+  onChange,
+  onSave,
+  saving,
+}: {
+  config: WebhookValidationConfig;
+  onChange: (c: WebhookValidationConfig) => void;
+  onSave: () => void;
+  saving: boolean;
+}) {
+  const set = (patch: Partial<WebhookValidationConfig>) =>
+    onChange({ ...config, ...patch });
+
+  return (
+    <div className="px-3 py-2 flex flex-col gap-2 border-t border-[var(--border)]">
+      <div className="flex items-center justify-between">
+        <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">Validation</span>
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="btn text-2xs py-0.5 px-2"
+        >
+          {saving ? "Saving…" : "Apply"}
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <label className="text-2xs text-[var(--text-3)] shrink-0">Type</label>
+        <select
+          value={config.type}
+          onChange={(e) => set({ type: e.target.value as WebhookValidationConfig["type"] })}
+          className="input text-xs py-0.5 flex-1"
+        >
+          <option value="none">None</option>
+          <option value="hmac">HMAC Signature</option>
+          <option value="header">Header Token</option>
+        </select>
+      </div>
+
+      {config.type === "hmac" && (
+        <>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Algorithm</label>
+            <select
+              value={config.algorithm ?? "sha256"}
+              onChange={(e) => set({ algorithm: e.target.value as HmacAlgorithm })}
+              className="input text-xs py-0.5 flex-1"
+            >
+              <option value="sha256">SHA-256</option>
+              <option value="sha1">SHA-1</option>
+              <option value="sha512">SHA-512</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Secret</label>
+            <input
+              type="password"
+              value={config.secret ?? ""}
+              onChange={(e) => set({ secret: e.target.value })}
+              placeholder="your-webhook-secret"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Sig. header</label>
+            <input
+              value={config.signatureHeader ?? ""}
+              onChange={(e) => set({ signatureHeader: e.target.value })}
+              placeholder="X-Hub-Signature-256"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Prefix</label>
+            <input
+              value={config.signaturePrefix ?? ""}
+              onChange={(e) => set({ signaturePrefix: e.target.value })}
+              placeholder="sha256= (optional)"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+        </>
+      )}
+
+      {config.type === "header" && (
+        <>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Header</label>
+            <input
+              value={config.headerName ?? ""}
+              onChange={(e) => set({ headerName: e.target.value })}
+              placeholder="X-Webhook-Token"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Expected</label>
+            <input
+              type="password"
+              value={config.headerValue ?? ""}
+              onChange={(e) => set({ headerValue: e.target.value })}
+              placeholder="secret-token"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function WebhookSection() {
+  const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([]);
+  const [logs, setLogs] = useState<Record<string, WebhookEntry[]>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const { addToast } = useStore();
+
+  const serverBase = `${window.location.protocol}//${window.location.hostname}:4000`;
+
+  const addEndpoint = () => {
+    const ep: WebhookEndpoint = {
+      id: crypto.randomUUID(),
+      label: `Webhook ${endpoints.length + 1}`,
+      validation: { ...DEFAULT_VALIDATION },
+    };
+    setEndpoints((prev) => [...prev, ep]);
+  };
+
+  const removeEndpoint = async (id: string) => {
+    try {
+      await deleteWebhookEndpoint(id);
+    } catch {
+      // best-effort
+    }
+    setEndpoints((prev) => prev.filter((e) => e.id !== id));
+    setLogs((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    if (expandedId === id) setExpandedId(null);
+  };
+
+  const updateValidation = (id: string, validation: WebhookValidationConfig) =>
+    setEndpoints((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, validation } : e)),
+    );
+
+  const applyConfig = async (ep: WebhookEndpoint) => {
+    setSaving(ep.id);
+    try {
+      await setWebhookConfig(ep.id, ep.validation);
+      addToast("success", "Validation config saved");
+    } catch (e) {
+      addToast("error", String(e));
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const refresh = useCallback(async (id: string) => {
+    try {
+      const entries = await loadWebhookLogs(id);
+      setLogs((prev) => ({ ...prev, [id]: entries }));
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  }, [addToast]);
+
+  const clear = async (id: string) => {
+    try {
+      await clearWebhookLogs(id);
+      setLogs((prev) => ({ ...prev, [id]: [] }));
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
+  const copyUrl = (id: string) => {
+    navigator.clipboard.writeText(`${serverBase}/webhook/${id}`);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  useEffect(() => {
+    if (!expandedId) return;
+    refresh(expandedId);
+    const timer = setInterval(() => refresh(expandedId), 3000);
+    return () => clearInterval(timer);
+  }, [expandedId, refresh]);
+
+  const fmt = (ts: number) =>
+    new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  return (
+    <div className="border-b border-[var(--border)] shrink-0">
+      <div className="flex items-center justify-between px-3 py-2">
+        <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
+          Webhooks {endpoints.length > 0 && `· ${endpoints.length}`}
+        </span>
+        <button
+          onClick={addEndpoint}
+          className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
+          title="New webhook endpoint"
+        >
+          <Plus size={13} />
+        </button>
+      </div>
+
+      {endpoints.length === 0 && (
+        <p className="p-4 text-xs text-[var(--text-3)] text-center">No endpoints yet</p>
+      )}
+
+      {endpoints.map((ep) => {
+        const epLogs = logs[ep.id] ?? [];
+        const isExpanded = expandedId === ep.id;
+        const hasValidation = ep.validation.type !== "none";
+        return (
+          <div key={ep.id} className="border-t border-[var(--border)]">
+            <div className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)]">
+              <button
+                onClick={() => setExpandedId(isExpanded ? null : ep.id)}
+                className="text-[var(--text-3)]"
+              >
+                {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </button>
+              <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
+                /webhook/{ep.id.slice(0, 8)}…
+              </span>
+              {hasValidation && (
+                <span className="text-2xs bg-[var(--accent-subtle)] text-[var(--accent)] rounded px-1 shrink-0">
+                  {ep.validation.type}
+                </span>
+              )}
+              <button
+                onClick={() => copyUrl(ep.id)}
+                title="Copy URL"
+                className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
+              >
+                {copied === ep.id ? (
+                  <span className="text-2xs text-emerald-600">Copied</span>
+                ) : (
+                  <Copy size={11} />
+                )}
+              </button>
+              <button
+                onClick={() => removeEndpoint(ep.id)}
+                className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
+              >
+                <Trash2 size={11} />
+              </button>
+            </div>
+
+            {isExpanded && (
+              <div className="border-t border-[var(--border)] bg-[var(--surface-2)]">
+                <ValidationConfigForm
+                  config={ep.validation}
+                  onChange={(v) => updateValidation(ep.id, v)}
+                  onSave={() => applyConfig(ep)}
+                  saving={saving === ep.id}
+                />
+
+                <div className="flex items-center justify-between px-3 py-1.5 border-t border-[var(--border)]">
+                  <span className="text-2xs text-[var(--text-3)]">
+                    {epLogs.length} {epLogs.length === 1 ? "request" : "requests"} · auto-refresh 3s
+                  </span>
+                  {epLogs.length > 0 && (
+                    <button
+                      onClick={() => clear(ep.id)}
+                      className="text-2xs text-[var(--text-3)] hover:text-[var(--danger)]"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <div className="font-mono text-2xs">
+                  {epLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-center gap-2 px-3 py-1 border-t border-[var(--border)]"
+                    >
+                      <span className="text-[var(--text-3)] shrink-0">{fmt(log.createdAt)}</span>
+                      <MethodBadge method={log.method} />
+                      {hasValidation && (
+                        <span
+                          className={`shrink-0 font-semibold ${log.validationPassed ? "text-emerald-600" : "text-red-500"}`}
+                          title={log.validationError ?? "OK"}
+                        >
+                          {log.validationPassed ? "✓" : "✗"}
+                        </span>
+                      )}
+                      <span className="flex-1 text-[var(--text-2)] truncate">
+                        {log.body ? log.body.slice(0, 60) : "(empty)"}
+                      </span>
+                    </div>
+                  ))}
+                  {epLogs.length === 0 && (
+                    <p className="px-3 py-2 text-[var(--text-3)]">Waiting for requests…</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -288,7 +694,7 @@ export function MockPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Header — always visible */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
@@ -314,123 +720,137 @@ export function MockPanel() {
         </div>
       </div>
 
-      {/* Routes */}
-      <div className="border-b border-[var(--border)] shrink-0">
-        <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
-            Routes {mockRoutes.length > 0 && `· ${mockRoutes.length}`}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <button onClick={sync} className="btn text-2xs py-0.5 px-2">
-              Sync
-            </button>
-            {mockStatus === "Active" && (
-              <button
-                onClick={stop}
-                className="btn btn-danger text-2xs py-0.5 px-2"
-              >
-                Stop
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+
+        {/* Routes */}
+        <div className="border-b border-[var(--border)]">
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
+              Routes {mockRoutes.length > 0 && `· ${mockRoutes.length}`}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button onClick={sync} className="btn text-2xs py-0.5 px-2">
+                Sync
               </button>
+              {mockStatus === "Active" && (
+                <button
+                  onClick={stop}
+                  className="btn btn-danger text-2xs py-0.5 px-2"
+                >
+                  Stop
+                </button>
+              )}
+              <button
+                onClick={() => setEditingRoute(makeRoute())}
+                className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+          </div>
+
+          <div>
+            {mockRoutes.map((route) => (
+              <div
+                key={route.id}
+                className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-t border-[var(--border)] cursor-pointer"
+                onClick={() => setEditingRoute(route)}
+              >
+                <input
+                  type="checkbox"
+                  checked={route.enabled !== false}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    toggleEnabled(route.id);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="accent-[var(--accent)] shrink-0"
+                />
+                <MethodBadge method={route.method} />
+                <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
+                  {route.pathPattern}
+                </span>
+                {route.sequences && route.sequences.length > 0 ? (
+                  <span className="text-2xs shrink-0 bg-[var(--accent-subtle)] text-[var(--accent)] rounded px-1">
+                    seq·{route.sequences.length}
+                  </span>
+                ) : (
+                  <span
+                    className={`text-2xs shrink-0 ${route.status >= 400 ? "text-red-500" : "text-[var(--text-3)]"}`}
+                  >
+                    {route.status}
+                  </span>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDeleteId(route.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
+                >
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            ))}
+            {!mockRoutes.length && (
+              <p className="p-4 text-xs text-[var(--text-3)] text-center">
+                No routes yet
+              </p>
             )}
-            <button
-              onClick={() => setEditingRoute(makeRoute())}
-              className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
-            >
-              <Plus size={13} />
-            </button>
           </div>
         </div>
 
-        <div className="max-h-52 overflow-y-auto">
-          {mockRoutes.map((route) => (
-            <div
-              key={route.id}
-              className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-t border-[var(--border)] cursor-pointer"
-              onClick={() => setEditingRoute(route)}
+        {/* Webhook Receiver */}
+        <WebhookSection />
+
+        {/* Request Log */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
+          <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
+            Request Log {mockLogs.length > 0 && `· ${mockLogs.length}`}
+          </span>
+          {mockLogs.length > 0 && (
+            <button
+              onClick={clearLogs}
+              className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
             >
-              <input
-                type="checkbox"
-                checked={route.enabled !== false}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  toggleEnabled(route.id);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className="accent-[var(--accent)] shrink-0"
-              />
-              <MethodBadge method={route.method} />
-              <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
-                {route.pathPattern}
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
+        <div className="font-mono text-2xs">
+          {mockLogs.map((log) => (
+            <div
+              key={log.id}
+              className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+            >
+              <span className="text-[var(--text-3)] shrink-0">
+                {fmt(log.createdAt)}
+              </span>
+              <MethodBadge method={log.method} />
+              <span className="flex-1 text-[var(--text-1)] truncate">
+                {log.path}
               </span>
               <span
-                className={`text-2xs shrink-0 ${route.status >= 400 ? "text-red-500" : "text-[var(--text-3)]"}`}
+                className={`shrink-0 font-semibold ${log.status >= 400 ? "text-red-500" : "text-emerald-600"}`}
               >
-                {route.status}
+                {log.status}
               </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmDeleteId(route.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
-              >
-                <Trash2 size={11} />
-              </button>
+              {!log.matched && (
+                <span className="text-2xs text-amber-500 shrink-0">
+                  unmatched
+                </span>
+              )}
             </div>
           ))}
-          {!mockRoutes.length && (
+          {!mockLogs.length && (
             <p className="p-4 text-xs text-[var(--text-3)] text-center">
-              No routes yet
+              No requests yet
             </p>
           )}
         </div>
-      </div>
 
-      {/* Request Log */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] shrink-0">
-        <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
-          Request Log {mockLogs.length > 0 && `· ${mockLogs.length}`}
-        </span>
-        {mockLogs.length > 0 && (
-          <button
-            onClick={clearLogs}
-            className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
-          >
-            <Trash2 size={12} />
-          </button>
-        )}
-      </div>
-      <div className="flex-1 overflow-y-auto font-mono text-2xs">
-        {mockLogs.map((log) => (
-          <div
-            key={log.id}
-            className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
-          >
-            <span className="text-[var(--text-3)] shrink-0">
-              {fmt(log.createdAt)}
-            </span>
-            <MethodBadge method={log.method} />
-            <span className="flex-1 text-[var(--text-1)] truncate">
-              {log.path}
-            </span>
-            <span
-              className={`shrink-0 font-semibold ${log.status >= 400 ? "text-red-500" : "text-emerald-600"}`}
-            >
-              {log.status}
-            </span>
-            {!log.matched && (
-              <span className="text-2xs text-amber-500 shrink-0">
-                unmatched
-              </span>
-            )}
-          </div>
-        ))}
-        {!mockLogs.length && (
-          <p className="p-4 text-xs text-[var(--text-3)] text-center">
-            No requests yet
-          </p>
-        )}
-      </div>
+      </div> {/* end scrollable body */}
 
       {editingRoute && (
         <RouteModal

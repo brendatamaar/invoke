@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import { useStore, coreStore } from "../../store";
 import type { KeyValue } from "@invoke/core";
 
@@ -41,7 +41,7 @@ export function VariableEditorModal() {
   };
 
   const addRow = () =>
-    setRows([...rows, { key: "", value: "", enabled: true }]);
+    setRows([...rows, { key: "", value: "", enabled: true, sensitive: false }]);
   const removeRow = (i: number) => setRows(rows.filter((_, idx) => idx !== i));
   const updateRow = (i: number, patch: Partial<KeyValue>) =>
     setRows(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -83,11 +83,19 @@ export function VariableEditorModal() {
                 className="input text-xs py-1 flex-1 font-mono"
               />
               <input
+                type={row.sensitive ? "password" : "text"}
                 value={row.value}
                 onChange={(e) => updateRow(i, { value: e.target.value })}
                 placeholder="value"
                 className="input text-xs py-1 flex-1 font-mono"
               />
+              <button
+                onClick={() => updateRow(i, { sensitive: !row.sensitive })}
+                title={row.sensitive ? "Unmask value" : "Mask value"}
+                className={`p-1 ${row.sensitive ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--text-1)]"}`}
+              >
+                {row.sensitive ? <EyeOff size={12} /> : <Eye size={12} />}
+              </button>
               <button
                 onClick={() => removeRow(i)}
                 className="text-[var(--text-3)] hover:text-[var(--danger)] p-1"

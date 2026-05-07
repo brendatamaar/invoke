@@ -12,6 +12,13 @@ export interface MockCondition {
   expected: string;
 }
 
+export interface MockSequenceItem {
+  status: number;
+  headers: KeyValue[];
+  body: string;
+  latencyMs?: number;
+}
+
 export interface MockRoute {
   id: string;
   enabled?: boolean;
@@ -22,6 +29,7 @@ export interface MockRoute {
   body: string;
   latencyMs?: number;
   conditions?: MockCondition[];
+  sequences?: MockSequenceItem[];
 }
 
 export interface MockLogEntry {

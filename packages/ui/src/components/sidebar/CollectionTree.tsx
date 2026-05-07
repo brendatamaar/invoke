@@ -12,15 +12,18 @@ import {
   Copy,
   Upload,
   Variable,
+  FileText,
 } from "lucide-react";
 import {
   exportCollectionZip,
+  exportCollectionAsOpenApi,
   importInvokeZip,
   importPostmanCollection,
   importInsomniaExport,
   importHoppscotchCollection,
   importOpenApiSpec,
   importYamlFiles,
+  importHarFile,
   parseCurl,
 } from "@invoke/core";
 import { useStore, coreStore } from "../../store";
@@ -150,8 +153,10 @@ function FolderNode({
   folder: FolderType;
   collectionId: string;
 }) {
-  const { expandedFolderIds, toggleFolder, requests, set } = useStore();
+  const { expandedFolderIds, toggleFolder, requests, set, addToast } =
+    useStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [descModal, setDescModal] = useState(false);
   const expanded = expandedFolderIds.includes(folder.id);
   const folderRequests = requests.filter((r) => r.folderId === folder.id);
 
@@ -168,44 +173,88 @@ function FolderNode({
     });
   };
 
+  const saveDescription = async (description: string) => {
+    setDescModal(false);
+    try {
+      await coreStore.updateFolder({ ...folder, description });
+      const folds = await coreStore.listFolders();
+      set({ folders: folds });
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
   return (
-    <div>
-      <div
-        className="group flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 text-[var(--text-2)]"
-        onClick={() => toggleFolder(folder.id)}
-      >
-        {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-        {expanded ? <FolderOpen size={13} /> : <Folder size={13} />}
-        <span className="flex-1 text-xs truncate">{folder.name}</span>
+    <>
+      <div>
         <div
-          className="opacity-0 group-hover:opacity-100 relative"
-          onClick={(e) => e.stopPropagation()}
+          className="group flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 text-[var(--text-2)]"
+          onClick={() => toggleFolder(folder.id)}
         >
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
+          {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+          {expanded ? <FolderOpen size={13} /> : <Folder size={13} />}
+          <span
+            className="flex-1 text-xs truncate"
+            title={folder.description || undefined}
           >
-            <MoreHorizontal size={13} />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]">
-              <MenuItem
-                icon={<Variable size={12} />}
-                label="Variables"
-                onClick={openVariableEditor}
-              />
-            </div>
+            {folder.name}
+          </span>
+          {folder.description && (
+            <span title={folder.description} className="shrink-0">
+              <FileText size={11} className="text-[var(--text-3)]" />
+            </span>
           )}
+          <div
+            className="opacity-0 group-hover:opacity-100 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
+            >
+              <MoreHorizontal size={13} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]">
+                <MenuItem
+                  icon={<Variable size={12} />}
+                  label="Variables"
+                  onClick={openVariableEditor}
+                />
+                <MenuItem
+                  icon={<FileText size={12} />}
+                  label="Description"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setDescModal(true);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
+        {expanded && (
+          <div className="ml-3">
+            {folderRequests.map((r) => (
+              <RequestNode key={r.id} request={r} collectionId={collectionId} />
+            ))}
+          </div>
+        )}
       </div>
-      {expanded && (
-        <div className="ml-3">
-          {folderRequests.map((r) => (
-            <RequestNode key={r.id} request={r} collectionId={collectionId} />
-          ))}
-        </div>
-      )}
-    </div>
+
+      <PromptModal
+        open={descModal}
+        title={`Description — ${folder.name}`}
+        label="Description"
+        defaultValue={folder.description ?? ""}
+        placeholder="Describe this folder…"
+        multiline
+        confirmLabel="Save"
+        allowEmpty
+        onConfirm={saveDescription}
+        onClose={() => setDescModal(false)}
+      />
+    </>
   );
 }
 
@@ -216,6 +265,7 @@ function CollectionNode({ collection }: { collection: Collection }) {
   const [addReqModal, setAddReqModal] = useState(false);
   const [renameModal, setRenameModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [descModal, setDescModal] = useState(false);
   const expanded = expandedFolderIds.includes(collection.id);
   const colFolders = folders.filter(
     (f) => f.collectionId === collection.id && !f.parentFolderId,
@@ -278,6 +328,17 @@ function CollectionNode({ collection }: { collection: Collection }) {
     }
   };
 
+  const saveDescription = async (description: string) => {
+    setDescModal(false);
+    try {
+      await coreStore.updateCollection({ ...collection, description });
+      const cols = await coreStore.listCollections();
+      set({ collections: cols });
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
   const exportZip = async () => {
     setMenuOpen(false);
     try {
@@ -299,6 +360,29 @@ function CollectionNode({ collection }: { collection: Collection }) {
       a.click();
       URL.revokeObjectURL(url);
       addToast("success", "Collection exported");
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
+  const exportOpenApi = () => {
+    setMenuOpen(false);
+    try {
+      const colRequests = requests.filter(
+        (r) => r.collectionId === collection.id,
+      );
+      const colFolders = folders.filter(
+        (f) => f.collectionId === collection.id,
+      );
+      const yamlStr = exportCollectionAsOpenApi(collection, colRequests, colFolders);
+      const blob = new Blob([yamlStr], { type: "text/yaml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${collection.name.replace(/\s+/g, "-")}-openapi.yaml`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast("success", "OpenAPI spec exported");
     } catch (e) {
       addToast("error", String(e));
     }
@@ -329,9 +413,17 @@ function CollectionNode({ collection }: { collection: Collection }) {
           ) : (
             <ChevronRight size={13} className="text-[var(--text-3)]" />
           )}
-          <span className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate">
+          <span
+            className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate"
+            title={collection.description || undefined}
+          >
             {collection.name}
           </span>
+          {collection.description && (
+            <span title={collection.description} className="shrink-0">
+              <FileText size={11} className="text-[var(--text-3)]" />
+            </span>
+          )}
           <span className="text-2xs text-[var(--text-3)]">
             {colRequests.length}
           </span>
@@ -369,9 +461,22 @@ function CollectionNode({ collection }: { collection: Collection }) {
                   onClick={openVariableEditor}
                 />
                 <MenuItem
+                  icon={<FileText size={12} />}
+                  label="Description"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setDescModal(true);
+                  }}
+                />
+                <MenuItem
                   icon={<Download size={12} />}
                   label="Export ZIP"
                   onClick={exportZip}
+                />
+                <MenuItem
+                  icon={<Download size={12} />}
+                  label="Export OpenAPI"
+                  onClick={exportOpenApi}
                 />
                 <div className="h-px bg-[var(--border)] my-1" />
                 <MenuItem
@@ -429,6 +534,18 @@ function CollectionNode({ collection }: { collection: Collection }) {
         onConfirm={del}
         onClose={() => setDeleteModal(false)}
       />
+      <PromptModal
+        open={descModal}
+        title={`Description — ${collection.name}`}
+        label="Description"
+        defaultValue={collection.description ?? ""}
+        placeholder="Describe this collection…"
+        multiline
+        confirmLabel="Save"
+        allowEmpty
+        onConfirm={saveDescription}
+        onClose={() => setDescModal(false)}
+      />
     </>
   );
 }
@@ -438,7 +555,7 @@ export function CollectionTree() {
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importType, setImportType] = useState<
-    "zip" | "postman" | "insomnia" | "hoppscotch" | "openapi" | "yaml" | "curl"
+    "zip" | "postman" | "insomnia" | "hoppscotch" | "openapi" | "yaml" | "curl" | "har"
   >("zip");
   const [newColModal, setNewColModal] = useState(false);
   const [curlModal, setCurlModal] = useState(false);
@@ -557,6 +674,11 @@ export function CollectionTree() {
       } else if (importType === "yaml") {
         imported = (await importYamlFiles(files)) as unknown as ImportResult;
       }
+      if (importType === "har") {
+        imported = importHarFile(
+          JSON.parse(await files[0].text()),
+        ) as unknown as ImportResult;
+      }
       if (imported) {
         const count = await persistImported(imported);
         await refreshCollections();
@@ -578,6 +700,7 @@ export function CollectionTree() {
     { type: "hoppscotch", label: "Hoppscotch", accept: ".json" },
     { type: "openapi", label: "OpenAPI / Swagger", accept: ".json,.yaml,.yml" },
     { type: "yaml", label: "Invoke YAML", accept: ".yaml,.yml" },
+    { type: "har", label: "HAR (Browser DevTools)", accept: ".har,.json" },
     { type: "curl", label: "cURL command", accept: "" },
   ];
 
