@@ -19,6 +19,7 @@ import {
   type KeyValue,
 } from "@invoke/core";
 import { ConfirmModal } from "../shared/ConfirmModal";
+import { Dialog } from "../shared/Dialog";
 
 export function EnvironmentPanel() {
   const { environments, activeEnvironmentId, envDraft, set, addToast } = useStore();
@@ -156,6 +157,7 @@ function EnvironmentModal({
   const { set, addToast } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
+  const [exportChoiceOpen, setExportChoiceOpen] = useState(false);
 
   const setDraft = (patch: Partial<Environment>) =>
     set({ envDraft: { ...draft, ...patch } });
@@ -200,6 +202,13 @@ function EnvironmentModal({
   };
 
   const hasSensitive = (draft.variables ?? []).some((v) => v.sensitive);
+  const requestExport = () => {
+    if (hasSensitive) {
+      setExportChoiceOpen(true);
+      return;
+    }
+    exportEnv(false);
+  };
 
   return (
     <div
@@ -235,21 +244,12 @@ function EnvironmentModal({
               <Upload size={11} /> Import
             </button>
             <button
-              onClick={() => exportEnv(false)}
+              onClick={requestExport}
               className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
               title="Export .env"
             >
               <Download size={11} /> Export
             </button>
-            {hasSensitive && (
-              <button
-                onClick={() => exportEnv(true)}
-                className="btn btn-danger text-2xs py-0.5 px-2 flex items-center gap-1"
-                title="Export including sensitive values"
-              >
-                <Download size={11} /> Export all
-              </button>
-            )}
           </div>
           <button
             onClick={onClose}
@@ -348,6 +348,52 @@ function EnvironmentModal({
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)] shrink-0">
           <button onClick={onClose} className="btn text-xs">Cancel</button>
           <button onClick={onSave} className="btn btn-primary text-xs">Save</button>
+        </div>
+
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Dialog
+            open={exportChoiceOpen}
+            onClose={() => setExportChoiceOpen(false)}
+            title="Export Environment"
+            width="420px"
+            footer={
+              <>
+                <button
+                  className="btn text-xs"
+                  onClick={() => setExportChoiceOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary text-xs"
+                  onClick={() => {
+                    setExportChoiceOpen(false);
+                    exportEnv(false);
+                  }}
+                >
+                  Export non-sensitive
+                </button>
+                <button
+                  className="btn btn-danger text-xs"
+                  onClick={() => {
+                    setExportChoiceOpen(false);
+                    exportEnv(true);
+                  }}
+                >
+                  Export all
+                </button>
+              </>
+            }
+          >
+            <p className="text-sm text-[var(--text-2)]">
+              This environment contains sensitive variables. Choose whether to
+              exclude sensitive values or include every value in the exported
+              .env file.
+            </p>
+          </Dialog>
         </div>
       </div>
     </div>
