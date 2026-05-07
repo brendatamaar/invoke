@@ -11,7 +11,7 @@ import { logger } from "hono/logger";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { validateMockRoutes } from "@invoke/core";
-import type { KeyValue, MockLogEntry, MockRoute } from "@invoke/core";
+import type { KeyValue, MockLogEntry, MockRoute, MockSequenceItem } from "@invoke/core";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "../../..");
@@ -34,7 +34,18 @@ const client = new ExecutorClient(
 );
 let mockRoutes: MockRoute[] = [];
 const mockLogs: MockLogEntry[] = [];
+const mockSequenceIndex = new Map<string, number>();
 const MAX_MOCK_REQUEST_BODY_BYTES = 1024 * 1024;
+
+interface WebhookEntry {
+  id: string;
+  method: string;
+  headers: KeyValue[];
+  body: string;
+  createdAt: number;
+}
+const webhookLogs = new Map<string, WebhookEntry[]>();
+const MAX_WEBHOOK_ENTRIES = 200;
 
 const headerSchema = z.object({
   key: z.string(),
@@ -146,6 +157,13 @@ const mockConditionSchema = z.object({
   expected: z.string().default(""),
 });
 
+const mockSequenceItemSchema = z.object({
+  status: z.number().int().min(100).max(599),
+  headers: z.array(mockHeaderSchema).default([]),
+  body: z.string().default(""),
+  latencyMs: z.number().int().min(0).max(30000).optional(),
+});
+
 const mockRouteSchema = z.object({
   id: z.string(),
   enabled: z.boolean().optional(),
@@ -156,6 +174,7 @@ const mockRouteSchema = z.object({
   body: z.string().default(""),
   latencyMs: z.number().int().min(0).max(30000).optional(),
   conditions: z.array(mockConditionSchema).optional(),
+  sequences: z.array(mockSequenceItemSchema).optional(),
 });
 
 const mockRoutesSchema = z
@@ -378,11 +397,41 @@ app.put("/api/mock/routes", zValidator("json", mockRoutesSchema), (c) => {
     headers: route.headers ?? [],
     enabled: route.enabled ?? true,
   }));
+  mockSequenceIndex.clear();
   return c.json({ routes: mockRoutes, count: mockRoutes.length });
 });
 
 app.delete("/api/mock/logs", (c) => {
   mockLogs.splice(0, mockLogs.length);
+  return c.json({ ok: true });
+});
+
+app.get("/api/webhook/:id/logs", (c) => {
+  const { id: webhookId } = c.req.param();
+  return c.json({ entries: webhookLogs.get(webhookId) ?? [] });
+});
+
+app.delete("/api/webhook/:id/logs", (c) => {
+  const { id: webhookId } = c.req.param();
+  webhookLogs.delete(webhookId);
+  return c.json({ ok: true });
+});
+
+app.all("/webhook/:id", async (c) => {
+  const { id: webhookId } = c.req.param();
+  const body = await c.req.text();
+  const headers = requestHeaders(c.req.raw.headers);
+  const entry: WebhookEntry = {
+    id: nodeCrypto.randomUUID(),
+    method: c.req.method.toUpperCase(),
+    headers,
+    body,
+    createdAt: Date.now(),
+  };
+  const existing = webhookLogs.get(webhookId) ?? [];
+  existing.unshift(entry);
+  if (existing.length > MAX_WEBHOOK_ENTRIES) existing.length = MAX_WEBHOOK_ENTRIES;
+  webhookLogs.set(webhookId, existing);
   return c.json({ ok: true });
 });
 
@@ -420,17 +469,25 @@ app.all("/mock/*", async (c) => {
   }
 
   const match = matchPath(matched.pathPattern, path);
-  if (matched.latencyMs)
+
+  let activeItem: Pick<MockSequenceItem, "status" | "headers" | "body" | "latencyMs"> = matched;
+  if (matched.sequences && matched.sequences.length > 0) {
+    const idx = mockSequenceIndex.get(matched.id) ?? 0;
+    activeItem = matched.sequences[idx % matched.sequences.length];
+    mockSequenceIndex.set(matched.id, idx + 1);
+  }
+
+  if (activeItem.latencyMs)
     await new Promise((resolveDelay) =>
-      setTimeout(resolveDelay, matched.latencyMs),
+      setTimeout(resolveDelay, activeItem.latencyMs),
     );
   const responseBody = renderMockTemplate(
-    matched.body,
+    activeItem.body,
     match.params,
     url.searchParams,
   );
   const responseHeaders = Object.fromEntries(
-    matched.headers
+    (activeItem.headers ?? [])
       .filter((header) => header.enabled !== false && header.key.trim())
       .map((header) => [header.key, header.value]),
   );
@@ -439,12 +496,12 @@ app.all("/mock/*", async (c) => {
     matched: true,
     method,
     path,
-    status: matched.status,
+    status: activeItem.status,
     headers,
     body,
   });
   return new Response(responseBody, {
-    status: matched.status,
+    status: activeItem.status,
     headers: responseHeaders,
   });
 });

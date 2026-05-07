@@ -15,6 +15,7 @@ import type {
   HttpMethod,
   KeyValue,
   RequestConfig,
+  RequestProtocol,
   SavedRequest,
   YamlBodyType,
 } from "./types";
@@ -471,6 +472,204 @@ export async function importOpenApiSpec(
   } catch (error) {
     throw openApiImportError(error);
   }
+}
+
+export function importHarFile(doc: any): {
+  collection: Collection;
+  folders: Folder[];
+  requests: SavedRequest[];
+} {
+  const now = Date.now();
+  const entries: any[] = doc?.log?.entries ?? [];
+  const collectionName: string =
+    doc?.log?.creator?.name
+      ? `${doc.log.creator.name} (HAR)`
+      : "HAR import";
+
+  const collection: Collection = {
+    id: id(),
+    name: collectionName,
+    variables: [],
+    sortOrder: now,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const SKIP_HEADERS = new Set([
+    "host",
+    "content-length",
+    "transfer-encoding",
+    ":authority",
+    ":method",
+    ":path",
+    ":scheme",
+  ]);
+
+  const requests: SavedRequest[] = entries.map((entry: any, i: number) => {
+    const req = entry?.request ?? {};
+    const rawUrl: string = req.url ?? "";
+    const method: HttpMethod = ((req.method ?? "GET") as string).toUpperCase() as HttpMethod;
+
+    let cleanUrl = rawUrl;
+    try {
+      const parsed = new URL(rawUrl);
+      cleanUrl = parsed.origin + parsed.pathname;
+    } catch {
+      cleanUrl = rawUrl.split("?")[0] ?? rawUrl;
+    }
+
+    const headers: KeyValue[] = (req.headers ?? [])
+      .filter((h: any) => !SKIP_HEADERS.has((h.name ?? "").toLowerCase()))
+      .map((h: any) => ({ key: h.name ?? "", value: h.value ?? "", enabled: true }));
+
+    const params: KeyValue[] = (req.queryString ?? []).map((q: any) => ({
+      key: q.name ?? "",
+      value: q.value ?? "",
+      enabled: true,
+    }));
+
+    let bodyMode: BodyMode = "none";
+    let body = "";
+    if (req.postData) {
+      const mime: string = req.postData.mimeType ?? "";
+      body = req.postData.text ?? "";
+      if (mime.includes("json")) bodyMode = "json";
+      else if (mime.includes("x-www-form-urlencoded")) bodyMode = "urlencoded";
+      else bodyMode = "raw";
+    }
+
+    const entryNow = now + i;
+    return {
+      id: id(),
+      collectionId: collection.id,
+      folderId: null,
+      name: `${method} ${new URL(rawUrl.startsWith("http") ? rawUrl : `http://x${rawUrl}`).pathname || "/"}`,
+      protocol: "rest" as RequestProtocol,
+      request: toRequestConfig({
+        ...emptyRequest(),
+        method,
+        url: cleanUrl,
+        params,
+        headers,
+        bodyMode,
+        body,
+      }),
+      sortOrder: entryNow,
+      createdAt: entryNow,
+      updatedAt: entryNow,
+    };
+  });
+
+  return { collection, folders: [], requests };
+}
+
+export function exportCollectionAsOpenApi(
+  collection: Collection,
+  requests: SavedRequest[],
+  folders: Folder[] = [],
+): string {
+  const foldersById = new Map(folders.map((f) => [f.id, f]));
+  const colRequests = requests.filter(
+    (r) => r.collectionId === collection.id && r.protocol === "rest",
+  );
+
+  const SKIP_HEADERS = new Set([
+    "content-type",
+    "accept",
+    "authorization",
+    "content-length",
+  ]);
+
+  const paths: Record<string, Record<string, unknown>> = {};
+
+  for (const saved of colRequests) {
+    const req = saved.request as RequestConfig;
+    if (!req.url) continue;
+
+    let urlPath = "/";
+    try {
+      urlPath = new URL(req.url).pathname || "/";
+    } catch {
+      urlPath = req.url.startsWith("/") ? req.url : `/${req.url}`;
+    }
+    urlPath = urlPath.replace(/\{\{([^}]+)\}\}/g, "{$1}");
+
+    const method = req.method.toLowerCase();
+    if (!paths[urlPath]) paths[urlPath] = {};
+
+    const folderName = saved.folderId
+      ? foldersById.get(saved.folderId)?.name
+      : undefined;
+
+    const parameters: unknown[] = (req.params ?? [])
+      .filter((p) => p.enabled !== false && p.key)
+      .map((p) => ({
+        name: p.key,
+        in: "query",
+        schema: { type: "string" },
+        example: p.value,
+      }));
+
+    for (const h of (req.headers ?? []).filter(
+      (h) => h.enabled !== false && h.key && !SKIP_HEADERS.has(h.key.toLowerCase()),
+    )) {
+      parameters.push({
+        name: h.key,
+        in: "header",
+        schema: { type: "string" },
+        example: h.value,
+      });
+    }
+
+    const operation: Record<string, unknown> = {
+      summary: saved.name,
+      ...(folderName ? { tags: [folderName] } : {}),
+      ...(parameters.length ? { parameters } : {}),
+      responses: { "200": { description: "OK" } },
+    };
+
+    if (req.bodyMode !== "none" && req.body) {
+      const mimeByMode: Record<string, string> = {
+        json: "application/json",
+        urlencoded: "application/x-www-form-urlencoded",
+        "form-data": "multipart/form-data",
+        raw: "text/plain",
+      };
+      const contentType = mimeByMode[req.bodyMode] ?? "text/plain";
+      operation.requestBody = {
+        content: {
+          [contentType]: {
+            schema: { type: "string" },
+            example: req.body,
+          },
+        },
+      };
+    }
+
+    paths[urlPath][method] = operation;
+  }
+
+  const tagNames = [
+    ...new Set(
+      colRequests
+        .filter((r) => r.folderId)
+        .map((r) => foldersById.get(r.folderId!)?.name)
+        .filter((n): n is string => Boolean(n)),
+    ),
+  ];
+
+  const spec: Record<string, unknown> = {
+    openapi: "3.0.3",
+    info: {
+      title: collection.name,
+      ...(collection.description ? { description: collection.description } : {}),
+      version: "1.0.0",
+    },
+    ...(tagNames.length ? { tags: tagNames.map((name) => ({ name })) } : {}),
+    paths,
+  };
+
+  return yaml.dump(spec, { lineWidth: 120 });
 }
 
 function flatRequestDocument(saved: SavedRequest): FlatRequestDocument {

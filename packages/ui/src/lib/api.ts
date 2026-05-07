@@ -94,6 +94,26 @@ export async function clearMockLogs() {
   if (!res.ok) throw new Error(await res.text());
 }
 
+export interface WebhookEntry {
+  id: string;
+  method: string;
+  headers: { key: string; value: string }[];
+  body: string;
+  createdAt: number;
+}
+
+export async function loadWebhookLogs(webhookId: string): Promise<WebhookEntry[]> {
+  const res = await fetch(`/api/webhook/${webhookId}/logs`);
+  if (!res.ok) throw new Error(await res.text());
+  const data = (await res.json()) as { entries: WebhookEntry[] };
+  return data.entries;
+}
+
+export async function clearWebhookLogs(webhookId: string): Promise<void> {
+  const res = await fetch(`/api/webhook/${webhookId}/logs`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await res.text());
+}
+
 export async function webSocketConnect(
   request: WebSocketRequestConfig,
 ): Promise<{ connectionId: string; error?: string }> {

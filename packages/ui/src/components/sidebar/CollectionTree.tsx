@@ -16,12 +16,14 @@ import {
 } from "lucide-react";
 import {
   exportCollectionZip,
+  exportCollectionAsOpenApi,
   importInvokeZip,
   importPostmanCollection,
   importInsomniaExport,
   importHoppscotchCollection,
   importOpenApiSpec,
   importYamlFiles,
+  importHarFile,
   parseCurl,
 } from "@invoke/core";
 import { useStore, coreStore } from "../../store";
@@ -363,6 +365,29 @@ function CollectionNode({ collection }: { collection: Collection }) {
     }
   };
 
+  const exportOpenApi = () => {
+    setMenuOpen(false);
+    try {
+      const colRequests = requests.filter(
+        (r) => r.collectionId === collection.id,
+      );
+      const colFolders = folders.filter(
+        (f) => f.collectionId === collection.id,
+      );
+      const yamlStr = exportCollectionAsOpenApi(collection, colRequests, colFolders);
+      const blob = new Blob([yamlStr], { type: "text/yaml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${collection.name.replace(/\s+/g, "-")}-openapi.yaml`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast("success", "OpenAPI spec exported");
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
   const openVariableEditor = () => {
     setMenuOpen(false);
     set({
@@ -448,6 +473,11 @@ function CollectionNode({ collection }: { collection: Collection }) {
                   label="Export ZIP"
                   onClick={exportZip}
                 />
+                <MenuItem
+                  icon={<Download size={12} />}
+                  label="Export OpenAPI"
+                  onClick={exportOpenApi}
+                />
                 <div className="h-px bg-[var(--border)] my-1" />
                 <MenuItem
                   icon={<Trash2 size={12} />}
@@ -525,7 +555,7 @@ export function CollectionTree() {
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importType, setImportType] = useState<
-    "zip" | "postman" | "insomnia" | "hoppscotch" | "openapi" | "yaml" | "curl"
+    "zip" | "postman" | "insomnia" | "hoppscotch" | "openapi" | "yaml" | "curl" | "har"
   >("zip");
   const [newColModal, setNewColModal] = useState(false);
   const [curlModal, setCurlModal] = useState(false);
@@ -644,6 +674,11 @@ export function CollectionTree() {
       } else if (importType === "yaml") {
         imported = (await importYamlFiles(files)) as unknown as ImportResult;
       }
+      if (importType === "har") {
+        imported = importHarFile(
+          JSON.parse(await files[0].text()),
+        ) as unknown as ImportResult;
+      }
       if (imported) {
         const count = await persistImported(imported);
         await refreshCollections();
@@ -665,6 +700,7 @@ export function CollectionTree() {
     { type: "hoppscotch", label: "Hoppscotch", accept: ".json" },
     { type: "openapi", label: "OpenAPI / Swagger", accept: ".json,.yaml,.yml" },
     { type: "yaml", label: "Invoke YAML", accept: ".yaml,.yml" },
+    { type: "har", label: "HAR (Browser DevTools)", accept: ".har,.json" },
     { type: "curl", label: "cURL command", accept: "" },
   ];
 

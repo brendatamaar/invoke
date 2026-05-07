@@ -1,6 +1,7 @@
 import { Zap, RefreshCw } from "lucide-react";
 import { useStore } from "../../store";
 import { Select } from "../shared/Select";
+import { VariableAutocompleteInput } from "../shared/VariableAutocompleteInput";
 import type { HttpMethod, KeyValue } from "@invoke/core";
 
 const METHODS: HttpMethod[] = [
@@ -48,12 +49,10 @@ export function URLBar({ onSend, loading }: Props) {
         ))}
       </Select>
 
-      {/* URL input */}
-      <input
-        type="text"
+      {/* URL input with variable autocomplete */}
+      <VariableAutocompleteInput
         value={request.url}
-        onChange={(e) => {
-          const url = e.target.value;
+        onChange={(url) => {
           const qIdx = url.indexOf("?");
           if (qIdx !== -1) {
             const qs = url.slice(qIdx + 1);
@@ -71,8 +70,7 @@ export function URLBar({ onSend, loading }: Props) {
           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) onSend();
         }}
         placeholder="https://api.example.com/endpoint"
-        className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] focus:bg-[var(--surface)] transition-colors"
-        spellCheck={false}
+        className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] focus:bg-[var(--surface)] transition-colors"
       />
 
       {/* Stream toggle */}
