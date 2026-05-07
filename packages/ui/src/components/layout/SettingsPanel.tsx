@@ -1,7 +1,8 @@
-import { Moon, Sun, X } from "lucide-react";
-import { useState } from "react";
-import { useStore } from "../../store";
-import type { RequestOptions, RequestProtocol } from "@invoke/core";
+import { Moon, Sun, X, Download, Upload } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useStore, coreStore } from "../../store";
+import { serializeWorkspace, parseWorkspaceBackup } from "@invoke/core";
+import type { RequestOptions, RequestProtocol, RetentionSettings } from "@invoke/core";
 
 interface Draft {
   theme: string;
@@ -54,6 +55,8 @@ export function SettingsPanel() {
     collections,
     requests,
     history,
+    retentionSettings,
+    addToast,
   } = useStore();
 
   const protocol = (request.protocol ?? "rest") as RequestProtocol;
@@ -67,6 +70,20 @@ export function SettingsPanel() {
       grpcRequest,
     ),
   );
+
+  const [retentionDraft, setRetentionDraft] = useState<RetentionSettings>(
+    retentionSettings ?? { maxEntries: 0, retentionDays: 0 },
+  );
+
+  const [storageStats, setStorageStats] = useState<Record<string, number>>({});
+  const backupInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showSettings) {
+      setRetentionDraft(retentionSettings ?? { maxEntries: 0, retentionDays: 0 });
+      coreStore.getStorageStats().then(setStorageStats).catch(() => {});
+    }
+  }, [showSettings, retentionSettings]);
 
   if (!showSettings) return null;
 
@@ -107,7 +124,44 @@ export function SettingsPanel() {
     });
   }
 
-  function handleSave() {
+  async function handleExportWorkspace() {
+    try {
+      const data = await coreStore.exportWorkspace();
+      const backup = serializeWorkspace(data);
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoke-workspace-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast("success", "Workspace exported");
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  }
+
+  async function handleImportWorkspace(file?: File) {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const backup = parseWorkspaceBackup(text);
+      await coreStore.importWorkspace(backup);
+      const [envs, colls] = await Promise.all([
+        coreStore.listEnvironments(),
+        coreStore.listCollections(),
+      ]);
+      const reqs = await coreStore.listRequests();
+      set({ environments: envs, collections: colls, requests: reqs });
+      addToast("success", `Workspace imported: ${backup.collections.length} collections, ${backup.environments.length} environments, ${backup.flows.length} flows`);
+    } catch (e) {
+      addToast("error", String(e));
+    } finally {
+      if (backupInputRef.current) backupInputRef.current.value = "";
+    }
+  }
+
+  async function handleSave() {
     document.documentElement.setAttribute("data-theme", draft.theme);
     localStorage.setItem("theme", draft.theme);
 
@@ -125,7 +179,13 @@ export function SettingsPanel() {
       });
     else setRequest({ timeoutMs: draft.timeoutMs, options: draft.options });
 
-    set({ showSettings: false });
+    try {
+      await coreStore.setRetentionSettings(retentionDraft);
+      set({ retentionSettings: retentionDraft, showSettings: false });
+    } catch (e) {
+      addToast("error", String(e));
+      set({ showSettings: false });
+    }
   }
 
   function handleCancel() {
@@ -305,18 +365,96 @@ export function SettingsPanel() {
             )}
           </div>
 
-          {/* Stats */}
+          {/* History Retention */}
           <div>
-            <Section title="Data" />
-            <div className="flex gap-4">
+            <Section title="History Retention" />
+            <div className="flex flex-col gap-3">
+              <Row label="Max entries">
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={retentionDraft.maxEntries}
+                  onChange={(e) =>
+                    setRetentionDraft((d) => ({
+                      ...d,
+                      maxEntries: Math.max(0, Number(e.target.value)),
+                    }))
+                  }
+                  className="input text-xs w-28"
+                />
+                <span className="text-xs text-[var(--text-3)]">
+                  0 = unlimited
+                </span>
+              </Row>
+              <Row label="Keep days">
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={retentionDraft.retentionDays}
+                  onChange={(e) =>
+                    setRetentionDraft((d) => ({
+                      ...d,
+                      retentionDays: Math.max(0, Number(e.target.value)),
+                    }))
+                  }
+                  className="input text-xs w-28"
+                />
+                <span className="text-xs text-[var(--text-3)]">
+                  0 = unlimited
+                </span>
+              </Row>
+              <p className="text-2xs text-[var(--text-3)]">
+                Pinned entries are never deleted by retention cleanup.
+              </p>
+            </div>
+          </div>
+
+          {/* Backup */}
+          <div>
+            <Section title="Backup" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportWorkspace}
+                className="btn text-xs flex items-center gap-1.5"
+              >
+                <Download size={12} /> Export workspace
+              </button>
+              <input
+                ref={backupInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={(e) => handleImportWorkspace(e.target.files?.[0])}
+              />
+              <button
+                onClick={() => backupInputRef.current?.click()}
+                className="btn text-xs flex items-center gap-1.5"
+              >
+                <Upload size={12} /> Import workspace
+              </button>
+            </div>
+            <p className="text-2xs text-[var(--text-3)] mt-2">
+              Export/import collections, environments, and flows as JSON. Import merges with existing data.
+            </p>
+          </div>
+
+          {/* Storage */}
+          <div>
+            <Section title="Storage" />
+            <div className="grid grid-cols-3 gap-2">
               {[
-                { label: "Collections", value: collections.length },
-                { label: "Requests", value: requests.length },
-                { label: "History", value: history.length },
+                { label: "Collections", value: storageStats.collections ?? collections.length },
+                { label: "Requests", value: storageStats.requests ?? requests.length },
+                { label: "History", value: storageStats.history ?? history.length },
+                { label: "Environments", value: storageStats.environments ?? 0 },
+                { label: "Flows", value: storageStats.flows ?? 0 },
+                { label: "Folders", value: storageStats.folders ?? 0 },
               ].map(({ label, value }) => (
                 <div
                   key={label}
-                  className="flex-1 bg-[var(--surface-2)] rounded-lg px-3 py-2 text-center"
+                  className="bg-[var(--surface-2)] rounded-lg px-3 py-2 text-center"
                 >
                   <div className="text-sm font-semibold">{value}</div>
                   <div className="text-2xs text-[var(--text-3)] mt-0.5">

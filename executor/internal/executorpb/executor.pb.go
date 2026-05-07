@@ -1662,15 +1662,17 @@ func (x *GrpcReflectRequest) GetTlsClientConfig() *TlsClientConfig {
 }
 
 type GrpcMethod struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Service       string                 `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
-	Method        string                 `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
-	FullMethod    string                 `protobuf:"bytes,3,opt,name=full_method,json=fullMethod,proto3" json:"full_method,omitempty"`
-	InputType     string                 `protobuf:"bytes,4,opt,name=input_type,json=inputType,proto3" json:"input_type,omitempty"`
-	OutputType    string                 `protobuf:"bytes,5,opt,name=output_type,json=outputType,proto3" json:"output_type,omitempty"`
-	InputJson     string                 `protobuf:"bytes,6,opt,name=input_json,json=inputJson,proto3" json:"input_json,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Service         string                 `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
+	Method          string                 `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
+	FullMethod      string                 `protobuf:"bytes,3,opt,name=full_method,json=fullMethod,proto3" json:"full_method,omitempty"`
+	InputType       string                 `protobuf:"bytes,4,opt,name=input_type,json=inputType,proto3" json:"input_type,omitempty"`
+	OutputType      string                 `protobuf:"bytes,5,opt,name=output_type,json=outputType,proto3" json:"output_type,omitempty"`
+	InputJson       string                 `protobuf:"bytes,6,opt,name=input_json,json=inputJson,proto3" json:"input_json,omitempty"`
+	ClientStreaming bool                   `protobuf:"varint,7,opt,name=client_streaming,json=clientStreaming,proto3" json:"client_streaming,omitempty"`
+	ServerStreaming bool                   `protobuf:"varint,8,opt,name=server_streaming,json=serverStreaming,proto3" json:"server_streaming,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *GrpcMethod) Reset() {
@@ -1743,6 +1745,20 @@ func (x *GrpcMethod) GetInputJson() string {
 		return x.InputJson
 	}
 	return ""
+}
+
+func (x *GrpcMethod) GetClientStreaming() bool {
+	if x != nil {
+		return x.ClientStreaming
+	}
+	return false
+}
+
+func (x *GrpcMethod) GetServerStreaming() bool {
+	if x != nil {
+		return x.ServerStreaming
+	}
+	return false
 }
 
 type GrpcReflectResponse struct {
@@ -1989,6 +2005,98 @@ func (x *GrpcExecuteResponse) GetError() string {
 	return ""
 }
 
+type GrpcStreamMessage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BodyJson      string                 `protobuf:"bytes,1,opt,name=body_json,json=bodyJson,proto3" json:"body_json,omitempty"`
+	Done          bool                   `protobuf:"varint,2,opt,name=done,proto3" json:"done,omitempty"`
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	Trailers      []*Header              `protobuf:"bytes,4,rep,name=trailers,proto3" json:"trailers,omitempty"`
+	StatusCode    int32                  `protobuf:"varint,5,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
+	StatusMessage string                 `protobuf:"bytes,6,opt,name=status_message,json=statusMessage,proto3" json:"status_message,omitempty"`
+	DurationMs    float64                `protobuf:"fixed64,7,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GrpcStreamMessage) Reset() {
+	*x = GrpcStreamMessage{}
+	mi := &file_executor_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GrpcStreamMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrpcStreamMessage) ProtoMessage() {}
+
+func (x *GrpcStreamMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_executor_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrpcStreamMessage.ProtoReflect.Descriptor instead.
+func (*GrpcStreamMessage) Descriptor() ([]byte, []int) {
+	return file_executor_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GrpcStreamMessage) GetBodyJson() string {
+	if x != nil {
+		return x.BodyJson
+	}
+	return ""
+}
+
+func (x *GrpcStreamMessage) GetDone() bool {
+	if x != nil {
+		return x.Done
+	}
+	return false
+}
+
+func (x *GrpcStreamMessage) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *GrpcStreamMessage) GetTrailers() []*Header {
+	if x != nil {
+		return x.Trailers
+	}
+	return nil
+}
+
+func (x *GrpcStreamMessage) GetStatusCode() int32 {
+	if x != nil {
+		return x.StatusCode
+	}
+	return 0
+}
+
+func (x *GrpcStreamMessage) GetStatusMessage() string {
+	if x != nil {
+		return x.StatusMessage
+	}
+	return ""
+}
+
+func (x *GrpcStreamMessage) GetDurationMs() float64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
 var File_executor_proto protoreflect.FileDescriptor
 
 const file_executor_proto_rawDesc = "" +
@@ -2128,7 +2236,7 @@ const file_executor_proto_rawDesc = "" +
 	"\bmetadata\x18\x04 \x03(\v2\x17.invoke.executor.HeaderR\bmetadata\x12\x1d\n" +
 	"\n" +
 	"verify_ssl\x18\x05 \x01(\bR\tverifySsl\x12L\n" +
-	"\x11tls_client_config\x18\x06 \x01(\v2 .invoke.executor.TlsClientConfigR\x0ftlsClientConfig\"\xbe\x01\n" +
+	"\x11tls_client_config\x18\x06 \x01(\v2 .invoke.executor.TlsClientConfigR\x0ftlsClientConfig\"\x94\x02\n" +
 	"\n" +
 	"GrpcMethod\x12\x18\n" +
 	"\aservice\x18\x01 \x01(\tR\aservice\x12\x16\n" +
@@ -2140,7 +2248,9 @@ const file_executor_proto_rawDesc = "" +
 	"\voutput_type\x18\x05 \x01(\tR\n" +
 	"outputType\x12\x1d\n" +
 	"\n" +
-	"input_json\x18\x06 \x01(\tR\tinputJson\"b\n" +
+	"input_json\x18\x06 \x01(\tR\tinputJson\x12)\n" +
+	"\x10client_streaming\x18\a \x01(\bR\x0fclientStreaming\x12)\n" +
+	"\x10server_streaming\x18\b \x01(\bR\x0fserverStreaming\"b\n" +
 	"\x13GrpcReflectResponse\x125\n" +
 	"\amethods\x18\x01 \x03(\v2\x1b.invoke.executor.GrpcMethodR\amethods\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"\xbf\x02\n" +
@@ -2165,7 +2275,17 @@ const file_executor_proto_rawDesc = "" +
 	"\x0estatus_message\x18\x05 \x01(\tR\rstatusMessage\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x01R\n" +
 	"durationMs\x12\x14\n" +
-	"\x05error\x18\a \x01(\tR\x05error2\xac\x06\n" +
+	"\x05error\x18\a \x01(\tR\x05error\"\xf8\x01\n" +
+	"\x11GrpcStreamMessage\x12\x1b\n" +
+	"\tbody_json\x18\x01 \x01(\tR\bbodyJson\x12\x12\n" +
+	"\x04done\x18\x02 \x01(\bR\x04done\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x123\n" +
+	"\btrailers\x18\x04 \x03(\v2\x17.invoke.executor.HeaderR\btrailers\x12\x1f\n" +
+	"\vstatus_code\x18\x05 \x01(\x05R\n" +
+	"statusCode\x12%\n" +
+	"\x0estatus_message\x18\x06 \x01(\tR\rstatusMessage\x12\x1f\n" +
+	"\vduration_ms\x18\a \x01(\x01R\n" +
+	"durationMs2\x8b\a\n" +
 	"\fHttpExecutor\x12C\n" +
 	"\x04Ping\x12\x1c.invoke.executor.PingRequest\x1a\x1d.invoke.executor.PingResponse\x12F\n" +
 	"\aExecute\x12\x1c.invoke.executor.HttpRequest\x1a\x1d.invoke.executor.HttpResponse\x12O\n" +
@@ -2175,7 +2295,8 @@ const file_executor_proto_rawDesc = "" +
 	"\rWebSocketPoll\x12%.invoke.executor.WebSocketPollRequest\x1a&.invoke.executor.WebSocketPollResponse\x12a\n" +
 	"\x0eWebSocketClose\x12&.invoke.executor.WebSocketCloseRequest\x1a'.invoke.executor.WebSocketCloseResponse\x12X\n" +
 	"\vGrpcReflect\x12#.invoke.executor.GrpcReflectRequest\x1a$.invoke.executor.GrpcReflectResponse\x12X\n" +
-	"\vGrpcExecute\x12#.invoke.executor.GrpcExecuteRequest\x1a$.invoke.executor.GrpcExecuteResponseB;Z9github.com/brendatama/invoke/executor/internal/executorpbb\x06proto3"
+	"\vGrpcExecute\x12#.invoke.executor.GrpcExecuteRequest\x1a$.invoke.executor.GrpcExecuteResponse\x12]\n" +
+	"\x10GrpcServerStream\x12#.invoke.executor.GrpcExecuteRequest\x1a\".invoke.executor.GrpcStreamMessage0\x01B;Z9github.com/brendatama/invoke/executor/internal/executorpbb\x06proto3"
 
 var (
 	file_executor_proto_rawDescOnce sync.Once
@@ -2189,7 +2310,7 @@ func file_executor_proto_rawDescGZIP() []byte {
 	return file_executor_proto_rawDescData
 }
 
-var file_executor_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_executor_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_executor_proto_goTypes = []any{
 	(*PingRequest)(nil),              // 0: invoke.executor.PingRequest
 	(*PingResponse)(nil),             // 1: invoke.executor.PingResponse
@@ -2219,6 +2340,7 @@ var file_executor_proto_goTypes = []any{
 	(*GrpcReflectResponse)(nil),      // 25: invoke.executor.GrpcReflectResponse
 	(*GrpcExecuteRequest)(nil),       // 26: invoke.executor.GrpcExecuteRequest
 	(*GrpcExecuteResponse)(nil),      // 27: invoke.executor.GrpcExecuteResponse
+	(*GrpcStreamMessage)(nil),        // 28: invoke.executor.GrpcStreamMessage
 }
 var file_executor_proto_depIdxs = []int32{
 	2,  // 0: invoke.executor.HttpRequest.headers:type_name -> invoke.executor.Header
@@ -2247,29 +2369,32 @@ var file_executor_proto_depIdxs = []int32{
 	4,  // 23: invoke.executor.GrpcExecuteRequest.tls_client_config:type_name -> invoke.executor.TlsClientConfig
 	2,  // 24: invoke.executor.GrpcExecuteResponse.metadata:type_name -> invoke.executor.Header
 	2,  // 25: invoke.executor.GrpcExecuteResponse.trailers:type_name -> invoke.executor.Header
-	0,  // 26: invoke.executor.HttpExecutor.Ping:input_type -> invoke.executor.PingRequest
-	5,  // 27: invoke.executor.HttpExecutor.Execute:input_type -> invoke.executor.HttpRequest
-	5,  // 28: invoke.executor.HttpExecutor.ExecuteStream:input_type -> invoke.executor.HttpRequest
-	14, // 29: invoke.executor.HttpExecutor.WebSocketConnect:input_type -> invoke.executor.WebSocketConnectRequest
-	16, // 30: invoke.executor.HttpExecutor.WebSocketSend:input_type -> invoke.executor.WebSocketSendRequest
-	18, // 31: invoke.executor.HttpExecutor.WebSocketPoll:input_type -> invoke.executor.WebSocketPollRequest
-	21, // 32: invoke.executor.HttpExecutor.WebSocketClose:input_type -> invoke.executor.WebSocketCloseRequest
-	23, // 33: invoke.executor.HttpExecutor.GrpcReflect:input_type -> invoke.executor.GrpcReflectRequest
-	26, // 34: invoke.executor.HttpExecutor.GrpcExecute:input_type -> invoke.executor.GrpcExecuteRequest
-	1,  // 35: invoke.executor.HttpExecutor.Ping:output_type -> invoke.executor.PingResponse
-	12, // 36: invoke.executor.HttpExecutor.Execute:output_type -> invoke.executor.HttpResponse
-	13, // 37: invoke.executor.HttpExecutor.ExecuteStream:output_type -> invoke.executor.ResponseChunk
-	15, // 38: invoke.executor.HttpExecutor.WebSocketConnect:output_type -> invoke.executor.WebSocketConnectResponse
-	17, // 39: invoke.executor.HttpExecutor.WebSocketSend:output_type -> invoke.executor.WebSocketSendResponse
-	20, // 40: invoke.executor.HttpExecutor.WebSocketPoll:output_type -> invoke.executor.WebSocketPollResponse
-	22, // 41: invoke.executor.HttpExecutor.WebSocketClose:output_type -> invoke.executor.WebSocketCloseResponse
-	25, // 42: invoke.executor.HttpExecutor.GrpcReflect:output_type -> invoke.executor.GrpcReflectResponse
-	27, // 43: invoke.executor.HttpExecutor.GrpcExecute:output_type -> invoke.executor.GrpcExecuteResponse
-	35, // [35:44] is the sub-list for method output_type
-	26, // [26:35] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	2,  // 26: invoke.executor.GrpcStreamMessage.trailers:type_name -> invoke.executor.Header
+	0,  // 27: invoke.executor.HttpExecutor.Ping:input_type -> invoke.executor.PingRequest
+	5,  // 28: invoke.executor.HttpExecutor.Execute:input_type -> invoke.executor.HttpRequest
+	5,  // 29: invoke.executor.HttpExecutor.ExecuteStream:input_type -> invoke.executor.HttpRequest
+	14, // 30: invoke.executor.HttpExecutor.WebSocketConnect:input_type -> invoke.executor.WebSocketConnectRequest
+	16, // 31: invoke.executor.HttpExecutor.WebSocketSend:input_type -> invoke.executor.WebSocketSendRequest
+	18, // 32: invoke.executor.HttpExecutor.WebSocketPoll:input_type -> invoke.executor.WebSocketPollRequest
+	21, // 33: invoke.executor.HttpExecutor.WebSocketClose:input_type -> invoke.executor.WebSocketCloseRequest
+	23, // 34: invoke.executor.HttpExecutor.GrpcReflect:input_type -> invoke.executor.GrpcReflectRequest
+	26, // 35: invoke.executor.HttpExecutor.GrpcExecute:input_type -> invoke.executor.GrpcExecuteRequest
+	26, // 36: invoke.executor.HttpExecutor.GrpcServerStream:input_type -> invoke.executor.GrpcExecuteRequest
+	1,  // 37: invoke.executor.HttpExecutor.Ping:output_type -> invoke.executor.PingResponse
+	12, // 38: invoke.executor.HttpExecutor.Execute:output_type -> invoke.executor.HttpResponse
+	13, // 39: invoke.executor.HttpExecutor.ExecuteStream:output_type -> invoke.executor.ResponseChunk
+	15, // 40: invoke.executor.HttpExecutor.WebSocketConnect:output_type -> invoke.executor.WebSocketConnectResponse
+	17, // 41: invoke.executor.HttpExecutor.WebSocketSend:output_type -> invoke.executor.WebSocketSendResponse
+	20, // 42: invoke.executor.HttpExecutor.WebSocketPoll:output_type -> invoke.executor.WebSocketPollResponse
+	22, // 43: invoke.executor.HttpExecutor.WebSocketClose:output_type -> invoke.executor.WebSocketCloseResponse
+	25, // 44: invoke.executor.HttpExecutor.GrpcReflect:output_type -> invoke.executor.GrpcReflectResponse
+	27, // 45: invoke.executor.HttpExecutor.GrpcExecute:output_type -> invoke.executor.GrpcExecuteResponse
+	28, // 46: invoke.executor.HttpExecutor.GrpcServerStream:output_type -> invoke.executor.GrpcStreamMessage
+	37, // [37:47] is the sub-list for method output_type
+	27, // [27:37] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_executor_proto_init() }
@@ -2283,7 +2408,7 @@ func file_executor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_executor_proto_rawDesc), len(file_executor_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   28,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

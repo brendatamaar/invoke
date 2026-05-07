@@ -4,6 +4,10 @@ import {
   ArrowLeftRight,
   ChevronRight,
   ChevronDown,
+  Pin,
+  PinOff,
+  Tag,
+  Cpu,
 } from "lucide-react";
 import { useState } from "react";
 import { useStore, coreStore } from "../../store";
@@ -11,18 +15,150 @@ import { MethodBadge } from "../shared/MethodBadge";
 import { StatusBadge } from "../shared/StatusBadge";
 import type { HistoryEntry } from "@invoke/core";
 
+function LabelEditor({
+  value,
+  onSave,
+}: {
+  value: string;
+  onSave: (label: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  if (!editing) {
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setDraft(value);
+          setEditing(true);
+        }}
+        className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+        title="Add label"
+      >
+        <Tag size={11} />
+      </button>
+    );
+  }
+
+  return (
+    <input
+      autoFocus
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        setEditing(false);
+        onSave(draft.trim());
+      }}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") {
+          setEditing(false);
+          onSave(draft.trim());
+        }
+        if (e.key === "Escape") {
+          setEditing(false);
+        }
+      }}
+      onClick={(e) => e.stopPropagation()}
+      placeholder="Add label…"
+      className="input text-xs py-0 px-1 w-24"
+    />
+  );
+}
+
+function HistoryItem({
+  entry,
+  restore,
+  onDelete,
+  onPin,
+  onLabel,
+  onCreateMock,
+}: {
+  entry: HistoryEntry;
+  restore: (entry: HistoryEntry) => void;
+  onDelete: (entry: HistoryEntry) => void;
+  onPin: (entry: HistoryEntry, pinned: boolean) => void;
+  onLabel: (entry: HistoryEntry, label: string) => void;
+  onCreateMock: (entry: HistoryEntry) => void;
+}) {
+  const req = entry.request as { method?: string; url?: string } | undefined;
+  return (
+    <div
+      className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-b border-[var(--border)] cursor-pointer"
+      onClick={() => restore(entry)}
+    >
+      <MethodBadge method={req?.method ?? "GET"} />
+      <div className="flex-1 min-w-0">
+        <span
+          className="block text-xs font-mono text-[var(--text-1)] truncate"
+          title={req?.url}
+        >
+          {req?.url ?? "—"}
+        </span>
+        {entry.label && (
+          <span className="text-2xs text-[var(--accent)] truncate">
+            {entry.label}
+          </span>
+        )}
+      </div>
+      <StatusBadge status={entry.response?.status ?? 0} />
+      <LabelEditor
+        value={entry.label ?? ""}
+        onSave={(label) => onLabel(entry, label)}
+      />
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onCreateMock(entry);
+        }}
+        className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+        title="Create mock from this response"
+      >
+        <Cpu size={11} />
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onPin(entry, !entry.pinned);
+        }}
+        className={`p-0.5 ${entry.pinned ? "text-[var(--accent)]" : "opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)]"}`}
+        title={entry.pinned ? "Unpin" : "Pin"}
+      >
+        {entry.pinned ? <PinOff size={11} /> : <Pin size={11} />}
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(entry);
+        }}
+        className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)]"
+        title="Delete"
+      >
+        <Trash2 size={11} />
+      </button>
+    </div>
+  );
+}
+
 function HistoryGroup({
   label,
   entries,
   restore,
   onDeleteGroup,
   onDeleteEntry,
+  onPin,
+  onLabel,
+  onCreateMock,
 }: {
   label: string;
   entries: HistoryEntry[];
   restore: (entry: HistoryEntry) => void;
   onDeleteGroup: () => void;
   onDeleteEntry: (entry: HistoryEntry) => void;
+  onPin: (entry: HistoryEntry, pinned: boolean) => void;
+  onLabel: (entry: HistoryEntry, label: string) => void;
+  onCreateMock: (entry: HistoryEntry) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
   return (
@@ -36,49 +172,31 @@ function HistoryGroup({
           {label}
           <span className="ml-1 normal-case font-normal">{entries.length}</span>
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDeleteGroup();
-          }}
-          className="opacity-0 group-hover/hdr:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
-          title={`Delete all ${label}`}
-        >
-          <Trash2 size={11} />
-        </button>
+        {label !== "Pinned" && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteGroup();
+            }}
+            className="opacity-0 group-hover/hdr:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
+            title={`Delete all ${label}`}
+          >
+            <Trash2 size={11} />
+          </button>
+        )}
       </div>
       {expanded &&
-        entries.map((entry, i) => {
-          const req = entry.request as
-            | { method?: string; url?: string }
-            | undefined;
-          return (
-            <div
-              key={entry.id ?? i}
-              className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-b border-[var(--border)] cursor-pointer"
-              onClick={() => restore(entry)}
-            >
-              <MethodBadge method={req?.method ?? "GET"} />
-              <span
-                className="flex-1 text-xs font-mono text-[var(--text-1)] truncate"
-                title={req?.url}
-              >
-                {req?.url ?? "—"}
-              </span>
-              <StatusBadge status={entry.response?.status ?? 0} />
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteEntry(entry);
-                }}
-                className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)]"
-                title="Delete"
-              >
-                <Trash2 size={11} />
-              </button>
-            </div>
-          );
-        })}
+        entries.map((entry, i) => (
+          <HistoryItem
+            key={entry.id ?? i}
+            entry={entry}
+            restore={restore}
+            onDelete={onDeleteEntry}
+            onPin={onPin}
+            onLabel={onLabel}
+            onCreateMock={onCreateMock}
+          />
+        ))}
     </div>
   );
 }
@@ -89,11 +207,14 @@ export function HistoryPanel() {
   const filtered = historyQuery.trim()
     ? history.filter((h) => {
         const req = h.request as { method?: string; url?: string } | undefined;
-        return `${req?.method ?? ""} ${req?.url ?? ""} ${h.response?.status ?? ""}`
+        return `${req?.method ?? ""} ${req?.url ?? ""} ${h.response?.status ?? ""} ${h.label ?? ""}`
           .toLowerCase()
           .includes(historyQuery.toLowerCase());
       })
     : history;
+
+  const pinned = filtered.filter((h) => h.pinned);
+  const unpinned = filtered.filter((h) => !h.pinned);
 
   const restore = (entry: HistoryEntry) => {
     const req = entry.request as
@@ -132,6 +253,62 @@ export function HistoryPanel() {
     }
   };
 
+  const handlePin = async (entry: HistoryEntry, pinned: boolean) => {
+    try {
+      await coreStore.pinHistoryEntry(entry.id, pinned);
+      set({
+        history: history.map((h) =>
+          h.id === entry.id ? { ...h, pinned } : h,
+        ),
+      });
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
+  const handleLabel = async (entry: HistoryEntry, label: string) => {
+    try {
+      await coreStore.setHistoryEntryLabel(entry.id, label);
+      set({
+        history: history.map((h) =>
+          h.id === entry.id ? { ...h, label: label || undefined } : h,
+        ),
+      });
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
+  const handleCreateMock = (entry: HistoryEntry) => {
+    const req = entry.request as { method?: string; url?: string } | undefined;
+    let path = "/";
+    try {
+      path = new URL(req?.url ?? "").pathname || "/";
+    } catch {
+      path = req?.url ?? "/";
+    }
+    const newRoute = {
+      id: Math.random().toString(36).slice(2),
+      enabled: true,
+      method: (req?.method ?? "GET") as import("@invoke/core").HttpMethod,
+      pathPattern: path,
+      status: entry.response?.status ?? 200,
+      headers: (entry.response?.headers ?? []).filter(
+        (h) =>
+          !["content-encoding", "transfer-encoding", "connection"].includes(
+            h.key.toLowerCase(),
+          ),
+      ),
+      body: entry.response?.body ?? "",
+      latencyMs: 0,
+    };
+    set((s) => ({
+      mockRoutes: [...s.mockRoutes, newRoute],
+      sidebarSection: "mocks",
+    }));
+    addToast("success", "Mock route created");
+  };
+
   const clearAll = () => set({ showClearHistoryModal: true });
 
   const dateLabel = (ts: number) => {
@@ -152,8 +329,8 @@ export function HistoryPanel() {
     });
   };
 
-  const grouped = filtered.reduce<
-    { label: string; entries: typeof filtered }[]
+  const grouped = unpinned.reduce<
+    { label: string; entries: typeof unpinned }[]
   >((acc, entry) => {
     const label = dateLabel(entry.createdAt);
     const last = acc[acc.length - 1];
@@ -204,6 +381,18 @@ export function HistoryPanel() {
             No history
           </p>
         )}
+        {pinned.length > 0 && (
+          <HistoryGroup
+            label="Pinned"
+            entries={pinned}
+            restore={restore}
+            onDeleteGroup={() => {}}
+            onDeleteEntry={deleteEntry}
+            onPin={handlePin}
+            onLabel={handleLabel}
+            onCreateMock={handleCreateMock}
+          />
+        )}
         {grouped.map((group) => (
           <HistoryGroup
             key={group.label}
@@ -212,6 +401,9 @@ export function HistoryPanel() {
             restore={restore}
             onDeleteGroup={() => deleteGroup(group.entries)}
             onDeleteEntry={deleteEntry}
+            onPin={handlePin}
+            onLabel={handleLabel}
+            onCreateMock={handleCreateMock}
           />
         ))}
       </div>

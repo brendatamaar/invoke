@@ -1,9 +1,9 @@
-import { Settings, HelpCircle, Search } from "lucide-react";
+import { Settings, HelpCircle, Search, Cookie } from "lucide-react";
 import { useStore } from "../../store";
 import { Select } from "../shared/Select";
 
 export function TopBar() {
-  const { environments, activeEnvironmentId, set, showSettings } = useStore();
+  const { environments, activeEnvironmentId, cookies, set, showSettings } = useStore();
   const activeEnv = environments.find((e) => e.id === activeEnvironmentId);
 
   return (
@@ -47,6 +47,16 @@ export function TopBar() {
           ))}
         </Select>
 
+        <button
+          onClick={() => set({ showCookieManager: true })}
+          className="relative p-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
+          title="Cookie Manager"
+        >
+          <Cookie size={15} />
+          {cookies.length > 0 && (
+            <span className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+          )}
+        </button>
         <button
           onClick={() => set({ showSettings: !showSettings })}
           className={`p-1.5 rounded hover:bg-[var(--surface-2)] ${showSettings ? "text-[var(--accent)]" : "text-[var(--text-3)]"}`}

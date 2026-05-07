@@ -4,6 +4,7 @@ import type {
   GrpcExecuteResponse,
   GrpcMethodInfo,
   GrpcRequestConfig,
+  GrpcStreamMessage,
   MockLogEntry,
   MockRoute,
   RequestConfig,
@@ -34,6 +35,40 @@ export async function execute(
   if (payload.bodyEncoding === "base64")
     payload.body = decodeBase64(payload.body);
   return payload;
+}
+
+export async function executeWithRetry(
+  request: RequestConfig,
+): Promise<ExecuteResponse & { retryAttempts?: number }> {
+  const policy = request.retryPolicy;
+  if (!policy || policy.maxRetries <= 0) return execute(request);
+
+  let lastResult: ExecuteResponse | undefined;
+  let attempts = 0;
+  let backoff = policy.backoffMs;
+
+  for (let attempt = 0; attempt <= policy.maxRetries; attempt++) {
+    try {
+      const res = await execute(request);
+      const shouldRetry =
+        (policy.retryOn5xx && res.status >= 500) ||
+        (policy.retryOnTimeout && !!res.error?.toLowerCase().includes("timeout"));
+      if (!shouldRetry || attempt === policy.maxRetries) {
+        return { ...res, retryAttempts: attempt };
+      }
+      lastResult = res;
+      attempts = attempt + 1;
+    } catch (e) {
+      const isTimeout =
+        policy.retryOnTimeout &&
+        String(e).toLowerCase().includes("timeout");
+      if (!isTimeout || attempt === policy.maxRetries) throw e;
+      attempts = attempt + 1;
+    }
+    await new Promise((r) => setTimeout(r, backoff));
+    backoff *= 2;
+  }
+  return { ...lastResult!, retryAttempts: attempts };
 }
 
 export async function executeStream(
@@ -202,6 +237,52 @@ export async function webSocketClose(
   return res.json() as Promise<{ error?: string }>;
 }
 
+export async function grpcServerStream(
+  request: GrpcRequestConfig,
+  handlers: {
+    onMessage: (msg: GrpcStreamMessage) => void;
+    onDone: (msg: GrpcStreamMessage) => void;
+    signal?: AbortSignal;
+  },
+): Promise<void> {
+  const payload = {
+    ...buildGrpcPayload(request),
+    fullMethod: grpcFullMethod(request),
+    bodyJson: request.body,
+  };
+  const res = await fetch("/api/grpc/server-stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    signal: handlers.signal,
+  });
+  if (!res.ok || !res.body) throw new Error(await res.text());
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const events = buffer.split("\n\n");
+    buffer = events.pop() ?? "";
+    for (const event of events) {
+      const dataLine = event.split("\n").find((l) => l.startsWith("data:"));
+      if (!dataLine) continue;
+      try {
+        const msg = JSON.parse(dataLine.slice(5).trimStart()) as GrpcStreamMessage;
+        if (msg.done) {
+          handlers.onDone(msg);
+        } else {
+          handlers.onMessage(msg);
+        }
+      } catch { /* skip malformed */ }
+    }
+  }
+}
+
 export async function grpcReflect(
   request: GrpcRequestConfig,
 ): Promise<{ methods: GrpcMethodInfo[]; error?: string }> {
@@ -228,6 +309,94 @@ export async function grpcExecute(
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json() as Promise<GrpcExecuteResponse>;
+}
+
+export interface ProxyRecord {
+  id: string;
+  method: string;
+  path: string;
+  requestHeaders: { key: string; value: string }[];
+  requestBody: string;
+  status: number;
+  responseHeaders: { key: string; value: string }[];
+  responseBody: string;
+  createdAt: number;
+}
+
+export async function proxyRequest(params: {
+  targetUrl: string;
+  method: string;
+  headers: { key: string; value: string; enabled?: boolean }[];
+  body: string;
+}): Promise<{ status: number; statusText: string; headers: { key: string; value: string }[]; body: string; recordId: string }> {
+  const res = await fetch("/api/proxy/request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<{ status: number; statusText: string; headers: { key: string; value: string }[]; body: string; recordId: string }>;
+}
+
+export async function loadProxyRecords(): Promise<ProxyRecord[]> {
+  const res = await fetch("/api/proxy/records");
+  if (!res.ok) throw new Error(await res.text());
+  const data = (await res.json()) as { records: ProxyRecord[] };
+  return data.records;
+}
+
+export async function clearProxyRecords(): Promise<void> {
+  const res = await fetch("/api/proxy/records", { method: "DELETE" });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+export async function proxyRecordsToMocks(ids?: string[]): Promise<{ added: number; routes: MockRoute[] }> {
+  const res = await fetch("/api/proxy/records/to-mocks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<{ added: number; routes: MockRoute[] }>;
+}
+
+export async function oauth2AuthCodeStart(params: {
+  authUrl: string;
+  tokenUrl: string;
+  clientId: string;
+  clientSecret: string;
+  scope: string;
+  redirectUri: string;
+  pkce: boolean;
+  codeChallenge: string;
+  codeChallengeMethod: string;
+}): Promise<{ authUrl: string; state: string }> {
+  const res = await fetch("/api/oauth2/auth-code/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<{ authUrl: string; state: string }>;
+}
+
+export async function oauth2AuthCodeResult(state: string): Promise<{
+  status: "pending" | "done" | "error" | "unknown";
+  accessToken?: string;
+  refreshToken?: string;
+  tokenType?: string;
+  expiresIn?: number;
+  error?: string;
+}> {
+  const res = await fetch(`/api/oauth2/auth-code/result/${state}`);
+  return res.json() as Promise<{
+    status: "pending" | "done" | "error" | "unknown";
+    accessToken?: string;
+    refreshToken?: string;
+    tokenType?: string;
+    expiresIn?: number;
+    error?: string;
+  }>;
 }
 
 export async function oauth2ClientCredentials(auth: AuthConfig): Promise<{

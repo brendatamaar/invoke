@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { isSensitiveVariableName, maskedValue } from "@invoke/core";
 import { useStore } from "../../store";
 
 const DYNAMIC_VARS = [
@@ -21,6 +22,15 @@ interface Props {
   placeholder?: string;
   className?: string;
   spellCheck?: boolean;
+  disabled?: boolean;
+  type?: "text" | "password";
+}
+
+interface VariableSuggestion {
+  name: string;
+  source: "environment" | "session" | "dynamic";
+  value?: string;
+  sensitive?: boolean;
 }
 
 export function VariableAutocompleteInput({
@@ -30,19 +40,62 @@ export function VariableAutocompleteInput({
   placeholder,
   className,
   spellCheck = false,
+  disabled,
+  type = "text",
 }: Props) {
   const { environments, activeEnvironmentId, sessionVariables } = useStore();
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<VariableSuggestion[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [triggerStart, setTriggerStart] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const allVars = useMemo(() => {
     const env = environments.find((e) => e.id === activeEnvironmentId);
-    const envKeys = (env?.variables ?? []).map((v) => v.key).filter(Boolean);
-    const sessionKeys = Object.keys(sessionVariables);
-    return [...new Set([...envKeys, ...sessionKeys, ...DYNAMIC_VARS])];
+    const vars = new Map<string, VariableSuggestion>();
+    (env?.variables ?? [])
+      .filter((v) => v.enabled !== false && v.key.trim())
+      .forEach((v) =>
+        vars.set(v.key.trim(), {
+          name: v.key.trim(),
+          source: "environment",
+          value: v.value,
+          sensitive: v.sensitive || isSensitiveVariableName(v.key),
+        }),
+      );
+    Object.entries(sessionVariables)
+      .filter(([key]) => key.trim())
+      .forEach(([key, value]) =>
+        vars.set(key.trim(), {
+          name: key.trim(),
+          source: "session",
+          value,
+          sensitive: isSensitiveVariableName(key),
+        }),
+      );
+    DYNAMIC_VARS.forEach((name) =>
+      vars.set(name, { name, source: "dynamic" }),
+    );
+    return [...vars.values()];
   }, [environments, activeEnvironmentId, sessionVariables]);
+
+  const variableTitle = useMemo(() => {
+    const names = [...value.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)].map((match) =>
+      String(match[1]).trim(),
+    );
+    if (!names.length) return undefined;
+    const byName = new Map(allVars.map((variable) => [variable.name, variable]));
+    return [...new Set(names)]
+      .map((name) => {
+        const found = byName.get(name);
+        if (!found) return `${name}: unresolved`;
+        if (found.source === "dynamic") return `${name}: dynamic`;
+        const preview = found.sensitive
+          ? maskedValue(found.value ?? "")
+          : (found.value ?? "");
+        return `${name}: ${preview || "(empty)"} (${found.source})`;
+      })
+      .join("\n");
+  }, [allVars, value]);
 
   const detectTrigger = (val: string, cursor: number) => {
     const before = val.slice(0, cursor);
@@ -60,7 +113,7 @@ export function VariableAutocompleteInput({
     const { active, start, partial } = detectTrigger(val, cursor);
     if (active) {
       const filtered = allVars.filter((v) =>
-        v.toLowerCase().startsWith(partial.toLowerCase()),
+        v.name.toLowerCase().startsWith(partial.toLowerCase()),
       );
       setSuggestions(filtered);
       setTriggerStart(start);
@@ -101,7 +154,7 @@ export function VariableAutocompleteInput({
       }
       if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
-        applySuggestion(suggestions[selectedIdx] ?? "");
+        applySuggestion(suggestions[selectedIdx]?.name ?? "");
         return;
       }
       if (e.key === "Escape") {
@@ -117,7 +170,7 @@ export function VariableAutocompleteInput({
     <div className="relative flex-1 min-w-0">
       <input
         ref={inputRef}
-        type="text"
+        type={type}
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
@@ -125,19 +178,31 @@ export function VariableAutocompleteInput({
         placeholder={placeholder}
         className={className}
         spellCheck={spellCheck}
+        disabled={disabled}
+        title={variableTitle}
       />
       {suggestions.length > 0 && (
         <div className="absolute top-full left-0 mt-1 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto min-w-40">
           {suggestions.map((v, i) => (
             <button
-              key={v}
-              className={`w-full text-left px-3 py-1 text-xs font-mono ${i === selectedIdx ? "bg-[var(--accent-subtle)] text-[var(--accent)]" : "text-[var(--text-1)] hover:bg-[var(--surface-2)]"}`}
+              key={v.name}
+              className={`w-full text-left px-3 py-1.5 text-xs ${i === selectedIdx ? "bg-[var(--accent-subtle)] text-[var(--accent)]" : "text-[var(--text-1)] hover:bg-[var(--surface-2)]"}`}
               onMouseDown={(e) => {
                 e.preventDefault();
-                applySuggestion(v);
+                applySuggestion(v.name);
               }}
             >
-              {`{{${v}}}`}
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-mono truncate">{`{{${v.name}}}`}</span>
+                <span className="ml-auto text-2xs text-[var(--text-3)] uppercase tracking-wide">
+                  {v.source}
+                </span>
+              </div>
+              {v.source !== "dynamic" && (
+                <div className="text-2xs text-[var(--text-3)] truncate mt-0.5">
+                  {v.sensitive ? maskedValue(v.value ?? "") : v.value || "(empty)"}
+                </div>
+              )}
             </button>
           ))}
         </div>

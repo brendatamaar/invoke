@@ -1,11 +1,12 @@
-import { useRef, useState } from "react";
-import { Play, Square, Plus, Trash2, X } from "lucide-react";
+import { useRef, useState, useCallback } from "react";
+import { Play, Square, Plus, Trash2, X, GripVertical, CheckCircle2, XCircle, Clock, List, Network } from "lucide-react";
 import { useStore, coreStore } from "../../store";
 import {
   FlowRunner,
   validateFlow,
   type Flow,
   type FlowStep,
+  type FlowStepResult,
   type VariableScope,
 } from "@invoke/core";
 import { execute } from "../../lib/api";
@@ -310,6 +311,185 @@ function StepEditorPanel({
   );
 }
 
+const NODE_W = 180;
+const NODE_H = 72;
+const NODE_GAP_Y = 56;
+const CANVAS_PAD = 40;
+
+function defaultPositions(steps: FlowStep[]): Record<string, { x: number; y: number }> {
+  const pos: Record<string, { x: number; y: number }> = {};
+  steps.forEach((step, i) => {
+    pos[step.id] = { x: CANVAS_PAD, y: CANVAS_PAD + i * (NODE_H + NODE_GAP_Y) };
+  });
+  return pos;
+}
+
+function FlowCanvas({
+  steps,
+  selectedIndex,
+  flowResult,
+  onSelect,
+  onAddStep,
+}: {
+  steps: FlowStep[];
+  selectedIndex: number | null;
+  flowResult: import("@invoke/core").FlowResult | undefined;
+  onSelect: (i: number) => void;
+  onAddStep: (type: FlowStep["type"]) => void;
+}) {
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>(() =>
+    defaultPositions(steps),
+  );
+  const [addingAt, setAddingAt] = useState(false);
+  const dragging = useRef<{ id: string; ox: number; oy: number } | null>(null);
+
+  // Sync new steps into positions
+  const knownIds = new Set(Object.keys(positions));
+  const lastKnown = steps.filter((s) => knownIds.has(s.id));
+  const newSteps = steps.filter((s) => !knownIds.has(s.id));
+  if (newSteps.length) {
+    const maxY = lastKnown.reduce((m, s) => Math.max(m, (positions[s.id]?.y ?? 0) + NODE_H), CANVAS_PAD);
+    const patch: Record<string, { x: number; y: number }> = {};
+    newSteps.forEach((s, i) => {
+      patch[s.id] = { x: CANVAS_PAD, y: maxY + NODE_GAP_Y + i * (NODE_H + NODE_GAP_Y) };
+    });
+    setPositions((p) => ({ ...p, ...patch }));
+  }
+
+  const canvasWidth = Math.max(
+    500,
+    ...steps.map((s) => (positions[s.id]?.x ?? 0) + NODE_W + CANVAS_PAD),
+  );
+  const canvasHeight = Math.max(
+    300,
+    ...steps.map((s) => (positions[s.id]?.y ?? 0) + NODE_H + CANVAS_PAD + 60),
+  );
+
+  const onMouseDown = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const pos = positions[id] ?? { x: 0, y: 0 };
+    dragging.current = { id, ox: e.clientX - pos.x, oy: e.clientY - pos.y };
+    const onMove = (ev: MouseEvent) => {
+      if (!dragging.current) return;
+      const { id: did, ox, oy } = dragging.current;
+      setPositions((p) => ({ ...p, [did]: { x: Math.max(0, ev.clientX - ox), y: Math.max(0, ev.clientY - oy) } }));
+    };
+    const onUp = () => {
+      dragging.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [positions]);
+
+  return (
+    <div className="relative w-full h-full overflow-auto bg-[var(--surface-2)]"
+      style={{ backgroundImage: "radial-gradient(circle, var(--border) 1px, transparent 1px)", backgroundSize: "20px 20px" }}
+    >
+      <svg
+        style={{ position: "absolute", top: 0, left: 0, width: canvasWidth, height: canvasHeight, pointerEvents: "none" }}
+      >
+        <defs>
+          <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3 z" fill="var(--border-strong)" />
+          </marker>
+        </defs>
+        {steps.map((step, i) => {
+          if (i === 0) return null;
+          const from = positions[steps[i - 1].id];
+          const to = positions[step.id];
+          if (!from || !to) return null;
+          const x1 = from.x + NODE_W / 2;
+          const y1 = from.y + NODE_H;
+          const x2 = to.x + NODE_W / 2;
+          const y2 = to.y;
+          const mid = (y1 + y2) / 2;
+          return (
+            <path
+              key={step.id}
+              d={`M${x1},${y1} C${x1},${mid} ${x2},${mid} ${x2},${y2}`}
+              fill="none"
+              stroke="var(--border-strong)"
+              strokeWidth="1.5"
+              markerEnd="url(#arrow)"
+            />
+          );
+        })}
+      </svg>
+
+      <div style={{ position: "relative", width: canvasWidth, height: canvasHeight }}>
+        {steps.map((step, i) => {
+          const pos = positions[step.id] ?? { x: CANVAS_PAD, y: CANVAS_PAD };
+          const stepResult = flowResult?.steps.find((r) => r.stepId === step.id);
+          const isSelected = selectedIndex === i;
+          const statusColor = stepResult
+            ? stepResult.status === "passed" ? "border-emerald-500" : "border-red-500"
+            : isSelected ? "border-[var(--accent)]" : "border-[var(--border)]";
+
+          return (
+            <div
+              key={step.id}
+              style={{ position: "absolute", left: pos.x, top: pos.y, width: NODE_W, height: NODE_H, cursor: "grab", userSelect: "none" }}
+              className={`bg-[var(--surface)] rounded-lg border-2 shadow-sm flex flex-col px-3 py-2 gap-0.5 ${statusColor} ${isSelected ? "shadow-md" : ""}`}
+              onMouseDown={(e) => onMouseDown(e, step.id)}
+              onClick={() => onSelect(i)}
+            >
+              <div className="flex items-center gap-1.5">
+                <div className={`w-2 h-2 rounded-full shrink-0 ${STEP_COLORS[step.type]}`} />
+                <span className="text-2xs text-[var(--text-3)] uppercase tracking-wide">{step.type}</span>
+                {stepResult && (
+                  stepResult.status === "passed"
+                    ? <CheckCircle2 size={10} className="ml-auto text-emerald-500" />
+                    : <XCircle size={10} className="ml-auto text-red-500" />
+                )}
+              </div>
+              <div className="text-xs font-medium text-[var(--text-1)] truncate">{step.name}</div>
+              {step.type === "request" && (
+                <div className="text-2xs text-[var(--text-3)] truncate">{step.request.method} {step.request.url || "—"}</div>
+              )}
+              {step.type === "delay" && (
+                <div className="text-2xs text-[var(--text-3)]">{step.delayMs}ms</div>
+              )}
+              {stepResult?.response?.status && (
+                <div className="flex items-center gap-1 text-2xs text-[var(--text-3)]">
+                  <Clock size={9} />{stepResult.completedAt - stepResult.startedAt}ms · {stepResult.response.status}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Add step button on canvas */}
+        <div style={{ position: "absolute", left: CANVAS_PAD, top: canvasHeight - 52 }}>
+          {addingAt ? (
+            <div className="flex gap-1">
+              {(["request", "delay", "condition", "loop"] as FlowStep["type"][]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => { onAddStep(t); setAddingAt(false); }}
+                  className="flex items-center gap-1 text-2xs px-2 py-1 rounded bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-2)]"
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full ${STEP_COLORS[t]}`} />
+                  {t}
+                </button>
+              ))}
+              <button onClick={() => setAddingAt(false)} className="text-2xs px-2 py-1 text-[var(--text-3)]">✕</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAddingAt(true)}
+              className="flex items-center gap-1.5 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] bg-[var(--surface)] border border-[var(--border)] rounded px-2.5 py-1.5 shadow-sm"
+            >
+              <Plus size={12} /> Add step
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
   const {
     set,
@@ -334,6 +514,9 @@ function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
   });
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [addingStep, setAddingStep] = useState(false);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "canvas">("list");
+  const dragIndex = useRef<number | null>(null);
 
   const updateStep = (index: number, step: FlowStep) => {
     const steps = [...draft.steps];
@@ -356,6 +539,15 @@ function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
     setDraft({ ...draft, steps });
     setSelectedIndex(steps.length - 1);
     setAddingStep(false);
+  };
+
+  const reorderStep = (from: number, to: number) => {
+    if (from === to) return;
+    const steps = [...draft.steps];
+    const [moved] = steps.splice(from, 1);
+    steps.splice(to, 0, moved);
+    setDraft({ ...draft, steps });
+    setSelectedIndex(to);
   };
 
   const showValidation = (validation: ReturnType<typeof validateFlow>) => {
@@ -443,7 +635,7 @@ function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
     >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col overflow-hidden"
-        style={{ width: 720, height: "82vh" }}
+        style={{ width: viewMode === "canvas" ? "90vw" : 720, height: "82vh" }}
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[var(--border)] shrink-0">
@@ -453,6 +645,23 @@ function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
             value={draft.name}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
           />
+          {/* View toggle */}
+          <div className="flex rounded border border-[var(--border)] overflow-hidden">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`px-2 py-1 text-2xs flex items-center gap-1 ${viewMode === "list" ? "bg-[var(--accent)] text-white" : "text-[var(--text-3)] hover:bg-[var(--surface-2)]"}`}
+              title="List view"
+            >
+              <List size={12} /> List
+            </button>
+            <button
+              onClick={() => setViewMode("canvas")}
+              className={`px-2 py-1 text-2xs flex items-center gap-1 ${viewMode === "canvas" ? "bg-[var(--accent)] text-white" : "text-[var(--text-3)] hover:bg-[var(--surface-2)]"}`}
+              title="Canvas view"
+            >
+              <Network size={12} /> Canvas
+            </button>
+          </div>
           <button
             onClick={handleClose}
             className="text-[var(--text-3)] hover:text-[var(--text-1)] p-1 rounded hover:bg-[var(--surface-2)]"
@@ -463,6 +672,36 @@ function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
 
         {/* Body */}
         <div className="flex flex-1 min-h-0">
+          {viewMode === "canvas" && (
+            <div className="flex flex-1 min-h-0 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <FlowCanvas
+                  steps={draft.steps}
+                  selectedIndex={selectedIndex}
+                  flowResult={flowResult}
+                  onSelect={setSelectedIndex}
+                  onAddStep={(type) => {
+                    const step = makeStep(type);
+                    const steps = [...draft.steps, step];
+                    setDraft({ ...draft, steps });
+                    setSelectedIndex(steps.length - 1);
+                  }}
+                />
+              </div>
+              {selectedIndex !== null && draft.steps[selectedIndex] && (
+                <div className="border-l border-[var(--border)] overflow-y-auto p-5 shrink-0" style={{ width: 280 }}>
+                  <StepEditorPanel
+                    step={draft.steps[selectedIndex]}
+                    onChange={(s) => updateStep(selectedIndex, s)}
+                    onRemove={() => removeStep(selectedIndex)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {viewMode === "list" && (
+          <>
           {/* Left: step list */}
           <div
             className="flex flex-col border-r border-[var(--border)]"
@@ -475,51 +714,76 @@ function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
             </div>
 
             <div className="flex-1 overflow-y-auto py-3 px-3 flex flex-col">
-              {draft.steps.map((step, i) => (
-                <div key={step.id} className="relative flex flex-col">
+              {draft.steps.map((step, i) => {
+                const stepResult = flowResult?.steps.find((r: FlowStepResult) => r.stepId === step.id);
+                const isDragTarget = dragOver === i;
+                return (
                   <div
-                    className={`group flex items-start gap-2.5 px-2 py-2 rounded cursor-pointer hover:bg-[var(--surface-2)] ${selectedIndex === i ? "bg-[var(--accent-subtle)]" : ""}`}
-                    onClick={() => setSelectedIndex(i)}
+                    key={step.id}
+                    className="relative flex flex-col"
+                    draggable
+                    onDragStart={() => { dragIndex.current = i; }}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(i); }}
+                    onDragLeave={() => setDragOver(null)}
+                    onDrop={() => {
+                      if (dragIndex.current !== null) reorderStep(dragIndex.current, i);
+                      dragIndex.current = null;
+                      setDragOver(null);
+                    }}
                   >
-                    <div className="relative flex flex-col items-center shrink-0 mt-0.5">
-                      <div
-                        className={`w-2 h-2 rounded-full ${STEP_COLORS[step.type]}`}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-2xs text-[var(--text-3)] uppercase tracking-wide">
-                        {step.type}
-                      </div>
-                      <div className="text-xs text-[var(--text-1)] truncate font-medium">
-                        {step.name}
-                      </div>
-                      {step.type === "request" && (
-                        <div className="text-2xs text-[var(--text-3)] truncate">
-                          {step.request.method} {step.request.url || "—"}
-                        </div>
-                      )}
-                      {step.type === "delay" && (
-                        <div className="text-2xs text-[var(--text-3)]">
-                          {step.delayMs}ms
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeStep(i);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0 mt-0.5"
+                    {isDragTarget && <div className="h-0.5 bg-[var(--accent)] rounded mx-1 mb-1" />}
+                    <div
+                      className={`group flex items-start gap-1.5 px-2 py-2 rounded cursor-pointer hover:bg-[var(--surface-2)] ${selectedIndex === i ? "bg-[var(--accent-subtle)]" : ""}`}
+                      onClick={() => setSelectedIndex(i)}
                     >
-                      <Trash2 size={10} />
-                    </button>
+                      <GripVertical size={11} className="text-[var(--text-3)] opacity-0 group-hover:opacity-100 shrink-0 mt-1 cursor-grab" />
+                      <div className="relative flex flex-col items-center shrink-0 mt-1">
+                        <div className={`w-2 h-2 rounded-full ${STEP_COLORS[step.type]}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-2xs text-[var(--text-3)] uppercase tracking-wide">
+                          {step.type}
+                        </div>
+                        <div className="text-xs text-[var(--text-1)] truncate font-medium">
+                          {step.name}
+                        </div>
+                        {step.type === "request" && (
+                          <div className="text-2xs text-[var(--text-3)] truncate">
+                            {step.request.method} {step.request.url || "—"}
+                          </div>
+                        )}
+                        {step.type === "delay" && (
+                          <div className="text-2xs text-[var(--text-3)]">
+                            {step.delayMs}ms
+                          </div>
+                        )}
+                        {stepResult && (
+                          <div className={`flex items-center gap-1 text-2xs mt-0.5 ${stepResult.status === "passed" ? "text-emerald-600" : "text-red-500"}`}>
+                            {stepResult.status === "passed"
+                              ? <CheckCircle2 size={10} />
+                              : <XCircle size={10} />}
+                            <span className="flex items-center gap-0.5 text-[var(--text-3)]">
+                              <Clock size={9} />{stepResult.completedAt - stepResult.startedAt}ms
+                            </span>
+                            {stepResult.response?.status && (
+                              <span>{stepResult.response.status}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeStep(i); }}
+                        className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0 mt-0.5"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    </div>
+                    {i < draft.steps.length - 1 && (
+                      <div className="w-px bg-[var(--border)] self-start ml-[22px] h-2" />
+                    )}
                   </div>
-                  {/* connector */}
-                  {i < draft.steps.length - 1 && (
-                    <div className="w-px bg-[var(--border)] self-start ml-[18px] h-2" />
-                  )}
-                </div>
-              ))}
+                );
+              })}
 
               {!draft.steps.length && (
                 <p className="text-xs text-[var(--text-3)] text-center py-6">
@@ -585,6 +849,8 @@ function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
 
         {/* Log */}

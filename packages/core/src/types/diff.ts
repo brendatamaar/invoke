@@ -21,3 +21,8 @@ export interface DiffResult {
   responseTimeDeltaMs: number;
   mode: "json" | "text";
 }
+
+export interface DiffIgnoreRule {
+  id: string;
+  path: string;
+}

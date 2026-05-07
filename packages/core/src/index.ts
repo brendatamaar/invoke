@@ -1,4 +1,6 @@
 export * from "./assertions";
+export * from "./cookies";
+export * from "./runner";
 export * from "./auth";
 export * from "./codegen";
 export * from "./diff";
@@ -14,3 +16,4 @@ export * from "./scripting";
 export * from "./storage";
 export * from "./types";
 export * from "./variables";
+export * from "./workspace";

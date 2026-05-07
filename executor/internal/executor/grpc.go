@@ -51,6 +51,101 @@ func (s *Service) GrpcReflect(ctx context.Context, req *GrpcReflectRequest) (*Gr
 	return &GrpcReflectResponse{Methods: methods}, nil
 }
 
+func (s *Service) GrpcServerStream(req *GrpcExecuteRequest, stream GrpcServerStreamServer) error {
+	address := strings.TrimSpace(req.GetAddress())
+	if address == "" {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: "address is required"})
+	}
+
+	fullMethod := strings.TrimSpace(req.GetFullMethod())
+	serviceName, methodName, err := splitFullMethod(fullMethod)
+	if err != nil {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: err.Error()})
+	}
+
+	timeout := time.Duration(req.GetTimeoutMs()) * time.Millisecond
+	if timeout <= 0 {
+		timeout = 60 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(stream.Context(), timeout)
+	defer cancel()
+
+	conn, err := grpcClientConn(ctx, address, req.GetTls(), req.GetVerifySsl(), req.GetTlsClientConfig())
+	if err != nil {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: err.Error()})
+	}
+	defer conn.Close()
+
+	ctx = metadata.NewOutgoingContext(ctx, outgoingMetadata(req.GetMetadata()))
+	files, err := descriptorRegistryForSymbols(ctx, conn, []string{serviceName})
+	if err != nil {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: err.Error()})
+	}
+	method, err := findGrpcMethod(files, serviceName, methodName)
+	if err != nil {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: err.Error()})
+	}
+	if !method.IsStreamingServer() {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: "method is not server-streaming; use GrpcExecute instead"})
+	}
+
+	input := dynamicpb.NewMessage(method.Input())
+	body := strings.TrimSpace(req.GetBodyJson())
+	if body == "" {
+		body = "{}"
+	}
+	if err := protojson.Unmarshal([]byte(body), input); err != nil {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: fmt.Sprintf("invalid request JSON: %v", err)})
+	}
+
+	var trailer metadata.MD
+	start := time.Now()
+	clientStream, err := conn.NewStream(ctx, &grpc.StreamDesc{ServerStreams: true}, fullMethod, grpc.Trailer(&trailer))
+	if err != nil {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: err.Error()})
+	}
+
+	if err := clientStream.SendMsg(input); err != nil {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: err.Error()})
+	}
+	if err := clientStream.CloseSend(); err != nil {
+		return stream.Send(&GrpcStreamMessage{Done: true, Error: err.Error()})
+	}
+
+	for {
+		output := dynamicpb.NewMessage(method.Output())
+		recvErr := clientStream.RecvMsg(output)
+		if recvErr != nil {
+			durationMs := floatMs(time.Since(start))
+			statusCode := int32(codes.OK)
+			statusMessage := ""
+			if st, ok := status.FromError(recvErr); ok {
+				statusCode = int32(st.Code())
+				statusMessage = st.Message()
+			}
+			done := &GrpcStreamMessage{
+				Done:          true,
+				DurationMs:    durationMs,
+				StatusCode:    statusCode,
+				StatusMessage: statusMessage,
+				Trailers:      metadataToHeaders(trailer),
+			}
+			if recvErr.Error() != "EOF" && statusCode != int32(codes.OK) {
+				done.Error = recvErr.Error()
+			}
+			return stream.Send(done)
+		}
+
+		bodyJSON, err := protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true}.Marshal(output)
+		if err != nil {
+			bodyJSON = []byte("{}")
+		}
+		if err := stream.Send(&GrpcStreamMessage{BodyJson: string(bodyJSON)}); err != nil {
+			return err
+		}
+	}
+}
+
 func (s *Service) GrpcExecute(ctx context.Context, req *GrpcExecuteRequest) (*GrpcExecuteResponse, error) {
 	address := strings.TrimSpace(req.GetAddress())
 	if address == "" {
@@ -85,8 +180,11 @@ func (s *Service) GrpcExecute(ctx context.Context, req *GrpcExecuteRequest) (*Gr
 	if err != nil {
 		return &GrpcExecuteResponse{Error: err.Error()}, nil
 	}
-	if method.IsStreamingClient() || method.IsStreamingServer() {
-		return &GrpcExecuteResponse{Error: "streaming gRPC methods are not supported yet"}, nil
+	if method.IsStreamingClient() {
+		return &GrpcExecuteResponse{Error: "client-streaming gRPC methods are not yet supported"}, nil
+	}
+	if method.IsStreamingServer() {
+		return &GrpcExecuteResponse{Error: "use /api/grpc/server-stream for server-streaming methods"}, nil
 	}
 
 	input := dynamicpb.NewMessage(method.Input())
@@ -194,12 +292,14 @@ func reflectGrpcMethods(ctx context.Context, conn *grpc.ClientConn) ([]*GrpcMeth
 		for index := 0; index < serviceDescriptor.Methods().Len(); index += 1 {
 			method := serviceDescriptor.Methods().Get(index)
 			methods = append(methods, &GrpcMethod{
-				Service:    string(serviceDescriptor.FullName()),
-				Method:     string(method.Name()),
-				FullMethod: "/" + string(serviceDescriptor.FullName()) + "/" + string(method.Name()),
-				InputType:  string(method.Input().FullName()),
-				OutputType: string(method.Output().FullName()),
-				InputJson:  grpcMessageTemplate(method.Input()),
+				Service:         string(serviceDescriptor.FullName()),
+				Method:          string(method.Name()),
+				FullMethod:      "/" + string(serviceDescriptor.FullName()) + "/" + string(method.Name()),
+				InputType:       string(method.Input().FullName()),
+				OutputType:      string(method.Output().FullName()),
+				InputJson:       grpcMessageTemplate(method.Input()),
+				ClientStreaming:  method.IsStreamingClient(),
+				ServerStreaming:  method.IsStreamingServer(),
 			})
 		}
 	}

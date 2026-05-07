@@ -72,4 +72,91 @@ describe("mock routes", () => {
     expect(fallback.status).toBe(200);
     expect(await fallback.text()).toBe("fallback");
   });
+
+  it("cycles response sequences and resets them when routes are synced", async () => {
+    const route = {
+      id: "sequence",
+      enabled: true,
+      method: "GET",
+      pathPattern: "/sequence",
+      status: 200,
+      headers: [],
+      body: "default",
+      sequences: [
+        { status: 200, headers: [], body: "first" },
+        { status: 201, headers: [], body: "second" },
+      ],
+    };
+
+    await app.request("/api/mock/routes", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ routes: [route] }),
+    });
+
+    const first = await app.request("/mock/sequence");
+    expect(first.status).toBe(200);
+    expect(await first.text()).toBe("first");
+
+    const second = await app.request("/mock/sequence");
+    expect(second.status).toBe(201);
+    expect(await second.text()).toBe("second");
+
+    const wrapped = await app.request("/mock/sequence");
+    expect(wrapped.status).toBe(200);
+    expect(await wrapped.text()).toBe("first");
+
+    await app.request("/api/mock/routes", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ routes: [route] }),
+    });
+
+    const reset = await app.request("/mock/sequence");
+    expect(reset.status).toBe(200);
+    expect(await reset.text()).toBe("first");
+  });
+});
+
+describe("webhook receiver", () => {
+  it("captures and clears webhook logs", async () => {
+    const webhookId = "webhook-test";
+    await app.request(`/api/webhook/${webhookId}/logs`, { method: "DELETE" });
+
+    const received = await app.request(`/webhook/${webhookId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Webhook-Test": "yes",
+      },
+      body: JSON.stringify({ ok: true }),
+    });
+
+    expect(received.status).toBe(200);
+    expect(await received.json()).toMatchObject({
+      ok: true,
+      validationPassed: true,
+    });
+
+    const logsResponse = await app.request(`/api/webhook/${webhookId}/logs`);
+    const logs = (await logsResponse.json()) as { entries: any[] };
+    expect(logs.entries).toHaveLength(1);
+    expect(logs.entries[0]).toMatchObject({
+      method: "POST",
+      body: '{"ok":true}',
+      validationPassed: true,
+    });
+    expect(
+      logs.entries[0].headers.some(
+        (header: any) =>
+          header.key.toLowerCase() === "x-webhook-test" &&
+          header.value === "yes",
+      ),
+    ).toBe(true);
+
+    await app.request(`/api/webhook/${webhookId}/logs`, { method: "DELETE" });
+    const clearedResponse = await app.request(`/api/webhook/${webhookId}/logs`);
+    const cleared = (await clearedResponse.json()) as { entries: any[] };
+    expect(cleared.entries).toEqual([]);
+  });
 });

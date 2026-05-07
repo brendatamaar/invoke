@@ -416,6 +416,171 @@ app.post(
 );
 
 app.post(
+  "/api/grpc/server-stream",
+  zValidator("json", grpcExecuteSchema),
+  (c) => {
+    const input = c.req.valid("json");
+    const stream = (client as any).GrpcServerStream({
+      ...grpcPayload(input),
+      fullMethod: input.fullMethod,
+      bodyJson: input.bodyJson,
+    });
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        let closed = false;
+        const close = () => {
+          if (!closed) { closed = true; controller.close(); }
+        };
+        const send = (data: unknown) => {
+          if (!closed)
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        };
+
+        c.req.raw.signal.addEventListener("abort", () => {
+          stream.cancel();
+          close();
+        });
+
+        stream.on("data", (msg: any) => {
+          send({
+            bodyJson: msg.bodyJson ?? "",
+            done: msg.done ?? false,
+            error: msg.error || undefined,
+            trailers: msg.trailers ?? [],
+            statusCode: msg.statusCode ?? 0,
+            statusMessage: msg.statusMessage ?? "",
+            durationMs: msg.durationMs ?? 0,
+          });
+          if (msg.done) close();
+        });
+        stream.on("error", (err: Error) => {
+          send({ bodyJson: "", done: true, error: err.message });
+          close();
+        });
+        stream.on("end", close);
+      },
+    });
+    return new Response(body, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      },
+    });
+  },
+);
+
+// Mock proxy/recording
+interface ProxyRecordEntry {
+  id: string;
+  method: string;
+  path: string;
+  requestHeaders: { key: string; value: string }[];
+  requestBody: string;
+  status: number;
+  responseHeaders: { key: string; value: string }[];
+  responseBody: string;
+  createdAt: number;
+}
+const proxyRecords: ProxyRecordEntry[] = [];
+const MAX_PROXY_RECORDS = 500;
+
+const proxySchema = z.object({
+  targetUrl: z.string().url(),
+  method: z.string().default("GET"),
+  headers: z.array(z.object({ key: z.string(), value: z.string(), enabled: z.boolean().optional() })).default([]),
+  body: z.string().default(""),
+});
+
+app.post("/api/proxy/request", zValidator("json", proxySchema), async (c) => {
+  const input = c.req.valid("json");
+
+  const headers: Record<string, string> = {};
+  for (const h of input.headers) {
+    if (h.enabled !== false && h.key) headers[h.key] = h.value;
+  }
+
+  const fetchOptions: RequestInit = {
+    method: input.method,
+    headers,
+  };
+  if (input.body && input.method !== "GET" && input.method !== "HEAD") {
+    fetchOptions.body = input.body;
+  }
+
+  const targetRes = await fetch(input.targetUrl, fetchOptions);
+  const responseBody = await targetRes.text();
+
+  const responseHeaders: { key: string; value: string }[] = [];
+  targetRes.headers.forEach((value, key) => {
+    if (!["content-encoding", "transfer-encoding", "connection"].includes(key.toLowerCase())) {
+      responseHeaders.push({ key, value });
+    }
+  });
+
+  const url = new URL(input.targetUrl);
+  const record: ProxyRecordEntry = {
+    id: nodeCrypto.randomUUID(),
+    method: input.method,
+    path: url.pathname + url.search,
+    requestHeaders: input.headers.filter((h) => h.enabled !== false && h.key),
+    requestBody: input.body,
+    status: targetRes.status,
+    responseHeaders,
+    responseBody,
+    createdAt: Date.now(),
+  };
+  proxyRecords.unshift(record);
+  if (proxyRecords.length > MAX_PROXY_RECORDS) proxyRecords.splice(MAX_PROXY_RECORDS);
+
+  return c.json({
+    status: targetRes.status,
+    statusText: targetRes.statusText,
+    headers: responseHeaders,
+    body: responseBody,
+    recordId: record.id,
+  });
+});
+
+app.get("/api/proxy/records", (c) => {
+  return c.json({ records: proxyRecords });
+});
+
+app.delete("/api/proxy/records", (c) => {
+  proxyRecords.splice(0, proxyRecords.length);
+  return c.json({ ok: true });
+});
+
+app.post("/api/proxy/records/to-mocks", zValidator("json", z.object({ ids: z.array(z.string()).optional() })), (c) => {
+  const { ids } = c.req.valid("json");
+  const selected = ids
+    ? proxyRecords.filter((r) => ids.includes(r.id))
+    : proxyRecords;
+
+  const validMethods = new Set(["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS"]);
+  const newRoutes: MockRoute[] = selected.map((r) => ({
+    id: nodeCrypto.randomUUID(),
+    enabled: true,
+    method: (validMethods.has(r.method.toUpperCase()) ? r.method.toUpperCase() : "GET") as MockRoute["method"],
+    pathPattern: r.path.split("?")[0] || "/",
+    status: r.status,
+    headers: r.responseHeaders as KeyValue[],
+    body: r.responseBody,
+    latencyMs: 0,
+  }));
+
+  // Merge with existing routes (deduplicate by method+path)
+  const existing = mockRoutes.filter(
+    (route) => !newRoutes.some((nr) => nr.method === route.method && nr.pathPattern === route.pathPattern),
+  );
+  mockRoutes = [...existing, ...newRoutes];
+  mockSequenceIndex.clear();
+
+  return c.json({ added: newRoutes.length, routes: mockRoutes });
+});
+
+app.post(
   "/api/oauth2/client-credentials",
   zValidator("json", oauth2ClientCredentialsSchema),
   async (c) => {
@@ -454,6 +619,139 @@ app.post(
     });
   },
 );
+
+// OAuth2 authorization-code helper
+interface OAuth2PendingResult {
+  status: "pending" | "done" | "error";
+  accessToken?: string;
+  refreshToken?: string;
+  tokenType?: string;
+  expiresIn?: number;
+  error?: string;
+  timestamp: number;
+}
+const oauth2Pending = new Map<string, OAuth2PendingResult>();
+
+const oauth2AuthCodeStartSchema = z.object({
+  authUrl: z.string().url(),
+  tokenUrl: z.string().url(),
+  clientId: z.string().min(1),
+  clientSecret: z.string().default(""),
+  scope: z.string().default(""),
+  redirectUri: z.string().url(),
+  pkce: z.boolean().default(false),
+  codeChallenge: z.string().default(""),
+  codeChallengeMethod: z.string().default(""),
+});
+
+app.post(
+  "/api/oauth2/auth-code/start",
+  zValidator("json", oauth2AuthCodeStartSchema),
+  async (c) => {
+    const input = c.req.valid("json");
+    const state = nodeCrypto.randomBytes(16).toString("hex");
+    oauth2Pending.set(state, { status: "pending", timestamp: Date.now() });
+
+    const url = new URL(input.authUrl);
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("client_id", input.clientId);
+    url.searchParams.set("redirect_uri", input.redirectUri);
+    url.searchParams.set("state", state);
+    if (input.scope) url.searchParams.set("scope", input.scope);
+    if (input.pkce && input.codeChallenge) {
+      url.searchParams.set("code_challenge", input.codeChallenge);
+      url.searchParams.set("code_challenge_method", input.codeChallengeMethod || "S256");
+    }
+
+    // Store token exchange params for callback use
+    oauth2Pending.set(state, {
+      status: "pending",
+      timestamp: Date.now(),
+      ...(input as any),
+    });
+
+    return c.json({ authUrl: url.toString(), state });
+  },
+);
+
+app.get("/api/oauth2/callback", async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  const error = c.req.query("error");
+
+  if (!state) return c.html("<h3>Error: missing state parameter</h3>", 400);
+
+  const pending = oauth2Pending.get(state) as (OAuth2PendingResult & typeof oauth2AuthCodeStartSchema._type) | undefined;
+  if (!pending) return c.html("<h3>Error: unknown state</h3>", 400);
+
+  if (error) {
+    oauth2Pending.set(state, { status: "error", error, timestamp: Date.now() });
+    return c.html(`<h3>Authorization failed: ${error}</h3><p>You can close this window.</p>`);
+  }
+
+  if (!code) {
+    oauth2Pending.set(state, { status: "error", error: "missing code", timestamp: Date.now() });
+    return c.html("<h3>Error: missing authorization code</h3>");
+  }
+
+  try {
+    const body = new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: (pending as any).redirectUri ?? "",
+      client_id: (pending as any).clientId ?? "",
+    });
+    if ((pending as any).clientSecret) body.set("client_secret", (pending as any).clientSecret);
+    if ((pending as any).pkce && (pending as any).codeVerifier) body.set("code_verifier", (pending as any).codeVerifier);
+
+    const tokenRes = await fetch((pending as any).tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${Buffer.from(`${(pending as any).clientId}:${(pending as any).clientSecret}`).toString("base64")}`,
+      },
+      body,
+    });
+    const text = await tokenRes.text();
+    const payload = JSON.parse(text) as {
+      access_token?: string;
+      refresh_token?: string;
+      token_type?: string;
+      expires_in?: number;
+      error?: string;
+    };
+
+    if (!tokenRes.ok || payload.error) {
+      oauth2Pending.set(state, { status: "error", error: payload.error || text, timestamp: Date.now() });
+      return c.html(`<h3>Token exchange failed</h3><pre>${payload.error ?? text}</pre><p>You can close this window.</p>`);
+    }
+
+    oauth2Pending.set(state, {
+      status: "done",
+      accessToken: payload.access_token,
+      refreshToken: payload.refresh_token,
+      tokenType: payload.token_type ?? "Bearer",
+      expiresIn: payload.expires_in,
+      timestamp: Date.now(),
+    });
+
+    return c.html(`<!DOCTYPE html><html><head><title>Authorization Successful</title></head><body style="font-family:sans-serif;padding:2rem;text-align:center"><h2>✓ Authorization Successful</h2><p>You can close this window and return to invoke.</p><script>window.close();</script></body></html>`);
+  } catch (e) {
+    oauth2Pending.set(state, { status: "error", error: String(e), timestamp: Date.now() });
+    return c.html(`<h3>Error: ${e}</h3><p>You can close this window.</p>`);
+  }
+});
+
+app.get("/api/oauth2/auth-code/result/:state", (c) => {
+  const state = c.req.param("state");
+  const result = oauth2Pending.get(state);
+  if (!result) return c.json({ status: "unknown" }, 404);
+  // Clean up done/error results after retrieval
+  if (result.status === "done" || result.status === "error") {
+    oauth2Pending.delete(state);
+  }
+  return c.json(result);
+});
 
 app.get("/api/mock/routes", (c) =>
   c.json({ routes: mockRoutes, logs: mockLogs.slice(-200).reverse() }),

@@ -13,6 +13,9 @@ import type {
   WebSocketRequestConfig,
 } from "./types";
 
+const SENSITIVE_VARIABLE_RE =
+  /(^|_)(secret|token|password|passwd|pwd|credential|credentials|private|auth|api[_-]?key|access[_-]?key|client[_-]?secret)($|_)/i;
+
 export function variablesFromEnvironment(
   environment?: Environment,
 ): Record<string, string> {
@@ -320,6 +323,69 @@ export function normalizeExtractionRules(
       enabled: rule.enabled ?? true,
     };
   });
+}
+
+export function isSensitiveVariableName(name: string) {
+  return SENSITIVE_VARIABLE_RE.test(name.trim());
+}
+
+export function maskedValue(value: string) {
+  if (!value) return "";
+  return "*".repeat(Math.min(Math.max(value.length, 6), 12));
+}
+
+export function parseEnvText(text: string): KeyValue[] {
+  const variables: KeyValue[] = [];
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const normalized = line.replace(/^export\s+/, "");
+    const eq = normalized.indexOf("=");
+    if (eq === -1) continue;
+    const key = normalized.slice(0, eq).trim();
+    if (!key) continue;
+    variables.push({
+      key,
+      value: parseEnvValue(normalized.slice(eq + 1).trim()),
+      enabled: true,
+      sensitive: isSensitiveVariableName(key),
+    });
+  }
+  return variables;
+}
+
+export function exportEnvText(
+  variables: KeyValue[],
+  options: { includeSensitive?: boolean } = {},
+) {
+  return variables
+    .filter((item) => item.enabled !== false && item.key.trim())
+    .filter((item) => options.includeSensitive || !item.sensitive)
+    .map((item) => `${item.key.trim()}=${formatEnvValue(item.value)}`)
+    .join("\n");
+}
+
+function parseEnvValue(raw: string) {
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
+    const inner = raw.slice(1, -1);
+    if (raw.startsWith('"')) {
+      return inner
+        .replace(/\\n/g, "\n")
+        .replace(/\\r/g, "\r")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\");
+    }
+    return inner.replace(/\\'/g, "'");
+  }
+  return raw;
+}
+
+function formatEnvValue(value: string) {
+  if (/^[^\s#"'\\]+$/.test(value)) return value;
+  return JSON.stringify(value);
 }
 
 function extractValue(
