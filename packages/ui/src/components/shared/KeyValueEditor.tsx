@@ -1,5 +1,6 @@
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import type { KeyValue } from "@invoke/core";
+import { VariableAutocompleteInput } from "./VariableAutocompleteInput";
 
 interface Props {
   rows: KeyValue[];
@@ -7,6 +8,7 @@ interface Props {
   keyPlaceholder?: string;
   valuePlaceholder?: string;
   disabled?: boolean;
+  variableAutocomplete?: boolean;
 }
 
 export function KeyValueEditor({
@@ -15,6 +17,7 @@ export function KeyValueEditor({
   keyPlaceholder = "Key",
   valuePlaceholder = "Value",
   disabled,
+  variableAutocomplete = true,
 }: Props) {
   const update = (
     i: number,
@@ -66,14 +69,24 @@ export function KeyValueEditor({
             className="flex-1 bg-transparent border-0 outline-none py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
           />
           <span className="w-px h-4 bg-[var(--border)] shrink-0" />
-          <input
-            type="text"
-            value={row.value}
-            onChange={(e) => update(i, "value", e.target.value)}
-            placeholder={valuePlaceholder}
-            disabled={disabled}
-            className="flex-1 bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
-          />
+          {variableAutocomplete ? (
+            <VariableAutocompleteInput
+              value={row.value}
+              onChange={(value) => update(i, "value", value)}
+              placeholder={valuePlaceholder}
+              disabled={disabled}
+              className="w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
+            />
+          ) : (
+            <input
+              type="text"
+              value={row.value}
+              onChange={(e) => update(i, "value", e.target.value)}
+              placeholder={valuePlaceholder}
+              disabled={disabled}
+              className="flex-1 bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
+            />
+          )}
           <button
             onClick={() => remove(i)}
             disabled={disabled}

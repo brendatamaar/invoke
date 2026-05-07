@@ -19,6 +19,8 @@ export function CommandPalette() {
     requests,
     environments,
     flows,
+    history,
+    mockRoutes,
     sidebarCollapsed,
     setRequest,
     resetRequest,
@@ -107,6 +109,39 @@ export function CommandPalette() {
       subtitle: "Collection",
       keywords: `collection ${c.name}`,
       run: () => set({ sidebarSection: "collections" }),
+    })),
+    // History entries (most recent 50 only)
+    ...history.slice(0, 50).map((h) => {
+      const req = h.request as { method?: string; url?: string } | undefined;
+      const url = req?.url ?? "";
+      const method = req?.method ?? "GET";
+      return {
+        id: `hist-${h.id}`,
+        kind: "history" as const,
+        title: h.label ? `${h.label} — ${url}` : url,
+        subtitle: `${method} · ${h.response?.status ?? "—"}`,
+        keywords: `history ${method} ${url} ${h.label ?? ""} ${h.response?.status ?? ""}`,
+        method,
+        run: () => {
+          setRequest({
+            method: method as Parameters<typeof setRequest>[0]["method"],
+            url,
+            headers: (req as { headers?: unknown[] })?.headers as Parameters<typeof setRequest>[0]["headers"] ?? [],
+            body: (req as { body?: string })?.body ?? "",
+          });
+          set({ sidebarSection: "history" });
+        },
+      };
+    }),
+    // Mock routes
+    ...mockRoutes.map((m) => ({
+      id: `mock-${m.id}`,
+      kind: "mock" as const,
+      title: `${m.method} ${m.pathPattern}`,
+      subtitle: `Mock · ${m.status}`,
+      keywords: `mock ${m.method} ${m.pathPattern}`,
+      method: m.method,
+      run: () => set({ sidebarSection: "mocks" }),
     })),
     // New request commands
     {
@@ -246,6 +281,8 @@ export function CommandPalette() {
     command: "Command",
     collection: "Collection",
     flow: "Flow",
+    history: "History",
+    mock: "Mock",
   };
   const KIND_COLORS: Record<string, string> = {
     request: "text-blue-600",
@@ -253,6 +290,8 @@ export function CommandPalette() {
     command: "text-zinc-600",
     collection: "text-amber-600",
     flow: "text-emerald-600",
+    history: "text-sky-600",
+    mock: "text-rose-600",
   };
 
   return (

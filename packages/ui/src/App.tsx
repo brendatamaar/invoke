@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   extractVariables,
   generateCodeSnippet,
+  parseCookieHeaders,
+  matchCookies,
+  buildCookieHeader,
   resolveRequest,
   runPostResponseScript,
   runPreRequestScript,
@@ -22,7 +25,10 @@ import { VariableEditorModal } from "./components/modals/VariableEditorModal";
 import { HelpModal } from "./components/modals/HelpModal";
 import { ClearHistoryModal } from "./components/modals/ClearHistoryModal";
 import { SettingsPanel } from "./components/layout/SettingsPanel";
-import { execute, executeStream, oauth2ClientCredentials } from "./lib/api";
+import { CollectionRunnerModal } from "./components/modals/CollectionRunnerModal";
+import { BatchRunnerModal } from "./components/modals/BatchRunnerModal";
+import { CookieManagerModal } from "./components/modals/CookieManagerModal";
+import { execute, executeStream, executeWithRetry, oauth2ClientCredentials } from "./lib/api";
 
 // Resize hook
 function useResize(initial: number) {
@@ -77,6 +83,8 @@ export default function App() {
     streamMode,
     codeTarget,
     response,
+    cookies,
+    enableCookies,
     set,
     addToast,
     loading,
@@ -90,12 +98,16 @@ export default function App() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [cols, envs, hist, fls, activeEnvId] = await Promise.all([
+        const [cols, envs, hist, fls, activeEnvId, retention, examples, diffRules, cookieList] = await Promise.all([
           coreStore.listCollections(),
           coreStore.listEnvironments(),
           coreStore.listHistory(200),
           coreStore.listFlows(),
           coreStore.getActiveEnvironmentId(),
+          coreStore.getRetentionSettings(),
+          coreStore.listResponseExamples(),
+          coreStore.listDiffIgnoreRules(),
+          coreStore.listCookies(),
         ]);
         const reqs = await coreStore.listRequests();
         const folds = await coreStore.listFolders();
@@ -107,6 +119,10 @@ export default function App() {
           requests: reqs,
           folders: folds,
           activeEnvironmentId: activeEnvId,
+          retentionSettings: retention,
+          responseExamples: examples,
+          diffIgnoreRules: diffRules,
+          cookies: cookieList,
         });
       } catch (e) {
         addToast("error", `Failed to load data: ${e}`);
@@ -157,41 +173,99 @@ export default function App() {
 
     // Pre-request script
     let resolved: RequestConfig;
+    let unresolved: string[] = [];
     try {
       const scriptCtx = await runPreRequestScript(
         request as RequestConfig,
         vars,
         request.scripts?.preRequest ?? "",
       );
-      const { request: r } = resolveRequest(
+      const result = resolveRequest(
         (scriptCtx.request ?? request) as RequestConfig,
         env,
         sessionVariables,
       );
-      resolved = r;
+      resolved = result.request;
+      unresolved = result.unresolved;
     } catch {
-      const { request: r } = resolveRequest(
+      const result = resolveRequest(
         request as RequestConfig,
         env,
         sessionVariables,
       );
-      resolved = r;
+      resolved = result.request;
+      unresolved = result.unresolved;
     }
 
-    // OAuth2 client credentials auto-fetch
-    if (resolved.auth?.type === "oauth2") {
-      try {
-        const tok = await oauth2ClientCredentials(resolved.auth);
-        if (tok.accessToken) {
+    if (unresolved.length > 0) {
+      addToast(
+        "warn",
+        `Unresolved variables: ${[...new Set(unresolved)].slice(0, 5).join(", ")}`,
+      );
+    }
+
+    // Inject matching cookies
+    if (enableCookies && cookies.length > 0) {
+      const matched = matchCookies(cookies, resolved.url);
+      if (matched.length > 0) {
+        const cookieHeader = buildCookieHeader(matched);
+        const existing = resolved.headers.find((h) => h.key.toLowerCase() === "cookie");
+        if (existing) {
           resolved = {
             ...resolved,
-            auth: { ...resolved.auth, type: "bearer", token: tok.accessToken },
+            headers: resolved.headers.map((h) =>
+              h.key.toLowerCase() === "cookie"
+                ? { ...h, value: h.value ? `${h.value}; ${cookieHeader}` : cookieHeader }
+                : h,
+            ),
           };
+        } else {
+          resolved = { ...resolved, headers: [...resolved.headers, { key: "Cookie", value: cookieHeader, enabled: true }] };
         }
-      } catch (e) {
-        addToast("warn", `OAuth2: ${e}`);
       }
     }
+
+    // Store resolved request for auth debugger
+    set({ resolvedRequest: resolved });
+
+    // OAuth2 token application
+    if (resolved.auth?.type === "oauth2") {
+      const flow = resolved.auth.flow ?? "client_credentials";
+      if (flow === "authorization_code" && resolved.auth.accessToken) {
+        // Use stored token; warn if expired
+        if (resolved.auth.tokenExpiresAt && resolved.auth.tokenExpiresAt < Date.now()) {
+          addToast("warn", "OAuth2 token may be expired — re-authorize in the Auth tab");
+        }
+        resolved = {
+          ...resolved,
+          auth: { ...resolved.auth, type: "bearer", token: resolved.auth.accessToken },
+        };
+      } else if (flow === "client_credentials") {
+        try {
+          const tok = await oauth2ClientCredentials(resolved.auth);
+          if (tok.accessToken) {
+            resolved = {
+              ...resolved,
+              auth: { ...resolved.auth, type: "bearer", token: tok.accessToken },
+            };
+          }
+        } catch (e) {
+          addToast("warn", `OAuth2: ${e}`);
+        }
+      }
+    }
+
+    const persistCookies = async (res: { headers: { key: string; value: string }[] }, url: string) => {
+      if (!enableCookies) return;
+      const setCookieHeaders = res.headers
+        .filter((h) => h.key.toLowerCase() === "set-cookie")
+        .map((h) => h.value);
+      if (setCookieHeaders.length === 0) return;
+      const parsed = parseCookieHeaders(setCookieHeaders, url);
+      await coreStore.upsertCookies(parsed);
+      const updated = await coreStore.listCookies();
+      set({ cookies: updated });
+    };
 
     if (streamMode) {
       const controller = new AbortController();
@@ -209,6 +283,7 @@ export default function App() {
               streamBytes: s.streamBytes + chunk.length,
             })),
           onFinal: async (res) => {
+            await persistCookies(res, resolved.url);
             const results = runAssertions(res, assertionRules);
             const extracted = extractVariables(res, extractRules);
             await coreStore.addHistory({
@@ -234,7 +309,8 @@ export default function App() {
     } else {
       set({ loading: true, response: undefined });
       try {
-        const res = await execute(resolved);
+        const res = await executeWithRetry(resolved);
+        await persistCookies(res, resolved.url);
 
         try {
           await runPostResponseScript(
@@ -277,6 +353,8 @@ export default function App() {
     streamMode,
     loading,
     streaming,
+    cookies,
+    enableCookies,
     addToast,
     set,
   ]); // eslint-disable-line
@@ -326,6 +404,9 @@ export default function App() {
       <HelpModal />
       <ClearHistoryModal />
       <SettingsPanel />
+      <CollectionRunnerModal />
+      <BatchRunnerModal />
+      <CookieManagerModal />
     </div>
   );
 }

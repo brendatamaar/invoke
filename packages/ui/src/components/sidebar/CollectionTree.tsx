@@ -13,6 +13,7 @@ import {
   Upload,
   Variable,
   FileText,
+  Play,
 } from "lucide-react";
 import {
   exportCollectionZip,
@@ -216,6 +217,14 @@ function FolderNode({
             </button>
             {menuOpen && (
               <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]">
+                <MenuItem
+                  icon={<Play size={12} />}
+                  label="Run"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    set({ showCollectionRunner: true, collectionRunnerTarget: { type: "folder", id: folder.id, name: folder.name } });
+                  }}
+                />
                 <MenuItem
                   icon={<Variable size={12} />}
                   label="Variables"
@@ -466,6 +475,14 @@ function CollectionNode({ collection }: { collection: Collection }) {
                   onClick={() => {
                     setMenuOpen(false);
                     setDescModal(true);
+                  }}
+                />
+                <MenuItem
+                  icon={<Play size={12} />}
+                  label="Run"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    set({ showCollectionRunner: true, collectionRunnerTarget: { type: "collection", id: collection.id, name: collection.name } });
                   }}
                 />
                 <MenuItem

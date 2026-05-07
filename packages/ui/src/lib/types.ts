@@ -12,7 +12,8 @@ export type PaletteKind =
   | "request"
   | "environment"
   | "history"
-  | "flow";
+  | "flow"
+  | "mock";
 export type SidebarSection =
   | "collections"
   | "history"
@@ -30,14 +31,16 @@ export type RequestTab =
   | "grpc"
   | "assertions"
   | "extract"
-  | "scripts";
+  | "scripts"
+  | "retry";
 export type ResponseTab =
   | "body"
   | "headers"
   | "timing"
   | "tls"
   | "assertions"
-  | "code";
+  | "code"
+  | "auth";
 
 export interface PaletteItem {
   id: string;

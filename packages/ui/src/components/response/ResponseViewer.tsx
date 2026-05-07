@@ -1,9 +1,17 @@
-import { useStore } from "../../store";
+import { useState } from "react";
+import { useStore, coreStore } from "../../store";
 import { CodeEditor } from "../editors/CodeEditor";
 import { StatusBadge } from "../shared/StatusBadge";
 import { Select } from "../shared/Select";
 import type { ResponseTab } from "../../lib/types";
-import type { TimingPhaseName, Timing, TimingAttempt } from "@invoke/core";
+import type {
+  AssertionMatcher,
+  AssertionType,
+  ExtractionSource,
+  TimingPhaseName,
+  Timing,
+  TimingAttempt,
+} from "@invoke/core";
 import {
   Clock,
   HardDrive,
@@ -11,6 +19,11 @@ import {
   CheckCircle,
   Code2,
   List,
+  PlusCircle,
+  Wand2,
+  BookmarkPlus,
+  Cpu,
+  KeyRound,
 } from "lucide-react";
 
 const TABS: { id: ResponseTab; label: string; icon?: React.ReactNode }[] = [
@@ -19,6 +32,7 @@ const TABS: { id: ResponseTab; label: string; icon?: React.ReactNode }[] = [
   { id: "timing", label: "Timing", icon: <Clock size={11} /> },
   { id: "tls", label: "TLS", icon: <Shield size={11} /> },
   { id: "assertions", label: "Assertions", icon: <CheckCircle size={11} /> },
+  { id: "auth", label: "Auth", icon: <KeyRound size={11} /> },
   { id: "code", label: "Code", icon: <Code2 size={11} /> },
 ];
 
@@ -31,6 +45,145 @@ function fmtSize(n: number) {
   return `${(n / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+// Quick-create assertion overlay
+interface AssertionDraft {
+  type: AssertionType;
+  expression: string;
+  matcher: AssertionMatcher;
+  expected: string;
+}
+
+function QuickAssertionOverlay({
+  draft,
+  onConfirm,
+  onClose,
+}: {
+  draft: AssertionDraft;
+  onConfirm: (d: AssertionDraft) => void;
+  onClose: () => void;
+}) {
+  const [d, setD] = useState(draft);
+  const needsExpr =
+    d.type === "header" || d.type === "bodyJsonPath" || d.type === "regex";
+
+  return (
+    <div className="absolute z-20 right-3 top-12 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-3 flex flex-col gap-2 w-72">
+      <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">
+        Quick assertion
+      </span>
+      <div className="flex gap-1.5">
+        <Select
+          size="2xs"
+          value={d.type}
+          onChange={(e) => setD((x) => ({ ...x, type: e.target.value as AssertionType }))}
+        >
+          {["status", "responseTime", "header", "bodyJsonPath", "bodySchema", "regex"].map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </Select>
+        <Select
+          size="2xs"
+          value={d.matcher}
+          onChange={(e) => setD((x) => ({ ...x, matcher: e.target.value as AssertionMatcher }))}
+        >
+          {["equals", "notEquals", "contains", "exists", "gt", "lt", "matches"].map((m) => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </Select>
+      </div>
+      {needsExpr && (
+        <input
+          value={d.expression}
+          onChange={(e) => setD((x) => ({ ...x, expression: e.target.value }))}
+          placeholder={d.type === "header" ? "Header-Name" : "$.path"}
+          className="input text-2xs py-0.5 font-mono"
+        />
+      )}
+      <input
+        value={d.expected}
+        onChange={(e) => setD((x) => ({ ...x, expected: e.target.value }))}
+        placeholder="expected"
+        className="input text-2xs py-0.5 font-mono"
+      />
+      <div className="flex gap-1.5 justify-end">
+        <button onClick={onClose} className="btn text-2xs py-0.5 px-2">
+          Cancel
+        </button>
+        <button
+          onClick={() => onConfirm(d)}
+          className="btn btn-primary text-2xs py-0.5 px-2"
+        >
+          Add assertion
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Quick-create extraction overlay
+interface ExtractionDraft {
+  variableName: string;
+  source: ExtractionSource;
+  expression: string;
+}
+
+function QuickExtractionOverlay({
+  draft,
+  onConfirm,
+  onClose,
+}: {
+  draft: ExtractionDraft;
+  onConfirm: (d: ExtractionDraft) => void;
+  onClose: () => void;
+}) {
+  const [d, setD] = useState(draft);
+  const needsExpr = d.source !== "status";
+
+  return (
+    <div className="absolute z-20 right-3 top-12 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-3 flex flex-col gap-2 w-72">
+      <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">
+        Quick extraction
+      </span>
+      <input
+        value={d.variableName}
+        onChange={(e) => setD((x) => ({ ...x, variableName: e.target.value }))}
+        placeholder="variableName"
+        className="input text-2xs py-0.5 font-mono"
+      />
+      <div className="flex gap-1.5">
+        <Select
+          size="2xs"
+          value={d.source}
+          onChange={(e) => setD((x) => ({ ...x, source: e.target.value as ExtractionSource }))}
+        >
+          {["body", "header", "status"].map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </Select>
+        {needsExpr && (
+          <input
+            value={d.expression}
+            onChange={(e) => setD((x) => ({ ...x, expression: e.target.value }))}
+            placeholder={d.source === "header" ? "Header-Name" : "$.path"}
+            className="input text-2xs py-0.5 font-mono flex-1"
+          />
+        )}
+      </div>
+      <div className="flex gap-1.5 justify-end">
+        <button onClick={onClose} className="btn text-2xs py-0.5 px-2">
+          Cancel
+        </button>
+        <button
+          onClick={() => onConfirm(d)}
+          className="btn btn-primary text-2xs py-0.5 px-2"
+        >
+          Add rule
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ResponseViewer() {
   const {
     response,
@@ -39,7 +192,21 @@ export function ResponseViewer() {
     streaming,
     streamBytes,
     assertionResults,
+    assertionRules,
+    extractRules,
+    request,
+    responseExamples,
+    mockRoutes,
+    addToast,
   } = useStore();
+
+  const [overlay, setOverlay] = useState<
+    | { kind: "assertion"; draft: AssertionDraft }
+    | { kind: "extraction"; draft: ExtractionDraft }
+    | { kind: "saveExample" }
+    | null
+  >(null);
+  const [exampleName, setExampleName] = useState("");
 
   if (!response && !streaming) {
     return (
@@ -82,12 +249,113 @@ export function ResponseViewer() {
   const passedCount = assertionResults.filter((r) => r.passed).length;
   const totalCount = assertionResults.length;
 
+  const addAssertion = (draft: AssertionDraft) => {
+    set((s) => ({
+      assertionRules: [
+        ...s.assertionRules,
+        {
+          id: Math.random().toString(36).slice(2),
+          ...draft,
+          enabled: true,
+        },
+      ],
+      requestTab: "assertions",
+    }));
+    setOverlay(null);
+    addToast("success", "Assertion added");
+  };
+
+  const addExtraction = (draft: ExtractionDraft) => {
+    set((s) => ({
+      extractRules: [
+        ...s.extractRules,
+        { id: Math.random().toString(36).slice(2), ...draft, enabled: true },
+      ],
+      requestTab: "extract",
+    }));
+    setOverlay(null);
+    addToast("success", "Extraction rule added");
+  };
+
+  const saveExample = async () => {
+    if (!response) return;
+    const name = exampleName.trim() || `Example ${responseExamples.length + 1}`;
+    const req = request as { id?: string };
+    const example = {
+      id: Math.random().toString(36).slice(2),
+      name,
+      requestId: req?.id,
+      status: response.status,
+      headers: response.headers,
+      body: response.body,
+      createdAt: Date.now(),
+    };
+    try {
+      await coreStore.saveResponseExample(example);
+      set((s) => ({ responseExamples: [...s.responseExamples, example] }));
+      addToast("success", `Saved as "${name}"`);
+    } catch (e) {
+      addToast("error", String(e));
+    }
+    setOverlay(null);
+    setExampleName("");
+  };
+
+  const createMock = () => {
+    if (!response) return;
+    const req = request as { method?: string; url?: string };
+    let path = "/";
+    try {
+      path = new URL(req?.url ?? "").pathname || "/";
+    } catch {
+      path = req?.url ?? "/";
+    }
+    const newRoute = {
+      id: Math.random().toString(36).slice(2),
+      enabled: true,
+      method: (req?.method ?? "GET") as import("@invoke/core").HttpMethod,
+      pathPattern: path,
+      status: response.status,
+      headers: response.headers.filter(
+        (h) =>
+          !["content-encoding", "transfer-encoding", "connection"].includes(
+            h.key.toLowerCase(),
+          ),
+      ),
+      body: response.body,
+      latencyMs: 0,
+    };
+    set((s) => ({
+      mockRoutes: [...s.mockRoutes, newRoute],
+      sidebarSection: "mocks",
+    }));
+    addToast("success", "Mock route created");
+  };
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Status bar */}
       {response && (
         <div className="flex items-center gap-3 px-3 py-2 border-b border-[var(--border)] bg-[var(--surface-2)]">
           <StatusBadge status={response.status} />
+          {/* Quick assertion from status */}
+          <button
+            onClick={() =>
+              setOverlay({
+                kind: "assertion",
+                draft: {
+                  type: "status",
+                  expression: "",
+                  matcher: "equals",
+                  expected: String(response.status),
+                },
+              })
+            }
+            className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+            title="Create assertion from status"
+          >
+            <PlusCircle size={11} />
+          </button>
           <span className="ml-auto text-2xs text-[var(--text-3)] flex items-center gap-1">
             <Clock size={11} /> {fmt(response.timing?.totalMs ?? 0)}
           </span>
@@ -106,6 +374,25 @@ export function ResponseViewer() {
               <CheckCircle size={11} /> {passedCount}/{totalCount}
             </span>
           )}
+          {/* Save as example */}
+          <button
+            onClick={() => {
+              setExampleName("");
+              setOverlay({ kind: "saveExample" });
+            }}
+            className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+            title="Save as response example"
+          >
+            <BookmarkPlus size={11} />
+          </button>
+          {/* Create mock */}
+          <button
+            onClick={createMock}
+            className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+            title="Create mock route from this response"
+          >
+            <Cpu size={11} />
+          </button>
         </div>
       )}
 
@@ -142,20 +429,88 @@ export function ResponseViewer() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {responseTab === "body" && <BodyTab />}
-        {responseTab === "headers" && <HeadersTab />}
+        {responseTab === "body" && (
+          <BodyTab
+            onQuickAssert={(draft) => setOverlay({ kind: "assertion", draft })}
+            onQuickExtract={(draft) => setOverlay({ kind: "extraction", draft })}
+          />
+        )}
+        {responseTab === "headers" && (
+          <HeadersTab
+            onQuickAssert={(draft) => setOverlay({ kind: "assertion", draft })}
+            onQuickExtract={(draft) => setOverlay({ kind: "extraction", draft })}
+          />
+        )}
         {responseTab === "timing" && <TimingTab />}
         {responseTab === "tls" && <TLSTab />}
-        {responseTab === "assertions" && <AssertionsTab />}
+        {responseTab === "assertions" && (
+          <AssertionsTab assertionRules={assertionRules} assertionResults={assertionResults} />
+        )}
+        {responseTab === "auth" && <AuthDebugTab />}
         {responseTab === "code" && <CodeTab />}
       </div>
+
+      {/* Overlays */}
+      {overlay?.kind === "assertion" && (
+        <QuickAssertionOverlay
+          draft={overlay.draft}
+          onConfirm={addAssertion}
+          onClose={() => setOverlay(null)}
+        />
+      )}
+      {overlay?.kind === "extraction" && (
+        <QuickExtractionOverlay
+          draft={overlay.draft}
+          onConfirm={addExtraction}
+          onClose={() => setOverlay(null)}
+        />
+      )}
+      {overlay?.kind === "saveExample" && (
+        <div className="absolute z-20 right-3 top-12 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-3 flex flex-col gap-2 w-60">
+          <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">
+            Save as example
+          </span>
+          <input
+            autoFocus
+            value={exampleName}
+            onChange={(e) => setExampleName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") saveExample();
+              if (e.key === "Escape") setOverlay(null);
+            }}
+            placeholder={`Example ${responseExamples.length + 1}`}
+            className="input text-xs py-1"
+          />
+          <div className="flex gap-1.5 justify-end">
+            <button
+              onClick={() => setOverlay(null)}
+              className="btn text-2xs py-0.5 px-2"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveExample}
+              className="btn btn-primary text-2xs py-0.5 px-2"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // Body tab
-function BodyTab() {
+function BodyTab({
+  onQuickAssert,
+  onQuickExtract,
+}: {
+  onQuickAssert: (d: AssertionDraft) => void;
+  onQuickExtract: (d: ExtractionDraft) => void;
+}) {
   const { response, responsePretty, set } = useStore();
+  const [jsonPathInput, setJsonPathInput] = useState("");
   if (!response) return null;
 
   const ct =
@@ -196,12 +551,55 @@ function BodyTab() {
           {ct || "text/plain"}
         </span>
         {isJson && (
-          <button
-            onClick={() => set({ responsePretty: !responsePretty })}
-            className={`ml-auto tab-btn text-2xs ${responsePretty ? "active" : ""}`}
-          >
-            Pretty
-          </button>
+          <>
+            <button
+              onClick={() => set({ responsePretty: !responsePretty })}
+              className={`ml-auto tab-btn text-2xs ${responsePretty ? "active" : ""}`}
+            >
+              Pretty
+            </button>
+            {/* Quick body assertion/extract */}
+            <div className="flex items-center gap-1 border-l border-[var(--border)] pl-2 ml-1">
+              <input
+                value={jsonPathInput}
+                onChange={(e) => setJsonPathInput(e.target.value)}
+                placeholder="$.path"
+                className="input text-2xs py-0 px-1 w-28 font-mono"
+                title="JSONPath for quick assertion or extraction"
+              />
+              <button
+                onClick={() =>
+                  onQuickAssert({
+                    type: "bodyJsonPath",
+                    expression: jsonPathInput,
+                    matcher: "equals",
+                    expected: "",
+                  })
+                }
+                className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+                title="Create assertion from JSONPath"
+              >
+                <PlusCircle size={11} />
+              </button>
+              <button
+                onClick={() => {
+                  const varName = jsonPathInput
+                    .replace(/^\$\.?/, "")
+                    .replace(/[^a-zA-Z0-9_]/g, "_")
+                    .replace(/^_+|_+$/g, "");
+                  onQuickExtract({
+                    variableName: varName || "extracted",
+                    source: "body",
+                    expression: jsonPathInput,
+                  });
+                }}
+                className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+                title="Create extraction from JSONPath"
+              >
+                <Wand2 size={11} />
+              </button>
+            </div>
+          </>
         )}
       </div>
       <div className="flex-1 overflow-auto">
@@ -212,7 +610,13 @@ function BodyTab() {
 }
 
 // Headers tab
-function HeadersTab() {
+function HeadersTab({
+  onQuickAssert,
+  onQuickExtract,
+}: {
+  onQuickAssert: (d: AssertionDraft) => void;
+  onQuickExtract: (d: ExtractionDraft) => void;
+}) {
   const { response } = useStore();
   if (!response) return null;
   const headers = Array.isArray(response.headers) ? response.headers : [];
@@ -221,14 +625,42 @@ function HeadersTab() {
       {headers.map((h, i) => (
         <div
           key={i}
-          className="flex items-start gap-4 px-3 py-2 hover:bg-[var(--surface-2)]"
+          className="group flex items-start gap-2 px-3 py-2 hover:bg-[var(--surface-2)]"
         >
           <span className="text-xs font-mono font-medium text-[var(--text-1)] w-56 shrink-0 truncate">
             {h.key}
           </span>
-          <span className="text-xs font-mono text-[var(--text-2)] break-all">
+          <span className="text-xs font-mono text-[var(--text-2)] break-all flex-1">
             {h.value}
           </span>
+          <button
+            onClick={() =>
+              onQuickAssert({
+                type: "header",
+                expression: h.key,
+                matcher: "equals",
+                expected: h.value,
+              })
+            }
+            className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5 shrink-0"
+            title="Create assertion from this header"
+          >
+            <PlusCircle size={11} />
+          </button>
+          <button
+            onClick={() => {
+              const varName = h.key.toLowerCase().replace(/[^a-z0-9]/g, "_");
+              onQuickExtract({
+                variableName: varName,
+                source: "header",
+                expression: h.key,
+              });
+            }}
+            className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5 shrink-0"
+            title="Create extraction from this header"
+          >
+            <Wand2 size={11} />
+          </button>
         </div>
       ))}
       {!headers.length && (
@@ -334,7 +766,6 @@ function TimingTab() {
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-[var(--text-1)]">
           Timing waterfall
@@ -344,7 +775,6 @@ function TimingTab() {
         </span>
       </div>
 
-      {/* Attempt cards */}
       <div className="flex flex-col gap-3">
         {attempts.map((attempt, idx) => {
           const bars = buildAttemptBars(attempt);
@@ -359,7 +789,6 @@ function TimingTab() {
               key={idx}
               className="flex flex-col gap-2.5 p-3 rounded border border-[var(--border)] bg-[var(--surface-2)]"
             >
-              {/* Attempt label row */}
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs font-semibold text-[var(--text-1)] shrink-0">
                   {label}
@@ -372,7 +801,6 @@ function TimingTab() {
                 )}
               </div>
 
-              {/* Waterfall track — taller with time labels above, bar below */}
               <div
                 className="relative h-13 bg-[var(--surface)] rounded border border-[var(--border)]"
                 style={{ height: 52 }}
@@ -410,7 +838,6 @@ function TimingTab() {
                 )}
               </div>
 
-              {/* Legend chips */}
               <div className="flex flex-wrap gap-1.5">
                 {bars.map((bar) => (
                   <span
@@ -434,7 +861,6 @@ function TimingTab() {
         })}
       </div>
 
-      {/* Timing summary grid */}
       <div
         className="grid gap-2"
         style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}
@@ -510,8 +936,13 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 // Assertions tab
-function AssertionsTab() {
-  const { assertionResults, assertionRules } = useStore();
+function AssertionsTab({
+  assertionRules,
+  assertionResults,
+}: {
+  assertionRules: import("@invoke/core").Assertion[];
+  assertionResults: import("@invoke/core").AssertionResult[];
+}) {
   if (!assertionResults.length)
     return (
       <p className="p-4 text-xs text-[var(--text-3)]">
@@ -569,6 +1000,131 @@ const CODE_TARGETS = [
   "powershell",
   "httpie",
 ] as const;
+
+function AuthDebugTab() {
+  const { response, resolvedRequest, cookies } = useStore();
+  const auth = resolvedRequest?.auth;
+  const [showToken, setShowToken] = useState(false);
+
+  const sentAuthHeader = (() => {
+    if (!resolvedRequest) return null;
+    const h = resolvedRequest.headers?.find((h) => h.key.toLowerCase() === "authorization");
+    return h?.value ?? null;
+  })();
+
+  const sentCookieHeader = (() => {
+    if (!resolvedRequest) return null;
+    const h = resolvedRequest.headers?.find((h) => h.key.toLowerCase() === "cookie");
+    return h?.value ?? null;
+  })();
+
+  const redirects = response?.redirects ?? [];
+
+  const Row = ({ label, value, mono = true }: { label: string; value: React.ReactNode; mono?: boolean }) => (
+    <div className="flex items-start gap-3 py-1.5 border-b border-[var(--border)] last:border-0">
+      <span className="text-2xs text-[var(--text-3)] w-28 shrink-0 pt-0.5">{label}</span>
+      <span className={`flex-1 text-xs break-all ${mono ? "font-mono" : ""} text-[var(--text-1)]`}>{value}</span>
+    </div>
+  );
+
+  if (!resolvedRequest && !response) {
+    return <p className="p-4 text-xs text-[var(--text-3)]">Send a request to see auth debug info.</p>;
+  }
+
+  return (
+    <div className="p-3 flex flex-col gap-4 text-xs">
+      {/* Auth header */}
+      <section>
+        <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">Authentication</p>
+        <div className="rounded border border-[var(--border)]">
+          {sentAuthHeader ? (
+            <Row label="Authorization" value={
+              <span className="flex items-center gap-1">
+                <span className={showToken ? "" : "blur-[3px] select-none"}>{sentAuthHeader}</span>
+                <button onClick={() => setShowToken((v) => !v)} className="shrink-0 text-[var(--text-3)] hover:text-[var(--text-1)] ml-1">
+                  {showToken ? "hide" : "show"}
+                </button>
+              </span>
+            } />
+          ) : (
+            <div className="py-2 px-3 text-2xs text-[var(--text-3)]">No Authorization header sent</div>
+          )}
+          {auth?.type === "oauth2" && auth.flow === "authorization_code" && (
+            <>
+              <Row label="OAuth2 flow" value="authorization_code" />
+              {auth.accessToken && (
+                <Row label="Token expires" value={
+                  auth.tokenExpiresAt
+                    ? (auth.tokenExpiresAt < Date.now()
+                        ? <span className="text-red-500">Expired ({new Date(auth.tokenExpiresAt).toLocaleString()})</span>
+                        : new Date(auth.tokenExpiresAt).toLocaleString())
+                    : "Unknown"
+                } mono={false} />
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Cookies sent */}
+      <section>
+        <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">
+          Cookies ({sentCookieHeader ? sentCookieHeader.split(";").length : 0} sent, {cookies.length} stored)
+        </p>
+        <div className="rounded border border-[var(--border)]">
+          {sentCookieHeader ? (
+            sentCookieHeader.split(";").map((pair, i) => {
+              const [name, ...rest] = pair.trim().split("=");
+              return <Row key={i} label={name?.trim() ?? "?"} value={rest.join("=") ?? ""} />;
+            })
+          ) : (
+            <div className="py-2 px-3 text-2xs text-[var(--text-3)]">No cookies sent</div>
+          )}
+        </div>
+      </section>
+
+      {/* Redirects */}
+      {redirects.length > 0 && (
+        <section>
+          <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">Redirects ({redirects.length})</p>
+          <div className="rounded border border-[var(--border)]">
+            {redirects.map((r, i) => (
+              <div key={i} className="flex items-center gap-3 py-1.5 px-3 border-b border-[var(--border)] last:border-0">
+                <span className="text-2xs font-mono text-[var(--text-3)] w-8">{r.status}</span>
+                <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">{r.url}</span>
+                {r.timing && <span className="text-2xs text-[var(--text-3)]">{r.timing.totalMs}ms</span>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* TLS summary */}
+      {response?.tls && (
+        <section>
+          <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">TLS</p>
+          <div className="rounded border border-[var(--border)]">
+            <Row label="Version" value={response.tls.version} />
+            <Row label="Cipher" value={response.tls.cipherSuite} />
+            {response.tls.certificates[0] && (
+              <>
+                <Row label="Subject" value={response.tls.certificates[0].subject} mono={false} />
+                <Row label="Issuer" value={response.tls.certificates[0].issuer} mono={false} />
+                <Row label="Expires" value={
+                  (() => {
+                    const exp = new Date(response.tls!.certificates[0].notAfter);
+                    const soon = exp.getTime() - Date.now() < 30 * 24 * 60 * 60 * 1000;
+                    return <span className={soon ? "text-amber-500" : ""}>{exp.toLocaleDateString()}</span>;
+                  })()
+                } mono={false} />
+              </>
+            )}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
 
 function CodeTab() {
   const { codeTarget, codeSnippet, codeLoading, set } = useStore();

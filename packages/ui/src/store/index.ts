@@ -6,7 +6,10 @@ import {
   InvokeStore as CoreStore,
   type Assertion,
   type AssertionResult,
+  type BatchRunStats,
   type Collection,
+  type CollectionRunResult,
+  type DiffIgnoreRule,
   type Environment,
   type ExecuteResponse,
   type ExtractionRule,
@@ -15,14 +18,19 @@ import {
   type Folder,
   type GrpcMethodInfo,
   type GrpcRequestConfig,
+  type GrpcStreamMessage,
   type GraphQLIntrospectionSchema,
   type GraphQLRequestConfig,
   type HistoryEntry,
   type KeyValue,
   type MockLogEntry,
   type MockRoute,
+  type RequestConfig,
   type RequestDraft,
+  type ResponseExample,
+  type RetentionSettings,
   type SavedRequest,
+  type StoredCookie,
   type WebSocketRequestConfig,
   type CodeExportTarget,
 } from "@invoke/core";
@@ -94,10 +102,14 @@ interface AppState {
   // gRPC
   grpcMethods: GrpcMethodInfo[];
   grpcStatus: string;
+  grpcStreaming: boolean;
+  grpcStreamMessages: GrpcStreamMessage[];
+  grpcStreamController: AbortController | undefined;
 
   // History
   history: HistoryEntry[];
   historyQuery: string;
+  retentionSettings: RetentionSettings | undefined;
 
   // Flows
   flows: Flow[];
@@ -110,6 +122,10 @@ interface AppState {
   diffLeftId: string;
   diffRightId: string;
   showDiffModal: boolean;
+  diffIgnoreRules: DiffIgnoreRule[];
+
+  // Response examples
+  responseExamples: ResponseExample[];
 
   // Mock server
   mockRoutes: MockRoute[];
@@ -124,6 +140,25 @@ interface AppState {
     name: string;
     variables: KeyValue[];
   };
+
+  // Collection runner
+  showCollectionRunner: boolean;
+  collectionRunnerTarget: { type: "collection" | "folder"; id: string; name: string } | null;
+  collectionRunResult: CollectionRunResult | null;
+  collectionRunning: boolean;
+
+  // Batch runner
+  showBatchRunner: boolean;
+  batchRunResult: BatchRunStats | null;
+  batchRunning: boolean;
+
+  // Cookies
+  cookies: StoredCookie[];
+  enableCookies: boolean;
+  showCookieManager: boolean;
+
+  // Last resolved request (for auth debugger)
+  resolvedRequest: RequestConfig | undefined;
 
   // Dialogs
   saveDialog: {
@@ -212,10 +247,14 @@ export const useStore = create<AppState>((set, get) => ({
   // gRPC
   grpcMethods: [],
   grpcStatus: "",
+  grpcStreaming: false,
+  grpcStreamMessages: [],
+  grpcStreamController: undefined,
 
   // History
   history: [],
   historyQuery: "",
+  retentionSettings: undefined,
 
   // Flows
   flows: [],
@@ -228,6 +267,10 @@ export const useStore = create<AppState>((set, get) => ({
   diffLeftId: "",
   diffRightId: "",
   showDiffModal: false,
+  diffIgnoreRules: [],
+
+  // Response examples
+  responseExamples: [],
 
   // Mock server
   mockRoutes: [],
@@ -236,6 +279,25 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Variable editor
   variableEditor: { open: false, name: "", variables: [] },
+
+  // Collection runner
+  showCollectionRunner: false,
+  collectionRunnerTarget: null,
+  collectionRunResult: null,
+  collectionRunning: false,
+
+  // Batch runner
+  showBatchRunner: false,
+  batchRunResult: null,
+  batchRunning: false,
+
+  // Cookies
+  cookies: [],
+  enableCookies: true,
+  showCookieManager: false,
+
+  // Last resolved request
+  resolvedRequest: undefined,
 
   // Dialogs
   saveDialog: { open: false, name: "", collectionId: "", folderId: "" },
