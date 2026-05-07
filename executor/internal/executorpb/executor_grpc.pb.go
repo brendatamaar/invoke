@@ -28,6 +28,7 @@ const (
 	HttpExecutor_WebSocketClose_FullMethodName   = "/invoke.executor.HttpExecutor/WebSocketClose"
 	HttpExecutor_GrpcReflect_FullMethodName      = "/invoke.executor.HttpExecutor/GrpcReflect"
 	HttpExecutor_GrpcExecute_FullMethodName      = "/invoke.executor.HttpExecutor/GrpcExecute"
+	HttpExecutor_GrpcServerStream_FullMethodName = "/invoke.executor.HttpExecutor/GrpcServerStream"
 )
 
 // HttpExecutorClient is the client API for HttpExecutor service.
@@ -43,6 +44,7 @@ type HttpExecutorClient interface {
 	WebSocketClose(ctx context.Context, in *WebSocketCloseRequest, opts ...grpc.CallOption) (*WebSocketCloseResponse, error)
 	GrpcReflect(ctx context.Context, in *GrpcReflectRequest, opts ...grpc.CallOption) (*GrpcReflectResponse, error)
 	GrpcExecute(ctx context.Context, in *GrpcExecuteRequest, opts ...grpc.CallOption) (*GrpcExecuteResponse, error)
+	GrpcServerStream(ctx context.Context, in *GrpcExecuteRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GrpcStreamMessage], error)
 }
 
 type httpExecutorClient struct {
@@ -152,6 +154,25 @@ func (c *httpExecutorClient) GrpcExecute(ctx context.Context, in *GrpcExecuteReq
 	return out, nil
 }
 
+func (c *httpExecutorClient) GrpcServerStream(ctx context.Context, in *GrpcExecuteRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GrpcStreamMessage], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &HttpExecutor_ServiceDesc.Streams[1], HttpExecutor_GrpcServerStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[GrpcExecuteRequest, GrpcStreamMessage]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type HttpExecutor_GrpcServerStreamClient = grpc.ServerStreamingClient[GrpcStreamMessage]
+
 // HttpExecutorServer is the server API for HttpExecutor service.
 // All implementations must embed UnimplementedHttpExecutorServer
 // for forward compatibility.
@@ -165,6 +186,7 @@ type HttpExecutorServer interface {
 	WebSocketClose(context.Context, *WebSocketCloseRequest) (*WebSocketCloseResponse, error)
 	GrpcReflect(context.Context, *GrpcReflectRequest) (*GrpcReflectResponse, error)
 	GrpcExecute(context.Context, *GrpcExecuteRequest) (*GrpcExecuteResponse, error)
+	GrpcServerStream(*GrpcExecuteRequest, grpc.ServerStreamingServer[GrpcStreamMessage]) error
 	mustEmbedUnimplementedHttpExecutorServer()
 }
 
@@ -201,6 +223,9 @@ func (UnimplementedHttpExecutorServer) GrpcReflect(context.Context, *GrpcReflect
 }
 func (UnimplementedHttpExecutorServer) GrpcExecute(context.Context, *GrpcExecuteRequest) (*GrpcExecuteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GrpcExecute not implemented")
+}
+func (UnimplementedHttpExecutorServer) GrpcServerStream(*GrpcExecuteRequest, grpc.ServerStreamingServer[GrpcStreamMessage]) error {
+	return status.Error(codes.Unimplemented, "method GrpcServerStream not implemented")
 }
 func (UnimplementedHttpExecutorServer) mustEmbedUnimplementedHttpExecutorServer() {}
 func (UnimplementedHttpExecutorServer) testEmbeddedByValue()                      {}
@@ -378,6 +403,17 @@ func _HttpExecutor_GrpcExecute_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HttpExecutor_GrpcServerStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GrpcExecuteRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(HttpExecutorServer).GrpcServerStream(m, &grpc.GenericServerStream[GrpcExecuteRequest, GrpcStreamMessage]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type HttpExecutor_GrpcServerStreamServer = grpc.ServerStreamingServer[GrpcStreamMessage]
+
 // HttpExecutor_ServiceDesc is the grpc.ServiceDesc for HttpExecutor service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -422,6 +458,11 @@ var HttpExecutor_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "ExecuteStream",
 			Handler:       _HttpExecutor_ExecuteStream_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GrpcServerStream",
+			Handler:       _HttpExecutor_GrpcServerStream_Handler,
 			ServerStreams: true,
 		},
 	},

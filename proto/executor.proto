@@ -14,6 +14,7 @@ service HttpExecutor {
   rpc WebSocketClose(WebSocketCloseRequest) returns (WebSocketCloseResponse);
   rpc GrpcReflect(GrpcReflectRequest) returns (GrpcReflectResponse);
   rpc GrpcExecute(GrpcExecuteRequest) returns (GrpcExecuteResponse);
+  rpc GrpcServerStream(GrpcExecuteRequest) returns (stream GrpcStreamMessage);
 }
 
 message PingRequest {}
@@ -191,6 +192,8 @@ message GrpcMethod {
   string input_type = 4;
   string output_type = 5;
   string input_json = 6;
+  bool client_streaming = 7;
+  bool server_streaming = 8;
 }
 
 message GrpcReflectResponse {
@@ -217,4 +220,14 @@ message GrpcExecuteResponse {
   string status_message = 5;
   double duration_ms = 6;
   string error = 7;
+}
+
+message GrpcStreamMessage {
+  string body_json = 1;
+  bool done = 2;
+  string error = 3;
+  repeated Header trailers = 4;
+  int32 status_code = 5;
+  string status_message = 6;
+  double duration_ms = 7;
 }
