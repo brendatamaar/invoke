@@ -73,7 +73,13 @@ export function RequestBuilder({ onSend }: Props) {
           {PROTOCOLS.map((p) => (
             <button
               key={p.id}
-              onClick={() => setRequest({ protocol: p.id })}
+              onClick={() => {
+              setRequest({ protocol: p.id });
+              set({
+                requestTab:
+                  p.id === "graphql" ? "graphql" : "params",
+              });
+            }}
               className={`tab-btn text-2xs ${protocol === p.id ? "active" : ""}`}
             >
               {p.label}
