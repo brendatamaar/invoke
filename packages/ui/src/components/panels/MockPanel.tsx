@@ -7,7 +7,11 @@ import {
   clearMockLogs,
   loadWebhookLogs,
   clearWebhookLogs,
+  setWebhookConfig,
+  deleteWebhookEndpoint,
   type WebhookEntry,
+  type WebhookValidationConfig,
+  type HmacAlgorithm,
 } from "../../lib/api";
 import { MethodBadge } from "../shared/MethodBadge";
 import { KeyValueEditor } from "../shared/KeyValueEditor";
@@ -283,6 +287,121 @@ function RouteModal({
 interface WebhookEndpoint {
   id: string;
   label: string;
+  validation: WebhookValidationConfig;
+}
+
+const DEFAULT_VALIDATION: WebhookValidationConfig = { type: "none" };
+
+function ValidationConfigForm({
+  config,
+  onChange,
+  onSave,
+  saving,
+}: {
+  config: WebhookValidationConfig;
+  onChange: (c: WebhookValidationConfig) => void;
+  onSave: () => void;
+  saving: boolean;
+}) {
+  const set = (patch: Partial<WebhookValidationConfig>) =>
+    onChange({ ...config, ...patch });
+
+  return (
+    <div className="px-3 py-2 flex flex-col gap-2 border-t border-[var(--border)]">
+      <div className="flex items-center justify-between">
+        <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">Validation</span>
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="btn text-2xs py-0.5 px-2"
+        >
+          {saving ? "Saving…" : "Apply"}
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <label className="text-2xs text-[var(--text-3)] shrink-0">Type</label>
+        <select
+          value={config.type}
+          onChange={(e) => set({ type: e.target.value as WebhookValidationConfig["type"] })}
+          className="input text-xs py-0.5 flex-1"
+        >
+          <option value="none">None</option>
+          <option value="hmac">HMAC Signature</option>
+          <option value="header">Header Token</option>
+        </select>
+      </div>
+
+      {config.type === "hmac" && (
+        <>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Algorithm</label>
+            <select
+              value={config.algorithm ?? "sha256"}
+              onChange={(e) => set({ algorithm: e.target.value as HmacAlgorithm })}
+              className="input text-xs py-0.5 flex-1"
+            >
+              <option value="sha256">SHA-256</option>
+              <option value="sha1">SHA-1</option>
+              <option value="sha512">SHA-512</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Secret</label>
+            <input
+              type="password"
+              value={config.secret ?? ""}
+              onChange={(e) => set({ secret: e.target.value })}
+              placeholder="your-webhook-secret"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Sig. header</label>
+            <input
+              value={config.signatureHeader ?? ""}
+              onChange={(e) => set({ signatureHeader: e.target.value })}
+              placeholder="X-Hub-Signature-256"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Prefix</label>
+            <input
+              value={config.signaturePrefix ?? ""}
+              onChange={(e) => set({ signaturePrefix: e.target.value })}
+              placeholder="sha256= (optional)"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+        </>
+      )}
+
+      {config.type === "header" && (
+        <>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Header</label>
+            <input
+              value={config.headerName ?? ""}
+              onChange={(e) => set({ headerName: e.target.value })}
+              placeholder="X-Webhook-Token"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Expected</label>
+            <input
+              type="password"
+              value={config.headerValue ?? ""}
+              onChange={(e) => set({ headerValue: e.target.value })}
+              placeholder="secret-token"
+              className="input text-xs py-0.5 flex-1 font-mono"
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 function WebhookSection() {
@@ -290,19 +409,46 @@ function WebhookSection() {
   const [logs, setLogs] = useState<Record<string, WebhookEntry[]>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
   const { addToast } = useStore();
 
   const serverBase = `${window.location.protocol}//${window.location.hostname}:4000`;
 
   const addEndpoint = () => {
-    const ep: WebhookEndpoint = { id: crypto.randomUUID(), label: `Webhook ${endpoints.length + 1}` };
+    const ep: WebhookEndpoint = {
+      id: crypto.randomUUID(),
+      label: `Webhook ${endpoints.length + 1}`,
+      validation: { ...DEFAULT_VALIDATION },
+    };
     setEndpoints((prev) => [...prev, ep]);
   };
 
-  const removeEndpoint = (id: string) => {
+  const removeEndpoint = async (id: string) => {
+    try {
+      await deleteWebhookEndpoint(id);
+    } catch {
+      // best-effort
+    }
     setEndpoints((prev) => prev.filter((e) => e.id !== id));
     setLogs((prev) => { const next = { ...prev }; delete next[id]; return next; });
     if (expandedId === id) setExpandedId(null);
+  };
+
+  const updateValidation = (id: string, validation: WebhookValidationConfig) =>
+    setEndpoints((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, validation } : e)),
+    );
+
+  const applyConfig = async (ep: WebhookEndpoint) => {
+    setSaving(ep.id);
+    try {
+      await setWebhookConfig(ep.id, ep.validation);
+      addToast("success", "Validation config saved");
+    } catch (e) {
+      addToast("error", String(e));
+    } finally {
+      setSaving(null);
+    }
   };
 
   const refresh = useCallback(async (id: string) => {
@@ -355,12 +501,13 @@ function WebhookSection() {
       </div>
 
       {endpoints.length === 0 && (
-        <p className="px-3 pb-3 text-xs text-[var(--text-3)]">No endpoints yet</p>
+        <p className="p-4 text-xs text-[var(--text-3)] text-center">No endpoints yet</p>
       )}
 
       {endpoints.map((ep) => {
         const epLogs = logs[ep.id] ?? [];
         const isExpanded = expandedId === ep.id;
+        const hasValidation = ep.validation.type !== "none";
         return (
           <div key={ep.id} className="border-t border-[var(--border)]">
             <div className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)]">
@@ -373,6 +520,11 @@ function WebhookSection() {
               <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
                 /webhook/{ep.id.slice(0, 8)}…
               </span>
+              {hasValidation && (
+                <span className="text-2xs bg-[var(--accent-subtle)] text-[var(--accent)] rounded px-1 shrink-0">
+                  {ep.validation.type}
+                </span>
+              )}
               <button
                 onClick={() => copyUrl(ep.id)}
                 title="Copy URL"
@@ -391,9 +543,17 @@ function WebhookSection() {
                 <Trash2 size={11} />
               </button>
             </div>
+
             {isExpanded && (
               <div className="border-t border-[var(--border)] bg-[var(--surface-2)]">
-                <div className="flex items-center justify-between px-3 py-1.5">
+                <ValidationConfigForm
+                  config={ep.validation}
+                  onChange={(v) => updateValidation(ep.id, v)}
+                  onSave={() => applyConfig(ep)}
+                  saving={saving === ep.id}
+                />
+
+                <div className="flex items-center justify-between px-3 py-1.5 border-t border-[var(--border)]">
                   <span className="text-2xs text-[var(--text-3)]">
                     {epLogs.length} {epLogs.length === 1 ? "request" : "requests"} · auto-refresh 3s
                   </span>
@@ -406,11 +566,23 @@ function WebhookSection() {
                     </button>
                   )}
                 </div>
-                <div className="max-h-40 overflow-y-auto font-mono text-2xs">
+
+                <div className="font-mono text-2xs">
                   {epLogs.map((log) => (
-                    <div key={log.id} className="flex items-center gap-2 px-3 py-1 border-t border-[var(--border)]">
+                    <div
+                      key={log.id}
+                      className="flex items-center gap-2 px-3 py-1 border-t border-[var(--border)]"
+                    >
                       <span className="text-[var(--text-3)] shrink-0">{fmt(log.createdAt)}</span>
                       <MethodBadge method={log.method} />
+                      {hasValidation && (
+                        <span
+                          className={`shrink-0 font-semibold ${log.validationPassed ? "text-emerald-600" : "text-red-500"}`}
+                          title={log.validationError ?? "OK"}
+                        >
+                          {log.validationPassed ? "✓" : "✗"}
+                        </span>
+                      )}
                       <span className="flex-1 text-[var(--text-2)] truncate">
                         {log.body ? log.body.slice(0, 60) : "(empty)"}
                       </span>
@@ -522,7 +694,7 @@ export function MockPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Header — always visible */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
@@ -548,132 +720,137 @@ export function MockPanel() {
         </div>
       </div>
 
-      {/* Routes */}
-      <div className="border-b border-[var(--border)] shrink-0">
-        <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
-            Routes {mockRoutes.length > 0 && `· ${mockRoutes.length}`}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <button onClick={sync} className="btn text-2xs py-0.5 px-2">
-              Sync
-            </button>
-            {mockStatus === "Active" && (
-              <button
-                onClick={stop}
-                className="btn btn-danger text-2xs py-0.5 px-2"
-              >
-                Stop
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+
+        {/* Routes */}
+        <div className="border-b border-[var(--border)]">
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
+              Routes {mockRoutes.length > 0 && `· ${mockRoutes.length}`}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button onClick={sync} className="btn text-2xs py-0.5 px-2">
+                Sync
               </button>
+              {mockStatus === "Active" && (
+                <button
+                  onClick={stop}
+                  className="btn btn-danger text-2xs py-0.5 px-2"
+                >
+                  Stop
+                </button>
+              )}
+              <button
+                onClick={() => setEditingRoute(makeRoute())}
+                className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+          </div>
+
+          <div>
+            {mockRoutes.map((route) => (
+              <div
+                key={route.id}
+                className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-t border-[var(--border)] cursor-pointer"
+                onClick={() => setEditingRoute(route)}
+              >
+                <input
+                  type="checkbox"
+                  checked={route.enabled !== false}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    toggleEnabled(route.id);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="accent-[var(--accent)] shrink-0"
+                />
+                <MethodBadge method={route.method} />
+                <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
+                  {route.pathPattern}
+                </span>
+                {route.sequences && route.sequences.length > 0 ? (
+                  <span className="text-2xs shrink-0 bg-[var(--accent-subtle)] text-[var(--accent)] rounded px-1">
+                    seq·{route.sequences.length}
+                  </span>
+                ) : (
+                  <span
+                    className={`text-2xs shrink-0 ${route.status >= 400 ? "text-red-500" : "text-[var(--text-3)]"}`}
+                  >
+                    {route.status}
+                  </span>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDeleteId(route.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
+                >
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            ))}
+            {!mockRoutes.length && (
+              <p className="p-4 text-xs text-[var(--text-3)] text-center">
+                No routes yet
+              </p>
             )}
-            <button
-              onClick={() => setEditingRoute(makeRoute())}
-              className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
-            >
-              <Plus size={13} />
-            </button>
           </div>
         </div>
 
-        <div className="max-h-52 overflow-y-auto">
-          {mockRoutes.map((route) => (
-            <div
-              key={route.id}
-              className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-t border-[var(--border)] cursor-pointer"
-              onClick={() => setEditingRoute(route)}
+        {/* Webhook Receiver */}
+        <WebhookSection />
+
+        {/* Request Log */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
+          <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
+            Request Log {mockLogs.length > 0 && `· ${mockLogs.length}`}
+          </span>
+          {mockLogs.length > 0 && (
+            <button
+              onClick={clearLogs}
+              className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
             >
-              <input
-                type="checkbox"
-                checked={route.enabled !== false}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  toggleEnabled(route.id);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className="accent-[var(--accent)] shrink-0"
-              />
-              <MethodBadge method={route.method} />
-              <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
-                {route.pathPattern}
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
+        <div className="font-mono text-2xs">
+          {mockLogs.map((log) => (
+            <div
+              key={log.id}
+              className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+            >
+              <span className="text-[var(--text-3)] shrink-0">
+                {fmt(log.createdAt)}
               </span>
-              {route.sequences && route.sequences.length > 0 ? (
-                <span className="text-2xs shrink-0 bg-[var(--accent-subtle)] text-[var(--accent)] rounded px-1">
-                  seq·{route.sequences.length}
-                </span>
-              ) : (
-                <span
-                  className={`text-2xs shrink-0 ${route.status >= 400 ? "text-red-500" : "text-[var(--text-3)]"}`}
-                >
-                  {route.status}
+              <MethodBadge method={log.method} />
+              <span className="flex-1 text-[var(--text-1)] truncate">
+                {log.path}
+              </span>
+              <span
+                className={`shrink-0 font-semibold ${log.status >= 400 ? "text-red-500" : "text-emerald-600"}`}
+              >
+                {log.status}
+              </span>
+              {!log.matched && (
+                <span className="text-2xs text-amber-500 shrink-0">
+                  unmatched
                 </span>
               )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmDeleteId(route.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
-              >
-                <Trash2 size={11} />
-              </button>
             </div>
           ))}
-          {!mockRoutes.length && (
+          {!mockLogs.length && (
             <p className="p-4 text-xs text-[var(--text-3)] text-center">
-              No routes yet
+              No requests yet
             </p>
           )}
         </div>
-      </div>
 
-      {/* Webhook Receiver */}
-      <WebhookSection />
-
-      {/* Request Log */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] shrink-0">
-        <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
-          Request Log {mockLogs.length > 0 && `· ${mockLogs.length}`}
-        </span>
-        {mockLogs.length > 0 && (
-          <button
-            onClick={clearLogs}
-            className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
-          >
-            <Trash2 size={12} />
-          </button>
-        )}
-      </div>
-      <div className="flex-1 overflow-y-auto font-mono text-2xs">
-        {mockLogs.map((log) => (
-          <div
-            key={log.id}
-            className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
-          >
-            <span className="text-[var(--text-3)] shrink-0">
-              {fmt(log.createdAt)}
-            </span>
-            <MethodBadge method={log.method} />
-            <span className="flex-1 text-[var(--text-1)] truncate">
-              {log.path}
-            </span>
-            <span
-              className={`shrink-0 font-semibold ${log.status >= 400 ? "text-red-500" : "text-emerald-600"}`}
-            >
-              {log.status}
-            </span>
-            {!log.matched && (
-              <span className="text-2xs text-amber-500 shrink-0">
-                unmatched
-              </span>
-            )}
-          </div>
-        ))}
-        {!mockLogs.length && (
-          <p className="p-4 text-xs text-[var(--text-3)] text-center">
-            No requests yet
-          </p>
-        )}
-      </div>
+      </div> {/* end scrollable body */}
 
       {editingRoute && (
         <RouteModal

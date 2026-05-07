@@ -919,7 +919,7 @@ function AssertionsPanel() {
                   className="input py-0.5 text-2xs font-mono"
                 />
               ) : (
-                <span className="text-2xs text-[var(--text-3)] italic px-1">
+                <span className="text-2xs text-[var(--text-3)] px-1">
                   —
                 </span>
               )}
@@ -1044,7 +1044,7 @@ function ExtractPanel() {
                   className="input py-0.5 text-2xs font-mono"
                 />
               ) : (
-                <span className="text-2xs text-[var(--text-3)] italic px-2">
+                <span className="text-2xs text-[var(--text-3)] px-2">
                   no expression needed
                 </span>
               )}
