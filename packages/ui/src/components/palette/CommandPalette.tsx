@@ -3,7 +3,7 @@ import { Search, ArrowRight } from "lucide-react";
 import Fuse from "fuse.js";
 import { useStore } from "../../store";
 import { MethodBadge } from "../shared/MethodBadge";
-import type { PaletteItem } from "../../lib/types";
+import type { PaletteItem } from "../../types";
 import {
   emptyGraphQLRequest,
   emptyWebSocketRequest,
@@ -126,7 +126,10 @@ export function CommandPalette() {
           setRequest({
             method: method as Parameters<typeof setRequest>[0]["method"],
             url,
-            headers: (req as { headers?: unknown[] })?.headers as Parameters<typeof setRequest>[0]["headers"] ?? [],
+            headers:
+              ((req as { headers?: unknown[] })?.headers as Parameters<
+                typeof setRequest
+              >[0]["headers"]) ?? [],
             body: (req as { body?: string })?.body ?? "",
           });
           set({ sidebarSection: "history" });

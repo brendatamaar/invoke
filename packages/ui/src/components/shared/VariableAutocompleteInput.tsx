@@ -1,6 +1,10 @@
 import { useMemo, useRef, useState } from "react";
 import { isSensitiveVariableName, maskedValue } from "@invoke/core";
 import { useStore } from "../../store";
+import type {
+  VariableAutocompleteInputProps,
+  VariableSuggestion,
+} from "../../types";
 
 const DYNAMIC_VARS = [
   "$uuid",
@@ -15,24 +19,6 @@ const DYNAMIC_VARS = [
   "$randomEmail",
 ];
 
-interface Props {
-  value: string;
-  onChange: (value: string) => void;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  className?: string;
-  spellCheck?: boolean;
-  disabled?: boolean;
-  type?: "text" | "password";
-}
-
-interface VariableSuggestion {
-  name: string;
-  source: "environment" | "session" | "dynamic";
-  value?: string;
-  sensitive?: boolean;
-}
-
 export function VariableAutocompleteInput({
   value,
   onChange,
@@ -42,7 +28,7 @@ export function VariableAutocompleteInput({
   spellCheck = false,
   disabled,
   type = "text",
-}: Props) {
+}: VariableAutocompleteInputProps) {
   const { environments, activeEnvironmentId, sessionVariables } = useStore();
   const [suggestions, setSuggestions] = useState<VariableSuggestion[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -72,9 +58,7 @@ export function VariableAutocompleteInput({
           sensitive: isSensitiveVariableName(key),
         }),
       );
-    DYNAMIC_VARS.forEach((name) =>
-      vars.set(name, { name, source: "dynamic" }),
-    );
+    DYNAMIC_VARS.forEach((name) => vars.set(name, { name, source: "dynamic" }));
     return [...vars.values()];
   }, [environments, activeEnvironmentId, sessionVariables]);
 
@@ -83,7 +67,9 @@ export function VariableAutocompleteInput({
       String(match[1]).trim(),
     );
     if (!names.length) return undefined;
-    const byName = new Map(allVars.map((variable) => [variable.name, variable]));
+    const byName = new Map(
+      allVars.map((variable) => [variable.name, variable]),
+    );
     return [...new Set(names)]
       .map((name) => {
         const found = byName.get(name);
@@ -102,7 +88,8 @@ export function VariableAutocompleteInput({
     const lastOpen = before.lastIndexOf("{{");
     if (lastOpen === -1) return { active: false, start: -1, partial: "" };
     const afterOpen = before.slice(lastOpen + 2);
-    if (afterOpen.includes("}}")) return { active: false, start: -1, partial: "" };
+    if (afterOpen.includes("}}"))
+      return { active: false, start: -1, partial: "" };
     return { active: true, start: lastOpen, partial: afterOpen };
   };
 
@@ -149,7 +136,9 @@ export function VariableAutocompleteInput({
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedIdx((i) => (i - 1 + suggestions.length) % suggestions.length);
+        setSelectedIdx(
+          (i) => (i - 1 + suggestions.length) % suggestions.length,
+        );
         return;
       }
       if (e.key === "Enter" || e.key === "Tab") {
@@ -200,7 +189,9 @@ export function VariableAutocompleteInput({
               </div>
               {v.source !== "dynamic" && (
                 <div className="text-2xs text-[var(--text-3)] truncate mt-0.5">
-                  {v.sensitive ? maskedValue(v.value ?? "") : v.value || "(empty)"}
+                  {v.sensitive
+                    ? maskedValue(v.value ?? "")
+                    : v.value || "(empty)"}
                 </div>
               )}
             </button>

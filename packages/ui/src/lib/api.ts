@@ -11,6 +11,11 @@ import type {
   WebSocketRelayMessage,
   WebSocketRequestConfig,
 } from "@invoke/core";
+import type {
+  ProxyRecord,
+  WebhookEntry,
+  WebhookValidationConfig,
+} from "../types";
 
 export async function ping() {
   const response = await fetch("/api/ping");
@@ -52,7 +57,8 @@ export async function executeWithRetry(
       const res = await execute(request);
       const shouldRetry =
         (policy.retryOn5xx && res.status >= 500) ||
-        (policy.retryOnTimeout && !!res.error?.toLowerCase().includes("timeout"));
+        (policy.retryOnTimeout &&
+          !!res.error?.toLowerCase().includes("timeout"));
       if (!shouldRetry || attempt === policy.maxRetries) {
         return { ...res, retryAttempts: attempt };
       }
@@ -60,8 +66,7 @@ export async function executeWithRetry(
       attempts = attempt + 1;
     } catch (e) {
       const isTimeout =
-        policy.retryOnTimeout &&
-        String(e).toLowerCase().includes("timeout");
+        policy.retryOnTimeout && String(e).toLowerCase().includes("timeout");
       if (!isTimeout || attempt === policy.maxRetries) throw e;
       attempts = attempt + 1;
     }
@@ -129,30 +134,9 @@ export async function clearMockLogs() {
   if (!res.ok) throw new Error(await res.text());
 }
 
-export type WebhookValidationType = "none" | "hmac" | "header";
-export type HmacAlgorithm = "sha256" | "sha1" | "sha512";
-
-export interface WebhookValidationConfig {
-  type: WebhookValidationType;
-  secret?: string;
-  algorithm?: HmacAlgorithm;
-  signatureHeader?: string;
-  signaturePrefix?: string;
-  headerName?: string;
-  headerValue?: string;
-}
-
-export interface WebhookEntry {
-  id: string;
-  method: string;
-  headers: { key: string; value: string }[];
-  body: string;
-  createdAt: number;
-  validationPassed: boolean;
-  validationError?: string;
-}
-
-export async function loadWebhookLogs(webhookId: string): Promise<WebhookEntry[]> {
+export async function loadWebhookLogs(
+  webhookId: string,
+): Promise<WebhookEntry[]> {
   const res = await fetch(`/api/webhook/${webhookId}/logs`);
   if (!res.ok) throw new Error(await res.text());
   const data = (await res.json()) as { entries: WebhookEntry[] };
@@ -160,7 +144,9 @@ export async function loadWebhookLogs(webhookId: string): Promise<WebhookEntry[]
 }
 
 export async function clearWebhookLogs(webhookId: string): Promise<void> {
-  const res = await fetch(`/api/webhook/${webhookId}/logs`, { method: "DELETE" });
+  const res = await fetch(`/api/webhook/${webhookId}/logs`, {
+    method: "DELETE",
+  });
   if (!res.ok) throw new Error(await res.text());
 }
 
@@ -272,13 +258,17 @@ export async function grpcServerStream(
       const dataLine = event.split("\n").find((l) => l.startsWith("data:"));
       if (!dataLine) continue;
       try {
-        const msg = JSON.parse(dataLine.slice(5).trimStart()) as GrpcStreamMessage;
+        const msg = JSON.parse(
+          dataLine.slice(5).trimStart(),
+        ) as GrpcStreamMessage;
         if (msg.done) {
           handlers.onDone(msg);
         } else {
           handlers.onMessage(msg);
         }
-      } catch { /* skip malformed */ }
+      } catch {
+        /* skip malformed */
+      }
     }
   }
 }
@@ -311,31 +301,31 @@ export async function grpcExecute(
   return res.json() as Promise<GrpcExecuteResponse>;
 }
 
-export interface ProxyRecord {
-  id: string;
-  method: string;
-  path: string;
-  requestHeaders: { key: string; value: string }[];
-  requestBody: string;
-  status: number;
-  responseHeaders: { key: string; value: string }[];
-  responseBody: string;
-  createdAt: number;
-}
-
 export async function proxyRequest(params: {
   targetUrl: string;
   method: string;
   headers: { key: string; value: string; enabled?: boolean }[];
   body: string;
-}): Promise<{ status: number; statusText: string; headers: { key: string; value: string }[]; body: string; recordId: string }> {
+}): Promise<{
+  status: number;
+  statusText: string;
+  headers: { key: string; value: string }[];
+  body: string;
+  recordId: string;
+}> {
   const res = await fetch("/api/proxy/request", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error(await res.text());
-  return res.json() as Promise<{ status: number; statusText: string; headers: { key: string; value: string }[]; body: string; recordId: string }>;
+  return res.json() as Promise<{
+    status: number;
+    statusText: string;
+    headers: { key: string; value: string }[];
+    body: string;
+    recordId: string;
+  }>;
 }
 
 export async function loadProxyRecords(): Promise<ProxyRecord[]> {
@@ -350,7 +340,9 @@ export async function clearProxyRecords(): Promise<void> {
   if (!res.ok) throw new Error(await res.text());
 }
 
-export async function proxyRecordsToMocks(ids?: string[]): Promise<{ added: number; routes: MockRoute[] }> {
+export async function proxyRecordsToMocks(
+  ids?: string[],
+): Promise<{ added: number; routes: MockRoute[] }> {
   const res = await fetch("/api/proxy/records/to-mocks", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

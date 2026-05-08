@@ -1,15 +1,7 @@
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import type { KeyValue } from "@invoke/core";
 import { VariableAutocompleteInput } from "./VariableAutocompleteInput";
-
-interface Props {
-  rows: KeyValue[];
-  onChange: (rows: KeyValue[]) => void;
-  keyPlaceholder?: string;
-  valuePlaceholder?: string;
-  disabled?: boolean;
-  variableAutocomplete?: boolean;
-}
+import type { KeyValueEditorProps } from "../../types";
 
 export function KeyValueEditor({
   rows,
@@ -18,7 +10,7 @@ export function KeyValueEditor({
   valuePlaceholder = "Value",
   disabled,
   variableAutocomplete = true,
-}: Props) {
+}: KeyValueEditorProps) {
   const update = (
     i: number,
     field: keyof KeyValue,

@@ -3,7 +3,6 @@ import { useStore, coreStore } from "../../store";
 import { CodeEditor } from "../editors/CodeEditor";
 import { StatusBadge } from "../shared/StatusBadge";
 import { Select } from "../shared/Select";
-import type { ResponseTab } from "../../lib/types";
 import type {
   AssertionMatcher,
   AssertionType,
@@ -12,6 +11,12 @@ import type {
   Timing,
   TimingAttempt,
 } from "@invoke/core";
+import type {
+  AssertionDraft,
+  ExtractionDraft,
+  PhaseBar,
+  ResponseTab,
+} from "../../types";
 import {
   Clock,
   HardDrive,
@@ -45,14 +50,6 @@ function fmtSize(n: number) {
   return `${(n / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-// Quick-create assertion overlay
-interface AssertionDraft {
-  type: AssertionType;
-  expression: string;
-  matcher: AssertionMatcher;
-  expected: string;
-}
-
 function QuickAssertionOverlay({
   draft,
   onConfirm,
@@ -75,19 +72,42 @@ function QuickAssertionOverlay({
         <Select
           size="2xs"
           value={d.type}
-          onChange={(e) => setD((x) => ({ ...x, type: e.target.value as AssertionType }))}
+          onChange={(e) =>
+            setD((x) => ({ ...x, type: e.target.value as AssertionType }))
+          }
         >
-          {["status", "responseTime", "header", "bodyJsonPath", "bodySchema", "regex"].map((t) => (
-            <option key={t} value={t}>{t}</option>
+          {[
+            "status",
+            "responseTime",
+            "header",
+            "bodyJsonPath",
+            "bodySchema",
+            "regex",
+          ].map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
           ))}
         </Select>
         <Select
           size="2xs"
           value={d.matcher}
-          onChange={(e) => setD((x) => ({ ...x, matcher: e.target.value as AssertionMatcher }))}
+          onChange={(e) =>
+            setD((x) => ({ ...x, matcher: e.target.value as AssertionMatcher }))
+          }
         >
-          {["equals", "notEquals", "contains", "exists", "gt", "lt", "matches"].map((m) => (
-            <option key={m} value={m}>{m}</option>
+          {[
+            "equals",
+            "notEquals",
+            "contains",
+            "exists",
+            "gt",
+            "lt",
+            "matches",
+          ].map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
           ))}
         </Select>
       </div>
@@ -120,13 +140,6 @@ function QuickAssertionOverlay({
   );
 }
 
-// Quick-create extraction overlay
-interface ExtractionDraft {
-  variableName: string;
-  source: ExtractionSource;
-  expression: string;
-}
-
 function QuickExtractionOverlay({
   draft,
   onConfirm,
@@ -154,16 +167,22 @@ function QuickExtractionOverlay({
         <Select
           size="2xs"
           value={d.source}
-          onChange={(e) => setD((x) => ({ ...x, source: e.target.value as ExtractionSource }))}
+          onChange={(e) =>
+            setD((x) => ({ ...x, source: e.target.value as ExtractionSource }))
+          }
         >
           {["body", "header", "status"].map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>
+              {s}
+            </option>
           ))}
         </Select>
         {needsExpr && (
           <input
             value={d.expression}
-            onChange={(e) => setD((x) => ({ ...x, expression: e.target.value }))}
+            onChange={(e) =>
+              setD((x) => ({ ...x, expression: e.target.value }))
+            }
             placeholder={d.source === "header" ? "Header-Name" : "$.path"}
             className="input text-2xs py-0.5 font-mono flex-1"
           />
@@ -432,19 +451,26 @@ export function ResponseViewer() {
         {responseTab === "body" && (
           <BodyTab
             onQuickAssert={(draft) => setOverlay({ kind: "assertion", draft })}
-            onQuickExtract={(draft) => setOverlay({ kind: "extraction", draft })}
+            onQuickExtract={(draft) =>
+              setOverlay({ kind: "extraction", draft })
+            }
           />
         )}
         {responseTab === "headers" && (
           <HeadersTab
             onQuickAssert={(draft) => setOverlay({ kind: "assertion", draft })}
-            onQuickExtract={(draft) => setOverlay({ kind: "extraction", draft })}
+            onQuickExtract={(draft) =>
+              setOverlay({ kind: "extraction", draft })
+            }
           />
         )}
         {responseTab === "timing" && <TimingTab />}
         {responseTab === "tls" && <TLSTab />}
         {responseTab === "assertions" && (
-          <AssertionsTab assertionRules={assertionRules} assertionResults={assertionResults} />
+          <AssertionsTab
+            assertionRules={assertionRules}
+            assertionResults={assertionResults}
+          />
         )}
         {responseTab === "auth" && <AuthDebugTab />}
         {responseTab === "code" && <CodeTab />}
@@ -692,16 +718,6 @@ function syntheticPhases(timing: Timing) {
     cursor += durationMs;
   }
   return phases;
-}
-
-interface PhaseBar {
-  name: TimingPhaseName;
-  label: string;
-  color: string;
-  startMs: number;
-  durationMs: number;
-  leftPct: number;
-  widthPct: number;
 }
 
 function buildAttemptBars(attempt: TimingAttempt): PhaseBar[] {
@@ -1008,58 +1024,103 @@ function AuthDebugTab() {
 
   const sentAuthHeader = (() => {
     if (!resolvedRequest) return null;
-    const h = resolvedRequest.headers?.find((h) => h.key.toLowerCase() === "authorization");
+    const h = resolvedRequest.headers?.find(
+      (h) => h.key.toLowerCase() === "authorization",
+    );
     return h?.value ?? null;
   })();
 
   const sentCookieHeader = (() => {
     if (!resolvedRequest) return null;
-    const h = resolvedRequest.headers?.find((h) => h.key.toLowerCase() === "cookie");
+    const h = resolvedRequest.headers?.find(
+      (h) => h.key.toLowerCase() === "cookie",
+    );
     return h?.value ?? null;
   })();
 
   const redirects = response?.redirects ?? [];
 
-  const Row = ({ label, value, mono = true }: { label: string; value: React.ReactNode; mono?: boolean }) => (
+  const Row = ({
+    label,
+    value,
+    mono = true,
+  }: {
+    label: string;
+    value: React.ReactNode;
+    mono?: boolean;
+  }) => (
     <div className="flex items-start gap-3 py-1.5 border-b border-[var(--border)] last:border-0">
-      <span className="text-2xs text-[var(--text-3)] w-28 shrink-0 pt-0.5">{label}</span>
-      <span className={`flex-1 text-xs break-all ${mono ? "font-mono" : ""} text-[var(--text-1)]`}>{value}</span>
+      <span className="text-2xs text-[var(--text-3)] w-28 shrink-0 pt-0.5">
+        {label}
+      </span>
+      <span
+        className={`flex-1 text-xs break-all ${mono ? "font-mono" : ""} text-[var(--text-1)]`}
+      >
+        {value}
+      </span>
     </div>
   );
 
   if (!resolvedRequest && !response) {
-    return <p className="p-4 text-xs text-[var(--text-3)]">Send a request to see auth debug info.</p>;
+    return (
+      <p className="p-4 text-xs text-[var(--text-3)]">
+        Send a request to see auth debug info.
+      </p>
+    );
   }
 
   return (
     <div className="p-3 flex flex-col gap-4 text-xs">
       {/* Auth header */}
       <section>
-        <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">Authentication</p>
+        <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">
+          Authentication
+        </p>
         <div className="rounded border border-[var(--border)]">
           {sentAuthHeader ? (
-            <Row label="Authorization" value={
-              <span className="flex items-center gap-1">
-                <span className={showToken ? "" : "blur-[3px] select-none"}>{sentAuthHeader}</span>
-                <button onClick={() => setShowToken((v) => !v)} className="shrink-0 text-[var(--text-3)] hover:text-[var(--text-1)] ml-1">
-                  {showToken ? "hide" : "show"}
-                </button>
-              </span>
-            } />
+            <Row
+              label="Authorization"
+              value={
+                <span className="flex items-center gap-1">
+                  <span className={showToken ? "" : "blur-[3px] select-none"}>
+                    {sentAuthHeader}
+                  </span>
+                  <button
+                    onClick={() => setShowToken((v) => !v)}
+                    className="shrink-0 text-[var(--text-3)] hover:text-[var(--text-1)] ml-1"
+                  >
+                    {showToken ? "hide" : "show"}
+                  </button>
+                </span>
+              }
+            />
           ) : (
-            <div className="py-2 px-3 text-2xs text-[var(--text-3)]">No Authorization header sent</div>
+            <div className="py-2 px-3 text-2xs text-[var(--text-3)]">
+              No Authorization header sent
+            </div>
           )}
           {auth?.type === "oauth2" && auth.flow === "authorization_code" && (
             <>
               <Row label="OAuth2 flow" value="authorization_code" />
               {auth.accessToken && (
-                <Row label="Token expires" value={
-                  auth.tokenExpiresAt
-                    ? (auth.tokenExpiresAt < Date.now()
-                        ? <span className="text-red-500">Expired ({new Date(auth.tokenExpiresAt).toLocaleString()})</span>
-                        : new Date(auth.tokenExpiresAt).toLocaleString())
-                    : "Unknown"
-                } mono={false} />
+                <Row
+                  label="Token expires"
+                  value={
+                    auth.tokenExpiresAt ? (
+                      auth.tokenExpiresAt < Date.now() ? (
+                        <span className="text-red-500">
+                          Expired (
+                          {new Date(auth.tokenExpiresAt).toLocaleString()})
+                        </span>
+                      ) : (
+                        new Date(auth.tokenExpiresAt).toLocaleString()
+                      )
+                    ) : (
+                      "Unknown"
+                    )
+                  }
+                  mono={false}
+                />
               )}
             </>
           )}
@@ -1069,16 +1130,25 @@ function AuthDebugTab() {
       {/* Cookies sent */}
       <section>
         <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">
-          Cookies ({sentCookieHeader ? sentCookieHeader.split(";").length : 0} sent, {cookies.length} stored)
+          Cookies ({sentCookieHeader ? sentCookieHeader.split(";").length : 0}{" "}
+          sent, {cookies.length} stored)
         </p>
         <div className="rounded border border-[var(--border)]">
           {sentCookieHeader ? (
             sentCookieHeader.split(";").map((pair, i) => {
               const [name, ...rest] = pair.trim().split("=");
-              return <Row key={i} label={name?.trim() ?? "?"} value={rest.join("=") ?? ""} />;
+              return (
+                <Row
+                  key={i}
+                  label={name?.trim() ?? "?"}
+                  value={rest.join("=") ?? ""}
+                />
+              );
             })
           ) : (
-            <div className="py-2 px-3 text-2xs text-[var(--text-3)]">No cookies sent</div>
+            <div className="py-2 px-3 text-2xs text-[var(--text-3)]">
+              No cookies sent
+            </div>
           )}
         </div>
       </section>
@@ -1086,13 +1156,26 @@ function AuthDebugTab() {
       {/* Redirects */}
       {redirects.length > 0 && (
         <section>
-          <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">Redirects ({redirects.length})</p>
+          <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">
+            Redirects ({redirects.length})
+          </p>
           <div className="rounded border border-[var(--border)]">
             {redirects.map((r, i) => (
-              <div key={i} className="flex items-center gap-3 py-1.5 px-3 border-b border-[var(--border)] last:border-0">
-                <span className="text-2xs font-mono text-[var(--text-3)] w-8">{r.status}</span>
-                <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">{r.url}</span>
-                {r.timing && <span className="text-2xs text-[var(--text-3)]">{r.timing.totalMs}ms</span>}
+              <div
+                key={i}
+                className="flex items-center gap-3 py-1.5 px-3 border-b border-[var(--border)] last:border-0"
+              >
+                <span className="text-2xs font-mono text-[var(--text-3)] w-8">
+                  {r.status}
+                </span>
+                <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
+                  {r.url}
+                </span>
+                {r.timing && (
+                  <span className="text-2xs text-[var(--text-3)]">
+                    {r.timing.totalMs}ms
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -1102,21 +1185,40 @@ function AuthDebugTab() {
       {/* TLS summary */}
       {response?.tls && (
         <section>
-          <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">TLS</p>
+          <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">
+            TLS
+          </p>
           <div className="rounded border border-[var(--border)]">
             <Row label="Version" value={response.tls.version} />
             <Row label="Cipher" value={response.tls.cipherSuite} />
             {response.tls.certificates[0] && (
               <>
-                <Row label="Subject" value={response.tls.certificates[0].subject} mono={false} />
-                <Row label="Issuer" value={response.tls.certificates[0].issuer} mono={false} />
-                <Row label="Expires" value={
-                  (() => {
-                    const exp = new Date(response.tls!.certificates[0].notAfter);
-                    const soon = exp.getTime() - Date.now() < 30 * 24 * 60 * 60 * 1000;
-                    return <span className={soon ? "text-amber-500" : ""}>{exp.toLocaleDateString()}</span>;
-                  })()
-                } mono={false} />
+                <Row
+                  label="Subject"
+                  value={response.tls.certificates[0].subject}
+                  mono={false}
+                />
+                <Row
+                  label="Issuer"
+                  value={response.tls.certificates[0].issuer}
+                  mono={false}
+                />
+                <Row
+                  label="Expires"
+                  value={(() => {
+                    const exp = new Date(
+                      response.tls!.certificates[0].notAfter,
+                    );
+                    const soon =
+                      exp.getTime() - Date.now() < 30 * 24 * 60 * 60 * 1000;
+                    return (
+                      <span className={soon ? "text-amber-500" : ""}>
+                        {exp.toLocaleDateString()}
+                      </span>
+                    );
+                  })()}
+                  mono={false}
+                />
               </>
             )}
           </div>

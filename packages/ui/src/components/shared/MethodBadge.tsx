@@ -1,7 +1,4 @@
-interface Props {
-  method: string;
-  size?: "sm" | "md";
-}
+import type { MethodBadgeProps } from "../../types";
 
 const METHOD_STYLES: Record<string, string> = {
   GET: "text-emerald-700 bg-emerald-50",
@@ -13,7 +10,7 @@ const METHOD_STYLES: Record<string, string> = {
   OPTIONS: "text-zinc-600    bg-zinc-100",
 };
 
-export function MethodBadge({ method, size = "sm" }: Props) {
+export function MethodBadge({ method, size = "sm" }: MethodBadgeProps) {
   const style = METHOD_STYLES[method] ?? "text-zinc-600 bg-zinc-100";
   const px = size === "md" ? "px-2 py-0.5 text-xs" : "px-1.5 py-px text-2xs";
   return (

@@ -11,7 +11,18 @@ import { logger } from "hono/logger";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { validateMockRoutes } from "@invoke/core";
-import type { KeyValue, MockLogEntry, MockRoute, MockSequenceItem } from "@invoke/core";
+import type {
+  KeyValue,
+  MockLogEntry,
+  MockRoute,
+  MockSequenceItem,
+} from "@invoke/core";
+import type {
+  OAuth2PendingResult,
+  ProxyRecordEntry,
+  WebhookEntry,
+  WebhookValidationConfig,
+} from "./types/index.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "../../..");
@@ -37,31 +48,6 @@ const mockLogs: MockLogEntry[] = [];
 const mockSequenceIndex = new Map<string, number>();
 const MAX_MOCK_REQUEST_BODY_BYTES = 1024 * 1024;
 
-type WebhookValidationType = "none" | "hmac" | "header";
-type HmacAlgorithm = "sha256" | "sha1" | "sha512";
-
-interface WebhookValidationConfig {
-  type: WebhookValidationType;
-  // HMAC fields
-  secret?: string;
-  algorithm?: HmacAlgorithm;
-  signatureHeader?: string;
-  signaturePrefix?: string;
-  // Header token fields
-  headerName?: string;
-  headerValue?: string;
-}
-
-interface WebhookEntry {
-  id: string;
-  method: string;
-  headers: KeyValue[];
-  body: string;
-  createdAt: number;
-  validationPassed: boolean;
-  validationError?: string;
-}
-
 const webhookLogs = new Map<string, WebhookEntry[]>();
 const webhookConfigs = new Map<string, WebhookValidationConfig>();
 const MAX_WEBHOOK_ENTRIES = 200;
@@ -78,7 +64,8 @@ function validateWebhookRequest(
     const found = headers.find(
       (h) => h.key.toLowerCase() === config.headerName!.toLowerCase(),
     );
-    if (!found) return { passed: false, error: `Missing header: ${config.headerName}` };
+    if (!found)
+      return { passed: false, error: `Missing header: ${config.headerName}` };
     if (found.value !== config.headerValue)
       return { passed: false, error: "Header token mismatch" };
     return { passed: true };
@@ -86,18 +73,25 @@ function validateWebhookRequest(
 
   if (config.type === "hmac") {
     if (!config.secret || !config.signatureHeader)
-      return { passed: false, error: "HMAC secret or signature header not configured" };
+      return {
+        passed: false,
+        error: "HMAC secret or signature header not configured",
+      };
     const algorithm = config.algorithm ?? "sha256";
     const sigHeader = headers.find(
       (h) => h.key.toLowerCase() === config.signatureHeader!.toLowerCase(),
     );
     if (!sigHeader)
-      return { passed: false, error: `Missing signature header: ${config.signatureHeader}` };
+      return {
+        passed: false,
+        error: `Missing signature header: ${config.signatureHeader}`,
+      };
     const rawSig = sigHeader.value;
     const prefix = config.signaturePrefix ?? "";
-    const receivedHex = prefix && rawSig.startsWith(prefix)
-      ? rawSig.slice(prefix.length)
-      : rawSig;
+    const receivedHex =
+      prefix && rawSig.startsWith(prefix)
+        ? rawSig.slice(prefix.length)
+        : rawSig;
     const expectedHex = nodeCrypto
       .createHmac(algorithm, config.secret)
       .update(body, "utf8")
@@ -107,7 +101,9 @@ function validateWebhookRequest(
         Buffer.from(receivedHex.padEnd(expectedHex.length, "0"), "hex"),
         Buffer.from(expectedHex, "hex"),
       );
-      return passed ? { passed: true } : { passed: false, error: "Signature mismatch" };
+      return passed
+        ? { passed: true }
+        : { passed: false, error: "Signature mismatch" };
     } catch {
       return { passed: false, error: "Invalid signature format" };
     }
@@ -430,11 +426,16 @@ app.post(
       start(controller) {
         let closed = false;
         const close = () => {
-          if (!closed) { closed = true; controller.close(); }
+          if (!closed) {
+            closed = true;
+            controller.close();
+          }
         };
         const send = (data: unknown) => {
           if (!closed)
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
+            );
         };
 
         c.req.raw.signal.addEventListener("abort", () => {
@@ -472,24 +473,21 @@ app.post(
 );
 
 // Mock proxy/recording
-interface ProxyRecordEntry {
-  id: string;
-  method: string;
-  path: string;
-  requestHeaders: { key: string; value: string }[];
-  requestBody: string;
-  status: number;
-  responseHeaders: { key: string; value: string }[];
-  responseBody: string;
-  createdAt: number;
-}
 const proxyRecords: ProxyRecordEntry[] = [];
 const MAX_PROXY_RECORDS = 500;
 
 const proxySchema = z.object({
   targetUrl: z.string().url(),
   method: z.string().default("GET"),
-  headers: z.array(z.object({ key: z.string(), value: z.string(), enabled: z.boolean().optional() })).default([]),
+  headers: z
+    .array(
+      z.object({
+        key: z.string(),
+        value: z.string(),
+        enabled: z.boolean().optional(),
+      }),
+    )
+    .default([]),
   body: z.string().default(""),
 });
 
@@ -514,7 +512,11 @@ app.post("/api/proxy/request", zValidator("json", proxySchema), async (c) => {
 
   const responseHeaders: { key: string; value: string }[] = [];
   targetRes.headers.forEach((value, key) => {
-    if (!["content-encoding", "transfer-encoding", "connection"].includes(key.toLowerCase())) {
+    if (
+      !["content-encoding", "transfer-encoding", "connection"].includes(
+        key.toLowerCase(),
+      )
+    ) {
       responseHeaders.push({ key, value });
     }
   });
@@ -532,7 +534,8 @@ app.post("/api/proxy/request", zValidator("json", proxySchema), async (c) => {
     createdAt: Date.now(),
   };
   proxyRecords.unshift(record);
-  if (proxyRecords.length > MAX_PROXY_RECORDS) proxyRecords.splice(MAX_PROXY_RECORDS);
+  if (proxyRecords.length > MAX_PROXY_RECORDS)
+    proxyRecords.splice(MAX_PROXY_RECORDS);
 
   return c.json({
     status: targetRes.status,
@@ -552,33 +555,51 @@ app.delete("/api/proxy/records", (c) => {
   return c.json({ ok: true });
 });
 
-app.post("/api/proxy/records/to-mocks", zValidator("json", z.object({ ids: z.array(z.string()).optional() })), (c) => {
-  const { ids } = c.req.valid("json");
-  const selected = ids
-    ? proxyRecords.filter((r) => ids.includes(r.id))
-    : proxyRecords;
+app.post(
+  "/api/proxy/records/to-mocks",
+  zValidator("json", z.object({ ids: z.array(z.string()).optional() })),
+  (c) => {
+    const { ids } = c.req.valid("json");
+    const selected = ids
+      ? proxyRecords.filter((r) => ids.includes(r.id))
+      : proxyRecords;
 
-  const validMethods = new Set(["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS"]);
-  const newRoutes: MockRoute[] = selected.map((r) => ({
-    id: nodeCrypto.randomUUID(),
-    enabled: true,
-    method: (validMethods.has(r.method.toUpperCase()) ? r.method.toUpperCase() : "GET") as MockRoute["method"],
-    pathPattern: r.path.split("?")[0] || "/",
-    status: r.status,
-    headers: r.responseHeaders as KeyValue[],
-    body: r.responseBody,
-    latencyMs: 0,
-  }));
+    const validMethods = new Set([
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "HEAD",
+      "OPTIONS",
+    ]);
+    const newRoutes: MockRoute[] = selected.map((r) => ({
+      id: nodeCrypto.randomUUID(),
+      enabled: true,
+      method: (validMethods.has(r.method.toUpperCase())
+        ? r.method.toUpperCase()
+        : "GET") as MockRoute["method"],
+      pathPattern: r.path.split("?")[0] || "/",
+      status: r.status,
+      headers: r.responseHeaders as KeyValue[],
+      body: r.responseBody,
+      latencyMs: 0,
+    }));
 
-  // Merge with existing routes (deduplicate by method+path)
-  const existing = mockRoutes.filter(
-    (route) => !newRoutes.some((nr) => nr.method === route.method && nr.pathPattern === route.pathPattern),
-  );
-  mockRoutes = [...existing, ...newRoutes];
-  mockSequenceIndex.clear();
+    // Merge with existing routes (deduplicate by method+path)
+    const existing = mockRoutes.filter(
+      (route) =>
+        !newRoutes.some(
+          (nr) =>
+            nr.method === route.method && nr.pathPattern === route.pathPattern,
+        ),
+    );
+    mockRoutes = [...existing, ...newRoutes];
+    mockSequenceIndex.clear();
 
-  return c.json({ added: newRoutes.length, routes: mockRoutes });
-});
+    return c.json({ added: newRoutes.length, routes: mockRoutes });
+  },
+);
 
 app.post(
   "/api/oauth2/client-credentials",
@@ -621,15 +642,6 @@ app.post(
 );
 
 // OAuth2 authorization-code helper
-interface OAuth2PendingResult {
-  status: "pending" | "done" | "error";
-  accessToken?: string;
-  refreshToken?: string;
-  tokenType?: string;
-  expiresIn?: number;
-  error?: string;
-  timestamp: number;
-}
 const oauth2Pending = new Map<string, OAuth2PendingResult>();
 
 const oauth2AuthCodeStartSchema = z.object({
@@ -660,7 +672,10 @@ app.post(
     if (input.scope) url.searchParams.set("scope", input.scope);
     if (input.pkce && input.codeChallenge) {
       url.searchParams.set("code_challenge", input.codeChallenge);
-      url.searchParams.set("code_challenge_method", input.codeChallengeMethod || "S256");
+      url.searchParams.set(
+        "code_challenge_method",
+        input.codeChallengeMethod || "S256",
+      );
     }
 
     // Store token exchange params for callback use
@@ -681,16 +696,24 @@ app.get("/api/oauth2/callback", async (c) => {
 
   if (!state) return c.html("<h3>Error: missing state parameter</h3>", 400);
 
-  const pending = oauth2Pending.get(state) as (OAuth2PendingResult & typeof oauth2AuthCodeStartSchema._type) | undefined;
+  const pending = oauth2Pending.get(state) as
+    | (OAuth2PendingResult & typeof oauth2AuthCodeStartSchema._type)
+    | undefined;
   if (!pending) return c.html("<h3>Error: unknown state</h3>", 400);
 
   if (error) {
     oauth2Pending.set(state, { status: "error", error, timestamp: Date.now() });
-    return c.html(`<h3>Authorization failed: ${error}</h3><p>You can close this window.</p>`);
+    return c.html(
+      `<h3>Authorization failed: ${error}</h3><p>You can close this window.</p>`,
+    );
   }
 
   if (!code) {
-    oauth2Pending.set(state, { status: "error", error: "missing code", timestamp: Date.now() });
+    oauth2Pending.set(state, {
+      status: "error",
+      error: "missing code",
+      timestamp: Date.now(),
+    });
     return c.html("<h3>Error: missing authorization code</h3>");
   }
 
@@ -701,8 +724,10 @@ app.get("/api/oauth2/callback", async (c) => {
       redirect_uri: (pending as any).redirectUri ?? "",
       client_id: (pending as any).clientId ?? "",
     });
-    if ((pending as any).clientSecret) body.set("client_secret", (pending as any).clientSecret);
-    if ((pending as any).pkce && (pending as any).codeVerifier) body.set("code_verifier", (pending as any).codeVerifier);
+    if ((pending as any).clientSecret)
+      body.set("client_secret", (pending as any).clientSecret);
+    if ((pending as any).pkce && (pending as any).codeVerifier)
+      body.set("code_verifier", (pending as any).codeVerifier);
 
     const tokenRes = await fetch((pending as any).tokenUrl, {
       method: "POST",
@@ -722,8 +747,14 @@ app.get("/api/oauth2/callback", async (c) => {
     };
 
     if (!tokenRes.ok || payload.error) {
-      oauth2Pending.set(state, { status: "error", error: payload.error || text, timestamp: Date.now() });
-      return c.html(`<h3>Token exchange failed</h3><pre>${payload.error ?? text}</pre><p>You can close this window.</p>`);
+      oauth2Pending.set(state, {
+        status: "error",
+        error: payload.error || text,
+        timestamp: Date.now(),
+      });
+      return c.html(
+        `<h3>Token exchange failed</h3><pre>${payload.error ?? text}</pre><p>You can close this window.</p>`,
+      );
     }
 
     oauth2Pending.set(state, {
@@ -735,9 +766,15 @@ app.get("/api/oauth2/callback", async (c) => {
       timestamp: Date.now(),
     });
 
-    return c.html(`<!DOCTYPE html><html><head><title>Authorization Successful</title></head><body style="font-family:sans-serif;padding:2rem;text-align:center"><h2>✓ Authorization Successful</h2><p>You can close this window and return to invoke.</p><script>window.close();</script></body></html>`);
+    return c.html(
+      `<!DOCTYPE html><html><head><title>Authorization Successful</title></head><body style="font-family:sans-serif;padding:2rem;text-align:center"><h2>✓ Authorization Successful</h2><p>You can close this window and return to invoke.</p><script>window.close();</script></body></html>`,
+    );
   } catch (e) {
-    oauth2Pending.set(state, { status: "error", error: String(e), timestamp: Date.now() });
+    oauth2Pending.set(state, {
+      status: "error",
+      error: String(e),
+      timestamp: Date.now(),
+    });
     return c.html(`<h3>Error: ${e}</h3><p>You can close this window.</p>`);
   }
 });
@@ -794,12 +831,16 @@ const webhookValidationSchema = z.object({
   headerValue: z.string().optional(),
 });
 
-app.put("/api/webhook/:id/config", zValidator("json", webhookValidationSchema), (c) => {
-  const { id: webhookId } = c.req.param();
-  const config = c.req.valid("json") as WebhookValidationConfig;
-  webhookConfigs.set(webhookId, config);
-  return c.json({ ok: true });
-});
+app.put(
+  "/api/webhook/:id/config",
+  zValidator("json", webhookValidationSchema),
+  (c) => {
+    const { id: webhookId } = c.req.param();
+    const config = c.req.valid("json") as WebhookValidationConfig;
+    webhookConfigs.set(webhookId, config);
+    return c.json({ ok: true });
+  },
+);
 
 app.delete("/api/webhook/:id", (c) => {
   const { id: webhookId } = c.req.param();
@@ -825,7 +866,8 @@ app.all("/webhook/:id", async (c) => {
   };
   const existing = webhookLogs.get(webhookId) ?? [];
   existing.unshift(entry);
-  if (existing.length > MAX_WEBHOOK_ENTRIES) existing.length = MAX_WEBHOOK_ENTRIES;
+  if (existing.length > MAX_WEBHOOK_ENTRIES)
+    existing.length = MAX_WEBHOOK_ENTRIES;
   webhookLogs.set(webhookId, existing);
   return c.json({ ok: true, validationPassed: validation.passed });
 });
@@ -865,7 +907,10 @@ app.all("/mock/*", async (c) => {
 
   const match = matchPath(matched.pathPattern, path);
 
-  let activeItem: Pick<MockSequenceItem, "status" | "headers" | "body" | "latencyMs"> = matched;
+  let activeItem: Pick<
+    MockSequenceItem,
+    "status" | "headers" | "body" | "latencyMs"
+  > = matched;
   if (matched.sequences && matched.sequences.length > 0) {
     const idx = mockSequenceIndex.get(matched.id) ?? 0;
     activeItem = matched.sequences[idx % matched.sequences.length];

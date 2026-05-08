@@ -2,13 +2,12 @@ import { Moon, Sun, X, Download, Upload } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useStore, coreStore } from "../../store";
 import { serializeWorkspace, parseWorkspaceBackup } from "@invoke/core";
-import type { RequestOptions, RequestProtocol, RetentionSettings } from "@invoke/core";
-
-interface Draft {
-  theme: string;
-  timeoutMs: number;
-  options: RequestOptions;
-}
+import type {
+  RequestOptions,
+  RequestProtocol,
+  RetentionSettings,
+} from "@invoke/core";
+import type { SettingsDraft } from "../../types";
 
 function buildDraft(
   protocol: RequestProtocol,
@@ -16,7 +15,7 @@ function buildDraft(
   graphqlRequest: { timeoutMs: number; options?: RequestOptions },
   websocketRequest: { timeoutMs?: number; options?: RequestOptions },
   grpcRequest: { timeoutMs: number; options?: RequestOptions },
-): Draft {
+): SettingsDraft {
   let timeoutMs: number;
   let options: RequestOptions;
   if (protocol === "graphql") {
@@ -61,7 +60,7 @@ export function SettingsPanel() {
 
   const protocol = (request.protocol ?? "rest") as RequestProtocol;
 
-  const [draft, setDraft] = useState<Draft>(() =>
+  const [draft, setDraft] = useState<SettingsDraft>(() =>
     buildDraft(
       protocol,
       request,
@@ -80,8 +79,13 @@ export function SettingsPanel() {
 
   useEffect(() => {
     if (showSettings) {
-      setRetentionDraft(retentionSettings ?? { maxEntries: 0, retentionDays: 0 });
-      coreStore.getStorageStats().then(setStorageStats).catch(() => {});
+      setRetentionDraft(
+        retentionSettings ?? { maxEntries: 0, retentionDays: 0 },
+      );
+      coreStore
+        .getStorageStats()
+        .then(setStorageStats)
+        .catch(() => {});
     }
   }, [showSettings, retentionSettings]);
 
@@ -128,7 +132,9 @@ export function SettingsPanel() {
     try {
       const data = await coreStore.exportWorkspace();
       const backup = serializeWorkspace(data);
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(backup, null, 2)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -153,7 +159,10 @@ export function SettingsPanel() {
       ]);
       const reqs = await coreStore.listRequests();
       set({ environments: envs, collections: colls, requests: reqs });
-      addToast("success", `Workspace imported: ${backup.collections.length} collections, ${backup.environments.length} environments, ${backup.flows.length} flows`);
+      addToast(
+        "success",
+        `Workspace imported: ${backup.collections.length} collections, ${backup.environments.length} environments, ${backup.flows.length} flows`,
+      );
     } catch (e) {
       addToast("error", String(e));
     } finally {
@@ -436,7 +445,8 @@ export function SettingsPanel() {
               </button>
             </div>
             <p className="text-2xs text-[var(--text-3)] mt-2">
-              Export/import collections, environments, and flows as JSON. Import merges with existing data.
+              Export/import collections, environments, and flows as JSON. Import
+              merges with existing data.
             </p>
           </div>
 
@@ -445,10 +455,22 @@ export function SettingsPanel() {
             <Section title="Storage" />
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: "Collections", value: storageStats.collections ?? collections.length },
-                { label: "Requests", value: storageStats.requests ?? requests.length },
-                { label: "History", value: storageStats.history ?? history.length },
-                { label: "Environments", value: storageStats.environments ?? 0 },
+                {
+                  label: "Collections",
+                  value: storageStats.collections ?? collections.length,
+                },
+                {
+                  label: "Requests",
+                  value: storageStats.requests ?? requests.length,
+                },
+                {
+                  label: "History",
+                  value: storageStats.history ?? history.length,
+                },
+                {
+                  label: "Environments",
+                  value: storageStats.environments ?? 0,
+                },
                 { label: "Flows", value: storageStats.flows ?? 0 },
                 { label: "Folders", value: storageStats.folders ?? 0 },
               ].map(({ label, value }) => (

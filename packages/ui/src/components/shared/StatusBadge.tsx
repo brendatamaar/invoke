@@ -1,8 +1,6 @@
-interface Props {
-  status: number;
-}
+import type { StatusBadgeProps } from "../../types";
 
-export function StatusBadge({ status }: Props) {
+export function StatusBadge({ status }: StatusBadgeProps) {
   let cls = "text-zinc-600 bg-zinc-100";
   if (status === 0) cls = "text-red-700 bg-red-50";
   else if (status >= 200 && status < 300)

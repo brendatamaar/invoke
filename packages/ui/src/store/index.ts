@@ -4,192 +4,11 @@ import {
   emptyWebSocketRequest,
   emptyRequest,
   InvokeStore as CoreStore,
-  type Assertion,
-  type AssertionResult,
-  type BatchRunStats,
-  type Collection,
-  type CollectionRunResult,
-  type DiffIgnoreRule,
-  type Environment,
-  type ExecuteResponse,
-  type ExtractionRule,
-  type Flow,
-  type FlowResult,
-  type Folder,
-  type GrpcMethodInfo,
-  type GrpcRequestConfig,
-  type GrpcStreamMessage,
-  type GraphQLIntrospectionSchema,
-  type GraphQLRequestConfig,
-  type HistoryEntry,
-  type KeyValue,
-  type MockLogEntry,
-  type MockRoute,
-  type RequestConfig,
-  type RequestDraft,
-  type ResponseExample,
-  type RetentionSettings,
-  type SavedRequest,
-  type StoredCookie,
-  type WebSocketRequestConfig,
-  type CodeExportTarget,
 } from "@invoke/core";
 import { create } from "zustand";
-import type {
-  ContextTarget,
-  RequestTab,
-  ResponseTab,
-  SidebarSection,
-  Toast,
-  WebSocketLogItem,
-} from "../lib/types";
+import type { AppState } from "../types";
 
 export const coreStore = new CoreStore();
-
-interface AppState {
-  // Request
-  request: RequestDraft;
-  graphqlRequest: GraphQLRequestConfig;
-  websocketRequest: WebSocketRequestConfig;
-  grpcRequest: GrpcRequestConfig;
-  requestTab: RequestTab;
-  assertionRules: Assertion[];
-  extractRules: ExtractionRule[];
-  scriptLogs: string[];
-
-  // Response
-  response: ExecuteResponse | undefined;
-  responseTab: ResponseTab;
-  assertionResults: AssertionResult[];
-  responsePretty: boolean;
-  responseSearch: string;
-  codeTarget: CodeExportTarget;
-  codeSnippet: string;
-  codeLoading: boolean;
-  loading: boolean;
-  streaming: boolean;
-  streamMode: boolean;
-  streamBytes: number;
-  streamController: AbortController | undefined;
-
-  // Collections / sidebar
-  collections: Collection[];
-  folders: Folder[];
-  requests: SavedRequest[];
-  expandedFolderIds: string[];
-  sidebarCollapsed: boolean;
-  sidebarSection: SidebarSection;
-  sidebarWidth: number;
-  contextMenu: { open: boolean; x: number; y: number; target?: ContextTarget };
-
-  // Environments
-  environments: Environment[];
-  activeEnvironmentId: string | undefined;
-  sessionVariables: Record<string, string>;
-  showEnvPanel: boolean;
-  envDraft: Environment | undefined;
-
-  // GraphQL
-  graphqlSchema: GraphQLIntrospectionSchema | undefined;
-  graphqlSchemaStatus: string;
-  expandedGraphQLTypeNames: string[];
-
-  // WebSocket
-  websocketState: "disconnected" | "connecting" | "connected";
-  websocketLog: WebSocketLogItem[];
-  websocketConnectionId: string;
-
-  // gRPC
-  grpcMethods: GrpcMethodInfo[];
-  grpcStatus: string;
-  grpcStreaming: boolean;
-  grpcStreamMessages: GrpcStreamMessage[];
-  grpcStreamController: AbortController | undefined;
-
-  // History
-  history: HistoryEntry[];
-  historyQuery: string;
-  retentionSettings: RetentionSettings | undefined;
-
-  // Flows
-  flows: Flow[];
-  flowDraft: Flow;
-  flowResult: FlowResult | undefined;
-  flowRunning: boolean;
-  flowLog: string[];
-
-  // Diff
-  diffLeftId: string;
-  diffRightId: string;
-  showDiffModal: boolean;
-  diffIgnoreRules: DiffIgnoreRule[];
-
-  // Response examples
-  responseExamples: ResponseExample[];
-
-  // Mock server
-  mockRoutes: MockRoute[];
-  mockLogs: MockLogEntry[];
-  mockStatus: string;
-
-  // Variable editor
-  variableEditor: {
-    open: boolean;
-    kind?: "collection" | "folder";
-    id?: string;
-    name: string;
-    variables: KeyValue[];
-  };
-
-  // Collection runner
-  showCollectionRunner: boolean;
-  collectionRunnerTarget: { type: "collection" | "folder"; id: string; name: string } | null;
-  collectionRunResult: CollectionRunResult | null;
-  collectionRunning: boolean;
-
-  // Batch runner
-  showBatchRunner: boolean;
-  batchRunResult: BatchRunStats | null;
-  batchRunning: boolean;
-
-  // Cookies
-  cookies: StoredCookie[];
-  enableCookies: boolean;
-  showCookieManager: boolean;
-
-  // Last resolved request (for auth debugger)
-  resolvedRequest: RequestConfig | undefined;
-
-  // Dialogs
-  saveDialog: {
-    open: boolean;
-    name: string;
-    collectionId: string;
-    folderId: string;
-  };
-  showSettings: boolean;
-  showHelp: boolean;
-  showClearHistoryModal: boolean;
-  uiFontSize: number;
-  commandPaletteOpen: boolean;
-  commandQuery: string;
-
-  // Toasts
-  toasts: Toast[];
-
-  // Actions
-  set: (
-    partial: Partial<AppState> | ((s: AppState) => Partial<AppState>),
-  ) => void;
-  setRequest: (partial: Partial<RequestDraft>) => void;
-  setGraphqlRequest: (partial: Partial<GraphQLRequestConfig>) => void;
-  setWebsocketRequest: (partial: Partial<WebSocketRequestConfig>) => void;
-  setGrpcRequest: (partial: Partial<GrpcRequestConfig>) => void;
-  addToast: (kind: Toast["kind"], message: string) => void;
-  removeToast: (id: string) => void;
-  toggleFolder: (id: string) => void;
-  resetRequest: () => void;
-}
 
 export const useStore = create<AppState>((set, get) => ({
   // Request
@@ -258,7 +77,11 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Flows
   flows: [],
-  flowDraft: { id: "", name: "New Flow", steps: [] } as unknown as Flow,
+  flowDraft: {
+    id: "",
+    name: "New Flow",
+    steps: [],
+  } as unknown as AppState["flowDraft"],
   flowResult: undefined,
   flowRunning: false,
   flowLog: [],

@@ -5,19 +5,9 @@ import { json } from "@codemirror/lang-json";
 import { javascript } from "@codemirror/lang-javascript";
 import { xml } from "@codemirror/lang-xml";
 import { python } from "@codemirror/lang-python";
+import type { CodeEditorLang, CodeEditorProps } from "../../types";
 
-type Lang = "json" | "javascript" | "xml" | "python" | "text";
-
-interface Props {
-  value: string;
-  onChange?: (value: string) => void;
-  lang?: Lang;
-  readOnly?: boolean;
-  minHeight?: string;
-  placeholder?: string;
-}
-
-function getLangExtension(lang: Lang) {
+function getLangExtension(lang: CodeEditorLang) {
   switch (lang) {
     case "json":
       return json();
@@ -38,7 +28,7 @@ export function CodeEditor({
   lang = "text",
   readOnly = false,
   minHeight = "120px",
-}: Props) {
+}: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);

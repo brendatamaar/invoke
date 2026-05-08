@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import React from "react";
+import type {
+  SelectOptionItem,
+  SelectProps,
+  SelectSize,
+  SelectSizeClasses,
+} from "../../types";
 
-type SelectSize = "2xs" | "xs" | "sm";
-
-interface OptionItem {
-  value: string;
-  label: React.ReactNode;
-}
-
-function parseOptions(children: React.ReactNode): OptionItem[] {
-  const items: OptionItem[] = [];
+function parseOptions(children: React.ReactNode): SelectOptionItem[] {
+  const items: SelectOptionItem[] = [];
   React.Children.forEach(children, (child) => {
     if (React.isValidElement(child) && child.type === "option") {
       const p = child.props as {
@@ -26,10 +25,7 @@ function parseOptions(children: React.ReactNode): OptionItem[] {
   return items;
 }
 
-const sizeMap: Record<
-  SelectSize,
-  { trigger: string; item: string; chevron: number }
-> = {
+const sizeMap: Record<SelectSize, SelectSizeClasses> = {
   "2xs": {
     trigger: "py-0.5 text-2xs",
     item: "px-2 py-1 text-2xs",
@@ -39,16 +35,6 @@ const sizeMap: Record<
   sm: { trigger: "py-1.5 text-xs", item: "px-2.5 py-1.5 text-xs", chevron: 11 },
 };
 
-interface Props {
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  size?: SelectSize;
-  className?: string;
-  wrapperClassName?: string;
-  disabled?: boolean;
-  children?: React.ReactNode;
-}
-
 export function Select({
   value,
   onChange,
@@ -57,7 +43,7 @@ export function Select({
   wrapperClassName = "",
   disabled,
   children,
-}: Props) {
+}: SelectProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const s = sizeMap[size];

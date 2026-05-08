@@ -13,7 +13,7 @@ import { HistoryPanel } from "../panels/HistoryPanel";
 import { EnvironmentPanel } from "../panels/EnvironmentPanel";
 import { FlowPanel } from "../panels/FlowPanel";
 import { MockPanel } from "../panels/MockPanel";
-import type { SidebarSection } from "../../lib/types";
+import type { SidebarSection } from "../../types";
 
 const NAV: { id: SidebarSection; icon: React.ReactNode; label: string }[] = [
   { id: "collections", icon: <Layers size={16} />, label: "Collections" },

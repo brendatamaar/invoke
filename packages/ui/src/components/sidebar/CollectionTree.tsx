@@ -36,6 +36,7 @@ import type {
   SavedRequest,
   Folder as FolderType,
 } from "@invoke/core";
+import type { CollectionImportResult } from "../../types";
 
 function MenuItem({
   icon,
@@ -222,7 +223,14 @@ function FolderNode({
                   label="Run"
                   onClick={() => {
                     setMenuOpen(false);
-                    set({ showCollectionRunner: true, collectionRunnerTarget: { type: "folder", id: folder.id, name: folder.name } });
+                    set({
+                      showCollectionRunner: true,
+                      collectionRunnerTarget: {
+                        type: "folder",
+                        id: folder.id,
+                        name: folder.name,
+                      },
+                    });
                   }}
                 />
                 <MenuItem
@@ -383,7 +391,11 @@ function CollectionNode({ collection }: { collection: Collection }) {
       const colFolders = folders.filter(
         (f) => f.collectionId === collection.id,
       );
-      const yamlStr = exportCollectionAsOpenApi(collection, colRequests, colFolders);
+      const yamlStr = exportCollectionAsOpenApi(
+        collection,
+        colRequests,
+        colFolders,
+      );
       const blob = new Blob([yamlStr], { type: "text/yaml" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -482,7 +494,14 @@ function CollectionNode({ collection }: { collection: Collection }) {
                   label="Run"
                   onClick={() => {
                     setMenuOpen(false);
-                    set({ showCollectionRunner: true, collectionRunnerTarget: { type: "collection", id: collection.id, name: collection.name } });
+                    set({
+                      showCollectionRunner: true,
+                      collectionRunnerTarget: {
+                        type: "collection",
+                        id: collection.id,
+                        name: collection.name,
+                      },
+                    });
                   }}
                 />
                 <MenuItem
@@ -572,7 +591,14 @@ export function CollectionTree() {
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importType, setImportType] = useState<
-    "zip" | "postman" | "insomnia" | "hoppscotch" | "openapi" | "yaml" | "curl" | "har"
+    | "zip"
+    | "postman"
+    | "insomnia"
+    | "hoppscotch"
+    | "openapi"
+    | "yaml"
+    | "curl"
+    | "har"
   >("zip");
   const [newColModal, setNewColModal] = useState(false);
   const [curlModal, setCurlModal] = useState(false);
@@ -618,12 +644,7 @@ export function CollectionTree() {
     }
   };
 
-  const persistImported = async (imported: {
-    collection: Collection;
-    folders?: FolderType[];
-    requests: SavedRequest[];
-    environments?: unknown[];
-  }) => {
+  const persistImported = async (imported: CollectionImportResult) => {
     const col = await coreStore.createCollection(
       imported.collection.name,
       imported.collection,
@@ -657,44 +678,41 @@ export function CollectionTree() {
     return imported.requests.length;
   };
 
-  type ImportResult = {
-    collection: Collection;
-    folders?: FolderType[];
-    requests: SavedRequest[];
-    environments?: unknown[];
-  };
-
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     e.target.value = "";
     try {
-      let imported: ImportResult | undefined;
+      let imported: CollectionImportResult | undefined;
       if (importType === "zip") {
-        imported = (await importInvokeZip(files[0])) as unknown as ImportResult;
+        imported = (await importInvokeZip(
+          files[0],
+        )) as unknown as CollectionImportResult;
       } else if (importType === "postman") {
         imported = importPostmanCollection(
           JSON.parse(await files[0].text()),
-        ) as unknown as ImportResult;
+        ) as unknown as CollectionImportResult;
       } else if (importType === "insomnia") {
         imported = importInsomniaExport(
           JSON.parse(await files[0].text()),
-        ) as unknown as ImportResult;
+        ) as unknown as CollectionImportResult;
       } else if (importType === "hoppscotch") {
         imported = importHoppscotchCollection(
           JSON.parse(await files[0].text()),
-        ) as unknown as ImportResult;
+        ) as unknown as CollectionImportResult;
       } else if (importType === "openapi") {
         imported = (await importOpenApiSpec(
           await files[0].text(),
-        )) as unknown as ImportResult;
+        )) as unknown as CollectionImportResult;
       } else if (importType === "yaml") {
-        imported = (await importYamlFiles(files)) as unknown as ImportResult;
+        imported = (await importYamlFiles(
+          files,
+        )) as unknown as CollectionImportResult;
       }
       if (importType === "har") {
         imported = importHarFile(
           JSON.parse(await files[0].text()),
-        ) as unknown as ImportResult;
+        ) as unknown as CollectionImportResult;
       }
       if (imported) {
         const count = await persistImported(imported);

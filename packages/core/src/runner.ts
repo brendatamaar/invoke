@@ -5,20 +5,13 @@ import type {
   BatchRunConfig,
   BatchRunStats,
   CollectionRunResult,
+  CollectionRunnerOptions,
   ExecuteResponse,
   RequestConfig,
   RequestRunResult,
   SavedRequest,
   VariableScope,
 } from "./types";
-
-export interface CollectionRunnerOptions {
-  execute: (request: RequestConfig) => Promise<ExecuteResponse>;
-  scopes?: VariableScope[];
-  stopOnFailure?: boolean;
-  onRequestStart?: (req: SavedRequest, index: number) => void;
-  onRequestComplete?: (result: RequestRunResult, index: number) => void;
-}
 
 export class CollectionRunner {
   private cancelled = false;
@@ -30,7 +23,12 @@ export class CollectionRunner {
   async run(
     requests: SavedRequest[],
     options: CollectionRunnerOptions,
-    meta: { id: string; name: string; collectionId?: string; folderId?: string },
+    meta: {
+      id: string;
+      name: string;
+      collectionId?: string;
+      folderId?: string;
+    },
   ): Promise<CollectionRunResult> {
     const startedAt = Date.now();
     const results: RequestRunResult[] = [];
@@ -58,7 +56,14 @@ export class CollectionRunner {
       try {
         const scopes: VariableScope[] = [
           ...(options.scopes ?? []),
-          { name: "runner", variables: Object.entries(variables).map(([key, value]) => ({ key, value, enabled: true })) },
+          {
+            name: "runner",
+            variables: Object.entries(variables).map(([key, value]) => ({
+              key,
+              value,
+              enabled: true,
+            })),
+          },
         ];
         const { request: resolved } = resolveRequest(req, scopes);
         const t0 = Date.now();
@@ -122,7 +127,8 @@ export function exportRunResultJson(result: CollectionRunResult): string {
 }
 
 export function exportRunResultCsv(result: CollectionRunResult): string {
-  const header = "Name,Method,URL,Status,Duration(ms),Assertions Passed,Assertions Failed,Error";
+  const header =
+    "Name,Method,URL,Status,Duration(ms),Assertions Passed,Assertions Failed,Error";
   const rows = result.results.map((r) => {
     const assertPassed = r.assertions?.filter((a) => a.passed).length ?? 0;
     const assertFailed = r.assertions?.filter((a) => !a.passed).length ?? 0;
@@ -220,9 +226,17 @@ export function computeBatchStats(
   const total = durations.length;
   if (total === 0) {
     return {
-      total: 0, passed, failed, statusCounts, errors,
-      minMs: 0, maxMs: 0, meanMs: 0,
-      p50Ms: 0, p95Ms: 0, p99Ms: 0,
+      total: 0,
+      passed,
+      failed,
+      statusCounts,
+      errors,
+      minMs: 0,
+      maxMs: 0,
+      meanMs: 0,
+      p50Ms: 0,
+      p95Ms: 0,
+      p99Ms: 0,
     };
   }
   const sorted = [...durations].sort((a, b) => a - b);

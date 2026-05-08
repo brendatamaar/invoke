@@ -1,16 +1,8 @@
-import type { Collection, Environment, Flow, Folder, SavedRequest } from "./types";
+import type { WorkspaceBackup } from "./types";
 
-export interface WorkspaceBackup {
-  version: "1.0";
-  exportedAt: number;
-  collections: Collection[];
-  folders: Folder[];
-  requests: SavedRequest[];
-  environments: Environment[];
-  flows: Flow[];
-}
-
-export function serializeWorkspace(data: Omit<WorkspaceBackup, "version" | "exportedAt">): WorkspaceBackup {
+export function serializeWorkspace(
+  data: Omit<WorkspaceBackup, "version" | "exportedAt">,
+): WorkspaceBackup {
   return {
     version: "1.0",
     exportedAt: Date.now(),
@@ -20,7 +12,8 @@ export function serializeWorkspace(data: Omit<WorkspaceBackup, "version" | "expo
 
 export function parseWorkspaceBackup(json: string): WorkspaceBackup {
   const parsed = JSON.parse(json) as Partial<WorkspaceBackup>;
-  if (parsed.version !== "1.0") throw new Error("Unsupported workspace version");
+  if (parsed.version !== "1.0")
+    throw new Error("Unsupported workspace version");
   return {
     version: "1.0",
     exportedAt: parsed.exportedAt ?? Date.now(),

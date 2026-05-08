@@ -12,5 +12,8 @@ export * from "./mock";
 export * from "./protocols";
 export * from "./request";
 export * from "./response";
+export * from "./runner";
 export * from "./script";
+export * from "./validation";
 export * from "./variables";
+export * from "./workspace";

@@ -10,6 +10,7 @@ import {
   type KeyValue,
   type VariableScope,
 } from "@invoke/core";
+import type { URLBarProps } from "../../types";
 
 const METHODS: HttpMethod[] = [
   "GET",
@@ -31,12 +32,7 @@ const METHOD_COLORS: Record<string, string> = {
   OPTIONS: "text-zinc-600",
 };
 
-interface Props {
-  onSend: () => void;
-  loading: boolean;
-}
-
-export function URLBar({ onSend, loading }: Props) {
+export function URLBar({ onSend, loading }: URLBarProps) {
   const {
     request,
     setRequest,
@@ -85,7 +81,9 @@ export function URLBar({ onSend, loading }: Props) {
               new URLSearchParams(qs).forEach((value, key) => {
                 if (key) urlParams.push({ key, value, enabled: true });
               });
-              const disabled = request.params.filter((p) => p.enabled === false);
+              const disabled = request.params.filter(
+                (p) => p.enabled === false,
+              );
               setRequest({ url, params: [...urlParams, ...disabled] });
             } else {
               setRequest({ url });

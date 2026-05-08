@@ -1,5 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Plus, Trash2, X, Copy, ChevronDown, ChevronRight, Radio, CheckSquare, Square } from "lucide-react";
+import {
+  RefreshCw,
+  Plus,
+  Trash2,
+  X,
+  Copy,
+  ChevronDown,
+  ChevronRight,
+  Radio,
+  CheckSquare,
+  Square,
+} from "lucide-react";
 import { useStore } from "../../store";
 import {
   loadMockRoutes,
@@ -12,16 +23,24 @@ import {
   loadProxyRecords,
   clearProxyRecords,
   proxyRecordsToMocks,
-  type WebhookEntry,
-  type WebhookValidationConfig,
-  type HmacAlgorithm,
-  type ProxyRecord,
 } from "../../lib/api";
 import { MethodBadge } from "../shared/MethodBadge";
 import { KeyValueEditor } from "../shared/KeyValueEditor";
 import { Select } from "../shared/Select";
 import { ConfirmModal } from "../shared/ConfirmModal";
-import { validateMockRoutes, type MockRoute, type MockSequenceItem } from "@invoke/core";
+import {
+  validateMockRoutes,
+  type MockRoute,
+  type MockSequenceItem,
+} from "@invoke/core";
+import type {
+  HmacAlgorithm,
+  ProxyRecord,
+  RouteTab,
+  WebhookEndpoint,
+  WebhookEntry,
+  WebhookValidationConfig,
+} from "../../types";
 
 const HTTP_METHODS = [
   "GET",
@@ -46,8 +65,6 @@ function makeRoute(): MockRoute {
   };
 }
 
-type RouteTab = "response" | "sequences" | "headers";
-
 function makeSequenceItem(): MockSequenceItem {
   return { status: 200, headers: [], body: "" };
 }
@@ -69,10 +86,16 @@ function RouteModal({
 
   const sequences = draft.sequences ?? [];
   const updateSeq = (i: number, patch: Partial<MockSequenceItem>) =>
-    set("sequences", sequences.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+    set(
+      "sequences",
+      sequences.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
+    );
   const addSeq = () => set("sequences", [...sequences, makeSequenceItem()]);
   const removeSeq = (i: number) =>
-    set("sequences", sequences.filter((_, idx) => idx !== i));
+    set(
+      "sequences",
+      sequences.filter((_, idx) => idx !== i),
+    );
 
   return (
     <div
@@ -108,15 +131,21 @@ function RouteModal({
 
         {/* Endpoint row */}
         <div className="px-5 pt-4 pb-3 flex flex-col gap-1.5 shrink-0 border-b border-[var(--border)]">
-          <label className="text-xs font-medium text-[var(--text-2)]">Endpoint</label>
+          <label className="text-xs font-medium text-[var(--text-2)]">
+            Endpoint
+          </label>
           <div className="flex gap-2">
             <Select
               value={draft.method}
-              onChange={(v) => set("method", v as unknown as MockRoute["method"])}
+              onChange={(v) =>
+                set("method", v as unknown as MockRoute["method"])
+              }
               size="sm"
             >
               {HTTP_METHODS.map((m) => (
-                <option key={m} value={m}>{m}</option>
+                <option key={m} value={m}>
+                  {m}
+                </option>
               ))}
             </Select>
             <input
@@ -138,7 +167,9 @@ function RouteModal({
             >
               {t}
               {t === "sequences" && sequences.length > 0 && (
-                <span className="ml-1 text-2xs bg-[var(--accent-subtle)] text-[var(--accent)] rounded px-1">{sequences.length}</span>
+                <span className="ml-1 text-2xs bg-[var(--accent-subtle)] text-[var(--accent)] rounded px-1">
+                  {sequences.length}
+                </span>
               )}
             </button>
           ))}
@@ -150,7 +181,9 @@ function RouteModal({
             <>
               <div className="flex gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-[var(--text-2)]">Status code</label>
+                  <label className="text-xs font-medium text-[var(--text-2)]">
+                    Status code
+                  </label>
                   <input
                     type="number"
                     className="input text-sm py-1.5 w-28"
@@ -161,7 +194,9 @@ function RouteModal({
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-[var(--text-2)]">Latency</label>
+                  <label className="text-xs font-medium text-[var(--text-2)]">
+                    Latency
+                  </label>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -170,7 +205,10 @@ function RouteModal({
                       placeholder="0"
                       value={draft.latencyMs ?? ""}
                       onChange={(e) =>
-                        set("latencyMs", e.target.value ? Number(e.target.value) : undefined)
+                        set(
+                          "latencyMs",
+                          e.target.value ? Number(e.target.value) : undefined,
+                        )
                       }
                     />
                     <span className="text-sm text-[var(--text-3)]">ms</span>
@@ -178,7 +216,9 @@ function RouteModal({
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-[var(--text-2)]">Response body</label>
+                <label className="text-xs font-medium text-[var(--text-2)]">
+                  Response body
+                </label>
                 <textarea
                   className="input text-sm py-2 font-mono resize-none"
                   rows={8}
@@ -189,7 +229,8 @@ function RouteModal({
               </div>
               {sequences.length > 0 && (
                 <p className="text-2xs text-amber-600 bg-amber-50 px-3 py-2 rounded">
-                  Sequences are active — this default response is overridden. Switch to Sequences tab to manage.
+                  Sequences are active — this default response is overridden.
+                  Switch to Sequences tab to manage.
                 </p>
               )}
             </>
@@ -198,12 +239,18 @@ function RouteModal({
           {tab === "sequences" && (
             <>
               <p className="text-xs text-[var(--text-3)]">
-                When sequences are set, each call to this route returns the next item in order, wrapping around. Overrides the default response.
+                When sequences are set, each call to this route returns the next
+                item in order, wrapping around. Overrides the default response.
               </p>
               {sequences.map((seq, i) => (
-                <div key={i} className="border border-[var(--border)] rounded-lg p-3 flex flex-col gap-3">
+                <div
+                  key={i}
+                  className="border border-[var(--border)] rounded-lg p-3 flex flex-col gap-3"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-[var(--text-2)]">Response {i + 1}</span>
+                    <span className="text-xs font-medium text-[var(--text-2)]">
+                      Response {i + 1}
+                    </span>
                     <button
                       onClick={() => removeSeq(i)}
                       className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
@@ -213,18 +260,24 @@ function RouteModal({
                   </div>
                   <div className="flex gap-4">
                     <div className="flex flex-col gap-1">
-                      <label className="text-2xs text-[var(--text-3)]">Status</label>
+                      <label className="text-2xs text-[var(--text-3)]">
+                        Status
+                      </label>
                       <input
                         type="number"
                         className="input text-xs py-1 w-20"
                         min={100}
                         max={599}
                         value={seq.status}
-                        onChange={(e) => updateSeq(i, { status: Number(e.target.value) })}
+                        onChange={(e) =>
+                          updateSeq(i, { status: Number(e.target.value) })
+                        }
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-2xs text-[var(--text-3)]">Latency</label>
+                      <label className="text-2xs text-[var(--text-3)]">
+                        Latency
+                      </label>
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
@@ -233,10 +286,16 @@ function RouteModal({
                           placeholder="0"
                           value={seq.latencyMs ?? ""}
                           onChange={(e) =>
-                            updateSeq(i, { latencyMs: e.target.value ? Number(e.target.value) : undefined })
+                            updateSeq(i, {
+                              latencyMs: e.target.value
+                                ? Number(e.target.value)
+                                : undefined,
+                            })
                           }
                         />
-                        <span className="text-2xs text-[var(--text-3)]">ms</span>
+                        <span className="text-2xs text-[var(--text-3)]">
+                          ms
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -260,7 +319,9 @@ function RouteModal({
 
           {tab === "headers" && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[var(--text-2)]">Response headers</label>
+              <label className="text-xs font-medium text-[var(--text-2)]">
+                Response headers
+              </label>
               <div className="border border-[var(--border)] rounded overflow-hidden">
                 <KeyValueEditor
                   rows={draft.headers}
@@ -275,9 +336,14 @@ function RouteModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-2)] shrink-0">
-          <button onClick={onClose} className="btn text-xs">Cancel</button>
+          <button onClick={onClose} className="btn text-xs">
+            Cancel
+          </button>
           <button
-            onClick={() => { onSave(draft); onClose(); }}
+            onClick={() => {
+              onSave(draft);
+              onClose();
+            }}
             className="btn btn-primary text-xs"
           >
             Save
@@ -286,12 +352,6 @@ function RouteModal({
       </div>
     </div>
   );
-}
-
-interface WebhookEndpoint {
-  id: string;
-  label: string;
-  validation: WebhookValidationConfig;
 }
 
 const DEFAULT_VALIDATION: WebhookValidationConfig = { type: "none" };
@@ -313,7 +373,9 @@ function ValidationConfigForm({
   return (
     <div className="px-3 py-2 flex flex-col gap-2 border-t border-[var(--border)]">
       <div className="flex items-center justify-between">
-        <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">Validation</span>
+        <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
+          Validation
+        </span>
         <button
           onClick={onSave}
           disabled={saving}
@@ -327,7 +389,9 @@ function ValidationConfigForm({
         <label className="text-2xs text-[var(--text-3)] shrink-0">Type</label>
         <select
           value={config.type}
-          onChange={(e) => set({ type: e.target.value as WebhookValidationConfig["type"] })}
+          onChange={(e) =>
+            set({ type: e.target.value as WebhookValidationConfig["type"] })
+          }
           className="input text-xs py-0.5 flex-1"
         >
           <option value="none">None</option>
@@ -339,10 +403,14 @@ function ValidationConfigForm({
       {config.type === "hmac" && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Algorithm</label>
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">
+              Algorithm
+            </label>
             <select
               value={config.algorithm ?? "sha256"}
-              onChange={(e) => set({ algorithm: e.target.value as HmacAlgorithm })}
+              onChange={(e) =>
+                set({ algorithm: e.target.value as HmacAlgorithm })
+              }
               className="input text-xs py-0.5 flex-1"
             >
               <option value="sha256">SHA-256</option>
@@ -351,7 +419,9 @@ function ValidationConfigForm({
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Secret</label>
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">
+              Secret
+            </label>
             <input
               type="password"
               value={config.secret ?? ""}
@@ -361,7 +431,9 @@ function ValidationConfigForm({
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Sig. header</label>
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">
+              Sig. header
+            </label>
             <input
               value={config.signatureHeader ?? ""}
               onChange={(e) => set({ signatureHeader: e.target.value })}
@@ -370,7 +442,9 @@ function ValidationConfigForm({
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Prefix</label>
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">
+              Prefix
+            </label>
             <input
               value={config.signaturePrefix ?? ""}
               onChange={(e) => set({ signaturePrefix: e.target.value })}
@@ -384,7 +458,9 @@ function ValidationConfigForm({
       {config.type === "header" && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Header</label>
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">
+              Header
+            </label>
             <input
               value={config.headerName ?? ""}
               onChange={(e) => set({ headerName: e.target.value })}
@@ -393,7 +469,9 @@ function ValidationConfigForm({
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Expected</label>
+            <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">
+              Expected
+            </label>
             <input
               type="password"
               value={config.headerValue ?? ""}
@@ -434,7 +512,11 @@ function WebhookSection() {
       // best-effort
     }
     setEndpoints((prev) => prev.filter((e) => e.id !== id));
-    setLogs((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    setLogs((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     if (expandedId === id) setExpandedId(null);
   };
 
@@ -455,14 +537,17 @@ function WebhookSection() {
     }
   };
 
-  const refresh = useCallback(async (id: string) => {
-    try {
-      const entries = await loadWebhookLogs(id);
-      setLogs((prev) => ({ ...prev, [id]: entries }));
-    } catch (e) {
-      addToast("error", String(e));
-    }
-  }, [addToast]);
+  const refresh = useCallback(
+    async (id: string) => {
+      try {
+        const entries = await loadWebhookLogs(id);
+        setLogs((prev) => ({ ...prev, [id]: entries }));
+      } catch (e) {
+        addToast("error", String(e));
+      }
+    },
+    [addToast],
+  );
 
   const clear = async (id: string) => {
     try {
@@ -487,7 +572,11 @@ function WebhookSection() {
   }, [expandedId, refresh]);
 
   const fmt = (ts: number) =>
-    new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    new Date(ts).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 
   return (
     <div className="border-b border-[var(--border)] shrink-0">
@@ -505,7 +594,9 @@ function WebhookSection() {
       </div>
 
       {endpoints.length === 0 && (
-        <p className="p-4 text-xs text-[var(--text-3)] text-center">No endpoints yet</p>
+        <p className="p-4 text-xs text-[var(--text-3)] text-center">
+          No endpoints yet
+        </p>
       )}
 
       {endpoints.map((ep) => {
@@ -519,7 +610,11 @@ function WebhookSection() {
                 onClick={() => setExpandedId(isExpanded ? null : ep.id)}
                 className="text-[var(--text-3)]"
               >
-                {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                {isExpanded ? (
+                  <ChevronDown size={12} />
+                ) : (
+                  <ChevronRight size={12} />
+                )}
               </button>
               <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
                 /webhook/{ep.id.slice(0, 8)}…
@@ -559,7 +654,9 @@ function WebhookSection() {
 
                 <div className="flex items-center justify-between px-3 py-1.5 border-t border-[var(--border)]">
                   <span className="text-2xs text-[var(--text-3)]">
-                    {epLogs.length} {epLogs.length === 1 ? "request" : "requests"} · auto-refresh 3s
+                    {epLogs.length}{" "}
+                    {epLogs.length === 1 ? "request" : "requests"} ·
+                    auto-refresh 3s
                   </span>
                   {epLogs.length > 0 && (
                     <button
@@ -577,7 +674,9 @@ function WebhookSection() {
                       key={log.id}
                       className="flex items-center gap-2 px-3 py-1 border-t border-[var(--border)]"
                     >
-                      <span className="text-[var(--text-3)] shrink-0">{fmt(log.createdAt)}</span>
+                      <span className="text-[var(--text-3)] shrink-0">
+                        {fmt(log.createdAt)}
+                      </span>
                       <MethodBadge method={log.method} />
                       {hasValidation && (
                         <span
@@ -593,7 +692,9 @@ function WebhookSection() {
                     </div>
                   ))}
                   {epLogs.length === 0 && (
-                    <p className="px-3 py-2 text-[var(--text-3)]">Waiting for requests…</p>
+                    <p className="px-3 py-2 text-[var(--text-3)]">
+                      Waiting for requests…
+                    </p>
                   )}
                 </div>
               </div>
@@ -638,9 +739,14 @@ function ProxyRecordingSection() {
     try {
       const ids = selected.size > 0 ? [...selected] : undefined;
       const result = await proxyRecordsToMocks(ids);
-      const routes = await (await fetch("/api/mock/routes")).json() as { routes: import("@invoke/core").MockRoute[] };
+      const routes = (await (await fetch("/api/mock/routes")).json()) as {
+        routes: import("@invoke/core").MockRoute[];
+      };
       set({ mockRoutes: result.routes });
-      addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`);
+      addToast(
+        "success",
+        `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`,
+      );
     } catch (e) {
       addToast("error", String(e));
     }
@@ -672,9 +778,15 @@ function ProxyRecordingSection() {
         <div className="flex flex-col">
           <div className="flex items-center gap-2 px-3 py-1.5 border-t border-[var(--border)] border-b">
             <span className="text-2xs text-[var(--text-3)] flex-1">
-              Requests proxied through <code className="font-mono">/api/proxy/request</code> are recorded here.
+              Requests proxied through{" "}
+              <code className="font-mono">/api/proxy/request</code> are recorded
+              here.
             </span>
-            <button onClick={refresh} className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]" title="Refresh">
+            <button
+              onClick={refresh}
+              className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
+              title="Refresh"
+            >
               <RefreshCw size={11} />
             </button>
             {records.length > 0 && (
@@ -682,11 +794,19 @@ function ProxyRecordingSection() {
                 <button
                   onClick={importSelected}
                   className="btn text-2xs py-0.5 px-1.5"
-                  title={selected.size > 0 ? "Import selected as mocks" : "Import all as mocks"}
+                  title={
+                    selected.size > 0
+                      ? "Import selected as mocks"
+                      : "Import all as mocks"
+                  }
                 >
                   Import {selected.size > 0 ? `(${selected.size})` : "all"}
                 </button>
-                <button onClick={clearAll} className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)]" title="Clear">
+                <button
+                  onClick={clearAll}
+                  className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)]"
+                  title="Clear"
+                >
                   <Trash2 size={11} />
                 </button>
               </>
@@ -695,7 +815,9 @@ function ProxyRecordingSection() {
 
           {records.length === 0 && (
             <p className="p-3 text-2xs text-[var(--text-3)] text-center">
-              No recorded requests. Use <code className="font-mono">POST /api/proxy/request</code> as your target base URL.
+              No recorded requests. Use{" "}
+              <code className="font-mono">POST /api/proxy/request</code> as your
+              target base URL.
             </p>
           )}
 
@@ -706,14 +828,30 @@ function ProxyRecordingSection() {
               className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)] cursor-pointer"
             >
               {selected.has(r.id) ? (
-                <CheckSquare size={11} className="text-[var(--accent)] shrink-0" />
+                <CheckSquare
+                  size={11}
+                  className="text-[var(--accent)] shrink-0"
+                />
               ) : (
                 <Square size={11} className="text-[var(--text-3)] shrink-0" />
               )}
-              <span className="text-2xs font-mono font-semibold text-[var(--text-3)] w-12 shrink-0">{r.method}</span>
-              <span className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate" title={r.path}>{r.path}</span>
-              <span className={`text-2xs font-mono shrink-0 ${r.status >= 400 ? "text-red-500" : "text-emerald-600"}`}>{r.status}</span>
-              <span className="text-2xs text-[var(--text-3)] shrink-0">{fmt(r.createdAt)}</span>
+              <span className="text-2xs font-mono font-semibold text-[var(--text-3)] w-12 shrink-0">
+                {r.method}
+              </span>
+              <span
+                className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate"
+                title={r.path}
+              >
+                {r.path}
+              </span>
+              <span
+                className={`text-2xs font-mono shrink-0 ${r.status >= 400 ? "text-red-500" : "text-emerald-600"}`}
+              >
+                {r.status}
+              </span>
+              <span className="text-2xs text-[var(--text-3)] shrink-0">
+                {fmt(r.createdAt)}
+              </span>
             </div>
           ))}
         </div>
@@ -840,10 +978,8 @@ export function MockPanel() {
           </button>
         </div>
       </div>
-
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto min-h-0">
-
         {/* Routes */}
         <div className="border-b border-[var(--border)]">
           <div className="flex items-center justify-between px-3 py-2">
@@ -973,9 +1109,8 @@ export function MockPanel() {
             </p>
           )}
         </div>
-
-      </div> {/* end scrollable body */}
-
+      </div>{" "}
+      {/* end scrollable body */}
       {editingRoute && (
         <RouteModal
           route={editingRoute}
@@ -983,7 +1118,6 @@ export function MockPanel() {
           onClose={() => setEditingRoute(null)}
         />
       )}
-
       <ConfirmModal
         open={confirmDeleteId !== null}
         title="Delete Route"

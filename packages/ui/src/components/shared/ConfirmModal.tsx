@@ -1,15 +1,6 @@
 import { useEffect } from "react";
 import { Dialog } from "./Dialog";
-
-interface Props {
-  open: boolean;
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onClose: () => void;
-}
+import type { ConfirmModalProps } from "../../types";
 
 export function ConfirmModal({
   open,
@@ -19,7 +10,7 @@ export function ConfirmModal({
   danger,
   onConfirm,
   onClose,
-}: Props) {
+}: ConfirmModalProps) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {

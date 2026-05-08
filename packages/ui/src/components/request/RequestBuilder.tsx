@@ -39,8 +39,19 @@ import {
   oauth2AuthCodeStart,
   oauth2AuthCodeResult,
 } from "../../lib/api";
-import type { RequestTab } from "../../lib/types";
-import type { KeyValue, RequestProtocol, VariableScope } from "@invoke/core";
+import type {
+  BodyMode,
+  KeyValue,
+  RequestProtocol,
+  VariableScope,
+} from "@invoke/core";
+import type {
+  AuthTextInputProps,
+  FieldProps,
+  GraphQLSchemaImportSource,
+  RequestBuilderProps,
+  RequestTab,
+} from "../../types";
 
 const PROTOCOLS: { id: RequestProtocol; label: string }[] = [
   { id: "rest", label: "REST" },
@@ -68,11 +79,7 @@ const GQL_TABS: { id: RequestTab; label: string }[] = [
   { id: "assertions", label: "Assertions" },
 ];
 
-interface Props {
-  onSend: () => void;
-}
-
-export function RequestBuilder({ onSend }: Props) {
+export function RequestBuilder({ onSend }: RequestBuilderProps) {
   const { request, setRequest, requestTab, set, loading } = useStore();
   const protocol = (request.protocol ?? "rest") as RequestProtocol;
 
@@ -88,12 +95,11 @@ export function RequestBuilder({ onSend }: Props) {
             <button
               key={p.id}
               onClick={() => {
-              setRequest({ protocol: p.id });
-              set({
-                requestTab:
-                  p.id === "graphql" ? "graphql" : "params",
-              });
-            }}
+                setRequest({ protocol: p.id });
+                set({
+                  requestTab: p.id === "graphql" ? "graphql" : "params",
+                });
+              }}
               className={`tab-btn text-2xs ${protocol === p.id ? "active" : ""}`}
             >
               {p.label}
@@ -276,7 +282,14 @@ function WebSocketBar() {
 
 // gRPC URL bar
 function GRPCBar() {
-  const { grpcRequest, setGrpcRequest, grpcMethods, grpcStreaming, set, addToast } = useStore();
+  const {
+    grpcRequest,
+    setGrpcRequest,
+    grpcMethods,
+    grpcStreaming,
+    set,
+    addToast,
+  } = useStore();
 
   const selectedMethod = grpcMethods.find(
     (m) => m.service === grpcRequest.service && m.method === grpcRequest.method,
@@ -288,7 +301,10 @@ function GRPCBar() {
     try {
       const { methods, error } = await grpcReflect(grpcRequest);
       if (error) throw new Error(error);
-      set({ grpcMethods: methods, grpcStatus: `${methods.length} methods found` });
+      set({
+        grpcMethods: methods,
+        grpcStatus: `${methods.length} methods found`,
+      });
     } catch (e) {
       set({ grpcStatus: "Error" });
       addToast("error", String(e));
@@ -298,25 +314,38 @@ function GRPCBar() {
   const execute = async () => {
     if (isServerStreaming) {
       const controller = new AbortController();
-      set({ grpcStreaming: true, grpcStreamMessages: [], grpcStreamController: controller, grpcStatus: "Streaming…" });
+      set({
+        grpcStreaming: true,
+        grpcStreamMessages: [],
+        grpcStreamController: controller,
+        grpcStatus: "Streaming…",
+      });
       try {
         await grpcServerStream(grpcRequest, {
           onMessage: (msg) => {
-            set((s) => ({ grpcStreamMessages: [...s.grpcStreamMessages, msg] }));
+            set((s) => ({
+              grpcStreamMessages: [...s.grpcStreamMessages, msg],
+            }));
           },
           onDone: (msg) => {
             set((s) => ({
               grpcStreamMessages: [...s.grpcStreamMessages, msg],
               grpcStreaming: false,
               grpcStreamController: undefined,
-              grpcStatus: msg.error ? `Error: ${msg.statusMessage}` : `Done — ${s.grpcStreamMessages.length + 1} messages`,
+              grpcStatus: msg.error
+                ? `Error: ${msg.statusMessage}`
+                : `Done — ${s.grpcStreamMessages.length + 1} messages`,
             }));
           },
           signal: controller.signal,
         });
       } catch (e: unknown) {
         if ((e as Error).name !== "AbortError") addToast("error", String(e));
-        set({ grpcStreaming: false, grpcStreamController: undefined, grpcStatus: "Cancelled" });
+        set({
+          grpcStreaming: false,
+          grpcStreamController: undefined,
+          grpcStatus: "Cancelled",
+        });
       }
       return;
     }
@@ -331,7 +360,14 @@ function GRPCBar() {
           statusText: res.statusMessage ?? "OK",
           headers: res.metadata ?? [],
           body: res.bodyJson ?? "",
-          timing: { dnsMs: 0, tcpMs: 0, tlsMs: 0, ttfbMs: 0, transferMs: 0, totalMs: res.durationMs ?? 0 },
+          timing: {
+            dnsMs: 0,
+            tcpMs: 0,
+            tlsMs: 0,
+            ttfbMs: 0,
+            transferMs: 0,
+            totalMs: res.durationMs ?? 0,
+          },
           requestSize: 0,
           responseSize: 0,
         },
@@ -345,7 +381,11 @@ function GRPCBar() {
   const cancelStream = () => {
     const { grpcStreamController } = useStore.getState();
     grpcStreamController?.abort();
-    set({ grpcStreaming: false, grpcStreamController: undefined, grpcStatus: "Cancelled" });
+    set({
+      grpcStreaming: false,
+      grpcStreamController: undefined,
+      grpcStatus: "Cancelled",
+    });
   };
 
   return (
@@ -369,11 +409,17 @@ function GRPCBar() {
         <RefreshCw size={12} /> Reflect
       </button>
       {grpcStreaming ? (
-        <button onClick={cancelStream} className="btn btn-danger text-xs flex items-center gap-1">
+        <button
+          onClick={cancelStream}
+          className="btn btn-danger text-xs flex items-center gap-1"
+        >
           <StopCircle size={12} /> Cancel
         </button>
       ) : (
-        <button onClick={execute} className="btn btn-primary text-xs flex items-center gap-1">
+        <button
+          onClick={execute}
+          className="btn btn-primary text-xs flex items-center gap-1"
+        >
           {isServerStreaming && <Zap size={12} />}
           Invoke
         </button>
@@ -417,7 +463,9 @@ function AuthPanel() {
         <Field label="Token">
           <AuthTextInput
             value={auth.token ?? ""}
-            onChange={(value) => setRequest({ auth: { ...auth, token: value } })}
+            onChange={(value) =>
+              setRequest({ auth: { ...auth, token: value } })
+            }
             placeholder="{{token}}"
           />
         </Field>
@@ -487,7 +535,16 @@ function AuthPanel() {
           <Field label="Flow">
             <Select
               value={auth.flow ?? "client_credentials"}
-              onChange={(e) => setRequest({ auth: { ...auth, flow: e.target.value as "client_credentials" | "authorization_code" } })}
+              onChange={(e) =>
+                setRequest({
+                  auth: {
+                    ...auth,
+                    flow: e.target.value as
+                      | "client_credentials"
+                      | "authorization_code",
+                  },
+                })
+              }
               className="bg-[var(--surface-2)] text-xs"
             >
               <option value="client_credentials">Client Credentials</option>
@@ -498,7 +555,9 @@ function AuthPanel() {
             <Field label="Authorization URL">
               <AuthTextInput
                 value={auth.authUrl ?? ""}
-                onChange={(value) => setRequest({ auth: { ...auth, authUrl: value } })}
+                onChange={(value) =>
+                  setRequest({ auth: { ...auth, authUrl: value } })
+                }
                 placeholder="https://provider.com/oauth/authorize"
               />
             </Field>
@@ -540,8 +599,13 @@ function AuthPanel() {
             <>
               <Field label="Redirect URI">
                 <AuthTextInput
-                  value={auth.redirectUri ?? "http://localhost:4000/api/oauth2/callback"}
-                  onChange={(value) => setRequest({ auth: { ...auth, redirectUri: value } })}
+                  value={
+                    auth.redirectUri ??
+                    "http://localhost:4000/api/oauth2/callback"
+                  }
+                  onChange={(value) =>
+                    setRequest({ auth: { ...auth, redirectUri: value } })
+                  }
                 />
               </Field>
               <div className="flex items-center gap-2 mt-1">
@@ -551,29 +615,40 @@ function AuthPanel() {
                     Token stored
                     {auth.tokenExpiresAt && (
                       <span className="text-[var(--text-3)]">
-                        — expires {new Date(auth.tokenExpiresAt).toLocaleString()}
+                        — expires{" "}
+                        {new Date(auth.tokenExpiresAt).toLocaleString()}
                       </span>
                     )}
                   </span>
                 )}
                 <button
-                  disabled={authorizing || !auth.authUrl || !auth.tokenUrl || !auth.clientId}
+                  disabled={
+                    authorizing ||
+                    !auth.authUrl ||
+                    !auth.tokenUrl ||
+                    !auth.clientId
+                  }
                   onClick={async () => {
-                    if (!auth.authUrl || !auth.tokenUrl || !auth.clientId) return;
+                    if (!auth.authUrl || !auth.tokenUrl || !auth.clientId)
+                      return;
                     setAuthorizing(true);
                     try {
-                      const redirectUri = auth.redirectUri ?? "http://localhost:4000/api/oauth2/callback";
-                      const { authUrl: url, state } = await oauth2AuthCodeStart({
-                        authUrl: auth.authUrl,
-                        tokenUrl: auth.tokenUrl,
-                        clientId: auth.clientId,
-                        clientSecret: auth.clientSecret ?? "",
-                        scope: auth.scope ?? "",
-                        redirectUri,
-                        pkce: auth.pkce ?? false,
-                        codeChallenge: "",
-                        codeChallengeMethod: "",
-                      });
+                      const redirectUri =
+                        auth.redirectUri ??
+                        "http://localhost:4000/api/oauth2/callback";
+                      const { authUrl: url, state } = await oauth2AuthCodeStart(
+                        {
+                          authUrl: auth.authUrl,
+                          tokenUrl: auth.tokenUrl,
+                          clientId: auth.clientId,
+                          clientSecret: auth.clientSecret ?? "",
+                          scope: auth.scope ?? "",
+                          redirectUri,
+                          pkce: auth.pkce ?? false,
+                          codeChallenge: "",
+                          codeChallengeMethod: "",
+                        },
+                      );
                       window.open(url, "_blank");
                       // Poll for token
                       const poll = async () => {
@@ -584,7 +659,9 @@ function AuthPanel() {
                         }
                         setAuthorizing(false);
                         if (result.status === "done" && result.accessToken) {
-                          const expiresAt = result.expiresIn ? Date.now() + result.expiresIn * 1000 : undefined;
+                          const expiresAt = result.expiresIn
+                            ? Date.now() + result.expiresIn * 1000
+                            : undefined;
                           setRequest({
                             auth: {
                               ...auth,
@@ -595,7 +672,10 @@ function AuthPanel() {
                           });
                           addToast("success", "OAuth2 token obtained");
                         } else {
-                          addToast("error", `OAuth2 failed: ${result.error ?? "unknown"}`);
+                          addToast(
+                            "error",
+                            `OAuth2 failed: ${result.error ?? "unknown"}`,
+                          );
                         }
                       };
                       setTimeout(poll, 1500);
@@ -607,9 +687,13 @@ function AuthPanel() {
                   className="ml-auto btn btn-primary text-2xs py-0.5 px-2 flex items-center gap-1"
                 >
                   {authorizing ? (
-                    <><RefreshCw size={11} className="animate-spin" /> Waiting…</>
+                    <>
+                      <RefreshCw size={11} className="animate-spin" /> Waiting…
+                    </>
                   ) : (
-                    <><ExternalLink size={11} /> Authorize</>
+                    <>
+                      <ExternalLink size={11} /> Authorize
+                    </>
                   )}
                 </button>
               </div>
@@ -690,12 +774,7 @@ function AuthTextInput({
   onChange,
   placeholder,
   type = "text",
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: "text" | "password";
-}) {
+}: AuthTextInputProps) {
   return (
     <VariableAutocompleteInput
       type={type}
@@ -707,13 +786,7 @@ function AuthTextInput({
   );
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, children }: FieldProps) {
   return (
     <div className="flex items-center gap-2">
       <label className="text-xs text-[var(--text-2)] w-24 shrink-0">
@@ -723,9 +796,6 @@ function Field({
     </div>
   );
 }
-
-// Body panel
-type BodyMode = "none" | "json" | "form-data" | "urlencoded" | "raw";
 
 function BodyPanel() {
   const { request, setRequest } = useStore();
@@ -880,8 +950,6 @@ function GraphQLQueryPanel() {
     </div>
   );
 }
-
-type GraphQLSchemaImportSource = "url" | "file";
 
 function graphQLSchemaStatusClass(status: string) {
   if (status.startsWith("Failed")) return "text-[var(--danger)]";
@@ -1264,9 +1332,7 @@ function AssertionsPanel() {
                   className="input py-0.5 text-2xs font-mono"
                 />
               ) : (
-                <span className="text-2xs text-[var(--text-3)] px-1">
-                  —
-                </span>
+                <span className="text-2xs text-[var(--text-3)] px-1">—</span>
               )}
             </div>
             <div className="w-28 shrink-0">
@@ -1413,7 +1479,9 @@ function ExtractPanel() {
 // Retry panel
 function RetryPanel() {
   const { request, setRequest } = useStore();
-  const policy = (request as { retryPolicy?: import("@invoke/core").RetryPolicy }).retryPolicy ?? {
+  const policy = (
+    request as { retryPolicy?: import("@invoke/core").RetryPolicy }
+  ).retryPolicy ?? {
     maxRetries: 0,
     retryOnTimeout: true,
     retryOn5xx: true,
@@ -1421,7 +1489,9 @@ function RetryPanel() {
   };
 
   const update = (patch: Partial<import("@invoke/core").RetryPolicy>) =>
-    setRequest({ retryPolicy: { ...policy, ...patch } } as Partial<import("@invoke/core").RequestDraft>);
+    setRequest({ retryPolicy: { ...policy, ...patch } } as Partial<
+      import("@invoke/core").RequestDraft
+    >);
 
   const enabled = policy.maxRetries > 0;
 
@@ -1435,7 +1505,10 @@ function RetryPanel() {
           onChange={(e) => update({ maxRetries: e.target.checked ? 3 : 0 })}
           className="accent-[var(--accent)]"
         />
-        <label htmlFor="retry-enable" className="text-xs text-[var(--text-2)] cursor-pointer">
+        <label
+          htmlFor="retry-enable"
+          className="text-xs text-[var(--text-2)] cursor-pointer"
+        >
           Enable retry
         </label>
       </div>
@@ -1447,7 +1520,9 @@ function RetryPanel() {
               min={1}
               max={10}
               value={policy.maxRetries}
-              onChange={(e) => update({ maxRetries: Math.max(1, Number(e.target.value)) })}
+              onChange={(e) =>
+                update({ maxRetries: Math.max(1, Number(e.target.value)) })
+              }
               className="input text-xs py-1 w-20"
             />
           </Field>
@@ -1457,7 +1532,9 @@ function RetryPanel() {
               min={0}
               step={100}
               value={policy.backoffMs}
-              onChange={(e) => update({ backoffMs: Math.max(0, Number(e.target.value)) })}
+              onChange={(e) =>
+                update({ backoffMs: Math.max(0, Number(e.target.value)) })
+              }
               className="input text-xs py-1 w-24"
             />
           </Field>
@@ -1485,8 +1562,9 @@ function RetryPanel() {
           </Field>
           <p className="text-2xs text-[var(--text-3)]">
             Backoff doubles each retry. Total wait ≈{" "}
-            {Array.from({ length: policy.maxRetries }, (_, i) =>
-              policy.backoffMs * Math.pow(2, i),
+            {Array.from(
+              { length: policy.maxRetries },
+              (_, i) => policy.backoffMs * Math.pow(2, i),
             ).reduce((a, b) => a + b, 0)}
             ms max.
           </p>

@@ -1,14 +1,6 @@
 import { X } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
-
-interface Props {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: ReactNode;
-  width?: string;
-  footer?: ReactNode;
-}
+import { useEffect } from "react";
+import type { DialogProps } from "../../types";
 
 export function Dialog({
   open,
@@ -17,7 +9,7 @@ export function Dialog({
   children,
   width = "480px",
   footer,
-}: Props) {
+}: DialogProps) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {

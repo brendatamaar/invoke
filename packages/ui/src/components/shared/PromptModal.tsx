@@ -1,18 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "./Dialog";
-
-interface Props {
-  open: boolean;
-  title: string;
-  label?: string;
-  defaultValue?: string;
-  placeholder?: string;
-  multiline?: boolean;
-  confirmLabel?: string;
-  allowEmpty?: boolean;
-  onConfirm: (value: string) => void;
-  onClose: () => void;
-}
+import type { PromptModalProps } from "../../types";
 
 export function PromptModal({
   open,
@@ -25,7 +13,7 @@ export function PromptModal({
   allowEmpty,
   onConfirm,
   onClose,
-}: Props) {
+}: PromptModalProps) {
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
