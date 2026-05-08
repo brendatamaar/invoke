@@ -46,3 +46,102 @@ export interface OAuth2PendingResult {
   error?: string;
   timestamp: number;
 }
+
+export interface WebhookValidationResult {
+  passed: boolean;
+  error?: string;
+}
+
+export interface MockConditionRequest {
+  headers: KeyValue[];
+  query: URLSearchParams;
+  body: string;
+}
+
+export interface MockPathMatch {
+  matched: boolean;
+  params: Record<string, string>;
+}
+
+export interface ServerHeaderInput {
+  key: string;
+  value: string;
+  enabled?: boolean;
+}
+
+export interface TlsClientConfigInput {
+  clientCertPem: string;
+  clientKeyPem: string;
+  caCertPem: string;
+  serverName: string;
+}
+
+export interface ExecuteInput {
+  method: string;
+  url: string;
+  headers: ServerHeaderInput[];
+  body: string;
+  auth?: {
+    type: string;
+    username?: string;
+    password?: string;
+  };
+  timeoutMs: number;
+  followRedirects: boolean;
+  maxRedirects: number;
+  verifySsl: boolean;
+  proxy?: {
+    type: "http" | "socks5";
+    url: string;
+    username: string;
+    password: string;
+  };
+  tlsClientConfig?: TlsClientConfigInput;
+}
+
+export interface WebSocketConnectInput {
+  url: string;
+  headers: ServerHeaderInput[];
+  protocols: string[];
+  timeoutMs: number;
+  verifySsl: boolean;
+  tlsClientConfig?: TlsClientConfigInput;
+}
+
+export interface GrpcReflectInput {
+  address: string;
+  tls: boolean;
+  timeoutMs: number;
+  metadata: ServerHeaderInput[];
+  verifySsl: boolean;
+  tlsClientConfig?: TlsClientConfigInput;
+}
+
+export interface GrpcExecuteInput extends GrpcReflectInput {
+  fullMethod: string;
+  bodyJson: string;
+}
+
+export interface ProxyRequestInput {
+  targetUrl: string;
+  method: string;
+  headers: ServerHeaderInput[];
+  body: string;
+}
+
+export interface OAuth2AuthCodeStartInput {
+  authUrl: string;
+  tokenUrl: string;
+  clientId: string;
+  clientSecret: string;
+  scope: string;
+  redirectUri: string;
+  pkce: boolean;
+  codeChallenge: string;
+  codeChallengeMethod: string;
+}
+
+export type OAuth2AuthCodePending = OAuth2PendingResult &
+  OAuth2AuthCodeStartInput & {
+    codeVerifier?: string;
+  };
