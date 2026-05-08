@@ -1,17 +1,17 @@
 # invoke
 
-invoke is a local-first API development and testing platform for developers who want a fast browser UI, self-hosting, accurate network timing, and no mandatory account or cloud sync.
+invoke is a local-first API development, debugging, and testing platform for developers who want a fast browser UI, self-hosting, accurate network timing, and no mandatory account or cloud sync.
 
 It combines a React web app, a TypeScript core engine, a thin Node.js proxy, and a Go executor. The browser owns the product state, the core engine handles API-client behavior, and the Go executor performs network I/O with low-level timing data that browser-only tools cannot capture reliably.
 
 ## Overview
 
-- **Local-first by default** - collections, environments, history, flows, mock routes, and settings live in browser storage.
+- **Local-first by default** - collections, environments, history, flows, cookies, response examples, mock routes, and settings live in browser storage.
 - **No required account** - use the app without sign-up, user management, or a hosted workspace.
-- **Protocol-aware** - build and inspect REST, GraphQL, WebSocket, gRPC, and streaming HTTP requests in one interface.
+- **Protocol-aware** - build and inspect REST, GraphQL, WebSocket, gRPC unary and server-streaming, and streaming HTTP requests in one interface.
 - **Accurate execution data** - capture detailed HTTP timing through a Go executor using `net/http/httptrace`.
-- **Repeatable API checks** - run assertions, extraction rules, scripts, and request flows locally.
-- **Portable API work** - import existing API work, export collection data, generate code snippets, and self-host with Docker Compose.
+- **Repeatable API checks** - run assertions, extraction rules, scripts, request flows, collection runs, and batch runs locally.
+- **Portable API work** - import existing API work, export OpenAPI specs, workspace backups, and code snippets, then self-host with Docker Compose.
 
 ## Features
 
@@ -23,10 +23,10 @@ invoke can create, send, save, and inspect API requests across multiple protocol
 - GraphQL queries with variables, schema introspection, and schema browsing.
 - WebSocket connections with custom upgrade headers, subprotocols, auth headers, TLS options, message composer, and chronological message log.
 - WebSocket polling for received messages and connection events.
-- gRPC server reflection and unary calls with metadata, TLS/plaintext modes, mTLS material, and protobuf JSON request/response handling.
+- gRPC server reflection, unary calls, and server-streaming calls with metadata, TLS/plaintext modes, mTLS material, and protobuf JSON request/response handling.
 - Streaming HTTP responses through the Go executor and server-side forwarding.
 
-REST requests support headers, query parameters, request bodies, auth configuration, variable resolution, timeouts, TLS options, and proxy settings.
+REST requests support headers, query parameters, request bodies, auth configuration, variable resolution, retry policies, timeouts, TLS options, cookie handling, and proxy settings.
 
 ### Response Inspection
 
@@ -39,6 +39,8 @@ The response view is designed for debugging:
 - Redirect tracking with per-hop response details.
 - TLS certificate details for HTTPS requests.
 - Assertion results after request execution.
+- Saved response examples for collection requests.
+- Captured cookies from `Set-Cookie` headers.
 - History entries that preserve request and response context.
 
 ### Collections and Environments
@@ -50,7 +52,10 @@ API work is organized locally in the browser:
 - Environments for local, staging, production, or custom variable sets.
 - Scoped variables across environment, collection, folder, request, session, and flow contexts.
 - Dynamic variables such as UUIDs and timestamps.
+- Variable autocomplete for `{{...}}` placeholders in the request URL.
+- Sensitive environment variables with `.env` import and export support.
 - Searchable history for previously executed requests.
+- Workspace JSON backup and restore for local project portability.
 
 The core variable system resolves `{{variable}}` placeholders before execution, so saved requests can move between environments without duplicating URLs, tokens, or host-specific values.
 
@@ -63,8 +68,10 @@ invoke includes common authentication and transport options used by real service
 - Bearer token.
 - API key in header or query.
 - OAuth2 client credentials.
+- OAuth2 authorization-code helper.
 - Digest auth.
 - AWS SigV4 signing.
+- Cookie manager with persisted cookie jar support.
 - mTLS client certificates.
 - Custom CA bundles.
 - TLS verification controls.
@@ -82,6 +89,9 @@ invoke includes local testing primitives so requests can become repeatable check
 - Pre-request and post-response scripts.
 - Browser Worker script execution path with a Node/test fallback.
 - Postman-style `test()` helper and `expect()` matchers.
+- Per-request retry policies with retryable status codes, network-error retrying, and backoff configuration.
+- Collection and folder runner with local progress, assertion results, and JSON/CSV report export.
+- Batch runner for repeated request execution with iterations, concurrency, delay, stop-on-failure, and latency stats.
 - Flow runner with request steps, delays, conditions, loops, extraction, cancellation, progress hooks, and saved flow persistence.
 - Browser flow editor in Settings with saved flows, request/delay steps, reordering, execution, and live step logs.
 
@@ -91,8 +101,11 @@ Response history is useful for more than re-running a request:
 
 - Search previous executions.
 - Restore a historical request into the builder.
+- Pin and label important history entries.
+- Configure history retention while preserving pinned entries.
 - Compare saved responses.
 - Diff structured JSON responses.
+- Ignore noisy JSON paths in response diffs.
 - Fall back to text diffing for non-JSON bodies.
 - Review assertion results from previous runs.
 
@@ -106,8 +119,11 @@ invoke can run browser-managed mock routes through the Node server:
 - Path parameters are supported.
 - Conditions can inspect headers, query values, and JSONPath body values.
 - Responses can include dynamic variables.
+- Routes can cycle through response sequences.
 - Latency can be configured.
 - Request logs show incoming mock traffic.
+- Webhook receiver endpoints can capture incoming requests, show logs, and enforce simple validation settings.
+- Proxy recording can capture upstream traffic and turn it into mockable route data.
 
 Mock state is intentionally local and in-memory on the Node side. The browser remains the owner of the mock configuration and can re-sync it when needed.
 
@@ -122,7 +138,14 @@ Supported imports:
 - cURL paste.
 - Insomnia export.
 - Hoppscotch export.
+- HAR files from browser DevTools.
 - invoke ZIP/YAML export format.
+
+Supported exports:
+
+- OpenAPI 3.0.3 YAML from REST collections.
+- Workspace JSON backup.
+- `.env` environment files.
 
 Code export targets include:
 
@@ -172,7 +195,7 @@ The browser is the source of truth for workspace data. Requests are resolved in 
 
 ### Browser UI
 
-The React app is the main product surface. It renders the request builder, response viewer, collection tree, environment editor, protocol clients, history, flow editor, settings, and import/export tools.
+The React app is the main product surface. It renders the request builder, response viewer, collection tree, environment editor, protocol clients, history, collection runner, batch runner, cookie manager, mock/webhook tools, flow editor, settings, and import/export tools.
 
 The UI imports `@invoke/core` directly. That keeps the app responsive and lets most business logic run near the browser-owned data.
 
@@ -187,8 +210,12 @@ The UI imports `@invoke/core` directly. That keeps the app responsive and lets m
 - Assertions.
 - Extraction.
 - Diffing.
+- Diff ignore rules.
+- Cookie parsing and matching.
 - Flow execution.
+- Collection and batch run orchestration.
 - Import/export.
+- Workspace backup parsing and serialization.
 - Code generation.
 - Storage helpers.
 - Script execution helpers.
@@ -204,8 +231,10 @@ Its responsibilities are:
 - Forward resolved HTTP requests to the Go executor.
 - Forward streaming responses.
 - Relay WebSocket operations.
-- Proxy gRPC reflection and unary execution.
+- Proxy gRPC reflection, unary execution, and server-streaming execution.
 - Host the in-memory mock server.
+- Host webhook capture routes and logs.
+- Support OAuth2 authorization-code callback handling.
 - Serve as the bridge between browser APIs and the Go sidecar.
 
 ### Go Executor
@@ -218,7 +247,7 @@ The Go executor performs network operations that need more control than browser 
 - Redirect handling.
 - Streaming response execution.
 - WebSocket connection management.
-- gRPC reflection and unary execution.
+- gRPC reflection, unary execution, and server-streaming execution.
 - mTLS and custom CA handling.
 
 The executor communicates with the Node server through gRPC. The contract lives in `proto/executor.proto`.
@@ -230,8 +259,13 @@ invoke's local-first model is simple:
 - Collections live in browser storage.
 - Environments live in browser storage.
 - Request history lives in browser storage.
+- Cookies live in browser storage.
+- Response examples live in browser storage.
+- History retention settings live in browser storage.
+- Diff ignore rules live in browser storage.
 - Saved flows live in browser storage.
 - Mock configuration is managed by the browser.
+- Webhook logs and mock runtime state are in memory on the Node server.
 - No account is required to use the app.
 - No database is required for local or self-hosted use.
 
@@ -444,7 +478,10 @@ Expected server responsibilities:
 - Forward work to the Go executor.
 - Stream responses back to the browser.
 - Relay protocol-specific operations.
+- Proxy gRPC reflection, unary execution, and server-streaming execution.
 - Host mock routes from browser-provided configuration.
+- Host webhook capture routes and logs.
+- Support OAuth2 authorization-code callback handling.
 - Normalize errors into UI-friendly responses.
 
 Avoid adding collection, environment, history, or flow CRUD routes unless the storage model changes deliberately.
@@ -462,7 +499,7 @@ Important areas:
 - Request cancellation and timeouts.
 - Streaming responses.
 - WebSocket lifecycle.
-- gRPC reflection and unary execution.
+- gRPC reflection, unary execution, and server-streaming execution.
 
 Run:
 
@@ -481,4 +518,4 @@ When changing persisted data:
 - Add migrations instead of assuming a clean browser profile.
 - Keep exported files readable and deterministic.
 - Avoid changing import/export formats without compatibility handling.
-- Test refresh and reload behavior after saving collections, environments, flows, and history.
+- Test refresh and reload behavior after saving collections, environments, flows, history, cookies, response examples, and settings.
