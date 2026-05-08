@@ -9,6 +9,9 @@ import {
   CheckCircle2,
   StopCircle,
   Zap,
+  X,
+  Link2,
+  FileUp,
 } from "lucide-react";
 import { Select } from "../shared/Select";
 import { useStore } from "../../store";
@@ -23,6 +26,8 @@ import {
   parseGraphQLIntrospection,
   publicGraphQLTypes,
   formatGraphQLTypeRef,
+  resolveTemplate,
+  variablesFromScopes,
 } from "@invoke/core";
 import {
   webSocketConnect,
@@ -35,7 +40,7 @@ import {
   oauth2AuthCodeResult,
 } from "../../lib/api";
 import type { RequestTab } from "../../lib/types";
-import type { KeyValue, RequestProtocol } from "@invoke/core";
+import type { KeyValue, RequestProtocol, VariableScope } from "@invoke/core";
 
 const PROTOCOLS: { id: RequestProtocol; label: string }[] = [
   { id: "rest", label: "REST" },
@@ -778,38 +783,11 @@ function GraphQLQueryPanel() {
   const {
     graphqlRequest,
     setGraphqlRequest,
-    set,
     graphqlSchema,
-    graphqlSchemaStatus,
     expandedGraphQLTypeNames,
+    set,
   } = useStore();
-
-  const introspect = async () => {
-    if (!graphqlRequest.url) return;
-    set({ graphqlSchemaStatus: "Fetching schema…" });
-    try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      graphqlRequest.headers?.forEach((h) => {
-        if (h.enabled !== false && h.key) headers[h.key] = h.value;
-      });
-      const res = await fetch(graphqlRequest.url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ query: GRAPHQL_INTROSPECTION_QUERY }),
-      });
-      const data = (await res.json()) as { data?: unknown };
-      if (data.data) {
-        const schema = parseGraphQLIntrospection(JSON.stringify(data.data));
-        set({ graphqlSchema: schema, graphqlSchemaStatus: "Schema loaded" });
-      } else {
-        set({ graphqlSchemaStatus: "Schema unavailable" });
-      }
-    } catch (e) {
-      set({ graphqlSchemaStatus: `Failed: ${String(e).slice(0, 40)}` });
-    }
-  };
+  const [schemaModalOpen, setSchemaModalOpen] = useState(false);
 
   const toggleType = (name: string) => {
     set((s) => ({
@@ -830,22 +808,13 @@ function GraphQLQueryPanel() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)]">
-        <input
-          value={graphqlRequest.url ?? ""}
-          onChange={(e) => setGraphqlRequest({ url: e.target.value })}
-          placeholder="https://api.example.com/graphql"
-          className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-mono outline-none focus:border-[var(--accent)]"
-        />
-        <button onClick={introspect} className="btn text-2xs py-0.5 px-2">
-          Fetch Schema
+        <button
+          onClick={() => setSchemaModalOpen(true)}
+          className="btn text-2xs py-0.5 px-2 gap-1"
+        >
+          <FileUp size={12} />
+          Import Schema
         </button>
-        {graphqlSchemaStatus && (
-          <span
-            className={`text-2xs ${graphqlSchemaStatus.startsWith("Failed") ? "text-[var(--danger)]" : "text-[var(--text-3)]"}`}
-          >
-            {graphqlSchemaStatus}
-          </span>
-        )}
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-auto">
@@ -903,6 +872,235 @@ function GraphQLQueryPanel() {
             </div>
           </div>
         )}
+      </div>
+      <GraphQLSchemaImportModal
+        open={schemaModalOpen}
+        onClose={() => setSchemaModalOpen(false)}
+      />
+    </div>
+  );
+}
+
+type GraphQLSchemaImportSource = "url" | "file";
+
+function graphQLSchemaStatusClass(status: string) {
+  if (status.startsWith("Failed")) return "text-[var(--danger)]";
+  if (status.startsWith("Missing")) return "text-[var(--warn)]";
+  return "text-[var(--text-3)]";
+}
+
+function graphQLSchemaFailureStatus(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return `Failed: ${message}`;
+}
+
+function GraphQLSchemaImportModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const {
+    request,
+    set,
+    graphqlSchemaStatus,
+    environments,
+    activeEnvironmentId,
+    sessionVariables,
+  } = useStore();
+  const [source, setSource] = useState<GraphQLSchemaImportSource>("url");
+  const [schemaUrl, setSchemaUrl] = useState("");
+  const [working, setWorking] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setSource("url");
+    setWorking(false);
+  }, [open]);
+
+  if (!open) return null;
+
+  const close = () => {
+    if (!working) onClose();
+  };
+
+  const resolveSchemaUrlAndHeaders = () => {
+    const env = environments.find((e) => e.id === activeEnvironmentId);
+    const scopes: VariableScope[] = [
+      { name: "environment", variables: env?.variables ?? [] },
+      { name: "session", variables: sessionVariables },
+    ];
+    const variables = variablesFromScopes(scopes);
+    const unresolved = new Set<string>();
+    const resolve = (value: string) => {
+      const resolved = resolveTemplate(value, variables);
+      resolved.unresolved.forEach((name) => unresolved.add(name));
+      return resolved.value;
+    };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    request.headers?.forEach((h) => {
+      if (h.enabled !== false && h.key)
+        headers[resolve(h.key)] = resolve(h.value);
+    });
+    return {
+      url: resolve(schemaUrl.trim()),
+      headers,
+      unresolved: [...unresolved],
+    };
+  };
+
+  const loadSchema = (body: string) => {
+    const schema = parseGraphQLIntrospection(body);
+    set({ graphqlSchema: schema, graphqlSchemaStatus: "Schema loaded" });
+    onClose();
+  };
+
+  const fetchSchema = async () => {
+    if (!schemaUrl.trim() || working) return;
+    const { url, headers, unresolved } = resolveSchemaUrlAndHeaders();
+    if (unresolved.length > 0) {
+      set({
+        graphqlSchemaStatus: `Missing variables: ${unresolved.slice(0, 5).join(", ")}`,
+      });
+      return;
+    }
+
+    setWorking(true);
+    set({ graphqlSchemaStatus: "Fetching schema…" });
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ query: GRAPHQL_INTROSPECTION_QUERY }),
+      });
+      const body = await res.text();
+      if (!res.ok) {
+        set({
+          graphqlSchemaStatus: `Failed: HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""}`,
+        });
+        return;
+      }
+      loadSchema(body);
+    } catch (e) {
+      set({ graphqlSchemaStatus: graphQLSchemaFailureStatus(e) });
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const importSchemaFile = async (file: File | undefined) => {
+    if (!file || working) return;
+    setWorking(true);
+    set({ graphqlSchemaStatus: "Importing schema…" });
+    try {
+      loadSchema(await file.text());
+    } catch (e) {
+      set({ graphqlSchemaStatus: graphQLSchemaFailureStatus(e) });
+    } finally {
+      setWorking(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={close}
+    >
+      <div
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        style={{ width: 520, maxWidth: "calc(100vw - 32px)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
+          <FileUp size={14} className="text-[var(--accent)]" />
+          <span className="text-sm font-semibold">Import Schema</span>
+          <button
+            onClick={close}
+            disabled={working}
+            className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] disabled:opacity-50"
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="p-4 flex flex-col gap-4">
+          <div className="flex items-center gap-1">
+            {(["url", "file"] as GraphQLSchemaImportSource[]).map((option) => (
+              <button
+                key={option}
+                onClick={() => setSource(option)}
+                className={`tab-btn text-2xs ${source === option ? "active" : ""}`}
+              >
+                {option === "url" ? "URL" : "Local JSON"}
+              </button>
+            ))}
+          </div>
+
+          {source === "url" ? (
+            <div className="flex flex-col gap-2">
+              <label className="text-2xs text-[var(--text-3)]">
+                GraphQL endpoint
+              </label>
+              <VariableAutocompleteInput
+                value={schemaUrl}
+                onChange={setSchemaUrl}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey))
+                    fetchSchema();
+                }}
+                placeholder="https://api.example.com/graphql"
+                className="input text-xs py-1.5 font-mono"
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={(e) => importSchemaFile(e.target.files?.[0])}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={working}
+                className="btn text-xs gap-1.5"
+              >
+                <FileUp size={13} />
+                Choose JSON
+              </button>
+            </div>
+          )}
+
+          {graphqlSchemaStatus && (
+            <p
+              className={`px-1 text-2xs whitespace-pre-wrap break-words ${graphQLSchemaStatusClass(graphqlSchemaStatus)}`}
+            >
+              {graphqlSchemaStatus}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
+          <button onClick={close} disabled={working} className="btn text-xs">
+            Cancel
+          </button>
+          {source === "url" && (
+            <button
+              onClick={fetchSchema}
+              disabled={working || !schemaUrl.trim()}
+              className="btn btn-primary text-xs gap-1.5"
+            >
+              <Link2 size={13} />
+              {working ? "Fetching…" : "Fetch Schema"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
