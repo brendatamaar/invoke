@@ -1,0 +1,192 @@
+import { useCallback } from "react";
+import {
+  extractVariables,
+  resolveRequest,
+  runAssertions,
+  runPostResponseScript,
+  runPreRequestScript,
+  variablesFromScopes,
+  type ExecuteResponse,
+  type RequestConfig,
+  type VariableScope,
+} from "@invoke/core";
+import { executeStream, executeWithRetry } from "../execute/api";
+import { coreStore, useStore } from "../../store";
+import { injectCookies, persistResponseCookies } from "./cookies";
+import { applyOAuth2Token } from "./oauth2";
+
+export function useRequestExecution() {
+  const request = useStore((state) => state.request);
+  const environments = useStore((state) => state.environments);
+  const activeEnvironmentId = useStore((state) => state.activeEnvironmentId);
+  const sessionVariables = useStore((state) => state.sessionVariables);
+  const assertionRules = useStore((state) => state.assertionRules);
+  const extractRules = useStore((state) => state.extractRules);
+  const streamMode = useStore((state) => state.streamMode);
+  const cookies = useStore((state) => state.cookies);
+  const enableCookies = useStore((state) => state.enableCookies);
+  const loading = useStore((state) => state.loading);
+  const streaming = useStore((state) => state.streaming);
+  const set = useStore((state) => state.set);
+  const addToast = useStore((state) => state.addToast);
+
+  const handleSend = useCallback(async () => {
+    if (loading || streaming || !request.url.trim()) return;
+
+    const env = environments.find((e) => e.id === activeEnvironmentId);
+    const varScopes: VariableScope[] = [
+      { name: "environment", variables: env?.variables ?? [] },
+      { name: "session", variables: sessionVariables },
+    ];
+    const vars = variablesFromScopes(varScopes);
+
+    let resolved: RequestConfig;
+    let unresolved: string[] = [];
+    try {
+      const scriptCtx = await runPreRequestScript(
+        request as RequestConfig,
+        vars,
+        request.scripts?.preRequest ?? "",
+      );
+      const result = resolveRequest(
+        (scriptCtx.request ?? request) as RequestConfig,
+        env,
+        sessionVariables,
+      );
+      resolved = result.request;
+      unresolved = result.unresolved;
+    } catch {
+      const result = resolveRequest(
+        request as RequestConfig,
+        env,
+        sessionVariables,
+      );
+      resolved = result.request;
+      unresolved = result.unresolved;
+    }
+
+    if (unresolved.length > 0) {
+      addToast(
+        "warn",
+        `Unresolved variables: ${[...new Set(unresolved)].slice(0, 5).join(", ")}`,
+      );
+    }
+
+    if (enableCookies && cookies.length > 0) {
+      resolved = injectCookies(resolved, cookies);
+    }
+
+    set({ resolvedRequest: resolved });
+
+    resolved = await applyOAuth2Token(resolved, (message) =>
+      addToast("warn", message),
+    );
+
+    const persistCookies = async (
+      response: { headers: { key: string; value: string }[] },
+      url: string,
+    ) => {
+      if (!enableCookies) return;
+      const updated = await persistResponseCookies(response, url);
+      if (updated) set({ cookies: updated });
+    };
+
+    const finishStreamExecution = async (response: ExecuteResponse) => {
+      await persistCookies(response, resolved.url);
+      const results = runAssertions(response, assertionRules);
+      const extracted = extractVariables(response, extractRules);
+      await coreStore.addHistory({
+        request: resolved,
+        response,
+        protocol: "rest",
+      });
+      const hist = await coreStore.listHistory(200);
+      set({
+        response,
+        assertionResults: results,
+        sessionVariables: { ...sessionVariables, ...extracted },
+        history: hist,
+        streaming: false,
+      });
+    };
+
+    if (streamMode) {
+      const controller = new AbortController();
+      set({
+        streaming: true,
+        loading: false,
+        response: undefined,
+        streamBytes: 0,
+        streamController: controller,
+      });
+      try {
+        await executeStream(resolved, {
+          onChunk: (chunk) =>
+            set((state: { streamBytes: number }) => ({
+              streamBytes: state.streamBytes + chunk.length,
+            })),
+          onFinal: async (response) => {
+            await finishStreamExecution(response);
+          },
+          signal: controller.signal,
+        });
+      } catch (e: unknown) {
+        if ((e as Error).name !== "AbortError") addToast("error", String(e));
+        set({ streaming: false });
+      }
+      return;
+    }
+
+    set({ loading: true, response: undefined });
+    try {
+      const response = await executeWithRetry(resolved);
+      await persistCookies(response, resolved.url);
+
+      try {
+        await runPostResponseScript(
+          resolved,
+          response,
+          vars,
+          request.scripts?.postResponse ?? "",
+        );
+      } catch {
+        /* ignore script errors */
+      }
+
+      const results = runAssertions(response, assertionRules);
+      const extracted = extractVariables(response, extractRules);
+      await coreStore.addHistory({
+        request: resolved,
+        response,
+        protocol: "rest",
+      });
+      const hist = await coreStore.listHistory(200);
+      set({
+        response,
+        assertionResults: results,
+        sessionVariables: { ...sessionVariables, ...extracted },
+        loading: false,
+        history: hist,
+      });
+    } catch (e) {
+      addToast("error", String(e));
+      set({ loading: false });
+    }
+  }, [
+    activeEnvironmentId,
+    addToast,
+    assertionRules,
+    cookies,
+    enableCookies,
+    environments,
+    extractRules,
+    loading,
+    request,
+    sessionVariables,
+    set,
+    streamMode,
+    streaming,
+  ]);
+
+  return { handleSend };
+}

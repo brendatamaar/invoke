@@ -8,11 +8,11 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useStore } from "../../store";
-import { CollectionTree } from "../sidebar/CollectionTree";
-import { HistoryPanel } from "../panels/HistoryPanel";
-import { EnvironmentPanel } from "../panels/EnvironmentPanel";
-import { FlowPanel } from "../panels/FlowPanel";
-import { MockPanel } from "../panels/MockPanel";
+import { CollectionTree } from "../../features/collections/components/CollectionTree";
+import { HistoryPanel } from "../../features/history/components/HistoryPanel";
+import { EnvironmentPanel } from "../../features/environments/components/EnvironmentPanel";
+import { FlowPanel } from "../../features/flows/components/FlowPanel";
+import { MockPanel } from "../../features/mock/components/MockPanel";
 import type { SidebarSection } from "../../types";
 
 const NAV: { id: SidebarSection; icon: React.ReactNode; label: string }[] = [
