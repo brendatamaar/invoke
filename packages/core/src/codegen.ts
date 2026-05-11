@@ -91,6 +91,24 @@ export const CODE_EXPORT_TARGETS: Array<Omit<CodeSnippet, "code">> = [
     language: "shell",
     filename: "request.http",
   },
+  {
+    target: "graphql-fetch",
+    label: "GraphQL fetch",
+    language: "javascript",
+    filename: "query.fetch.js",
+  },
+  {
+    target: "graphql-apollo",
+    label: "GraphQL Apollo",
+    language: "javascript",
+    filename: "query.apollo.tsx",
+  },
+  {
+    target: "graphql-urql",
+    label: "GraphQL urql",
+    language: "javascript",
+    filename: "query.urql.tsx",
+  },
 ];
 
 export async function generateCodeSnippet(
@@ -135,6 +153,12 @@ function generatorFor(target: CodeExportTarget) {
       return async (request: RequestConfig) => generatePowerShell(request);
     case "httpie":
       return async (request: RequestConfig) => generateHttpie(request);
+    case "graphql-fetch":
+      return async (request: RequestConfig) => generateGraphQLFetch(request);
+    case "graphql-apollo":
+      return async (request: RequestConfig) => generateGraphQLApollo(request);
+    case "graphql-urql":
+      return async (request: RequestConfig) => generateGraphQLUrql(request);
     default:
       return async (request: RequestConfig) => generateCurl(request);
   }
@@ -500,6 +524,187 @@ async function formatJavaScript(source: string) {
   } catch {
     return `${source.trim()}\n`;
   }
+}
+
+// ── GraphQL-specific generators ────────────────────────────────────────────
+
+interface ParsedGQLBody {
+  query: string;
+  variables: Record<string, unknown> | null;
+  operationName: string | null;
+  operationKind: "query" | "mutation" | "subscription";
+}
+
+function parseGQLBody(request: RequestConfig): ParsedGQLBody | null {
+  if (!hasBody(request)) return null;
+  try {
+    const parsed = JSON.parse(request.body) as {
+      query?: string;
+      variables?: unknown;
+      operationName?: string;
+    };
+    if (!parsed.query) return null;
+    const q = parsed.query.trim().replace(/^[\s\n]+/, "");
+    const lower = q.toLowerCase();
+    const operationKind: ParsedGQLBody["operationKind"] = lower.startsWith(
+      "mutation",
+    )
+      ? "mutation"
+      : lower.startsWith("subscription")
+        ? "subscription"
+        : "query";
+    return {
+      query: parsed.query,
+      variables:
+        parsed.variables !== null &&
+        typeof parsed.variables === "object" &&
+        !Array.isArray(parsed.variables)
+          ? (parsed.variables as Record<string, unknown>)
+          : null,
+      operationName: parsed.operationName ?? null,
+      operationKind,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function gqlConstName(gql: ParsedGQLBody): string {
+  if (gql.operationName) {
+    return gql.operationName
+      .replace(/([a-z])([A-Z])/g, "$1_$2")
+      .toUpperCase();
+  }
+  return gql.operationKind.toUpperCase() + "_OPERATION";
+}
+
+async function generateGraphQLFetch(request: RequestConfig): Promise<string> {
+  const gql = parseGQLBody(request);
+  if (!gql) return generateFetch(request);
+
+  const extraHeaders = enabledHeaders(request.headers).filter(
+    (h) => h.key.toLowerCase() !== "content-type",
+  );
+  const hasVars =
+    gql.variables !== null && Object.keys(gql.variables).length > 0;
+
+  const headerLines = [
+    `    "Content-Type": "application/json"`,
+    ...extraHeaders.map((h) => `    ${jsString(h.key)}: ${jsString(h.value)}`),
+  ].join(",\n");
+
+  const bodyFields = [
+    `    query: QUERY`,
+    ...(hasVars ? [`    variables`] : []),
+    ...(gql.operationName
+      ? [`    operationName: ${jsString(gql.operationName)}`]
+      : []),
+  ].join(",\n");
+
+  const source = `
+const QUERY = \`
+${gql.query.trim()}
+\`;
+${hasVars ? `\nconst variables = ${JSON.stringify(gql.variables, null, 2)};\n` : ""}
+const response = await fetch(${jsString(request.url)}, {
+  method: "POST",
+  headers: {
+${headerLines},
+  },
+  body: JSON.stringify({
+${bodyFields},
+  }),
+});
+
+const { data, errors } = await response.json();
+console.log(data);
+if (errors) console.error(errors);
+`;
+  return formatJavaScript(source);
+}
+
+async function generateGraphQLApollo(request: RequestConfig): Promise<string> {
+  const gql = parseGQLBody(request);
+  if (!gql) return generateFetch(request);
+
+  const constName = gqlConstName(gql);
+  const hasVars =
+    gql.variables !== null && Object.keys(gql.variables).length > 0;
+  const varStr = hasVars
+    ? `,\n  variables: ${JSON.stringify(gql.variables, null, 2)}`
+    : "";
+
+  let hookImport: string;
+  let hookUsage: string;
+  if (gql.operationKind === "mutation") {
+    hookImport = "useMutation";
+    hookUsage = `const [${toCamelCase(constName)}, { data, loading, error }] = useMutation(${constName}${hasVars ? `, { variables: ${JSON.stringify(gql.variables, null, 2)} }` : ""});`;
+  } else if (gql.operationKind === "subscription") {
+    hookImport = "useSubscription";
+    hookUsage = `const { data, loading, error } = useSubscription(${constName}${hasVars ? `${varStr.replace(/^,\n/, ", ")}` : ""});`;
+  } else {
+    hookImport = "useQuery";
+    hookUsage = `const { data, loading, error } = useQuery(${constName}${varStr ? `{${varStr}\n}` : ""});`;
+  }
+
+  const source = `
+import { gql, ${hookImport} } from "@apollo/client";
+
+const ${constName} = gql\`
+${gql.query.trim()}
+\`;
+
+// Inside your component:
+${hookUsage}
+`;
+  return formatJavaScript(source);
+}
+
+async function generateGraphQLUrql(request: RequestConfig): Promise<string> {
+  const gql = parseGQLBody(request);
+  if (!gql) return generateFetch(request);
+
+  const constName = gqlConstName(gql);
+  const hasVars =
+    gql.variables !== null && Object.keys(gql.variables).length > 0;
+
+  let hookImport: string;
+  let hookUsage: string;
+  if (gql.operationKind === "mutation") {
+    hookImport = "useMutation";
+    hookUsage = `const [{ data, fetching, error }, execute] = useMutation(${constName});`;
+    if (hasVars) {
+      hookUsage += `\n// execute({ variables: ${JSON.stringify(gql.variables, null, 2)} });`;
+    }
+  } else if (gql.operationKind === "subscription") {
+    hookImport = "useSubscription";
+    hookUsage = `const [{ data, fetching, error }] = useSubscription({
+  query: ${constName},${hasVars ? `\n  variables: ${JSON.stringify(gql.variables, null, 2)},` : ""}
+});`;
+  } else {
+    hookImport = "useQuery";
+    hookUsage = `const [{ data, fetching, error }] = useQuery({
+  query: ${constName},${hasVars ? `\n  variables: ${JSON.stringify(gql.variables, null, 2)},` : ""}
+});`;
+  }
+
+  const source = `
+import { gql, ${hookImport} } from "urql";
+
+const ${constName} = gql\`
+${gql.query.trim()}
+\`;
+
+// Inside your component:
+${hookUsage}
+`;
+  return formatJavaScript(source);
+}
+
+function toCamelCase(screaming: string): string {
+  return screaming
+    .toLowerCase()
+    .replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 }
 
 function hasBody(request: RequestConfig) {

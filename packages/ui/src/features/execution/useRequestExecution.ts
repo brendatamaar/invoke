@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import {
   extractVariables,
+  graphQLToRequestConfig,
   resolveRequest,
   runAssertions,
   runPostResponseScript,
@@ -8,15 +9,20 @@ import {
   variablesFromScopes,
   type ExecuteResponse,
   type RequestConfig,
+  type RequestDraft,
   type VariableScope,
 } from "@invoke/core";
-import { executeStream, executeWithRetry } from "../execute/api";
+import { executeStream, executeWithAPQ, executeWithRetry } from "../execute/api";
+import { processMultipartResponse } from "../execute/multipart";
 import { coreStore, useStore } from "../../store";
 import { injectCookies, persistResponseCookies } from "./cookies";
 import { applyOAuth2Token } from "./oauth2";
+import { extractRequiredVarNames } from "../request/components/GraphQLPanels";
 
 export function useRequestExecution() {
   const request = useStore((state) => state.request);
+  const graphqlRequest = useStore((state) => state.graphqlRequest);
+  const graphqlFileUploads = useStore((state) => state.graphqlFileUploads);
   const environments = useStore((state) => state.environments);
   const activeEnvironmentId = useStore((state) => state.activeEnvironmentId);
   const sessionVariables = useStore((state) => state.sessionVariables);
@@ -33,6 +39,77 @@ export function useRequestExecution() {
 
   const handleSend = useCallback(async () => {
     if (loading || streaming || !request.url.trim()) return;
+    set({ graphqlDeferredParts: null });
+
+    const protocol = request.protocol ?? "rest";
+
+    // For GraphQL, validate variables and convert to REST request shape
+    let activeRequest: RequestDraft;
+    if (protocol === "graphql") {
+      const varsStr = graphqlRequest.variables?.trim() ?? "{}";
+      let parsedVars: Record<string, unknown> = {};
+      if (varsStr && varsStr !== "{}") {
+        try {
+          parsedVars = JSON.parse(varsStr);
+        } catch {
+          addToast("warn", "Variables panel contains invalid JSON");
+          set({ requestTab: "graphqlVariables" });
+          return;
+        }
+      }
+      // P4.2 — warn on missing required (non-null, no default) variables
+      const requiredVars = extractRequiredVarNames(graphqlRequest.query ?? "");
+      const missingVars = requiredVars.filter(
+        (name) => !(name in parsedVars) || parsedVars[name] === null,
+      );
+      if (missingVars.length > 0) {
+        addToast("warn", `Missing required variable${missingVars.length > 1 ? "s" : ""}: ${missingVars.join(", ")}`);
+        set({ requestTab: "graphqlVariables" });
+        return;
+      }
+      const converted = graphQLToRequestConfig({
+        ...graphqlRequest,
+        url: request.url,
+      });
+
+      // P5.1 file uploads — switch to graphql-multipart bodyMode
+      if (graphqlFileUploads.length > 0) {
+        try {
+          const operations = JSON.parse(converted.body) as Record<string, unknown>;
+          // ensure variable paths are null in operations.variables
+          const variables = (operations.variables ?? {}) as Record<string, unknown>;
+          const map: Record<string, string[]> = {};
+          graphqlFileUploads.forEach((f, idx) => {
+            const key = String(idx);
+            map[key] = [`variables.${f.varPath}`];
+            variables[f.varPath] = null;
+          });
+          operations.variables = variables;
+          converted.body = JSON.stringify({
+            operations,
+            map,
+            files: graphqlFileUploads.map((f, idx) => ({
+              field: String(idx),
+              filename: f.filename,
+              dataUrl: f.dataUrl,
+            })),
+          });
+          converted.bodyMode = "graphql-multipart";
+        } catch { /* keep original body */ }
+      }
+
+      // P5.2 batch mode — wrap body in array
+      if (graphqlRequest.batchMode && graphqlFileUploads.length === 0) {
+        try {
+          const bodyArr = [JSON.parse(converted.body)];
+          converted.body = JSON.stringify(bodyArr);
+        } catch { /* keep original body */ }
+      }
+
+      activeRequest = { ...converted, protocol: "graphql" } as RequestDraft;
+    } else {
+      activeRequest = request;
+    }
 
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const varScopes: VariableScope[] = [
@@ -45,12 +122,12 @@ export function useRequestExecution() {
     let unresolved: string[] = [];
     try {
       const scriptCtx = await runPreRequestScript(
-        request as RequestConfig,
+        activeRequest as RequestConfig,
         vars,
-        request.scripts?.preRequest ?? "",
+        activeRequest.scripts?.preRequest ?? "",
       );
       const result = resolveRequest(
-        (scriptCtx.request ?? request) as RequestConfig,
+        (scriptCtx.request ?? activeRequest) as RequestConfig,
         env,
         sessionVariables,
       );
@@ -58,7 +135,7 @@ export function useRequestExecution() {
       unresolved = result.unresolved;
     } catch {
       const result = resolveRequest(
-        request as RequestConfig,
+        activeRequest as RequestConfig,
         env,
         sessionVariables,
       );
@@ -94,14 +171,15 @@ export function useRequestExecution() {
       if (updated) set({ cookies: updated });
     };
 
-    const finishStreamExecution = async (response: ExecuteResponse) => {
+    const finishStreamExecution = async (rawResponse: ExecuteResponse) => {
+      const { response, parts } = processMultipartResponse(rawResponse);
       await persistCookies(response, resolved.url);
       const results = runAssertions(response, assertionRules);
       const extracted = extractVariables(response, extractRules);
       await coreStore.addHistory({
         request: resolved,
         response,
-        protocol: "rest",
+        protocol,
       });
       const hist = await coreStore.listHistory(200);
       set({
@@ -111,6 +189,7 @@ export function useRequestExecution() {
         history: hist,
         streaming: false,
         retryAttempts: undefined,
+        graphqlDeferredParts: parts,
       });
     };
 
@@ -150,7 +229,12 @@ export function useRequestExecution() {
       retryAttempts: undefined,
     });
     try {
-      const response = await executeWithRetry(resolved, controller.signal);
+      const rawResponse = await (
+        protocol === "graphql" && graphqlRequest.apq && !graphqlRequest.batchMode
+          ? executeWithAPQ(resolved, controller.signal, graphqlRequest.query ?? "")
+          : executeWithRetry(resolved, controller.signal)
+      );
+      const { response, parts } = processMultipartResponse(rawResponse);
       await persistCookies(response, resolved.url);
 
       try {
@@ -158,7 +242,7 @@ export function useRequestExecution() {
           resolved,
           response,
           vars,
-          request.scripts?.postResponse ?? "",
+          activeRequest.scripts?.postResponse ?? "",
         );
       } catch {
         /* ignore script errors */
@@ -169,7 +253,7 @@ export function useRequestExecution() {
       await coreStore.addHistory({
         request: resolved,
         response,
-        protocol: "rest",
+        protocol,
       });
       const hist = await coreStore.listHistory(200);
       set({
@@ -178,8 +262,9 @@ export function useRequestExecution() {
         sessionVariables: { ...sessionVariables, ...extracted },
         loading: false,
         loadController: undefined,
-        retryAttempts: response.retryAttempts,
+        retryAttempts: rawResponse.retryAttempts,
         history: hist,
+        graphqlDeferredParts: parts,
       });
     } catch (e) {
       if ((e as Error).name !== "AbortError") addToast("error", String(e));
@@ -193,6 +278,8 @@ export function useRequestExecution() {
     enableCookies,
     environments,
     extractRules,
+    graphqlFileUploads,
+    graphqlRequest,
     loading,
     request,
     sessionVariables,

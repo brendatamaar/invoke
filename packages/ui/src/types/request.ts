@@ -35,4 +35,4 @@ export interface FieldProps {
   children: ReactNode;
 }
 
-export type GraphQLSchemaImportSource = "url" | "file";
+export type GraphQLSchemaImportSource = "url" | "file" | "sdl";

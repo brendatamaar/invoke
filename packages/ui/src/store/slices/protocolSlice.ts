@@ -2,8 +2,12 @@ import type { AppState } from "../../types";
 
 export type ProtocolSlice = Pick<
   AppState,
+  | "graphqlFileUploads"
+  | "graphqlDeferredParts"
   | "graphqlSchema"
   | "graphqlSchemaStatus"
+  | "graphqlSchemaEndpoint"
+  | "graphqlSchemaLastFetched"
   | "expandedGraphQLTypeNames"
   | "websocketState"
   | "websocketLog"
@@ -17,8 +21,12 @@ export type ProtocolSlice = Pick<
 
 export function createProtocolSlice(): ProtocolSlice {
   return {
+    graphqlFileUploads: [],
+    graphqlDeferredParts: null,
     graphqlSchema: undefined,
     graphqlSchemaStatus: "",
+    graphqlSchemaEndpoint: "",
+    graphqlSchemaLastFetched: 0,
     expandedGraphQLTypeNames: [],
     websocketState: "disconnected",
     websocketLog: [],

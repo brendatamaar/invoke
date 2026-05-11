@@ -4,6 +4,7 @@ import type { KeyValue, WebSocketMessageMode } from "./common";
 import type { RequestConfig, RequestOptions, RequestScripts } from "./request";
 
 export interface GraphQLRequestConfig {
+  protocol?: "graphql";
   url: string;
   headers: KeyValue[];
   auth: AuthConfig;
@@ -15,6 +16,8 @@ export interface GraphQLRequestConfig {
   extractionRules?: ExtractionRule[];
   options?: RequestOptions;
   scripts?: RequestScripts;
+  apq?: boolean;
+  batchMode?: boolean;
 }
 
 export interface WebSocketRequestConfig {

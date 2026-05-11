@@ -17,6 +17,8 @@ export const GRAPHQL_INTROSPECTION_QUERY = `query IntrospectionQuery {
       fields(includeDeprecated: true) {
         name
         description
+        isDeprecated
+        deprecationReason
         args {
           name
           description
@@ -24,6 +26,28 @@ export const GRAPHQL_INTROSPECTION_QUERY = `query IntrospectionQuery {
           defaultValue
         }
         type { kind name ofType { kind name ofType { kind name ofType { kind name } } } }
+      }
+      inputFields {
+        name
+        description
+        type { kind name ofType { kind name ofType { kind name ofType { kind name } } } }
+        defaultValue
+      }
+      enumValues(includeDeprecated: true) {
+        name
+        description
+        isDeprecated
+        deprecationReason
+      }
+      interfaces {
+        kind
+        name
+        ofType { kind name ofType { kind name } }
+      }
+      possibleTypes {
+        kind
+        name
+        ofType { kind name ofType { kind name } }
       }
     }
   }
@@ -67,13 +91,7 @@ export function rootGraphQLTypes(schema?: GraphQLIntrospectionSchema) {
 
 export function publicGraphQLTypes(schema?: GraphQLIntrospectionSchema) {
   return (schema?.types ?? [])
-    .filter(
-      (type) =>
-        type.name &&
-        !type.name.startsWith("__") &&
-        Array.isArray(type.fields) &&
-        type.fields.length > 0,
-    )
+    .filter((type) => type.name && !type.name.startsWith("__"))
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 

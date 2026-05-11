@@ -1,30 +1,21 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
+import { CODE_EXPORT_TARGETS } from "@invoke/core";
 import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { Select } from "../../../components/shared/Select";
 import { useStore } from "../../../store";
 
-const CODE_TARGETS = [
-  "curl",
-  "fetch",
-  "node-fetch",
-  "node-axios",
-  "python-requests",
-  "python-httpx",
-  "go-net-http",
-  "java-okhttp",
-  "kotlin-okhttp",
-  "ruby-net-http",
-  "php-guzzle",
-  "csharp-httpclient",
-  "rust-reqwest",
-  "powershell",
-  "httpie",
-] as const;
-
 export function CodeTab() {
-  const { codeTarget, codeSnippet, codeLoading, set } = useStore();
+  const { codeTarget, codeSnippet, codeLoading, request, set } = useStore();
   const [copied, setCopied] = useState(false);
+
+  const isGraphQL = request.protocol === "graphql";
+
+  const visibleTargets = CODE_EXPORT_TARGETS.filter((t) =>
+    isGraphQL
+      ? true
+      : !t.target.startsWith("graphql-"),
+  );
 
   const copy = () => {
     navigator.clipboard.writeText(codeSnippet).then(() => {
@@ -42,11 +33,11 @@ export function CodeTab() {
           onChange={(e) =>
             set({ codeTarget: e.target.value as typeof codeTarget })
           }
-          wrapperClassName="w-40"
+          wrapperClassName="w-44"
         >
-          {CODE_TARGETS.map((t) => (
-            <option key={t} value={t}>
-              {t}
+          {visibleTargets.map((t) => (
+            <option key={t.target} value={t.target}>
+              {t.label}
             </option>
           ))}
         </Select>

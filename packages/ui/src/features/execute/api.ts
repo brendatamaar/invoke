@@ -125,6 +125,64 @@ function buildExecutePayload(req: RequestConfig) {
   };
 }
 
+// ── APQ (Automatic Persisted Queries) ──────────────────────────────────────
+
+async function computeQueryHash(query: string): Promise<string> {
+  const data = new TextEncoder().encode(query);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function isPersistedQueryNotFound(body: string): boolean {
+  try {
+    const parsed = JSON.parse(body) as {
+      errors?: { extensions?: { code?: string }; message?: string }[];
+    };
+    return (parsed.errors ?? []).some(
+      (e) =>
+        e?.extensions?.code === "PERSISTED_QUERY_NOT_FOUND" ||
+        e?.message === "PersistedQueryNotFound",
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function executeWithAPQ(
+  request: RequestConfig,
+  signal: AbortSignal | undefined,
+  queryText: string,
+): Promise<ExecuteResponse & { retryAttempts?: number }> {
+  const hash = await computeQueryHash(queryText);
+  const ext = { persistedQuery: { version: 1, sha256Hash: hash } };
+
+  let bodyObj: Record<string, unknown> = {};
+  try {
+    bodyObj = JSON.parse(request.body) as Record<string, unknown>;
+  } catch { /* keep empty */ }
+
+  const { query: _q, ...restFields } = bodyObj as {
+    query?: string;
+    [k: string]: unknown;
+  };
+
+  // First attempt: hash-only (no query field)
+  const probe = await execute(
+    { ...request, body: JSON.stringify({ ...restFields, extensions: ext }) },
+    signal,
+  );
+
+  if (!isPersistedQueryNotFound(probe.body)) return probe; // cache hit
+
+  // Retry with full query + extensions
+  return executeWithRetry(
+    { ...request, body: JSON.stringify({ ...bodyObj, extensions: ext }) },
+    signal,
+  );
+}
+
 async function handleSseEvent(
   rawEvent: string,
   handlers: {

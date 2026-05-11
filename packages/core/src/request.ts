@@ -35,6 +35,7 @@ export const emptyRequest = (): RequestDraft => ({
 });
 
 export const emptyGraphQLRequest = (): GraphQLRequestConfig => ({
+  protocol: "graphql",
   url: "",
   headers: [],
   auth: { type: "none" },
@@ -153,6 +154,9 @@ export function isGraphQLRequestConfig(
   request: ProtocolRequestConfig | RequestDraft,
 ): request is GraphQLRequestConfig {
   const maybe = request as Partial<GraphQLRequestConfig>;
+  // Prefer explicit protocol discriminator
+  if ((maybe as { protocol?: string }).protocol === "graphql") return true;
+  // Structural fallback for legacy data
   return (
     typeof maybe.query === "string" &&
     typeof maybe.variables === "string" &&

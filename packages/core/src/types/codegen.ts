@@ -13,7 +13,10 @@ export type CodeExportTarget =
   | "csharp-httpclient"
   | "rust-reqwest"
   | "powershell"
-  | "httpie";
+  | "httpie"
+  | "graphql-fetch"
+  | "graphql-apollo"
+  | "graphql-urql";
 
 export interface CodeSnippet {
   target: CodeExportTarget;

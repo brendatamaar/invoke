@@ -47,6 +47,50 @@ function serializeBody(
     return { body: Buffer.from(body), extraHeaders: [] };
   }
 
+  if (bodyMode === "graphql-multipart") {
+    try {
+      const { operations, map, files } = JSON.parse(body || "{}") as {
+        operations: Record<string, unknown>;
+        map: Record<string, string[]>;
+        files: Array<{ field: string; filename: string; dataUrl: string }>;
+      };
+      const boundary = `----InvokeBoundary${Date.now().toString(16)}`;
+      const parts: Buffer[] = [];
+
+      parts.push(
+        Buffer.from(
+          `--${boundary}\r\nContent-Disposition: form-data; name="operations"\r\n\r\n${JSON.stringify(operations)}\r\n`,
+        ),
+      );
+      parts.push(
+        Buffer.from(
+          `--${boundary}\r\nContent-Disposition: form-data; name="map"\r\n\r\n${JSON.stringify(map)}\r\n`,
+        ),
+      );
+      for (const file of files) {
+        const match = file.dataUrl.match(/^data:([^;]+);base64,(.+)$/s);
+        if (!match) continue;
+        const [, mime, b64] = match;
+        parts.push(
+          Buffer.from(
+            `--${boundary}\r\nContent-Disposition: form-data; name="${file.field}"; filename="${file.filename}"\r\nContent-Type: ${mime}\r\n\r\n`,
+          ),
+        );
+        parts.push(Buffer.from(b64, "base64"));
+        parts.push(Buffer.from(`\r\n`));
+      }
+      parts.push(Buffer.from(`--${boundary}--\r\n`));
+      return {
+        body: Buffer.concat(parts),
+        extraHeaders: [
+          { key: "Content-Type", value: `multipart/form-data; boundary=${boundary}` },
+        ],
+      };
+    } catch {
+      return { body: Buffer.from(body), extraHeaders: [] };
+    }
+  }
+
   if (bodyMode === "form-data") {
     try {
       const pairs = JSON.parse(body || "[]") as Array<{

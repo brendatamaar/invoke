@@ -7,7 +7,7 @@ export type HttpMethod =
   | "HEAD"
   | "OPTIONS"
   | (string & {});
-export type BodyMode = "none" | "json" | "form-data" | "urlencoded" | "raw" | "file";
+export type BodyMode = "none" | "json" | "form-data" | "urlencoded" | "raw" | "file" | "graphql-multipart";
 export type AuthType =
   | "none"
   | "basic"

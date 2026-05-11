@@ -47,6 +47,23 @@ export interface Toast {
   message: string;
 }
 
+export interface GraphQLFileUpload {
+  id: string;
+  varPath: string;
+  dataUrl: string;
+  filename: string;
+  mimeType: string;
+}
+
+export interface GraphQLDeferredPart {
+  partIndex: number;
+  path?: (string | number)[];
+  data?: unknown;
+  errors?: unknown[];
+  hasNext: boolean;
+  label?: string;
+}
+
 export interface AppState {
   request: RequestDraft;
   graphqlRequest: GraphQLRequestConfig;
@@ -84,8 +101,12 @@ export interface AppState {
   sessionVariables: Record<string, string>;
   showEnvPanel: boolean;
   envDraft: Environment | undefined;
+  graphqlFileUploads: GraphQLFileUpload[];
+  graphqlDeferredParts: GraphQLDeferredPart[] | null;
   graphqlSchema: GraphQLIntrospectionSchema | undefined;
   graphqlSchemaStatus: string;
+  graphqlSchemaEndpoint: string;
+  graphqlSchemaLastFetched: number;
   expandedGraphQLTypeNames: string[];
   websocketState: "disconnected" | "connecting" | "connected";
   websocketLog: WebSocketLogItem[];
