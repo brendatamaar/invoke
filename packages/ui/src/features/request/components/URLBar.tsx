@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Zap, RefreshCw, Layers } from "lucide-react";
+import { Zap, RefreshCw, Layers, X } from "lucide-react";
 import { useStore } from "../../../store";
 import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
@@ -41,6 +41,7 @@ export function URLBar({ onSend, loading }: URLBarProps) {
     environments,
     activeEnvironmentId,
     sessionVariables,
+    loadController,
   } = useStore();
   const color = METHOD_COLORS[request.method] ?? "text-zinc-600";
   const unresolved = useMemo(() => {
@@ -123,6 +124,17 @@ export function URLBar({ onSend, loading }: URLBarProps) {
       >
         <Zap size={13} />
       </button>
+
+      {/* Cancel button (non-stream loading) */}
+      {loading && loadController && (
+        <button
+          onClick={() => loadController.abort()}
+          className="btn btn-danger px-3 gap-1 text-xs"
+          title="Cancel request"
+        >
+          <X size={13} /> Cancel
+        </button>
+      )}
 
       {/* Send button */}
       <button

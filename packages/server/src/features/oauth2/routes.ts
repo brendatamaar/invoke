@@ -9,6 +9,7 @@ import type {
 import {
   oauth2AuthCodeStartSchema,
   oauth2ClientCredentialsSchema,
+  oauth2RefreshTokenSchema,
 } from "./schema.js";
 
 const oauth2Pending = new Map<string, OAuth2PendingResult>();
@@ -80,6 +81,7 @@ export function registerOAuth2Routes(app: Hono) {
         status: "pending",
         timestamp: Date.now(),
         ...input,
+        codeVerifier: input.pkce ? input.codeVerifier : undefined,
       });
 
       return c.json({ authUrl: url.toString(), state });
@@ -188,4 +190,50 @@ export function registerOAuth2Routes(app: Hono) {
     }
     return c.json(result);
   });
+
+  app.post(
+    "/api/oauth2/refresh-token",
+    zValidator("json", oauth2RefreshTokenSchema),
+    async (c) => {
+      const input = c.req.valid("json");
+      const body = new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: input.refreshToken,
+      });
+      const headers: Record<string, string> = {
+        "Content-Type": "application/x-www-form-urlencoded",
+      };
+      if (input.clientId || input.clientSecret) {
+        headers.Authorization = `Basic ${Buffer.from(
+          `${input.clientId}:${input.clientSecret}`,
+        ).toString("base64")}`;
+      }
+      const tokenResponse = await fetch(input.tokenUrl, {
+        method: "POST",
+        headers,
+        body,
+      });
+      const text = await tokenResponse.text();
+      if (!tokenResponse.ok) {
+        return c.json(
+          { error: text || tokenResponse.statusText },
+          tokenResponse.status as any,
+        );
+      }
+      const payload = JSON.parse(text) as {
+        access_token?: string;
+        refresh_token?: string;
+        token_type?: string;
+        expires_in?: number;
+        error?: string;
+      };
+      return c.json({
+        accessToken: payload.access_token,
+        refreshToken: payload.refresh_token,
+        tokenType: payload.token_type ?? "Bearer",
+        expiresIn: payload.expires_in,
+        error: payload.error,
+      });
+    },
+  );
 }

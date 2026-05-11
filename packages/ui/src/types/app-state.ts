@@ -65,6 +65,8 @@ export interface AppState {
   codeSnippet: string;
   codeLoading: boolean;
   loading: boolean;
+  loadController: AbortController | undefined;
+  retryAttempts: number | undefined;
   streaming: boolean;
   streamMode: boolean;
   streamBytes: number;

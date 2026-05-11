@@ -177,6 +177,19 @@ export function AuthPanel() {
           </Field>
           {(auth.flow ?? "client_credentials") === "authorization_code" && (
             <>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-[var(--text-2)] w-24 shrink-0">
+                  Use PKCE
+                </label>
+                <input
+                  type="checkbox"
+                  checked={auth.pkce ?? false}
+                  onChange={(e) =>
+                    setRequest({ auth: { ...auth, pkce: e.target.checked } })
+                  }
+                  className="accent-[var(--accent)]"
+                />
+              </div>
               <Field label="Redirect URI">
                 <AuthTextInput
                   value={
@@ -215,6 +228,27 @@ export function AuthPanel() {
                       const redirectUri =
                         auth.redirectUri ??
                         "http://localhost:4000/api/oauth2/callback";
+                      const usePkce = auth.pkce ?? false;
+                      let codeVerifier = "";
+                      let codeChallenge = "";
+                      if (usePkce) {
+                        const raw = new Uint8Array(43);
+                        crypto.getRandomValues(raw);
+                        codeVerifier = btoa(String.fromCharCode(...raw))
+                          .replace(/\+/g, "-")
+                          .replace(/\//g, "_")
+                          .replace(/=/g, "");
+                        const digest = await crypto.subtle.digest(
+                          "SHA-256",
+                          new TextEncoder().encode(codeVerifier),
+                        );
+                        codeChallenge = btoa(
+                          String.fromCharCode(...new Uint8Array(digest)),
+                        )
+                          .replace(/\+/g, "-")
+                          .replace(/\//g, "_")
+                          .replace(/=/g, "");
+                      }
                       const { authUrl: url, state } = await oauth2AuthCodeStart(
                         {
                           authUrl: auth.authUrl,
@@ -223,9 +257,10 @@ export function AuthPanel() {
                           clientSecret: auth.clientSecret ?? "",
                           scope: auth.scope ?? "",
                           redirectUri,
-                          pkce: auth.pkce ?? false,
-                          codeChallenge: "",
-                          codeChallengeMethod: "",
+                          pkce: usePkce,
+                          codeChallenge,
+                          codeChallengeMethod: usePkce ? "S256" : "",
+                          codeVerifier,
                         },
                       );
                       window.open(url, "_blank");

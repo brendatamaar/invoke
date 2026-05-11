@@ -28,6 +28,7 @@ export function useRequestExecution() {
   const loading = useStore((state) => state.loading);
   const streaming = useStore((state) => state.streaming);
   const set = useStore((state) => state.set);
+  const setRequest = useStore((state) => state.setRequest);
   const addToast = useStore((state) => state.addToast);
 
   const handleSend = useCallback(async () => {
@@ -78,8 +79,10 @@ export function useRequestExecution() {
 
     set({ resolvedRequest: resolved });
 
-    resolved = await applyOAuth2Token(resolved, (message) =>
-      addToast("warn", message),
+    resolved = await applyOAuth2Token(
+      resolved,
+      (message) => addToast("warn", message),
+      (newAuth) => setRequest({ auth: newAuth }),
     );
 
     const persistCookies = async (
@@ -107,6 +110,7 @@ export function useRequestExecution() {
         sessionVariables: { ...sessionVariables, ...extracted },
         history: hist,
         streaming: false,
+        retryAttempts: undefined,
       });
     };
 
@@ -118,6 +122,7 @@ export function useRequestExecution() {
         response: undefined,
         streamBytes: 0,
         streamController: controller,
+        retryAttempts: undefined,
       });
       try {
         await executeStream(resolved, {
@@ -137,9 +142,15 @@ export function useRequestExecution() {
       return;
     }
 
-    set({ loading: true, response: undefined });
+    const controller = new AbortController();
+    set({
+      loading: true,
+      loadController: controller,
+      response: undefined,
+      retryAttempts: undefined,
+    });
     try {
-      const response = await executeWithRetry(resolved);
+      const response = await executeWithRetry(resolved, controller.signal);
       await persistCookies(response, resolved.url);
 
       try {
@@ -166,11 +177,13 @@ export function useRequestExecution() {
         assertionResults: results,
         sessionVariables: { ...sessionVariables, ...extracted },
         loading: false,
+        loadController: undefined,
+        retryAttempts: response.retryAttempts,
         history: hist,
       });
     } catch (e) {
-      addToast("error", String(e));
-      set({ loading: false });
+      if ((e as Error).name !== "AbortError") addToast("error", String(e));
+      set({ loading: false, loadController: undefined });
     }
   }, [
     activeEnvironmentId,
@@ -184,6 +197,7 @@ export function useRequestExecution() {
     request,
     sessionVariables,
     set,
+    setRequest,
     streamMode,
     streaming,
   ]);

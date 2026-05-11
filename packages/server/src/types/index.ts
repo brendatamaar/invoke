@@ -45,6 +45,7 @@ export interface OAuth2PendingResult {
   expiresIn?: number;
   error?: string;
   timestamp: number;
+  codeVerifier?: string;
 }
 
 export interface WebhookValidationResult {
@@ -81,10 +82,15 @@ export interface ExecuteInput {
   url: string;
   headers: ServerHeaderInput[];
   body: string;
+  bodyMode?: "none" | "json" | "form-data" | "urlencoded" | "raw";
   auth?: {
     type: string;
     username?: string;
     password?: string;
+    token?: string;
+    apiKeyName?: string;
+    apiKeyValue?: string;
+    apiKeyIn?: "header" | "query";
   };
   timeoutMs: number;
   followRedirects: boolean;
@@ -139,6 +145,7 @@ export interface OAuth2AuthCodeStartInput {
   pkce: boolean;
   codeChallenge: string;
   codeChallengeMethod: string;
+  codeVerifier: string;
 }
 
 export type OAuth2AuthCodePending = OAuth2PendingResult &

@@ -3,11 +3,13 @@ import { decodeBase64, ensureOk } from "../../lib/http";
 
 export async function execute(
   request: RequestConfig,
+  signal?: AbortSignal,
 ): Promise<ExecuteResponse> {
   const response = await fetch("/api/execute", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(buildExecutePayload(request)),
+    signal,
   });
   await ensureOk(response);
   const payload = (await response.json()) as ExecuteResponse;
@@ -18,17 +20,19 @@ export async function execute(
 
 export async function executeWithRetry(
   request: RequestConfig,
+  signal?: AbortSignal,
 ): Promise<ExecuteResponse & { retryAttempts?: number }> {
   const policy = request.retryPolicy;
-  if (!policy || policy.maxRetries <= 0) return execute(request);
+  if (!policy || policy.maxRetries <= 0) return execute(request, signal);
 
   let lastResult: ExecuteResponse | undefined;
   let attempts = 0;
   let backoff = policy.backoffMs;
 
   for (let attempt = 0; attempt <= policy.maxRetries; attempt++) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     try {
-      const res = await execute(request);
+      const res = await execute(request, signal);
       const shouldRetry =
         (policy.retryOn5xx && res.status >= 500) ||
         (policy.retryOnTimeout &&
@@ -39,6 +43,7 @@ export async function executeWithRetry(
       lastResult = res;
       attempts = attempt + 1;
     } catch (e) {
+      if ((e as Error).name === "AbortError") throw e;
       const isTimeout =
         policy.retryOnTimeout && String(e).toLowerCase().includes("timeout");
       if (!isTimeout || attempt === policy.maxRetries) throw e;
@@ -82,12 +87,32 @@ export async function executeStream(
   if (buffer.trim()) await handleSseEvent(buffer, handlers);
 }
 
+const BODY_MODE_CONTENT_TYPES: Partial<Record<string, string>> = {
+  json: "application/json",
+  urlencoded: "application/x-www-form-urlencoded",
+};
+
 function buildExecutePayload(req: RequestConfig) {
+  let headers = req.headers;
+  const autoContentType = BODY_MODE_CONTENT_TYPES[req.bodyMode];
+  if (
+    autoContentType &&
+    !headers.some(
+      (h) => h.enabled !== false && h.key.toLowerCase() === "content-type",
+    )
+  ) {
+    headers = [
+      ...headers,
+      { key: "Content-Type", value: autoContentType, enabled: true },
+    ];
+  }
+
   return {
     method: req.method,
     url: req.url,
-    headers: req.headers,
+    headers,
     body: req.bodyMode === "none" ? "" : req.body,
+    bodyMode: req.bodyMode,
     auth: req.auth,
     timeoutMs: req.timeoutMs,
     followRedirects: req.options?.followRedirects ?? true,
@@ -119,7 +144,11 @@ async function handleSseEvent(
   const data = ev.data.join("\n");
   if (ev.event === "chunk") {
     try {
-      handlers.onChunk((JSON.parse(data) as { chunk?: string }).chunk ?? "");
+      const parsed = JSON.parse(data) as { chunk?: string; encoding?: string };
+      const rawChunk = parsed.chunk ?? "";
+      const chunk =
+        parsed.encoding === "base64" ? atob(rawChunk) : rawChunk;
+      handlers.onChunk(chunk);
     } catch {
       handlers.onChunk(data);
     }

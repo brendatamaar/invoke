@@ -108,8 +108,9 @@ export function resolveRequest(
     options: resolveOptions(request.options, resolve),
   };
   const withAuth = applyAuth(resolvedBase);
+  const baseUrl = stripQueryString(withAuth.url);
   return {
-    request: { ...withAuth, url: buildUrl(withAuth.url, withAuth.params) },
+    request: { ...withAuth, url: buildUrl(baseUrl, withAuth.params) },
     unresolved: [...unresolved],
   };
 }
@@ -473,4 +474,15 @@ function variablesFromKeyValues(variables: KeyValue[]) {
       .filter((item) => item.enabled !== false && item.key.trim())
       .map((item) => [item.key.trim(), item.value]),
   );
+}
+
+function stripQueryString(url: string) {
+  try {
+    const u = new URL(url);
+    u.search = "";
+    return u.toString();
+  } catch {
+    const idx = url.indexOf("?");
+    return idx >= 0 ? url.slice(0, idx) : url;
+  }
 }

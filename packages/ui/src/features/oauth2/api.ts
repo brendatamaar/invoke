@@ -10,6 +10,7 @@ export async function oauth2AuthCodeStart(params: {
   pkce: boolean;
   codeChallenge: string;
   codeChallengeMethod: string;
+  codeVerifier: string;
 }): Promise<{ authUrl: string; state: string }> {
   const response = await fetch("/api/oauth2/auth-code/start", {
     method: "POST",
@@ -58,6 +59,32 @@ export async function oauth2ClientCredentials(auth: AuthConfig): Promise<{
   const payload = (await response.json()) as {
     accessToken?: string;
     tokenType?: string;
+    expiresIn?: number;
+    error?: string;
+  };
+  if (!response.ok) throw new Error(payload.error || response.statusText);
+  return payload;
+}
+
+export async function oauth2RefreshToken(params: {
+  tokenUrl: string;
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+}): Promise<{
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  error?: string;
+}> {
+  const response = await fetch("/api/oauth2/refresh-token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  const payload = (await response.json()) as {
+    accessToken?: string;
+    refreshToken?: string;
     expiresIn?: number;
     error?: string;
   };

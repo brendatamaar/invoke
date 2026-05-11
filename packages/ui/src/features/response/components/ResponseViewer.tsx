@@ -14,6 +14,7 @@ import {
   BookmarkPlus,
   Cpu,
   KeyRound,
+  RefreshCw,
 } from "lucide-react";
 import { AssertionsTab } from "./AssertionsTab";
 import { AuthDebugTab } from "./AuthDebugTab";
@@ -53,6 +54,7 @@ export function ResponseViewer() {
     responseExamples,
     mockRoutes,
     addToast,
+    retryAttempts,
   } = useStore();
 
   const [overlay, setOverlay] = useState<
@@ -218,6 +220,11 @@ export function ResponseViewer() {
           {response.statusText && response.status !== 0 && (
             <span className="text-2xs text-[var(--text-3)] font-mono">
               {response.statusText}
+            </span>
+          )}
+          {(retryAttempts ?? 0) > 0 && (
+            <span className="text-2xs text-amber-600 flex items-center gap-1">
+              <RefreshCw size={11} /> {retryAttempts} retr{retryAttempts === 1 ? "y" : "ies"}
             </span>
           )}
           {totalCount > 0 && (

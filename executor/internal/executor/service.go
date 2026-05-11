@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -258,7 +259,7 @@ func transportFor(req *HttpRequest) (*http.Transport, error) {
 		return nil, err
 	}
 	transport := &http.Transport{
-		DisableKeepAlives: true,
+		ForceAttemptHTTP2: true,
 		TLSClientConfig:   tlsConfig,
 	}
 	if req.GetProxy() != nil && strings.TrimSpace(req.GetProxy().GetUrl()) != "" {
@@ -318,6 +319,7 @@ func tlsConfigFor(verify bool, clientConfig *TlsClientConfig) (*tls.Config, erro
 	if len(caCert) > 0 {
 		pool, err := x509.SystemCertPool()
 		if err != nil || pool == nil {
+			log.Printf("warning: SystemCertPool failed (%v); custom CA will be the only trusted root", err)
 			pool = x509.NewCertPool()
 		}
 		if !pool.AppendCertsFromPEM(caCert) {
@@ -330,9 +332,11 @@ func tlsConfigFor(verify bool, clientConfig *TlsClientConfig) (*tls.Config, erro
 }
 
 func headersFromHTTP(values http.Header) []*Header {
-	headers := make([]*Header, 0, len(values))
-	for key, all := range values {
-		headers = append(headers, &Header{Key: key, Value: strings.Join(all, ", ")})
+	headers := make([]*Header, 0)
+	for key, vals := range values {
+		for _, v := range vals {
+			headers = append(headers, &Header{Key: key, Value: v})
+		}
 	}
 	return headers
 }

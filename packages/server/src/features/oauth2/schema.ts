@@ -17,4 +17,12 @@ export const oauth2AuthCodeStartSchema = z.object({
   pkce: z.boolean().default(false),
   codeChallenge: z.string().default(""),
   codeChallengeMethod: z.string().default(""),
+  codeVerifier: z.string().default(""),
+});
+
+export const oauth2RefreshTokenSchema = z.object({
+  tokenUrl: z.string().url(),
+  clientId: z.string().default(""),
+  clientSecret: z.string().default(""),
+  refreshToken: z.string().min(1),
 });
