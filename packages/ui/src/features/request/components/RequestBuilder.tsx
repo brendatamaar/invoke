@@ -68,23 +68,22 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header row: protocol pills + URL bar */}
+      {/* Header row: protocol dropdown + URL bar */}
       <div className="flex items-center border-b border-[var(--border)]">
-        <div className="flex items-center gap-0.5 px-2 py-1.5 border-r border-[var(--border)]">
-          {PROTOCOLS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => {
-                setRequest({ protocol: p.id });
-                set({
-                  requestTab: p.id === "graphql" ? "graphql" : "params",
-                });
-              }}
-              className={`tab-btn text-2xs ${protocol === p.id ? "active" : ""}`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center px-2 py-1.5 border-r border-[var(--border)]">
+          <select
+            value={protocol}
+            onChange={(e) => {
+              const p = e.target.value as RequestProtocol;
+              setRequest({ protocol: p });
+              set({ requestTab: p === "graphql" ? "graphql" : "params" });
+            }}
+            className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-28 outline-none focus:border-[var(--accent)] text-[var(--text-1)] cursor-pointer"
+          >
+            {PROTOCOLS.map((p) => (
+              <option key={p.id} value={p.id}>{p.label}</option>
+            ))}
+          </select>
         </div>
         <div className="flex-1">
           {(protocol === "rest" || protocol === "graphql") && (

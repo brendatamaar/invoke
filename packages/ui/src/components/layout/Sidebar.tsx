@@ -29,7 +29,7 @@ export function Sidebar() {
   return (
     <aside
       className="flex flex-col border-r border-[var(--border)] bg-[var(--surface-2)] overflow-hidden"
-      style={{ width: sidebarCollapsed ? 44 : 280, flexShrink: 0 }}
+      style={{ width: sidebarCollapsed ? 44 : 240, flexShrink: 0 }}
     >
       {/* Icon nav */}
       <nav className="flex flex-col gap-0.5 p-1.5 border-b border-[var(--border)]">

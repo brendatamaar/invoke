@@ -61,17 +61,16 @@ export function URLBar({ onSend, loading }: URLBarProps) {
 
   return (
     <div className="flex items-center gap-2 px-3 py-2">
-      {/* Method combo: free-text + suggestions */}
-      <datalist id="http-methods-list">
-        {METHODS.map((m) => <option key={m} value={m} />)}
-      </datalist>
-      <input
-        list="http-methods-list"
+      {/* Method selector */}
+      <select
         value={request.method}
-        onChange={(e) => setRequest({ method: e.target.value.toUpperCase() as HttpMethod })}
-        className={`bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-24 outline-none focus:border-[var(--accent)] ${color}`}
-        spellCheck={false}
-      />
+        onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
+        className={`bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-24 outline-none focus:border-[var(--accent)] cursor-pointer ${color}`}
+      >
+        {METHODS.map((m) => (
+          <option key={m} value={m}>{m}</option>
+        ))}
+      </select>
 
       {/* URL input with variable autocomplete + paste-cURL detection */}
       <div className="flex-1 min-w-0">
