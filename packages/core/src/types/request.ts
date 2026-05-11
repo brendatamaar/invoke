@@ -30,6 +30,8 @@ export interface RequestOptions {
   followRedirects?: boolean;
   maxRedirects?: number;
   verifySsl?: boolean;
+  connectTimeoutMs?: number;
+  readTimeoutMs?: number;
   tlsClientConfig?: TlsClientConfig;
   proxy?: {
     type: "http" | "socks5";

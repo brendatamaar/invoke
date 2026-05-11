@@ -82,7 +82,7 @@ export interface ExecuteInput {
   url: string;
   headers: ServerHeaderInput[];
   body: string;
-  bodyMode?: "none" | "json" | "form-data" | "urlencoded" | "raw";
+  bodyMode?: "none" | "json" | "form-data" | "urlencoded" | "raw" | "file";
   auth?: {
     type: string;
     username?: string;
@@ -93,6 +93,8 @@ export interface ExecuteInput {
     apiKeyIn?: "header" | "query";
   };
   timeoutMs: number;
+  connectTimeoutMs?: number;
+  readTimeoutMs?: number;
   followRedirects: boolean;
   maxRedirects: number;
   verifySsl: boolean;

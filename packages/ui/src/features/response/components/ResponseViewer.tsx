@@ -9,6 +9,8 @@ import {
   Shield,
   CheckCircle,
   Code2,
+  Eye,
+  GitCompare,
   List,
   PlusCircle,
   BookmarkPlus,
@@ -21,6 +23,7 @@ import { AuthDebugTab } from "./AuthDebugTab";
 import { BodyTab } from "./BodyTab";
 import { CodeTab } from "./CodeTab";
 import { HeadersTab } from "./HeadersTab";
+import { VisualizeTab } from "./VisualizeTab";
 import {
   QuickAssertionOverlay,
   QuickExtractionOverlay,
@@ -38,6 +41,7 @@ const TABS: { id: ResponseTab; label: string; icon?: ReactNode }[] = [
   { id: "assertions", label: "Assertions", icon: <CheckCircle size={11} /> },
   { id: "auth", label: "Auth", icon: <KeyRound size={11} /> },
   { id: "code", label: "Code", icon: <Code2 size={11} /> },
+  { id: "visualize", label: "Visualize", icon: <Eye size={11} /> },
 ];
 
 export function ResponseViewer() {
@@ -52,6 +56,7 @@ export function ResponseViewer() {
     extractRules,
     request,
     responseExamples,
+    history,
     mockRoutes,
     addToast,
     retryAttempts,
@@ -251,6 +256,18 @@ export function ResponseViewer() {
           >
             <Cpu size={11} />
           </button>
+          {history.length >= 2 && (
+            <button
+              onClick={() => {
+                const [latest, previous] = history;
+                set({ diffLeftId: previous.id, diffRightId: latest.id, showDiffModal: true });
+              }}
+              className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+              title="Diff last two history entries"
+            >
+              <GitCompare size={11} />
+            </button>
+          )}
         </div>
       )}
 
@@ -311,6 +328,7 @@ export function ResponseViewer() {
         )}
         {responseTab === "auth" && <AuthDebugTab />}
         {responseTab === "code" && <CodeTab />}
+        {responseTab === "visualize" && <VisualizeTab />}
       </div>
 
       {overlay?.kind === "assertion" && (

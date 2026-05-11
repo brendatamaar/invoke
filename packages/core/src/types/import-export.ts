@@ -14,7 +14,7 @@ export type FlatRequestDocument = {
   headers?: Record<string, string>;
   auth?: AuthConfig;
   body?: {
-    type: "none" | "json" | "text" | "form-data" | "form-urlencoded";
+    type: "none" | "json" | "text" | "form-data" | "form-urlencoded" | "file";
     content?: string;
   };
   graphql?: {

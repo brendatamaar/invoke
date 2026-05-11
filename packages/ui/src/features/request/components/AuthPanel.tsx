@@ -376,6 +376,16 @@ export function AuthPanel() {
               }
             />
           </Field>
+          <Field label="Session Token">
+            <AuthTextInput
+              type="password"
+              value={auth.awsSessionToken ?? ""}
+              onChange={(value) =>
+                setRequest({ auth: { ...auth, awsSessionToken: value } })
+              }
+              placeholder="optional"
+            />
+          </Field>
         </>
       )}
     </div>

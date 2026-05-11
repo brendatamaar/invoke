@@ -23,6 +23,7 @@ export function VariableAutocompleteInput({
   value,
   onChange,
   onKeyDown,
+  onPaste,
   placeholder,
   className,
   spellCheck = false,
@@ -163,6 +164,7 @@ export function VariableAutocompleteInput({
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
+        onPaste={onPaste}
         onBlur={() => setTimeout(() => setSuggestions([]), 150)}
         placeholder={placeholder}
         className={className}

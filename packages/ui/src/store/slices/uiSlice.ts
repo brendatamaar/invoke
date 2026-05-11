@@ -11,6 +11,9 @@ export type UiSlice = Pick<
   | "showSettings"
   | "showHelp"
   | "showClearHistoryModal"
+  | "showPassphraseModal"
+  | "passphraseMode"
+  | "passphraseCallback"
   | "uiFontSize"
   | "commandPaletteOpen"
   | "commandQuery"
@@ -32,6 +35,9 @@ export function createUiSlice(set: StoreSet, get: StoreGet): UiSlice {
   showSettings: false,
   showHelp: false,
   showClearHistoryModal: false,
+  showPassphraseModal: false,
+  passphraseMode: "setup" as const,
+  passphraseCallback: null,
   uiFontSize: Number(localStorage.getItem("uiFontSize") ?? 13),
   commandPaletteOpen: false,
   commandQuery: "",

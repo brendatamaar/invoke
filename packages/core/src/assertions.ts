@@ -165,6 +165,18 @@ function jsonPath(body: string, path: string) {
   return JSONPath({ path, json, wrap: false }) as unknown;
 }
 
+/** Evaluate a JSONPath expression against a JSON string. Returns the matched value or an error message. */
+export function evaluateJsonPath(body: string, path: string): { value: unknown; error?: never } | { value?: never; error: string } {
+  if (!path.trim()) return { error: "empty path" };
+  try {
+    const json = JSON.parse(body);
+    const result = JSONPath({ path, json, wrap: false });
+    return { value: result };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}
+
 function parseJson(body: string) {
   try {
     return JSON.parse(body);

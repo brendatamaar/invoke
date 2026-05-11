@@ -142,6 +142,9 @@ export interface AppState {
   showSettings: boolean;
   showHelp: boolean;
   showClearHistoryModal: boolean;
+  showPassphraseModal: boolean;
+  passphraseMode: "setup" | "unlock";
+  passphraseCallback: ((passphrase: string | null) => void) | null;
   uiFontSize: number;
   commandPaletteOpen: boolean;
   commandQuery: string;

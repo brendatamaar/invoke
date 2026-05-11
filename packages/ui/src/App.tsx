@@ -10,6 +10,7 @@ import { VariableEditorModal } from "./features/variables/components/VariableEdi
 import { HelpModal } from "./features/help/components/HelpModal";
 import { ClearHistoryModal } from "./features/history/components/ClearHistoryModal";
 import { SettingsPanel } from "./features/settings/components/SettingsPanel";
+import { PassphraseModal } from "./features/settings/components/PassphraseModal";
 import { CollectionRunnerModal } from "./features/collections/components/CollectionRunnerModal";
 import { BatchRunnerModal } from "./features/collections/components/BatchRunnerModal";
 import { CookieManagerModal } from "./features/cookies/components/CookieManagerModal";
@@ -18,15 +19,22 @@ import { useCodeSnippetGeneration } from "./features/codegen/useCodeSnippetGener
 import { useActiveEnvironmentPersistence } from "./features/environments/useActiveEnvironmentPersistence";
 import { useRequestExecution } from "./features/execution/useRequestExecution";
 import { useResizablePane } from "./hooks/useResizablePane";
+import { checkAndUnlockOnStartup } from "./features/settings/useCrypto";
+import { useStore } from "./store";
 
 export default function App() {
   const { size: requestHeight, onMouseDown: onResizeMouseDown } =
     useResizablePane(320);
   const { handleSend } = useRequestExecution();
+  const set = useStore((s) => s.set);
 
   useAppBootstrap();
   useActiveEnvironmentPersistence();
   useCodeSnippetGeneration();
+
+  useEffect(() => {
+    checkAndUnlockOnStartup(set).catch(() => {});
+  }, [set]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -68,6 +76,7 @@ export default function App() {
       <HelpModal />
       <ClearHistoryModal />
       <SettingsPanel />
+      <PassphraseModal />
       <CollectionRunnerModal />
       <BatchRunnerModal />
       <CookieManagerModal />

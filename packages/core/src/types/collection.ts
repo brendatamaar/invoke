@@ -43,6 +43,8 @@ export interface SavedRequest {
   sortOrder: number;
   createdAt: number;
   updatedAt: number;
+  /** AES-GCM encrypted JSON of the `auth` field. Present when a passphrase is configured. */
+  encryptedAuth?: string;
 }
 
 export interface Environment {
@@ -51,4 +53,6 @@ export interface Environment {
   variables: KeyValue[];
   createdAt: number;
   updatedAt: number;
+  /** AES-GCM encrypted JSON of sensitive variables (where sensitive===true). Present when a passphrase is configured. */
+  encryptedVariables?: string;
 }

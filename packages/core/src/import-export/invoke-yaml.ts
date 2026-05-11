@@ -336,7 +336,8 @@ function keyValuesToRecord(items: KeyValue[] = []) {
 function bodyModeToYaml(mode: BodyMode): YamlBodyType {
   if (mode === "raw") return "text";
   if (mode === "urlencoded") return "form-urlencoded";
-  return mode;
+  if (mode === "file") return "file";
+  return mode as YamlBodyType;
 }
 
 function yamlBodyToMode(mode: string | undefined): BodyMode {

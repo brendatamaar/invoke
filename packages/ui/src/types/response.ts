@@ -12,7 +12,8 @@ export type ResponseTab =
   | "tls"
   | "assertions"
   | "code"
-  | "auth";
+  | "auth"
+  | "visualize";
 
 export interface AssertionDraft {
   type: AssertionType;

@@ -115,6 +115,8 @@ function buildExecutePayload(req: RequestConfig) {
     bodyMode: req.bodyMode,
     auth: req.auth,
     timeoutMs: req.timeoutMs,
+    connectTimeoutMs: req.options?.connectTimeoutMs,
+    readTimeoutMs: req.options?.readTimeoutMs,
     followRedirects: req.options?.followRedirects ?? true,
     maxRedirects: req.options?.maxRedirects ?? 10,
     verifySsl: req.options?.verifySsl ?? true,

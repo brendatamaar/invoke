@@ -12,7 +12,7 @@ export type RequestTab =
   | "assertions"
   | "extract"
   | "scripts"
-  | "retry";
+  | "options";
 
 export interface URLBarProps {
   onSend: () => void;

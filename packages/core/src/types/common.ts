@@ -5,8 +5,9 @@ export type HttpMethod =
   | "PATCH"
   | "DELETE"
   | "HEAD"
-  | "OPTIONS";
-export type BodyMode = "none" | "json" | "form-data" | "urlencoded" | "raw";
+  | "OPTIONS"
+  | (string & {});
+export type BodyMode = "none" | "json" | "form-data" | "urlencoded" | "raw" | "file";
 export type AuthType =
   | "none"
   | "basic"

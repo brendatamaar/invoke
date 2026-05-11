@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { registerExecuteRoutes } from "./features/execute/routes.js";
+import { rateLimit } from "./middleware/rateLimit.js";
 import { registerGrpcRoutes } from "./features/grpc/routes.js";
 import { registerHealthRoutes } from "./features/health/routes.js";
 import { registerMockRoutes } from "./features/mock/routes.js";
@@ -18,6 +19,7 @@ export function createApp() {
   app.use("*", cors());
 
   registerHealthRoutes(app);
+  app.use("/api/execute/*", rateLimit());
   registerExecuteRoutes(app);
   registerWebSocketRoutes(app);
   registerGrpcRoutes(app);

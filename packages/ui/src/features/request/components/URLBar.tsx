@@ -1,11 +1,11 @@
-import { useMemo } from "react";
-import { Zap, RefreshCw, Layers, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Zap, RefreshCw, Layers, X, GitMerge, Repeat } from "lucide-react";
 import { useStore } from "../../../store";
-import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 import {
   resolveTemplate,
   variablesFromScopes,
+  parseCurl,
   type HttpMethod,
   type KeyValue,
   type VariableScope,
@@ -44,6 +44,11 @@ export function URLBar({ onSend, loading }: URLBarProps) {
     loadController,
   } = useStore();
   const color = METHOD_COLORS[request.method] ?? "text-zinc-600";
+  const followRedirects = request.options?.followRedirects ?? true;
+  const [showSendN, setShowSendN] = useState(false);
+  const [sendCount, setSendCount] = useState(5);
+  const sendNRef = useRef<HTMLDivElement>(null);
+
   const unresolved = useMemo(() => {
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const scopes: VariableScope[] = [
@@ -56,24 +61,30 @@ export function URLBar({ onSend, loading }: URLBarProps) {
 
   return (
     <div className="flex items-center gap-2 px-3 py-2">
-      {/* Method selector */}
-      <Select
-        size="sm"
+      {/* Method combo: free-text + suggestions */}
+      <datalist id="http-methods-list">
+        {METHODS.map((m) => <option key={m} value={m} />)}
+      </datalist>
+      <input
+        list="http-methods-list"
         value={request.method}
-        onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
-        className={`bg-[var(--surface-2)] font-semibold font-mono ${color}`}
-      >
-        {METHODS.map((m) => (
-          <option key={m} value={m}>
-            {m}
-          </option>
-        ))}
-      </Select>
+        onChange={(e) => setRequest({ method: e.target.value.toUpperCase() as HttpMethod })}
+        className={`bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-24 outline-none focus:border-[var(--accent)] ${color}`}
+        spellCheck={false}
+      />
 
-      {/* URL input with variable autocomplete */}
+      {/* URL input with variable autocomplete + paste-cURL detection */}
       <div className="flex-1 min-w-0">
         <VariableAutocompleteInput
           value={request.url}
+          onPaste={(e) => {
+            const text = e.clipboardData.getData("text");
+            if (text.trimStart().startsWith("curl ")) {
+              e.preventDefault();
+              const parsed = parseCurl(text);
+              if (parsed.url) setRequest({ ...parsed } as any);
+            }
+          }}
           onChange={(url) => {
             const qIdx = url.indexOf("?");
             if (qIdx !== -1) {
@@ -104,6 +115,47 @@ export function URLBar({ onSend, loading }: URLBarProps) {
           <p className="mt-1 text-2xs text-[var(--warn)] truncate">
             Missing variables: {unresolved.join(", ")}
           </p>
+        )}
+      </div>
+
+      {/* Follow-redirects toggle */}
+      <button
+        onClick={() => setRequest({ options: { ...request.options, followRedirects: !followRedirects } })}
+        title={followRedirects ? "Following redirects (click to disable)" : "Not following redirects (click to enable)"}
+        className={`p-1.5 rounded border text-xs transition-colors ${followRedirects ? "border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)]" : "border-amber-500 text-amber-500"}`}
+      >
+        <GitMerge size={13} />
+      </button>
+
+      {/* Send N times */}
+      <div className="relative" ref={sendNRef}>
+        <button
+          onClick={() => setShowSendN((v) => !v)}
+          title="Send N times"
+          className="p-1.5 rounded border border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors"
+        >
+          <Repeat size={13} />
+        </button>
+        {showSendN && (
+          <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--surface)] border border-[var(--border)] rounded shadow-lg p-2 flex items-center gap-2 min-w-36">
+            <span className="text-2xs text-[var(--text-2)] whitespace-nowrap">Send</span>
+            <input
+              type="number"
+              min={1}
+              max={500}
+              value={sendCount}
+              onChange={(e) => setSendCount(Math.max(1, Number(e.target.value)))}
+              className="input text-xs py-0.5 w-14"
+              autoFocus
+            />
+            <span className="text-2xs text-[var(--text-2)]">times</span>
+            <button
+              onClick={() => { setShowSendN(false); set({ showBatchRunner: true }); }}
+              className="btn btn-primary text-2xs py-0.5 px-2"
+            >
+              Go
+            </button>
+          </div>
         )}
       </div>
 

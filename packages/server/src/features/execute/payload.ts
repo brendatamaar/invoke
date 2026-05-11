@@ -2,10 +2,11 @@ import type { ExecuteInput } from "../../types/index.js";
 import { tlsClientConfigPayload } from "../shared/payload.js";
 
 type Header = { key: string; value: string; enabled?: boolean };
+type ExtraHeader = Header & { _soft?: boolean };
 
 function serializeBody(
   input: ExecuteInput,
-): { body: Buffer; extraHeaders: Header[] } {
+): { body: Buffer; extraHeaders: ExtraHeader[] } {
   const { bodyMode, body } = input;
 
   if (bodyMode === "urlencoded") {
@@ -22,10 +23,28 @@ function serializeBody(
             `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`,
         )
         .join("&");
-      return { body: Buffer.from(encoded), extraHeaders: [] };
+      return {
+        body: Buffer.from(encoded),
+        extraHeaders: [
+          { key: "Content-Type", value: "application/x-www-form-urlencoded" },
+        ],
+      };
     } catch {
       return { body: Buffer.from(body), extraHeaders: [] };
     }
+  }
+
+  if (bodyMode === "file") {
+    // body is a data URL: "data:<mime>;base64,<data>"
+    const match = body.match(/^data:([^;]+);base64,(.+)$/s);
+    if (match) {
+      const [, mime, b64] = match;
+      return {
+        body: Buffer.from(b64, "base64"),
+        extraHeaders: [{ key: "Content-Type", value: mime }],
+      };
+    }
+    return { body: Buffer.from(body), extraHeaders: [] };
   }
 
   if (bodyMode === "form-data") {
@@ -60,7 +79,28 @@ function serializeBody(
     }
   }
 
-  return { body: Buffer.from(body), extraHeaders: [] };
+  // raw / no bodyMode: auto-infer content type so callers don't get octet-stream
+  const trimmed = (body ?? "").trimStart();
+  const isJsonBody =
+    (trimmed.startsWith("{") || trimmed.startsWith("[")) &&
+    (() => {
+      try {
+        JSON.parse(trimmed);
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+  return {
+    body: Buffer.from(body),
+    extraHeaders: [
+      {
+        key: "Content-Type",
+        value: isJsonBody ? "application/json" : "text/plain; charset=utf-8",
+        _soft: true,
+      } as Header & { _soft?: boolean },
+    ],
+  };
 }
 
 function applyAuthIfNeeded(
@@ -122,17 +162,31 @@ export function executePayload(input: ExecuteInput) {
 
   const { body, extraHeaders } = serializeBody(input);
 
-  if (extraHeaders.length > 0) {
-    headers = headers.filter((h) => h.key.toLowerCase() !== "content-type");
-    headers = [...headers, ...extraHeaders];
+  for (const extra of extraHeaders) {
+    const { _soft, ...header } = extra as Header & { _soft?: boolean };
+    const hasContentType = headers.some(
+      (h) => h.key.toLowerCase() === header.key.toLowerCase(),
+    );
+    if (_soft && hasContentType) continue; // user-set header wins
+    headers = headers.filter(
+      (h) => h.key.toLowerCase() !== header.key.toLowerCase(),
+    );
+    headers = [...headers, header];
   }
 
   const { headers: finalHeaders, url } = applyAuthIfNeeded(input, headers);
 
+  // Inject connect/read timeout as stripped internal headers (Go executor reads + removes them)
+  const transportHeaders = [...finalHeaders];
+  if (input.connectTimeoutMs)
+    transportHeaders.push({ key: "X-Invoke-Connect-Timeout-Ms", value: String(input.connectTimeoutMs) });
+  if (input.readTimeoutMs)
+    transportHeaders.push({ key: "X-Invoke-Read-Timeout-Ms", value: String(input.readTimeoutMs) });
+
   return {
     method: input.method,
     url,
-    headers: finalHeaders,
+    headers: transportHeaders,
     body,
     timeoutMs: input.timeoutMs,
     followRedirects: input.followRedirects,

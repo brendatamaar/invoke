@@ -7,7 +7,7 @@ export const executeSchema = z.object({
   headers: z.array(headerSchema).default([]),
   body: z.string().default(""),
   bodyMode: z
-    .enum(["none", "json", "form-data", "urlencoded", "raw"])
+    .enum(["none", "json", "form-data", "urlencoded", "raw", "file"])
     .optional(),
   auth: z
     .object({
@@ -21,6 +21,8 @@ export const executeSchema = z.object({
     })
     .optional(),
   timeoutMs: z.number().int().positive().default(30000),
+  connectTimeoutMs: z.number().int().positive().optional(),
+  readTimeoutMs: z.number().int().positive().optional(),
   followRedirects: z.boolean().default(true),
   maxRedirects: z.number().int().default(10),
   verifySsl: z.boolean().default(true),
