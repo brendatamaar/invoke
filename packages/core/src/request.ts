@@ -65,6 +65,13 @@ export const emptyWebSocketRequest = (): WebSocketRequestConfig => ({
   variables: [],
   options: { verifySsl: true, tlsClientConfig: {} },
   scripts: { preRequest: "", postResponse: "" },
+  savedMessages: [],
+  autoReconnect: false,
+  preset: "none",
+  presetQuery: "",
+  presetVariables: "{}",
+  ndjsonMode: false,
+  origin: "",
 });
 
 export const emptyGrpcRequest = (): GrpcRequestConfig => ({

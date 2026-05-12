@@ -20,6 +20,16 @@ export interface GraphQLRequestConfig {
   batchMode?: boolean;
 }
 
+export type WsPreset = "none" | "graphql-transport-ws";
+
+export interface WsSavedMessage {
+  id: string;
+  label: string;
+  body: string;
+  type: "text" | "binary";
+  autoSend: boolean;
+}
+
 export interface WebSocketRequestConfig {
   url: string;
   protocols?: string;
@@ -31,6 +41,13 @@ export interface WebSocketRequestConfig {
   variables?: KeyValue[];
   options?: RequestOptions;
   scripts?: RequestScripts;
+  savedMessages?: WsSavedMessage[];
+  autoReconnect?: boolean;
+  preset?: WsPreset;
+  presetQuery?: string;
+  presetVariables?: string;
+  ndjsonMode?: boolean;
+  origin?: string;
 }
 
 export interface GrpcRequestConfig {

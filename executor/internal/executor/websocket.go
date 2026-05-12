@@ -6,49 +6,40 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
 
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
+)
+
+const (
+	maxFrameBytes  = 4 * 1024 * 1024  // 4 MB per incoming frame
+	maxBufferBytes = 16 * 1024 * 1024 // 16 MB total buffered per connection
+	pingInterval   = 30 * time.Second
+	pongWait       = 90 * time.Second // conn is dead if no pong within this window
 )
 
 type wsConnection struct {
-	conn     *websocket.Conn
-	mu       sync.Mutex
-	messages []*WebSocketMessage
-	closed   bool
-	lastUsed time.Time
+	conn       *websocket.Conn
+	mu         sync.Mutex
+	messages   []*WebSocketMessage
+	totalBytes int64
+	closed     bool
+	lastUsed   time.Time
 }
 
-type websocketFrame struct {
-	body        []byte
-	payloadType byte
-}
-
-var websocketFrameCodec = websocket.Codec{
-	Marshal: func(v interface{}) ([]byte, byte, error) {
-		switch value := v.(type) {
-		case string:
-			return []byte(value), websocket.TextFrame, nil
-		case []byte:
-			return value, websocket.BinaryFrame, nil
-		default:
-			return nil, websocket.UnknownFrame, websocket.ErrNotSupported
+func (s *Service) startWsCleanupTicker() {
+	ticker := time.NewTicker(60 * time.Second)
+	go func() {
+		for range ticker.C {
+			s.wsMu.Lock()
+			s.cleanupWebSocketsLocked()
+			s.wsMu.Unlock()
 		}
-	},
-	Unmarshal: func(data []byte, payloadType byte, v interface{}) error {
-		frame, ok := v.(*websocketFrame)
-		if !ok {
-			return websocket.ErrNotSupported
-		}
-		frame.body = data
-		frame.payloadType = payloadType
-		return nil
-	},
+	}()
 }
 
 func (s *Service) WebSocketConnect(ctx context.Context, req *WebSocketConnectRequest) (*WebSocketConnectResponse, error) {
@@ -61,56 +52,85 @@ func (s *Service) WebSocketConnect(ctx context.Context, req *WebSocketConnectReq
 	if timeout <= 0 {
 		timeout = 30 * time.Second
 	}
-	connectCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 
-	config, err := websocket.NewConfig(rawURL, websocketOrigin(rawURL))
-	if err != nil {
-		return &WebSocketConnectResponse{Error: err.Error()}, nil
-	}
-	config.Protocol = cleanedStrings(req.GetProtocols())
-	config.Header = make(http.Header)
-	for _, header := range req.GetHeaders() {
-		if strings.TrimSpace(header.GetKey()) != "" {
-			config.Header.Add(header.GetKey(), header.GetValue())
-		}
-	}
 	tlsConfig, err := tlsConfigFor(req.GetVerifySsl(), req.GetTlsClientConfig())
 	if err != nil {
 		return &WebSocketConnectResponse{Error: err.Error()}, nil
 	}
-	config.TlsConfig = tlsConfig
 
-	type dialResult struct {
-		conn *websocket.Conn
-		err  error
-	}
-	result := make(chan dialResult, 1)
-	go func() {
-		conn, dialErr := websocket.DialConfig(config)
-		result <- dialResult{conn: conn, err: dialErr}
-	}()
-
-	var conn *websocket.Conn
-	select {
-	case <-connectCtx.Done():
-		return &WebSocketConnectResponse{Error: connectCtx.Err().Error()}, nil
-	case res := <-result:
-		if res.err != nil {
-			return &WebSocketConnectResponse{Error: res.err.Error()}, nil
+	// Build request headers; allow user-supplied Origin to override the derived one.
+	reqHeaders := make(http.Header)
+	userOrigin := ""
+	for _, h := range req.GetHeaders() {
+		key := strings.TrimSpace(h.GetKey())
+		if key == "" {
+			continue
 		}
-		conn = res.conn
+		if strings.EqualFold(key, "origin") {
+			userOrigin = h.GetValue()
+		} else {
+			reqHeaders.Add(key, h.GetValue())
+		}
 	}
+	if userOrigin == "" {
+		userOrigin = websocketOrigin(rawURL)
+	}
+	reqHeaders.Set("Origin", userOrigin)
+
+	dialer := websocket.Dialer{
+		TLSClientConfig:  tlsConfig,
+		HandshakeTimeout: timeout,
+		Subprotocols:     cleanedStrings(req.GetProtocols()),
+	}
+
+	connectCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	conn, _, connErr := dialer.DialContext(connectCtx, rawURL, reqHeaders)
+	if connErr != nil {
+		return &WebSocketConnectResponse{Error: connErr.Error()}, nil
+	}
+
+	conn.SetReadLimit(maxFrameBytes)
+	conn.SetReadDeadline(time.Now().Add(pongWait)) //nolint:errcheck
+	conn.SetPongHandler(func(string) error {
+		return conn.SetReadDeadline(time.Now().Add(pongWait))
+	})
 
 	connectionID := newConnectionID()
-	wrapped := &wsConnection{conn: conn, messages: []*WebSocketMessage{}, lastUsed: time.Now()}
+	wrapped := &wsConnection{
+		conn:     conn,
+		messages: []*WebSocketMessage{},
+		lastUsed: time.Now(),
+	}
 	s.wsMu.Lock()
 	s.cleanupWebSocketsLocked()
 	s.wsConnections[connectionID] = wrapped
 	s.wsMu.Unlock()
 
-	go s.readWebSocket(connectionID, wrapped)
+	go s.readWebSocket(wrapped)
+	go s.pingWebSocket(wrapped)
 	return &WebSocketConnectResponse{ConnectionId: connectionID}, nil
+}
+
+func (s *Service) pingWebSocket(conn *wsConnection) {
+	ticker := time.NewTicker(pingInterval)
+	defer ticker.Stop()
+	for range ticker.C {
+		conn.mu.Lock()
+		closed := conn.closed
+		conn.mu.Unlock()
+		if closed {
+			return
+		}
+		deadline := time.Now().Add(10 * time.Second)
+		if err := conn.conn.WriteControl(websocket.PingMessage, []byte{}, deadline); err != nil {
+			conn.mu.Lock()
+			conn.closed = true
+			conn.mu.Unlock()
+			return
+		}
+	}
 }
 
 func (s *Service) WebSocketSend(_ context.Context, req *WebSocketSendRequest) (*WebSocketSendResponse, error) {
@@ -126,27 +146,33 @@ func (s *Service) WebSocketSend(_ context.Context, req *WebSocketSendRequest) (*
 		return &WebSocketSendResponse{Error: "connection is closed"}, nil
 	}
 
-	var err error
+	logBody := req.GetBody()
+	var sendErr error
 	if req.GetBinary() {
-		err = websocket.Message.Send(conn.conn, []byte(req.GetBody()))
+		decoded, decErr := base64.StdEncoding.DecodeString(req.GetBody())
+		if decErr != nil {
+			return &WebSocketSendResponse{Error: fmt.Sprintf("binary body must be base64-encoded: %s", decErr)}, nil
+		}
+		sendErr = conn.conn.WriteMessage(websocket.BinaryMessage, decoded)
 	} else {
-		err = websocket.Message.Send(conn.conn, req.GetBody())
+		sendErr = conn.conn.WriteMessage(websocket.TextMessage, []byte(req.GetBody()))
 	}
+
 	conn.mu.Lock()
 	conn.lastUsed = time.Now()
 	conn.messages = appendWebSocketMessage(conn.messages, &WebSocketMessage{
 		Direction: "out",
 		Type:      websocketMessageType(req.GetBinary()),
-		Body:      req.GetBody(),
+		Body:      logBody,
 		CreatedAt: time.Now().UnixMilli(),
 	})
-	if err != nil {
+	if sendErr != nil {
 		conn.closed = true
 	}
 	conn.mu.Unlock()
 
-	if err != nil {
-		return &WebSocketSendResponse{Error: err.Error()}, nil
+	if sendErr != nil {
+		return &WebSocketSendResponse{Error: sendErr.Error()}, nil
 	}
 	return &WebSocketSendResponse{}, nil
 }
@@ -165,6 +191,9 @@ func (s *Service) WebSocketPoll(_ context.Context, req *WebSocketPollRequest) (*
 	conn.mu.Lock()
 	count := min(maxMessages, len(conn.messages))
 	messages := append([]*WebSocketMessage(nil), conn.messages[:count]...)
+	for _, m := range messages {
+		conn.totalBytes -= int64(len(m.Body))
+	}
 	conn.messages = conn.messages[count:]
 	conn.lastUsed = time.Now()
 	connected := !conn.closed
@@ -187,39 +216,65 @@ func (s *Service) WebSocketClose(_ context.Context, req *WebSocketCloseRequest) 
 	conn.mu.Lock()
 	conn.closed = true
 	conn.mu.Unlock()
+
+	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+	_ = conn.conn.WriteControl(websocket.CloseMessage, closeMsg, time.Now().Add(5*time.Second))
 	if err := conn.conn.Close(); err != nil {
 		return &WebSocketCloseResponse{Error: err.Error()}, nil
 	}
 	return &WebSocketCloseResponse{}, nil
 }
 
-func (s *Service) readWebSocket(_ string, conn *wsConnection) {
+func (s *Service) readWebSocket(conn *wsConnection) {
 	for {
-		var frame websocketFrame
-		err := websocketFrameCodec.Receive(conn.conn, &frame)
+		msgType, data, err := conn.conn.ReadMessage()
 		now := time.Now()
 
 		conn.mu.Lock()
 		conn.lastUsed = now
 		if err != nil {
 			conn.closed = true
-			if err != io.EOF {
-				conn.messages = appendWebSocketMessage(conn.messages, &WebSocketMessage{
-					Direction: "system",
-					Type:      "error",
-					Body:      err.Error(),
-					CreatedAt: now.UnixMilli(),
-				})
+			body := closeReason(err)
+			msgKind := "info"
+			if !isNormalClose(err) {
+				msgKind = "error"
 			}
+			conn.messages = appendWebSocketMessage(conn.messages, &WebSocketMessage{
+				Direction: "system",
+				Type:      msgKind,
+				Body:      body,
+				CreatedAt: now.UnixMilli(),
+			})
 			conn.mu.Unlock()
 			return
 		}
+
 		messageType := "text"
-		body := string(frame.body)
-		if frame.payloadType == websocket.BinaryFrame {
+		body := string(data)
+		if msgType == websocket.BinaryMessage {
 			messageType = "binary"
-			body = base64.StdEncoding.EncodeToString(frame.body)
+			body = base64.StdEncoding.EncodeToString(data)
 		}
+
+		incoming := int64(len(data))
+		if conn.totalBytes+incoming > maxBufferBytes {
+			// Drop oldest half to make room.
+			half := len(conn.messages) / 2
+			if half > 0 {
+				for _, m := range conn.messages[:half] {
+					conn.totalBytes -= int64(len(m.Body))
+				}
+				conn.messages = conn.messages[half:]
+			}
+			conn.messages = appendWebSocketMessage(conn.messages, &WebSocketMessage{
+				Direction: "system",
+				Type:      "warn",
+				Body:      "buffer overflow: oldest messages discarded",
+				CreatedAt: now.UnixMilli(),
+			})
+		}
+
+		conn.totalBytes += incoming
 		conn.messages = appendWebSocketMessage(conn.messages, &WebSocketMessage{
 			Direction: "in",
 			Type:      messageType,
@@ -228,6 +283,27 @@ func (s *Service) readWebSocket(_ string, conn *wsConnection) {
 		})
 		conn.mu.Unlock()
 	}
+}
+
+func isNormalClose(err error) bool {
+	return websocket.IsCloseError(err,
+		websocket.CloseNormalClosure,
+		websocket.CloseGoingAway,
+		websocket.CloseNoStatusReceived,
+	)
+}
+
+func closeReason(err error) string {
+	if closeErr, ok := err.(*websocket.CloseError); ok {
+		if closeErr.Text != "" {
+			return fmt.Sprintf("Connection closed (%d): %s", closeErr.Code, closeErr.Text)
+		}
+		return fmt.Sprintf("Connection closed (%d)", closeErr.Code)
+	}
+	if strings.Contains(err.Error(), "use of closed network connection") {
+		return "Connection closed"
+	}
+	return fmt.Sprintf("Connection error: %s", err.Error())
 }
 
 func (s *Service) websocketByID(connectionID string) (*wsConnection, bool) {
@@ -244,6 +320,8 @@ func (s *Service) cleanupWebSocketsLocked() {
 		expired := conn.closed || conn.lastUsed.Before(cutoff)
 		conn.mu.Unlock()
 		if expired {
+			closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+			_ = conn.conn.WriteControl(websocket.CloseMessage, closeMsg, time.Now().Add(time.Second))
 			_ = conn.conn.Close()
 			delete(s.wsConnections, id)
 		}
@@ -289,9 +367,9 @@ func websocketMessageType(binary bool) string {
 }
 
 func newConnectionID() string {
-	bytes := make([]byte, 16)
-	if _, err := rand.Read(bytes); err == nil {
-		return "ws_" + hex.EncodeToString(bytes)
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err == nil {
+		return "ws_" + hex.EncodeToString(b)
 	}
 	return fmt.Sprintf("ws_%d", time.Now().UnixNano())
 }

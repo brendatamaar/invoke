@@ -21,6 +21,8 @@ export function createApp() {
   registerHealthRoutes(app);
   app.use("/api/execute/*", rateLimit());
   registerExecuteRoutes(app);
+  // WS connect is more expensive than HTTP execute — tighter burst, slower refill.
+  app.use("/api/websocket/connect", rateLimit(20, 2));
   registerWebSocketRoutes(app);
   registerGrpcRoutes(app);
   registerProxyRoutes(app);

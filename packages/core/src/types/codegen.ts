@@ -25,3 +25,18 @@ export interface CodeSnippet {
   filename: string;
   code: string;
 }
+
+export type WsCodeExportTarget =
+  | "ws-wscat"
+  | "ws-websocat"
+  | "ws-javascript"
+  | "ws-node-ws"
+  | "ws-python-websockets";
+
+export interface WsCodeSnippet {
+  target: WsCodeExportTarget;
+  label: string;
+  language: "shell" | "javascript" | "python";
+  filename: string;
+  code: string;
+}

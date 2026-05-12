@@ -1,4 +1,4 @@
-import type { AppState } from "../../types";
+import type { AppState, WsSession } from "../../types";
 
 export type ProtocolSlice = Pick<
   AppState,
@@ -9,9 +9,8 @@ export type ProtocolSlice = Pick<
   | "graphqlSchemaEndpoint"
   | "graphqlSchemaLastFetched"
   | "expandedGraphQLTypeNames"
-  | "websocketState"
-  | "websocketLog"
-  | "websocketConnectionId"
+  | "wsSessions"
+  | "activeWsSessionId"
   | "grpcMethods"
   | "grpcStatus"
   | "grpcStreaming"
@@ -19,7 +18,18 @@ export type ProtocolSlice = Pick<
   | "grpcStreamController"
 >;
 
+export function makeWsSession(label: string): WsSession {
+  return {
+    id: crypto.randomUUID(),
+    connectionId: "",
+    state: "disconnected",
+    log: [],
+    label,
+  };
+}
+
 export function createProtocolSlice(): ProtocolSlice {
+  const initial = makeWsSession("Session 1");
   return {
     graphqlFileUploads: [],
     graphqlDeferredParts: null,
@@ -28,9 +38,8 @@ export function createProtocolSlice(): ProtocolSlice {
     graphqlSchemaEndpoint: "",
     graphqlSchemaLastFetched: 0,
     expandedGraphQLTypeNames: [],
-    websocketState: "disconnected",
-    websocketLog: [],
-    websocketConnectionId: "",
+    wsSessions: [initial],
+    activeWsSessionId: initial.id,
     grpcMethods: [],
     grpcStatus: "",
     grpcStreaming: false,

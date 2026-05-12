@@ -41,6 +41,16 @@ export interface WebSocketLogItem {
   createdAt: number;
 }
 
+export interface WsSession {
+  id: string;
+  connectionId: string;
+  state: "disconnected" | "connecting" | "connected";
+  log: WebSocketLogItem[];
+  label: string;
+  latencyMs?: number;
+  lastActivityAt?: number;
+}
+
 export interface Toast {
   id: string;
   kind: "success" | "error" | "info" | "warn";
@@ -108,9 +118,8 @@ export interface AppState {
   graphqlSchemaEndpoint: string;
   graphqlSchemaLastFetched: number;
   expandedGraphQLTypeNames: string[];
-  websocketState: "disconnected" | "connecting" | "connected";
-  websocketLog: WebSocketLogItem[];
-  websocketConnectionId: string;
+  wsSessions: WsSession[];
+  activeWsSessionId: string;
   grpcMethods: GrpcMethodInfo[];
   grpcStatus: string;
   grpcStreaming: boolean;
@@ -177,6 +186,9 @@ export interface AppState {
   setGraphqlRequest: (partial: Partial<GraphQLRequestConfig>) => void;
   setWebsocketRequest: (partial: Partial<WebSocketRequestConfig>) => void;
   setGrpcRequest: (partial: Partial<GrpcRequestConfig>) => void;
+  setWsSession: (id: string, partial: Partial<Omit<WsSession, "id">>) => void;
+  addWsSession: () => string;
+  closeWsSession: (id: string) => void;
   addToast: (kind: Toast["kind"], message: string) => void;
   removeToast: (id: string) => void;
   toggleFolder: (id: string) => void;

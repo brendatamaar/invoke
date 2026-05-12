@@ -3,6 +3,9 @@ import type {
   CodeSnippet,
   KeyValue,
   RequestConfig,
+  WebSocketRequestConfig,
+  WsCodeExportTarget,
+  WsCodeSnippet,
 } from "./types";
 
 export const CODE_EXPORT_TARGETS: Array<Omit<CodeSnippet, "code">> = [
@@ -835,4 +838,151 @@ function phpArray(value: Record<string, string>) {
     ([key, val]) => `${phpString(key)} => ${phpString(val)}`,
   );
   return `[${entries.join(", ")}]`;
+}
+
+// ─── WebSocket code generation ───────────────────────────────────────────────
+
+export const WS_CODE_EXPORT_TARGETS: Array<Omit<WsCodeSnippet, "code">> = [
+  { target: "ws-wscat", label: "wscat", language: "shell", filename: "websocket.sh" },
+  { target: "ws-websocat", label: "websocat", language: "shell", filename: "websocket.sh" },
+  { target: "ws-javascript", label: "Browser WebSocket", language: "javascript", filename: "websocket.js" },
+  { target: "ws-node-ws", label: "Node.js ws", language: "javascript", filename: "websocket.node.js" },
+  { target: "ws-python-websockets", label: "Python websockets", language: "python", filename: "websocket.py" },
+];
+
+export function generateWsCodeSnippet(
+  request: WebSocketRequestConfig,
+  target: WsCodeExportTarget,
+): WsCodeSnippet {
+  const meta = WS_CODE_EXPORT_TARGETS.find((t) => t.target === target) ?? WS_CODE_EXPORT_TARGETS[0];
+  const code = wsGeneratorFor(target)(request);
+  return { ...meta, code };
+}
+
+function wsGeneratorFor(target: WsCodeExportTarget) {
+  switch (target) {
+    case "ws-wscat": return generateWscat;
+    case "ws-websocat": return generateWebsocat;
+    case "ws-javascript": return generateWsJavaScript;
+    case "ws-node-ws": return generateWsNodeWs;
+    case "ws-python-websockets": return generateWsPython;
+    default: return generateWscat;
+  }
+}
+
+function wsEffectiveHeaders(request: WebSocketRequestConfig): Array<{ key: string; value: string }> {
+  const headers = (request.headers ?? [])
+    .filter((h) => h.enabled !== false && h.key)
+    .map((h) => ({ key: h.key, value: h.value }));
+  const auth = request.auth;
+  if (!auth || auth.type === "none") return headers;
+  if ((auth.type === "bearer" || auth.type === "oauth2") && auth.token) {
+    headers.push({ key: "Authorization", value: `Bearer ${auth.token}` });
+  } else if (auth.type === "basic" && auth.username) {
+    const encoded = btoa(`${auth.username}:${auth.password ?? ""}`);
+    headers.push({ key: "Authorization", value: `Basic ${encoded}` });
+  } else if (auth.type === "api-key" && auth.apiKeyName && auth.apiKeyValue && auth.apiKeyIn !== "query") {
+    headers.push({ key: auth.apiKeyName, value: auth.apiKeyValue });
+  }
+  return headers;
+}
+
+function generateWscat(request: WebSocketRequestConfig): string {
+  const parts = ["wscat", "-c", shellQuote(request.url)];
+  for (const h of wsEffectiveHeaders(request)) {
+    parts.push("-H", shellQuote(`${h.key}: ${h.value}`));
+  }
+  if (request.protocols) {
+    for (const p of request.protocols.split(",").map((s) => s.trim()).filter(Boolean)) {
+      parts.push("--protocol", shellQuote(p));
+    }
+  }
+  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
+}
+
+function generateWebsocat(request: WebSocketRequestConfig): string {
+  const parts = ["websocat", shellQuote(request.url)];
+  for (const h of wsEffectiveHeaders(request)) {
+    parts.push(`-H ${shellQuote(`${h.key}: ${h.value}`)}`);
+  }
+  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
+}
+
+function generateWsJavaScript(request: WebSocketRequestConfig): string {
+  const protocols = request.protocols
+    ? `, ${JSON.stringify(request.protocols.split(",").map((p) => p.trim()).filter(Boolean))}`
+    : "";
+  const initMsg = request.message
+    ? `\n  ws.send(${JSON.stringify(request.message)});`
+    : "";
+  return `const ws = new WebSocket(${JSON.stringify(request.url)}${protocols});
+
+ws.onopen = () => {
+  console.log("Connected");${initMsg}
+};
+
+ws.onmessage = (event) => {
+  console.log("Received:", event.data);
+};
+
+ws.onerror = (error) => {
+  console.error("Error:", error);
+};
+
+ws.onclose = (event) => {
+  console.log("Closed:", event.code, event.reason);
+};`;
+}
+
+function generateWsNodeWs(request: WebSocketRequestConfig): string {
+  const hdrs = wsEffectiveHeaders(request);
+  const headersObj = hdrs.length
+    ? `\n  headers: ${JSON.stringify(Object.fromEntries(hdrs.map((h) => [h.key, h.value])), null, 4).replace(/\n/g, "\n  ")},`
+    : "";
+  const protocols = request.protocols
+    ? `\n  protocols: ${JSON.stringify(request.protocols.split(",").map((p) => p.trim()).filter(Boolean))},`
+    : "";
+  const initMsg = request.message
+    ? `\n  ws.send(${JSON.stringify(request.message)});`
+    : "";
+  const options = protocols || headersObj ? `, {${protocols}${headersObj}\n}` : "";
+  return `import WebSocket from "ws";
+
+const ws = new WebSocket(${JSON.stringify(request.url)}${options});
+
+ws.on("open", () => {
+  console.log("Connected");${initMsg}
+});
+
+ws.on("message", (data) => {
+  console.log("Received:", data.toString());
+});
+
+ws.on("error", (err) => {
+  console.error("Error:", err);
+});
+
+ws.on("close", (code, reason) => {
+  console.log("Closed:", code, reason.toString());
+});`;
+}
+
+function generateWsPython(request: WebSocketRequestConfig): string {
+  const hdrs = wsEffectiveHeaders(request);
+  const headersDict = hdrs.length
+    ? `\nextra_headers = ${JSON.stringify(Object.fromEntries(hdrs.map((h) => [h.key, h.value])), null, 4)}\n`
+    : "\nextra_headers = {}\n";
+  const kwarg = hdrs.length ? ", additional_headers=extra_headers" : "";
+  const initMsg = request.message
+    ? `\n        await ws.send(${JSON.stringify(request.message)})`
+    : "";
+  return `import asyncio
+import websockets
+${headersDict}
+async def main():
+    async with websockets.connect(${JSON.stringify(request.url)}${kwarg}) as ws:${initMsg}
+        async for message in ws:
+            print("Received:", message)
+
+asyncio.run(main())`;
 }

@@ -37,10 +37,12 @@ type Service struct {
 }
 
 func NewService() *Service {
-	return &Service{
+	s := &Service{
 		startedAt:     time.Now(),
 		wsConnections: make(map[string]*wsConnection),
 	}
+	s.startWsCleanupTicker()
+	return s
 }
 
 func (s *Service) Ping(context.Context, *PingRequest) (*PingResponse, error) {
