@@ -12,7 +12,11 @@ import {
   type RequestDraft,
   type VariableScope,
 } from "@invoke/core";
-import { executeStream, executeWithAPQ, executeWithRetry } from "../execute/api";
+import {
+  executeStream,
+  executeWithAPQ,
+  executeWithRetry,
+} from "../execute/api";
 import { processMultipartResponse } from "../execute/multipart";
 import { coreStore, useStore } from "../../store";
 import { injectCookies, persistResponseCookies } from "./cookies";
@@ -63,7 +67,10 @@ export function useRequestExecution() {
         (name) => !(name in parsedVars) || parsedVars[name] === null,
       );
       if (missingVars.length > 0) {
-        addToast("warn", `Missing required variable${missingVars.length > 1 ? "s" : ""}: ${missingVars.join(", ")}`);
+        addToast(
+          "warn",
+          `Missing required variable${missingVars.length > 1 ? "s" : ""}: ${missingVars.join(", ")}`,
+        );
         set({ requestTab: "graphqlVariables" });
         return;
       }
@@ -75,9 +82,15 @@ export function useRequestExecution() {
       // P5.1 file uploads — switch to graphql-multipart bodyMode
       if (graphqlFileUploads.length > 0) {
         try {
-          const operations = JSON.parse(converted.body) as Record<string, unknown>;
+          const operations = JSON.parse(converted.body) as Record<
+            string,
+            unknown
+          >;
           // ensure variable paths are null in operations.variables
-          const variables = (operations.variables ?? {}) as Record<string, unknown>;
+          const variables = (operations.variables ?? {}) as Record<
+            string,
+            unknown
+          >;
           const map: Record<string, string[]> = {};
           graphqlFileUploads.forEach((f, idx) => {
             const key = String(idx);
@@ -95,7 +108,9 @@ export function useRequestExecution() {
             })),
           });
           converted.bodyMode = "graphql-multipart";
-        } catch { /* keep original body */ }
+        } catch {
+          /* keep original body */
+        }
       }
 
       // P5.2 batch mode — wrap body in array
@@ -103,7 +118,9 @@ export function useRequestExecution() {
         try {
           const bodyArr = [JSON.parse(converted.body)];
           converted.body = JSON.stringify(bodyArr);
-        } catch { /* keep original body */ }
+        } catch {
+          /* keep original body */
+        }
       }
 
       activeRequest = { ...converted, protocol: "graphql" } as RequestDraft;
@@ -229,11 +246,15 @@ export function useRequestExecution() {
       retryAttempts: undefined,
     });
     try {
-      const rawResponse = await (
-        protocol === "graphql" && graphqlRequest.apq && !graphqlRequest.batchMode
-          ? executeWithAPQ(resolved, controller.signal, graphqlRequest.query ?? "")
-          : executeWithRetry(resolved, controller.signal)
-      );
+      const rawResponse = await (protocol === "graphql" &&
+      graphqlRequest.apq &&
+      !graphqlRequest.batchMode
+        ? executeWithAPQ(
+            resolved,
+            controller.signal,
+            graphqlRequest.query ?? "",
+          )
+        : executeWithRetry(resolved, controller.signal));
       const { response, parts } = processMultipartResponse(rawResponse);
       await persistCookies(response, resolved.url);
 

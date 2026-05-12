@@ -53,7 +53,14 @@ export type GrpcCodeExportTarget =
 export interface GrpcCodeSnippet {
   target: GrpcCodeExportTarget;
   label: string;
-  language: "shell" | "javascript" | "python" | "go" | "java" | "csharp" | "kotlin";
+  language:
+    | "shell"
+    | "javascript"
+    | "python"
+    | "go"
+    | "java"
+    | "csharp"
+    | "kotlin";
   filename: string;
   code: string;
 }

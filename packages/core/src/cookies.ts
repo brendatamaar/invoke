@@ -32,7 +32,9 @@ export function parseCookieHeaders(
 
     for (const attr of attrs) {
       const eqPos = attr.indexOf("=");
-      const attrKey = (eqPos >= 0 ? attr.slice(0, eqPos) : attr).trim().toLowerCase();
+      const attrKey = (eqPos >= 0 ? attr.slice(0, eqPos) : attr)
+        .trim()
+        .toLowerCase();
       const attrVal = eqPos >= 0 ? attr.slice(eqPos + 1).trim() : "";
 
       if (attrKey === "domain" && attrVal) {
@@ -44,8 +46,10 @@ export function parseCookieHeaders(
       } else if (attrKey === "httponly") {
         httpOnly = true;
       } else if (attrKey === "samesite" && attrVal) {
-        const ss = attrVal.charAt(0).toUpperCase() + attrVal.slice(1).toLowerCase();
-        if (ss === "Strict" || ss === "Lax" || ss === "None") sameSite = ss as StoredCookie["sameSite"];
+        const ss =
+          attrVal.charAt(0).toUpperCase() + attrVal.slice(1).toLowerCase();
+        if (ss === "Strict" || ss === "Lax" || ss === "None")
+          sameSite = ss as StoredCookie["sameSite"];
       } else if (attrKey === "expires" && attrVal) {
         const d = new Date(attrVal).getTime();
         if (!isNaN(d)) expires = d;
@@ -55,13 +59,28 @@ export function parseCookieHeaders(
       }
     }
 
-    results.push({ id: id(), domain, path, name, value, secure, httpOnly, sameSite, expires, createdAt: now, updatedAt: now });
+    results.push({
+      id: id(),
+      domain,
+      path,
+      name,
+      value,
+      secure,
+      httpOnly,
+      sameSite,
+      expires,
+      createdAt: now,
+      updatedAt: now,
+    });
   }
 
   return results;
 }
 
-export function matchCookies(cookies: StoredCookie[], url: string): StoredCookie[] {
+export function matchCookies(
+  cookies: StoredCookie[],
+  url: string,
+): StoredCookie[] {
   let urlObj: URL;
   try {
     urlObj = new URL(url);

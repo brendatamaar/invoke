@@ -39,15 +39,20 @@ function hasAuthSecrets(auth: AuthConfig | undefined): boolean {
   );
 }
 
-const SENSITIVE_METADATA_KEYS = /^(authorization|cookie|x-api-key|.*-token.*)$/i;
+const SENSITIVE_METADATA_KEYS =
+  /^(authorization|cookie|x-api-key|.*-token.*)$/i;
 
 function hasSensitiveMetadata(metadata: KeyValue[] | undefined): boolean {
   if (!metadata?.length) return false;
-  return metadata.some((m) => m.enabled !== false && SENSITIVE_METADATA_KEYS.test(m.key));
+  return metadata.some(
+    (m) => m.enabled !== false && SENSITIVE_METADATA_KEYS.test(m.key),
+  );
 }
 
 function sensitiveMetadataEntries(metadata: KeyValue[]): KeyValue[] {
-  return metadata.filter((m) => m.enabled !== false && SENSITIVE_METADATA_KEYS.test(m.key));
+  return metadata.filter(
+    (m) => m.enabled !== false && SENSITIVE_METADATA_KEYS.test(m.key),
+  );
 }
 
 function redactMetadata(metadata: KeyValue[]): KeyValue[] {
@@ -89,7 +94,10 @@ export class InvokeStore {
   }
 
   async verifyCryptoKey(key: CryptoKey): Promise<boolean> {
-    const verifyBlob = await metaStorage.getMeta<string>(this.db, "crypto:verify");
+    const verifyBlob = await metaStorage.getMeta<string>(
+      this.db,
+      "crypto:verify",
+    );
     if (!verifyBlob) return false;
     try {
       const value = await decryptJson<string>(verifyBlob, key);
@@ -120,31 +128,58 @@ export class InvokeStore {
   }
 
   async listRequests(collectionId?: string) {
-    const requests = await collectionStorage.listRequests(this.db, collectionId);
+    const requests = await collectionStorage.listRequests(
+      this.db,
+      collectionId,
+    );
     if (!this.cryptoKey) return requests;
     return Promise.all(requests.map((r) => this.decryptRequest(r)));
   }
 
   private async decryptRequest(r: SavedRequest): Promise<SavedRequest> {
     if (!this.cryptoKey) return r;
-    if (!r.encryptedAuth && !r.encryptedMetadata && !r.encryptedTlsKey) return r;
+    if (!r.encryptedAuth && !r.encryptedMetadata && !r.encryptedTlsKey)
+      return r;
     try {
       let req = r.request as any;
       if (r.encryptedAuth) {
-        const auth = await decryptJson<AuthConfig>(r.encryptedAuth, this.cryptoKey);
+        const auth = await decryptJson<AuthConfig>(
+          r.encryptedAuth,
+          this.cryptoKey,
+        );
         req = { ...req, auth };
       }
       if (r.encryptedMetadata) {
-        const sensitive = await decryptJson<KeyValue[]>(r.encryptedMetadata, this.cryptoKey);
+        const sensitive = await decryptJson<KeyValue[]>(
+          r.encryptedMetadata,
+          this.cryptoKey,
+        );
         const redacted = (req.metadata ?? []) as KeyValue[];
-        const nonSensitive = redacted.filter((m: KeyValue) => !SENSITIVE_METADATA_KEYS.test(m.key));
+        const nonSensitive = redacted.filter(
+          (m: KeyValue) => !SENSITIVE_METADATA_KEYS.test(m.key),
+        );
         req = { ...req, metadata: [...nonSensitive, ...sensitive] };
       }
       if (r.encryptedTlsKey) {
-        const clientKeyPem = await decryptJson<string>(r.encryptedTlsKey, this.cryptoKey);
-        req = { ...req, options: { ...req.options, tlsClientConfig: { ...req.options?.tlsClientConfig, clientKeyPem } } };
+        const clientKeyPem = await decryptJson<string>(
+          r.encryptedTlsKey,
+          this.cryptoKey,
+        );
+        req = {
+          ...req,
+          options: {
+            ...req.options,
+            tlsClientConfig: { ...req.options?.tlsClientConfig, clientKeyPem },
+          },
+        };
       }
-      return { ...r, request: req as ProtocolRequestConfig, encryptedAuth: undefined, encryptedMetadata: undefined, encryptedTlsKey: undefined };
+      return {
+        ...r,
+        request: req as ProtocolRequestConfig,
+        encryptedAuth: undefined,
+        encryptedMetadata: undefined,
+        encryptedTlsKey: undefined,
+      };
     } catch {
       return r;
     }
@@ -208,24 +243,51 @@ export class InvokeStore {
       if (hasAuthSecrets(req?.auth)) {
         const encryptedAuth = await encryptJson(req.auth, this.cryptoKey);
         const redactedAuth: AuthConfig = { type: req.auth.type };
-        const patchedRequest = { ...(patched.request as any), auth: redactedAuth };
-        patched = { ...patched, request: patchedRequest as ProtocolRequestConfig, encryptedAuth };
+        const patchedRequest = {
+          ...(patched.request as any),
+          auth: redactedAuth,
+        };
+        patched = {
+          ...patched,
+          request: patchedRequest as ProtocolRequestConfig,
+          encryptedAuth,
+        };
         needsWrite = true;
       }
 
       if (hasSensitiveMetadata(req?.metadata)) {
         const sensitive = sensitiveMetadataEntries(req.metadata);
         const encryptedMetadata = await encryptJson(sensitive, this.cryptoKey);
-        const patchedRequest = { ...(patched.request as any), metadata: redactMetadata(req.metadata) };
-        patched = { ...patched, request: patchedRequest as ProtocolRequestConfig, encryptedMetadata };
+        const patchedRequest = {
+          ...(patched.request as any),
+          metadata: redactMetadata(req.metadata),
+        };
+        patched = {
+          ...patched,
+          request: patchedRequest as ProtocolRequestConfig,
+          encryptedMetadata,
+        };
         needsWrite = true;
       }
 
       const tlsKey = req?.options?.tlsClientConfig?.clientKeyPem;
       if (tlsKey) {
         const encryptedTlsKey = await encryptJson(tlsKey, this.cryptoKey);
-        const patchedRequest = { ...(patched.request as any), options: { ...(patched.request as any).options, tlsClientConfig: { ...(patched.request as any).options?.tlsClientConfig, clientKeyPem: "" } } };
-        patched = { ...patched, request: patchedRequest as ProtocolRequestConfig, encryptedTlsKey };
+        const patchedRequest = {
+          ...(patched.request as any),
+          options: {
+            ...(patched.request as any).options,
+            tlsClientConfig: {
+              ...(patched.request as any).options?.tlsClientConfig,
+              clientKeyPem: "",
+            },
+          },
+        };
+        patched = {
+          ...patched,
+          request: patchedRequest as ProtocolRequestConfig,
+          encryptedTlsKey,
+        };
         needsWrite = true;
       }
 
@@ -250,9 +312,16 @@ export class InvokeStore {
   private async decryptEnvironment(e: Environment): Promise<Environment> {
     if (!e.encryptedVariables || !this.cryptoKey) return e;
     try {
-      const sensitive = await decryptJson<KeyValue[]>(e.encryptedVariables, this.cryptoKey);
+      const sensitive = await decryptJson<KeyValue[]>(
+        e.encryptedVariables,
+        this.cryptoKey,
+      );
       const nonSensitive = e.variables.filter((v) => !v.sensitive);
-      return { ...e, variables: [...nonSensitive, ...sensitive], encryptedVariables: undefined };
+      return {
+        ...e,
+        variables: [...nonSensitive, ...sensitive],
+        encryptedVariables: undefined,
+      };
     } catch {
       return e;
     }
@@ -262,11 +331,21 @@ export class InvokeStore {
     environment: Partial<Environment> & Pick<Environment, "name" | "variables">,
   ) {
     if (this.cryptoKey) {
-      const sensitiveVars = environment.variables.filter((v) => v.sensitive && v.value);
-      const plainVars = environment.variables.filter((v) => !v.sensitive || !v.value);
+      const sensitiveVars = environment.variables.filter(
+        (v) => v.sensitive && v.value,
+      );
+      const plainVars = environment.variables.filter(
+        (v) => !v.sensitive || !v.value,
+      );
       if (sensitiveVars.length > 0) {
-        const encryptedVariables = await encryptJson(sensitiveVars, this.cryptoKey);
-        const redactedSensitive = sensitiveVars.map((v) => ({ ...v, value: "[redacted]" }));
+        const encryptedVariables = await encryptJson(
+          sensitiveVars,
+          this.cryptoKey,
+        );
+        const redactedSensitive = sensitiveVars.map((v) => ({
+          ...v,
+          value: "[redacted]",
+        }));
         return environmentStorage.saveEnvironment(this.db, {
           ...environment,
           variables: [...plainVars, ...redactedSensitive],

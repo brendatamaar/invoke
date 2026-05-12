@@ -88,10 +88,6 @@ export function listHistory(db: InvokeDB, limit = 100) {
   return db.history.orderBy("createdAt").reverse().limit(limit).toArray();
 }
 
-export async function searchHistory(
-  db: InvokeDB,
-  query: string,
-  limit = 100,
-) {
+export async function searchHistory(db: InvokeDB, query: string, limit = 100) {
   return filterHistory(await listHistory(db, HISTORY_LIMIT), query, limit);
 }

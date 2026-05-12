@@ -11,26 +11,58 @@ import { GRPCBar, WebSocketBar } from "./ProtocolBars";
 import { GraphQLVariablesPanel, ScriptsPanel } from "./ScriptPanels";
 import { AssertionsPanel, ExtractPanel } from "./RulePanels";
 import { OptionsPanel } from "./OptionsPanel";
-import type {
-  KeyValue,
-  RequestProtocol,
-} from "@invoke/core";
-import type {
-  RequestBuilderProps,
-  RequestTab,
-} from "../../../types";
+import type { KeyValue, RequestProtocol } from "@invoke/core";
+import type { RequestBuilderProps, RequestTab } from "../../../types";
 
 const COMMON_HEADERS = [
-  "Accept","Accept-Charset","Accept-Encoding","Accept-Language",
-  "Authorization","Cache-Control","Content-Disposition","Content-Encoding",
-  "Content-Language","Content-Length","Content-Type","Cookie",
-  "DNT","Date","ETag","Expect","From","Host","If-Match",
-  "If-Modified-Since","If-None-Match","If-Unmodified-Since","Keep-Alive",
-  "Last-Modified","Link","Location","Origin","Pragma","Range","Referer",
-  "Retry-After","Set-Cookie","TE","Transfer-Encoding","Upgrade",
-  "User-Agent","Vary","Via","Warning","WWW-Authenticate",
-  "X-Api-Key","X-Auth-Token","X-Content-Type-Options","X-Forwarded-For",
-  "X-Frame-Options","X-Request-ID","X-Requested-With","X-XSS-Protection",
+  "Accept",
+  "Accept-Charset",
+  "Accept-Encoding",
+  "Accept-Language",
+  "Authorization",
+  "Cache-Control",
+  "Content-Disposition",
+  "Content-Encoding",
+  "Content-Language",
+  "Content-Length",
+  "Content-Type",
+  "Cookie",
+  "DNT",
+  "Date",
+  "ETag",
+  "Expect",
+  "From",
+  "Host",
+  "If-Match",
+  "If-Modified-Since",
+  "If-None-Match",
+  "If-Unmodified-Since",
+  "Keep-Alive",
+  "Last-Modified",
+  "Link",
+  "Location",
+  "Origin",
+  "Pragma",
+  "Range",
+  "Referer",
+  "Retry-After",
+  "Set-Cookie",
+  "TE",
+  "Transfer-Encoding",
+  "Upgrade",
+  "User-Agent",
+  "Vary",
+  "Via",
+  "Warning",
+  "WWW-Authenticate",
+  "X-Api-Key",
+  "X-Auth-Token",
+  "X-Content-Type-Options",
+  "X-Forwarded-For",
+  "X-Frame-Options",
+  "X-Request-ID",
+  "X-Requested-With",
+  "X-XSS-Protection",
 ];
 
 const PROTOCOLS: { id: RequestProtocol; label: string }[] = [
@@ -81,7 +113,9 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
             className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-28 outline-none focus:border-[var(--accent)] text-[var(--text-1)] cursor-pointer"
           >
             {PROTOCOLS.map((p) => (
-              <option key={p.id} value={p.id}>{p.label}</option>
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
             ))}
           </select>
         </div>
@@ -161,4 +195,3 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
     </div>
   );
 }
-

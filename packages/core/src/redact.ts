@@ -11,12 +11,15 @@ const SENSITIVE_HEADERS = new Set([
   "x-auth-token",
 ]);
 
-const SENSITIVE_KEY_PATTERN = /^(authorization|cookie|set-cookie|x-api-key|proxy-authorization|.*token.*)$/i;
+const SENSITIVE_KEY_PATTERN =
+  /^(authorization|cookie|set-cookie|x-api-key|proxy-authorization|.*token.*)$/i;
 
 const REDACTED = "[redacted]";
 
 function isSensitiveKey(key: string): boolean {
-  return SENSITIVE_HEADERS.has(key.toLowerCase()) || SENSITIVE_KEY_PATTERN.test(key);
+  return (
+    SENSITIVE_HEADERS.has(key.toLowerCase()) || SENSITIVE_KEY_PATTERN.test(key)
+  );
 }
 
 function redactHeaders(headers: KeyValue[]): KeyValue[] {
@@ -53,7 +56,9 @@ export function redactHistoryEntry(entry: HistoryEntry): HistoryEntry {
   const redactedResponse = response
     ? {
         ...response,
-        headers: response.headers ? redactHeaders(response.headers) : response.headers,
+        headers: response.headers
+          ? redactHeaders(response.headers)
+          : response.headers,
       }
     : response;
 
@@ -62,7 +67,11 @@ export function redactHistoryEntry(entry: HistoryEntry): HistoryEntry {
 
 /** Redact sensitive values from gRPC stream messages for display/export. */
 export function redactStreamTranscript(
-  messages: Array<{ metadata?: KeyValue[]; trailers?: KeyValue[]; [k: string]: unknown }>,
+  messages: Array<{
+    metadata?: KeyValue[];
+    trailers?: KeyValue[];
+    [k: string]: unknown;
+  }>,
 ): typeof messages {
   return messages.map((msg) => ({
     ...msg,

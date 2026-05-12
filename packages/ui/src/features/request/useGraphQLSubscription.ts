@@ -10,7 +10,12 @@ export interface GQLSubMessage {
   createdAt: number;
 }
 
-export type GQLSubState = "idle" | "connecting" | "subscribed" | "complete" | "error";
+export type GQLSubState =
+  | "idle"
+  | "connecting"
+  | "subscribed"
+  | "complete"
+  | "error";
 
 export interface SubscribeOptions {
   url: string;
@@ -31,7 +36,12 @@ export function useGraphQLSubscription() {
   function addMessage(kind: GQLSubMessage["kind"], payload: string) {
     setMessages((prev) => [
       ...prev,
-      { id: Math.random().toString(36).slice(2), kind, payload, createdAt: Date.now() },
+      {
+        id: Math.random().toString(36).slice(2),
+        kind,
+        payload,
+        createdAt: Date.now(),
+      },
     ]);
   }
 
@@ -45,7 +55,11 @@ export function useGraphQLSubscription() {
   async function terminate(connId: string | null, nextState: GQLSubState) {
     stopPolling();
     if (connId) {
-      try { await webSocketClose(connId); } catch { /* ignore */ }
+      try {
+        await webSocketClose(connId);
+      } catch {
+        /* ignore */
+      }
       connIdRef.current = null;
     }
     setState(nextState);
@@ -58,9 +72,8 @@ export function useGraphQLSubscription() {
     ackReceivedRef.current = false;
     subIdRef.current = `sub_${Math.random().toString(36).slice(2)}`;
 
-    const wsUrl = opts.url.replace(
-      /^(https?):\/\//,
-      (_, proto: string) => (proto === "https" ? "wss://" : "ws://"),
+    const wsUrl = opts.url.replace(/^(https?):\/\//, (_, proto: string) =>
+      proto === "https" ? "wss://" : "ws://",
     );
 
     try {
@@ -69,7 +82,9 @@ export function useGraphQLSubscription() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url: wsUrl,
-          headers: (opts.headers ?? []).filter((h) => h.enabled !== false && h.key.trim()),
+          headers: (opts.headers ?? []).filter(
+            (h) => h.enabled !== false && h.key.trim(),
+          ),
           protocols: ["graphql-transport-ws"],
           timeoutMs: 30000,
           verifySsl: true,
@@ -83,11 +98,17 @@ export function useGraphQLSubscription() {
       connIdRef.current = connectionId;
 
       addMessage("system", "Connected");
-      await webSocketSend(connectionId, JSON.stringify({ type: "connection_init" }));
+      await webSocketSend(
+        connectionId,
+        JSON.stringify({ type: "connection_init" }),
+      );
 
       const poll = async () => {
         const id = connIdRef.current;
-        if (!id) { stopPolling(); return; }
+        if (!id) {
+          stopPolling();
+          return;
+        }
         try {
           const { messages: raw, connected } = await webSocketPoll(id);
           if (!connected) {
@@ -99,7 +120,9 @@ export function useGraphQLSubscription() {
             let parsed: { type: string; id?: string; payload?: unknown };
             try {
               parsed = JSON.parse(msg.body) as typeof parsed;
-            } catch { continue; }
+            } catch {
+              continue;
+            }
 
             switch (parsed.type) {
               case "connection_ack":
@@ -107,15 +130,24 @@ export function useGraphQLSubscription() {
                   ackReceivedRef.current = true;
                   addMessage("system", "Acknowledged");
                   let vars: unknown = {};
-                  try { vars = JSON.parse(opts.variables ?? "{}"); } catch { /* */ }
+                  try {
+                    vars = JSON.parse(opts.variables ?? "{}");
+                  } catch {
+                    /* */
+                  }
                   const payload: Record<string, unknown> = {
                     query: opts.query,
                     variables: vars,
                   };
-                  if (opts.operationName) payload.operationName = opts.operationName;
+                  if (opts.operationName)
+                    payload.operationName = opts.operationName;
                   await webSocketSend(
                     id,
-                    JSON.stringify({ type: "subscribe", id: subIdRef.current, payload }),
+                    JSON.stringify({
+                      type: "subscribe",
+                      id: subIdRef.current,
+                      payload,
+                    }),
                   );
                   setState("subscribed");
                 }
@@ -137,11 +169,15 @@ export function useGraphQLSubscription() {
                 }
                 break;
               case "ping":
-                await webSocketSend(id, JSON.stringify({ type: "pong" })).catch(() => {});
+                await webSocketSend(id, JSON.stringify({ type: "pong" })).catch(
+                  () => {},
+                );
                 break;
             }
           }
-        } catch { /* poll failed — connection may be gone */ }
+        } catch {
+          /* poll failed — connection may be gone */
+        }
       };
 
       pollRef.current = setInterval(poll, 500);
@@ -155,8 +191,13 @@ export function useGraphQLSubscription() {
     const id = connIdRef.current;
     if (id) {
       try {
-        await webSocketSend(id, JSON.stringify({ type: "complete", id: subIdRef.current }));
-      } catch { /* ignore */ }
+        await webSocketSend(
+          id,
+          JSON.stringify({ type: "complete", id: subIdRef.current }),
+        );
+      } catch {
+        /* ignore */
+      }
     }
     addMessage("system", "Unsubscribed");
     terminate(id, "idle");

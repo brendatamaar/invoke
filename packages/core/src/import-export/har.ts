@@ -43,7 +43,9 @@ export function importHarFile(doc: any): {
   const requests: SavedRequest[] = entries.map((entry: any, i: number) => {
     const req = entry?.request ?? {};
     const rawUrl: string = req.url ?? "";
-    const method = ((req.method ?? "GET") as string).toUpperCase() as HttpMethod;
+    const method = (
+      (req.method ?? "GET") as string
+    ).toUpperCase() as HttpMethod;
     const parsedUrl = safeUrl(rawUrl);
     const cleanUrl = parsedUrl
       ? `${parsedUrl.origin}${parsedUrl.pathname}`

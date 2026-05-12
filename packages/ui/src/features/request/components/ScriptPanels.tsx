@@ -5,7 +5,8 @@ import { useStore } from "../../../store";
 import type { GraphQLFileUpload } from "../../../types";
 
 export function GraphQLVariablesPanel() {
-  const { graphqlRequest, setGraphqlRequest, graphqlFileUploads, set } = useStore();
+  const { graphqlRequest, setGraphqlRequest, graphqlFileUploads, set } =
+    useStore();
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [filesExpanded, setFilesExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -44,7 +45,9 @@ export function GraphQLVariablesPanel() {
   };
 
   const removeFile = (id: string) =>
-    set((s) => ({ graphqlFileUploads: s.graphqlFileUploads.filter((f) => f.id !== id) }));
+    set((s) => ({
+      graphqlFileUploads: s.graphqlFileUploads.filter((f) => f.id !== id),
+    }));
 
   const updateVarPath = (id: string, varPath: string) =>
     set((s) => ({
@@ -94,7 +97,10 @@ export function GraphQLVariablesPanel() {
                   className="input text-2xs py-0.5 px-1.5 font-mono flex-1 min-w-0"
                   title="Variable path (e.g. file, or images.0)"
                 />
-                <span className="text-2xs text-[var(--text-3)] truncate max-w-[120px]" title={f.filename}>
+                <span
+                  className="text-2xs text-[var(--text-3)] truncate max-w-[120px]"
+                  title={f.filename}
+                >
                   {f.filename}
                 </span>
                 <button
@@ -130,7 +136,8 @@ export function GraphQLVariablesPanel() {
               </button>
             </div>
             <p className="text-2xs text-[var(--text-3)]">
-              Set variable values to <code className="font-mono">null</code> in the JSON above for file fields.
+              Set variable values to <code className="font-mono">null</code> in
+              the JSON above for file fields.
             </p>
           </div>
         )}

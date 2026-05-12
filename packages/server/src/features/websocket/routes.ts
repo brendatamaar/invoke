@@ -77,16 +77,24 @@ export function registerWebSocketRoutes(app: Hono) {
 
         signal.addEventListener("abort", () => {
           done = true;
-          try { controller.close(); } catch { /* already closed */ }
+          try {
+            controller.close();
+          } catch {
+            /* already closed */
+          }
         });
 
         const send = (event: string, data: unknown) => {
           if (done) return;
           try {
             controller.enqueue(
-              encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+              encoder.encode(
+                `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
+              ),
             );
-          } catch { /* stream closed */ }
+          } catch {
+            /* stream closed */
+          }
         };
 
         const sleep = (ms: number) =>
@@ -95,26 +103,44 @@ export function registerWebSocketRoutes(app: Hono) {
         while (!done) {
           try {
             const result = await grpcCall<{
-              messages: Array<{ direction: string; type: string; body: string; createdAt: number }>;
+              messages: Array<{
+                direction: string;
+                type: string;
+                body: string;
+                createdAt: number;
+              }>;
               connected: boolean;
               error?: string;
-            }>("WebSocketPoll", { connectionId, maxMessages: SSE_MAX_MESSAGES });
+            }>("WebSocketPoll", {
+              connectionId,
+              maxMessages: SSE_MAX_MESSAGES,
+            });
 
             for (const msg of result.messages ?? []) {
               send("message", msg);
             }
 
             if (!result.connected) {
-              send("close", { reason: result.error ?? "server closed connection" });
+              send("close", {
+                reason: result.error ?? "server closed connection",
+              });
               done = true;
-              try { controller.close(); } catch { /* already closed */ }
+              try {
+                controller.close();
+              } catch {
+                /* already closed */
+              }
               return;
             }
           } catch (e) {
             // executor unavailable — stop streaming
             send("close", { reason: String(e) });
             done = true;
-            try { controller.close(); } catch { /* already closed */ }
+            try {
+              controller.close();
+            } catch {
+              /* already closed */
+            }
             return;
           }
 

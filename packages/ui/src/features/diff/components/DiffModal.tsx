@@ -7,7 +7,15 @@ import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { Select } from "../../../components/shared/Select";
 
 export function DiffModal() {
-  const { showDiffModal, history, diffIgnoreRules, diffLeftId, diffRightId, set, addToast } = useStore();
+  const {
+    showDiffModal,
+    history,
+    diffIgnoreRules,
+    diffLeftId,
+    diffRightId,
+    set,
+    addToast,
+  } = useStore();
   const [leftId, setLeftId] = useState(diffLeftId ?? "");
   const [rightId, setRightId] = useState(diffRightId ?? "");
   const [newPath, setNewPath] = useState("");

@@ -48,8 +48,12 @@ export function TLSTab() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3">
-      <span className="text-xs text-[var(--text-3)] w-28 shrink-0">{label}</span>
-      <span className="text-xs font-mono text-[var(--text-1)] break-all">{value}</span>
+      <span className="text-xs text-[var(--text-3)] w-28 shrink-0">
+        {label}
+      </span>
+      <span className="text-xs font-mono text-[var(--text-1)] break-all">
+        {value}
+      </span>
     </div>
   );
 }

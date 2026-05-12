@@ -3,10 +3,7 @@ import { CheckCircle2, ExternalLink, RefreshCw } from "lucide-react";
 import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 import { useStore } from "../../../store";
-import {
-  oauth2AuthCodeResult,
-  oauth2AuthCodeStart,
-} from "../../oauth2/api";
+import { oauth2AuthCodeResult, oauth2AuthCodeStart } from "../../oauth2/api";
 import type { AuthTextInputProps, FieldProps } from "../../../types";
 
 export function AuthPanel() {
@@ -208,7 +205,8 @@ export function AuthPanel() {
                     Token stored
                     {auth.tokenExpiresAt && (
                       <span className="text-[var(--text-3)]">
-                        - expires {new Date(auth.tokenExpiresAt).toLocaleString()}
+                        - expires{" "}
+                        {new Date(auth.tokenExpiresAt).toLocaleString()}
                       </span>
                     )}
                   </span>
@@ -301,7 +299,8 @@ export function AuthPanel() {
                 >
                   {authorizing ? (
                     <>
-                      <RefreshCw size={11} className="animate-spin" /> Waiting...
+                      <RefreshCw size={11} className="animate-spin" />{" "}
+                      Waiting...
                     </>
                   ) : (
                     <>

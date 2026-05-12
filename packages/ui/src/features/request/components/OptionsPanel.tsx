@@ -1,10 +1,18 @@
 import { useStore } from "../../../store";
 import type { RequestDraft, RequestOptions, RetryPolicy } from "@invoke/core";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex items-center gap-2">
-      <label className="text-xs text-[var(--text-2)] w-36 shrink-0">{label}</label>
+      <label className="text-xs text-[var(--text-2)] w-36 shrink-0">
+        {label}
+      </label>
       <div className="flex-1">{children}</div>
     </div>
   );
@@ -12,7 +20,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-2xs font-semibold uppercase tracking-wide text-[var(--text-3)] pt-1">{children}</p>
+    <p className="text-2xs font-semibold uppercase tracking-wide text-[var(--text-3)] pt-1">
+      {children}
+    </p>
   );
 }
 
@@ -30,7 +40,9 @@ export function OptionsPanel() {
     setRequest({ options: { ...options, ...patch } } as any);
 
   const updateRetry = (patch: Partial<RetryPolicy>) =>
-    setRequest({ retryPolicy: { ...policy, ...patch } } as Partial<RequestDraft>);
+    setRequest({
+      retryPolicy: { ...policy, ...patch },
+    } as Partial<RequestDraft>);
 
   const retryEnabled = policy.maxRetries > 0;
 
@@ -43,7 +55,9 @@ export function OptionsPanel() {
           min={0}
           step={1000}
           value={request.timeoutMs ?? 30000}
-          onChange={(e) => setRequest({ timeoutMs: Math.max(0, Number(e.target.value)) })}
+          onChange={(e) =>
+            setRequest({ timeoutMs: Math.max(0, Number(e.target.value)) })
+          }
           className="input text-xs py-1 w-28"
         />
       </Field>
@@ -54,7 +68,11 @@ export function OptionsPanel() {
           step={1000}
           value={options.connectTimeoutMs ?? ""}
           onChange={(e) =>
-            setOption({ connectTimeoutMs: e.target.value ? Math.max(0, Number(e.target.value)) : undefined })
+            setOption({
+              connectTimeoutMs: e.target.value
+                ? Math.max(0, Number(e.target.value))
+                : undefined,
+            })
           }
           placeholder="none"
           className="input text-xs py-1 w-28"
@@ -67,7 +85,11 @@ export function OptionsPanel() {
           step={1000}
           value={options.readTimeoutMs ?? ""}
           onChange={(e) =>
-            setOption({ readTimeoutMs: e.target.value ? Math.max(0, Number(e.target.value)) : undefined })
+            setOption({
+              readTimeoutMs: e.target.value
+                ? Math.max(0, Number(e.target.value))
+                : undefined,
+            })
           }
           placeholder="none"
           className="input text-xs py-1 w-28"
@@ -90,7 +112,9 @@ export function OptionsPanel() {
             min={0}
             max={30}
             value={options.maxRedirects ?? 10}
-            onChange={(e) => setOption({ maxRedirects: Math.max(0, Number(e.target.value)) })}
+            onChange={(e) =>
+              setOption({ maxRedirects: Math.max(0, Number(e.target.value)) })
+            }
             className="input text-xs py-1 w-16"
             disabled={!(options.followRedirects ?? true)}
           />
@@ -111,7 +135,9 @@ export function OptionsPanel() {
           <input
             type="checkbox"
             checked={retryEnabled}
-            onChange={(e) => updateRetry({ maxRetries: e.target.checked ? 3 : 0 })}
+            onChange={(e) =>
+              updateRetry({ maxRetries: e.target.checked ? 3 : 0 })
+            }
             className="accent-[var(--accent)]"
           />
         </Field>
@@ -123,7 +149,11 @@ export function OptionsPanel() {
                 min={1}
                 max={10}
                 value={policy.maxRetries}
-                onChange={(e) => updateRetry({ maxRetries: Math.max(1, Number(e.target.value)) })}
+                onChange={(e) =>
+                  updateRetry({
+                    maxRetries: Math.max(1, Number(e.target.value)),
+                  })
+                }
                 className="input text-xs py-1 w-20"
               />
             </Field>
@@ -133,7 +163,11 @@ export function OptionsPanel() {
                 min={0}
                 step={100}
                 value={policy.backoffMs}
-                onChange={(e) => updateRetry({ backoffMs: Math.max(0, Number(e.target.value)) })}
+                onChange={(e) =>
+                  updateRetry({
+                    backoffMs: Math.max(0, Number(e.target.value)),
+                  })
+                }
                 className="input text-xs py-1 w-24"
               />
             </Field>
@@ -143,7 +177,9 @@ export function OptionsPanel() {
                   <input
                     type="checkbox"
                     checked={policy.retryOn5xx}
-                    onChange={(e) => updateRetry({ retryOn5xx: e.target.checked })}
+                    onChange={(e) =>
+                      updateRetry({ retryOn5xx: e.target.checked })
+                    }
                     className="accent-[var(--accent)]"
                   />
                   5xx errors
@@ -152,7 +188,9 @@ export function OptionsPanel() {
                   <input
                     type="checkbox"
                     checked={policy.retryOnTimeout}
-                    onChange={(e) => updateRetry({ retryOnTimeout: e.target.checked })}
+                    onChange={(e) =>
+                      updateRetry({ retryOnTimeout: e.target.checked })
+                    }
                     className="accent-[var(--accent)]"
                   />
                   Timeout
@@ -161,7 +199,11 @@ export function OptionsPanel() {
             </Field>
             <p className="text-2xs text-[var(--text-3)]">
               Backoff doubles each retry. Max wait ≈{" "}
-              {Array.from({ length: policy.maxRetries }, (_, i) => policy.backoffMs * Math.pow(2, i)).reduce((a, b) => a + b, 0)}ms.
+              {Array.from(
+                { length: policy.maxRetries },
+                (_, i) => policy.backoffMs * Math.pow(2, i),
+              ).reduce((a, b) => a + b, 0)}
+              ms.
             </p>
           </>
         )}

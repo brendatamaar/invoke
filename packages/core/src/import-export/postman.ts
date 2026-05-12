@@ -1,5 +1,17 @@
-import { emptyGrpcRequest, emptyRequest, id, toRequestConfig } from "../request";
-import type { Collection, Folder, GrpcRequestConfig, HttpMethod, RequestConfig, SavedRequest } from "../types";
+import {
+  emptyGrpcRequest,
+  emptyRequest,
+  id,
+  toRequestConfig,
+} from "../request";
+import type {
+  Collection,
+  Folder,
+  GrpcRequestConfig,
+  HttpMethod,
+  RequestConfig,
+  SavedRequest,
+} from "../types";
 
 export function importPostmanCollection(doc: any) {
   const now = Date.now();
@@ -33,7 +45,10 @@ export function importPostmanCollection(doc: any) {
       }
       if (!item.request) continue;
       const raw = item.request;
-      if (raw.type === "grpc" || item.protocolProfileBehavior?.protocolVersion === "grpc") {
+      if (
+        raw.type === "grpc" ||
+        item.protocolProfileBehavior?.protocolVersion === "grpc"
+      ) {
         requests.push(postmanGrpcItem(item, collection.id, folderId));
         continue;
       }
@@ -94,11 +109,15 @@ function postmanAuth(auth: any): RequestConfig["auth"] {
   return { type: "none" };
 }
 
-
-function postmanGrpcItem(item: any, collectionId: string, folderId: string | null): SavedRequest {
+function postmanGrpcItem(
+  item: any,
+  collectionId: string,
+  folderId: string | null,
+): SavedRequest {
   const raw = item.request ?? item;
   const url = raw.url?.grpc ?? raw.url?.raw ?? raw.url ?? "";
-  const service = raw.service ?? raw.method?.split("/").slice(0, -1).join("/") ?? "";
+  const service =
+    raw.service ?? raw.method?.split("/").slice(0, -1).join("/") ?? "";
   const method = raw.method?.split("/").pop() ?? raw.methodName ?? "";
   const metadata = (raw.header ?? raw.metadata ?? []).map((h: any) => ({
     key: h.key ?? h.name ?? "",

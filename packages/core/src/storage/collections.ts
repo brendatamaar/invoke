@@ -33,10 +33,7 @@ export async function createCollection(
   return collection;
 }
 
-export async function updateCollection(
-  db: InvokeDB,
-  collection: Collection,
-) {
+export async function updateCollection(db: InvokeDB, collection: Collection) {
   const updated = {
     ...collection,
     variables: collection.variables ?? [],
@@ -153,9 +150,7 @@ export async function saveRequest(
     request: clonePlain(normalizeSavedRequest(request)),
     sortOrder: options.sortOrder ?? draft.sortOrder ?? now,
     createdAt:
-      options.createdAt ??
-      (request as Partial<SavedRequest>).createdAt ??
-      now,
+      options.createdAt ?? (request as Partial<SavedRequest>).createdAt ?? now,
     updatedAt: now,
   };
   await db.requests.put(clonePlain(saved));

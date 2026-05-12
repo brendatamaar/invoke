@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Plus, Trash2 } from "lucide-react";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { useStore } from "../../../store";
 import type {

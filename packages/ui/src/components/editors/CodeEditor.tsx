@@ -14,16 +14,29 @@ const graphqlStreamLanguage = StreamLanguage.define({
   startState: () => ({ blockString: false }),
   token(stream, state: { blockString: boolean }) {
     if (state.blockString) {
-      if (stream.match('"""')) { state.blockString = false; return "string"; }
+      if (stream.match('"""')) {
+        state.blockString = false;
+        return "string";
+      }
       stream.next();
       return "string";
     }
     if (stream.eatSpace()) return null;
-    if (stream.match("#")) { stream.skipToEnd(); return "comment"; }
-    if (stream.match('"""')) { state.blockString = true; return "string"; }
+    if (stream.match("#")) {
+      stream.skipToEnd();
+      return "comment";
+    }
+    if (stream.match('"""')) {
+      state.blockString = true;
+      return "string";
+    }
     if (stream.match('"')) {
       while (!stream.eol()) {
-        if (stream.peek() === "\\") { stream.next(); stream.next(); continue; }
+        if (stream.peek() === "\\") {
+          stream.next();
+          stream.next();
+          continue;
+        }
         if (stream.next() === '"') break;
       }
       return "string";
@@ -34,9 +47,24 @@ const graphqlStreamLanguage = StreamLanguage.define({
     if (stream.match("...")) return "punctuation";
     if (stream.match(/^[A-Za-z_]\w*/)) {
       const w = stream.current();
-      if (["query","mutation","subscription","fragment","on"].includes(w)) return "keyword";
-      if (["type","interface","union","enum","input","scalar","schema","directive","extend","implements"].includes(w)) return "keyword";
-      if (["true","false","null"].includes(w)) return "atom";
+      if (["query", "mutation", "subscription", "fragment", "on"].includes(w))
+        return "keyword";
+      if (
+        [
+          "type",
+          "interface",
+          "union",
+          "enum",
+          "input",
+          "scalar",
+          "schema",
+          "directive",
+          "extend",
+          "implements",
+        ].includes(w)
+      )
+        return "keyword";
+      if (["true", "false", "null"].includes(w)) return "atom";
       if (/^[A-Z]/.test(w)) return "type";
       return "def";
     }

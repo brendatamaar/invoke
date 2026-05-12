@@ -1,10 +1,7 @@
 import { Trash2 } from "lucide-react";
 import type { FlowStep } from "@invoke/core";
 import { Select } from "../../../components/shared/Select";
-import {
-  HTTP_METHODS,
-  STEP_LABEL_COLORS,
-} from "./flowStepUtils";
+import { HTTP_METHODS, STEP_LABEL_COLORS } from "./flowStepUtils";
 
 export function StepEditorPanel({
   step,

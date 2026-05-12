@@ -45,7 +45,10 @@ function resolveDynamicVars(text: string): string {
     .replace(/\{\{\$timestamp\}\}/g, String(Date.now()))
     .replace(/\{\{\$isoTimestamp\}\}/g, new Date().toISOString())
     .replace(/\{\{\$randomUUID\}\}/g, crypto.randomUUID())
-    .replace(/\{\{\$randomInt\}\}/g, String(Math.floor(Math.random() * 1_000_000)));
+    .replace(
+      /\{\{\$randomInt\}\}/g,
+      String(Math.floor(Math.random() * 1_000_000)),
+    );
 }
 
 // ─── Protocol templates ──────────────────────────────────────────────────────
@@ -58,24 +61,72 @@ interface MsgTemplate {
 
 const PROTOCOL_TEMPLATES: Record<string, MsgTemplate[]> = {
   "graphql-transport-ws": [
-    { label: "connection_init", body: '{"type":"connection_init"}', type: "text" },
     {
-      label: "subscribe",
-      body: JSON.stringify({ type: "subscribe", id: "sub_1", payload: { query: "subscription { ... }", variables: {} } }, null, 2),
+      label: "connection_init",
+      body: '{"type":"connection_init"}',
       type: "text",
     },
-    { label: "complete", body: '{"type":"complete","id":"sub_1"}', type: "text" },
+    {
+      label: "subscribe",
+      body: JSON.stringify(
+        {
+          type: "subscribe",
+          id: "sub_1",
+          payload: { query: "subscription { ... }", variables: {} },
+        },
+        null,
+        2,
+      ),
+      type: "text",
+    },
+    {
+      label: "complete",
+      body: '{"type":"complete","id":"sub_1"}',
+      type: "text",
+    },
     { label: "ping", body: '{"type":"ping"}', type: "text" },
   ],
   MQTT: [
-    { label: "CONNECT", body: JSON.stringify({ type: "CONNECT", clientId: "invoke-client", keepAlive: 60 }, null, 2), type: "text" },
-    { label: "PUBLISH", body: JSON.stringify({ type: "PUBLISH", topic: "test/topic", payload: "hello" }, null, 2), type: "text" },
-    { label: "SUBSCRIBE", body: JSON.stringify({ type: "SUBSCRIBE", topics: ["test/#"] }, null, 2), type: "text" },
+    {
+      label: "CONNECT",
+      body: JSON.stringify(
+        { type: "CONNECT", clientId: "invoke-client", keepAlive: 60 },
+        null,
+        2,
+      ),
+      type: "text",
+    },
+    {
+      label: "PUBLISH",
+      body: JSON.stringify(
+        { type: "PUBLISH", topic: "test/topic", payload: "hello" },
+        null,
+        2,
+      ),
+      type: "text",
+    },
+    {
+      label: "SUBSCRIBE",
+      body: JSON.stringify({ type: "SUBSCRIBE", topics: ["test/#"] }, null, 2),
+      type: "text",
+    },
   ],
   STOMP: [
-    { label: "CONNECT", body: "CONNECT\naccept-version:1.2\nheart-beat:0,0\n\n\0", type: "text" },
-    { label: "SEND", body: "SEND\ndestination:/topic/test\ncontent-type:application/json\n\n{\"message\":\"hello\"}\0", type: "text" },
-    { label: "SUBSCRIBE", body: "SUBSCRIBE\nid:sub-0\ndestination:/topic/test\n\n\0", type: "text" },
+    {
+      label: "CONNECT",
+      body: "CONNECT\naccept-version:1.2\nheart-beat:0,0\n\n\0",
+      type: "text",
+    },
+    {
+      label: "SEND",
+      body: 'SEND\ndestination:/topic/test\ncontent-type:application/json\n\n{"message":"hello"}\0',
+      type: "text",
+    },
+    {
+      label: "SUBSCRIBE",
+      body: "SUBSCRIBE\nid:sub-0\ndestination:/topic/test\n\n\0",
+      type: "text",
+    },
   ],
   "Socket.IO": [
     { label: "Handshake (EIO4)", body: "40", type: "text" },
@@ -86,7 +137,12 @@ const PROTOCOL_TEMPLATES: Record<string, MsgTemplate[]> = {
 
 // ─── Sensitive key-value editor ──────────────────────────────────────────────
 
-const SENSITIVE_KEYS = new Set(["authorization", "cookie", "set-cookie", "proxy-authorization"]);
+const SENSITIVE_KEYS = new Set([
+  "authorization",
+  "cookie",
+  "set-cookie",
+  "proxy-authorization",
+]);
 
 function SensitiveKeyValueEditor({
   rows,
@@ -223,7 +279,8 @@ export function WebSocketClient() {
 
   const filteredLog = useMemo(() => {
     let entries = activeSession?.log ?? [];
-    if (dirFilter !== "all") entries = entries.filter((e) => e.direction === dirFilter);
+    if (dirFilter !== "all")
+      entries = entries.filter((e) => e.direction === dirFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       entries = entries.filter((e) => e.body.toLowerCase().includes(q));
@@ -283,7 +340,11 @@ export function WebSocketClient() {
     const id = `sub_${++subIdRef.current}`;
     setCurrentSubId(id);
     let vars: unknown = {};
-    try { vars = JSON.parse(websocketRequest.presetVariables ?? "{}"); } catch { /* invalid JSON */ }
+    try {
+      vars = JSON.parse(websocketRequest.presetVariables ?? "{}");
+    } catch {
+      /* invalid JSON */
+    }
     const frame = JSON.stringify({
       type: "subscribe",
       id,
@@ -295,7 +356,13 @@ export function WebSocketClient() {
       setWsSession(activeSession.id, {
         log: [
           ...(activeSession?.log ?? []),
-          { id: crypto.randomUUID(), direction: "sent" as const, type: "text", body: frame, createdAt: Date.now() },
+          {
+            id: crypto.randomUUID(),
+            direction: "sent" as const,
+            type: "text",
+            body: frame,
+            createdAt: Date.now(),
+          },
         ],
       });
     } catch (e) {
@@ -312,7 +379,13 @@ export function WebSocketClient() {
       setWsSession(activeSession.id, {
         log: [
           ...(activeSession?.log ?? []),
-          { id: crypto.randomUUID(), direction: "sent" as const, type: "text", body: frame, createdAt: Date.now() },
+          {
+            id: crypto.randomUUID(),
+            direction: "sent" as const,
+            type: "text",
+            body: frame,
+            createdAt: Date.now(),
+          },
         ],
       });
     } catch (e) {
@@ -346,7 +419,10 @@ export function WebSocketClient() {
 
   const copyAll = () => {
     const text = (activeSession?.log ?? [])
-      .map((e) => `[${new Date(e.createdAt).toISOString()}] [${e.direction}] ${e.body}`)
+      .map(
+        (e) =>
+          `[${new Date(e.createdAt).toISOString()}] [${e.direction}] ${e.body}`,
+      )
       .join("\n");
     navigator.clipboard.writeText(text).catch(() => {});
   };
@@ -368,7 +444,13 @@ export function WebSocketClient() {
     setWebsocketRequest({
       savedMessages: [
         ...savedMessages,
-        { id: crypto.randomUUID(), label: "", body: "", type: "text", autoSend: false },
+        {
+          id: crypto.randomUUID(),
+          label: "",
+          body: "",
+          type: "text",
+          autoSend: false,
+        },
       ],
     });
   };
@@ -377,7 +459,13 @@ export function WebSocketClient() {
     setWebsocketRequest({
       savedMessages: [
         ...savedMessages,
-        { id: crypto.randomUUID(), label: tpl.label, body: tpl.body, type: tpl.type, autoSend: false },
+        {
+          id: crypto.randomUUID(),
+          label: tpl.label,
+          body: tpl.body,
+          type: tpl.type,
+          autoSend: false,
+        },
       ],
     });
     setShowTemplates(false);
@@ -385,12 +473,16 @@ export function WebSocketClient() {
 
   const updateSavedMessage = (id: string, partial: Partial<WsSavedMessage>) => {
     setWebsocketRequest({
-      savedMessages: savedMessages.map((m) => (m.id === id ? { ...m, ...partial } : m)),
+      savedMessages: savedMessages.map((m) =>
+        m.id === id ? { ...m, ...partial } : m,
+      ),
     });
   };
 
   const removeSavedMessage = (id: string) => {
-    setWebsocketRequest({ savedMessages: savedMessages.filter((m) => m.id !== id) });
+    setWebsocketRequest({
+      savedMessages: savedMessages.filter((m) => m.id !== id),
+    });
   };
 
   const INNER_TABS: { id: InnerTab; label: string }[] = [
@@ -526,8 +618,9 @@ export function WebSocketClient() {
           {/* Message log */}
           <div className="flex-1 overflow-y-auto font-mono text-2xs p-2 flex flex-col gap-1">
             {filteredLog.map((entry) => {
-              const displayBody =
-                prettyJson ? (tryPrettyJson(entry.body) ?? entry.body) : entry.body;
+              const displayBody = prettyJson
+                ? (tryPrettyJson(entry.body) ?? entry.body)
+                : entry.body;
               const expanded = expandedIds.has(entry.id);
               return (
                 <div
@@ -546,17 +639,27 @@ export function WebSocketClient() {
                       onClick={() => toggleExpanded(entry.id)}
                       className="mt-0.5 shrink-0 text-[var(--text-3)] hover:text-[var(--text-1)]"
                     >
-                      {expanded
-                        ? <ChevronDown size={10} />
-                        : <ChevronRight size={10} />
-                      }
+                      {expanded ? (
+                        <ChevronDown size={10} />
+                      ) : (
+                        <ChevronRight size={10} />
+                      )}
                     </button>
                     {entry.direction === "sent" ? (
-                      <ArrowUp size={11} className="text-blue-600 mt-0.5 shrink-0" />
+                      <ArrowUp
+                        size={11}
+                        className="text-blue-600 mt-0.5 shrink-0"
+                      />
                     ) : entry.direction === "system" ? (
-                      <Info size={11} className="text-amber-600 mt-0.5 shrink-0" />
+                      <Info
+                        size={11}
+                        className="text-amber-600 mt-0.5 shrink-0"
+                      />
                     ) : (
-                      <ArrowDown size={11} className="text-emerald-600 mt-0.5 shrink-0" />
+                      <ArrowDown
+                        size={11}
+                        className="text-emerald-600 mt-0.5 shrink-0"
+                      />
                     )}
                     <pre className="flex-1 break-all whitespace-pre-wrap text-[var(--text-1)] font-mono">
                       {displayBody}
@@ -579,12 +682,36 @@ export function WebSocketClient() {
                   {/* Frame inspector */}
                   {expanded && (
                     <div className="px-7 pb-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-[var(--text-3)] border-t border-[var(--border)]">
-                      <span>type: <span className="text-[var(--text-2)]">{entry.type}</span></span>
-                      <span>direction: <span className="text-[var(--text-2)]">{entry.direction}</span></span>
-                      <span>size: <span className="text-[var(--text-2)]">{byteSize(entry.body)} B</span></span>
-                      <span>timestamp: <span className="text-[var(--text-2)]">{new Date(entry.createdAt).toISOString()}</span></span>
+                      <span>
+                        type:{" "}
+                        <span className="text-[var(--text-2)]">
+                          {entry.type}
+                        </span>
+                      </span>
+                      <span>
+                        direction:{" "}
+                        <span className="text-[var(--text-2)]">
+                          {entry.direction}
+                        </span>
+                      </span>
+                      <span>
+                        size:{" "}
+                        <span className="text-[var(--text-2)]">
+                          {byteSize(entry.body)} B
+                        </span>
+                      </span>
+                      <span>
+                        timestamp:{" "}
+                        <span className="text-[var(--text-2)]">
+                          {new Date(entry.createdAt).toISOString()}
+                        </span>
+                      </span>
                       <button
-                        onClick={() => navigator.clipboard.writeText(entry.body).catch(() => {})}
+                        onClick={() =>
+                          navigator.clipboard
+                            .writeText(entry.body)
+                            .catch(() => {})
+                        }
                         className="flex items-center gap-0.5 hover:text-[var(--text-1)] transition-colors"
                       >
                         <Copy size={9} /> copy
@@ -607,7 +734,9 @@ export function WebSocketClient() {
             })}
             {!filteredLog.length && (
               <p className="text-[var(--text-3)] text-center mt-8 text-2xs">
-                {search || dirFilter !== "all" ? "No matching messages" : "No messages"}
+                {search || dirFilter !== "all"
+                  ? "No matching messages"
+                  : "No messages"}
               </p>
             )}
           </div>
@@ -615,7 +744,10 @@ export function WebSocketClient() {
           {/* Diff selection bar */}
           {diffSelected.length > 0 && (
             <div className="border-t border-[var(--border)] px-3 py-1.5 flex items-center gap-2 shrink-0 bg-[var(--surface-2)]">
-              <ArrowLeftRight size={11} className="text-[var(--accent)] shrink-0" />
+              <ArrowLeftRight
+                size={11}
+                className="text-[var(--accent)] shrink-0"
+              />
               <span className="text-2xs text-[var(--text-2)] flex-1">
                 {diffSelected.length === 1
                   ? "Select one more frame to diff"
@@ -630,7 +762,10 @@ export function WebSocketClient() {
                 </button>
               )}
               <button
-                onClick={() => { setDiffSelected([]); setShowDiff(false); }}
+                onClick={() => {
+                  setDiffSelected([]);
+                  setShowDiff(false);
+                }}
                 className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
               >
                 <X size={11} />
@@ -639,41 +774,57 @@ export function WebSocketClient() {
           )}
 
           {/* Inline diff panel */}
-          {showDiff && diffSelected.length === 2 && (() => {
-            const allLog = activeSession?.log ?? [];
-            const left = allLog.find((e) => e.id === diffSelected[0]);
-            const right = allLog.find((e) => e.id === diffSelected[1]);
-            const leftBody = left ? (tryPrettyJson(left.body) ?? left.body) : "";
-            const rightBody = right ? (tryPrettyJson(right.body) ?? right.body) : "";
-            return (
-              <div className="border-t border-[var(--border)] shrink-0 flex flex-col" style={{ maxHeight: "45%" }}>
-                <div className="flex items-center justify-between px-3 py-1 bg-[var(--surface-2)] border-b border-[var(--border)] shrink-0">
-                  <span className="text-2xs font-medium text-[var(--text-2)]">Frame diff</span>
-                  <button onClick={() => setShowDiff(false)} className="text-[var(--text-3)] hover:text-[var(--text-1)]">
-                    <X size={11} />
-                  </button>
-                </div>
-                <div className="flex overflow-hidden flex-1 min-h-0">
-                  <div className="flex-1 overflow-auto p-2 border-r border-[var(--border)]">
-                    <div className="text-[10px] text-[var(--text-3)] mb-1">
-                      Frame A · {left?.direction} · {new Date(left?.createdAt ?? 0).toLocaleTimeString()}
-                    </div>
-                    <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all">
-                      {leftBody}
-                    </pre>
+          {showDiff &&
+            diffSelected.length === 2 &&
+            (() => {
+              const allLog = activeSession?.log ?? [];
+              const left = allLog.find((e) => e.id === diffSelected[0]);
+              const right = allLog.find((e) => e.id === diffSelected[1]);
+              const leftBody = left
+                ? (tryPrettyJson(left.body) ?? left.body)
+                : "";
+              const rightBody = right
+                ? (tryPrettyJson(right.body) ?? right.body)
+                : "";
+              return (
+                <div
+                  className="border-t border-[var(--border)] shrink-0 flex flex-col"
+                  style={{ maxHeight: "45%" }}
+                >
+                  <div className="flex items-center justify-between px-3 py-1 bg-[var(--surface-2)] border-b border-[var(--border)] shrink-0">
+                    <span className="text-2xs font-medium text-[var(--text-2)]">
+                      Frame diff
+                    </span>
+                    <button
+                      onClick={() => setShowDiff(false)}
+                      className="text-[var(--text-3)] hover:text-[var(--text-1)]"
+                    >
+                      <X size={11} />
+                    </button>
                   </div>
-                  <div className="flex-1 overflow-auto p-2">
-                    <div className="text-[10px] text-[var(--text-3)] mb-1">
-                      Frame B · {right?.direction} · {new Date(right?.createdAt ?? 0).toLocaleTimeString()}
+                  <div className="flex overflow-hidden flex-1 min-h-0">
+                    <div className="flex-1 overflow-auto p-2 border-r border-[var(--border)]">
+                      <div className="text-[10px] text-[var(--text-3)] mb-1">
+                        Frame A · {left?.direction} ·{" "}
+                        {new Date(left?.createdAt ?? 0).toLocaleTimeString()}
+                      </div>
+                      <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all">
+                        {leftBody}
+                      </pre>
                     </div>
-                    <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all">
-                      {rightBody}
-                    </pre>
+                    <div className="flex-1 overflow-auto p-2">
+                      <div className="text-[10px] text-[var(--text-3)] mb-1">
+                        Frame B · {right?.direction} ·{" "}
+                        {new Date(right?.createdAt ?? 0).toLocaleTimeString()}
+                      </div>
+                      <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all">
+                        {rightBody}
+                      </pre>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
           {/* Composer */}
           <div className="border-t border-[var(--border)] p-2 flex flex-col gap-1.5 shrink-0">
@@ -685,14 +836,18 @@ export function WebSocketClient() {
                 </div>
                 <textarea
                   value={websocketRequest.presetQuery ?? ""}
-                  onChange={(e) => setWebsocketRequest({ presetQuery: e.target.value })}
+                  onChange={(e) =>
+                    setWebsocketRequest({ presetQuery: e.target.value })
+                  }
                   placeholder="subscription { ... }"
                   rows={3}
                   className="input text-xs font-mono resize-none py-1.5"
                 />
                 <textarea
                   value={websocketRequest.presetVariables ?? "{}"}
-                  onChange={(e) => setWebsocketRequest({ presetVariables: e.target.value })}
+                  onChange={(e) =>
+                    setWebsocketRequest({ presetVariables: e.target.value })
+                  }
                   placeholder="{}"
                   rows={2}
                   className="input text-xs font-mono resize-none py-1.5"
@@ -735,7 +890,9 @@ export function WebSocketClient() {
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder={binaryMode ? "Base64-encoded bytes…" : "Message…"}
+                    placeholder={
+                      binaryMode ? "Base64-encoded bytes…" : "Message…"
+                    }
                     disabled={websocketState !== "connected"}
                     rows={2}
                     className="input text-xs font-mono flex-1 resize-none py-1.5"
@@ -769,8 +926,8 @@ export function WebSocketClient() {
             <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-[var(--border)] text-2xs text-amber-700 dark:text-amber-400 shrink-0">
               <AlertTriangle size={11} className="mt-0.5 shrink-0" />
               <span>
-                Sensitive headers (Authorization, Cookie) are sent as plaintext handshake headers.
-                Use the Auth tab for credentials instead.
+                Sensitive headers (Authorization, Cookie) are sent as plaintext
+                handshake headers. Use the Auth tab for credentials instead.
               </span>
             </div>
           )}
@@ -787,11 +944,15 @@ export function WebSocketClient() {
       {innerTab === "auth" && (
         <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Type</label>
+            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+              Type
+            </label>
             <Select
               value={auth.type}
               onChange={(e) =>
-                setWebsocketRequest({ auth: { type: e.target.value as typeof auth.type } })
+                setWebsocketRequest({
+                  auth: { type: e.target.value as typeof auth.type },
+                })
               }
             >
               {["none", "bearer", "basic", "api-key"].map((t) => (
@@ -804,10 +965,14 @@ export function WebSocketClient() {
 
           {auth.type === "bearer" && (
             <div className="flex items-center gap-2">
-              <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Token</label>
+              <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+                Token
+              </label>
               <VariableAutocompleteInput
                 value={auth.token ?? ""}
-                onChange={(v) => setWebsocketRequest({ auth: { ...auth, token: v } })}
+                onChange={(v) =>
+                  setWebsocketRequest({ auth: { ...auth, token: v } })
+                }
                 placeholder="{{token}}"
                 className="input text-xs flex-1"
               />
@@ -817,20 +982,28 @@ export function WebSocketClient() {
           {auth.type === "basic" && (
             <>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Username</label>
+                <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+                  Username
+                </label>
                 <VariableAutocompleteInput
                   value={auth.username ?? ""}
-                  onChange={(v) => setWebsocketRequest({ auth: { ...auth, username: v } })}
+                  onChange={(v) =>
+                    setWebsocketRequest({ auth: { ...auth, username: v } })
+                  }
                   className="input text-xs flex-1"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Password</label>
+                <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+                  Password
+                </label>
                 <input
                   type="password"
                   value={auth.password ?? ""}
                   onChange={(e) =>
-                    setWebsocketRequest({ auth: { ...auth, password: e.target.value } })
+                    setWebsocketRequest({
+                      auth: { ...auth, password: e.target.value },
+                    })
                   }
                   className="input text-xs flex-1"
                 />
@@ -841,18 +1014,26 @@ export function WebSocketClient() {
           {auth.type === "api-key" && (
             <>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Key</label>
+                <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+                  Key
+                </label>
                 <VariableAutocompleteInput
                   value={auth.apiKeyName ?? ""}
-                  onChange={(v) => setWebsocketRequest({ auth: { ...auth, apiKeyName: v } })}
+                  onChange={(v) =>
+                    setWebsocketRequest({ auth: { ...auth, apiKeyName: v } })
+                  }
                   className="input text-xs flex-1"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Value</label>
+                <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+                  Value
+                </label>
                 <VariableAutocompleteInput
                   value={auth.apiKeyValue ?? ""}
-                  onChange={(v) => setWebsocketRequest({ auth: { ...auth, apiKeyValue: v } })}
+                  onChange={(v) =>
+                    setWebsocketRequest({ auth: { ...auth, apiKeyValue: v } })
+                  }
                   className="input text-xs flex-1"
                 />
               </div>
@@ -878,14 +1059,18 @@ export function WebSocketClient() {
               <div className="flex items-center gap-2">
                 <input
                   value={msg.label}
-                  onChange={(e) => updateSavedMessage(msg.id, { label: e.target.value })}
+                  onChange={(e) =>
+                    updateSavedMessage(msg.id, { label: e.target.value })
+                  }
                   placeholder="Label (optional)"
                   className="input text-xs flex-1"
                 />
                 <select
                   value={msg.type}
                   onChange={(e) =>
-                    updateSavedMessage(msg.id, { type: e.target.value as "text" | "binary" })
+                    updateSavedMessage(msg.id, {
+                      type: e.target.value as "text" | "binary",
+                    })
                   }
                   className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-1.5 py-1 text-xs text-[var(--text-1)] outline-none cursor-pointer"
                 >
@@ -908,7 +1093,9 @@ export function WebSocketClient() {
               </div>
               <textarea
                 value={msg.body}
-                onChange={(e) => updateSavedMessage(msg.id, { body: e.target.value })}
+                onChange={(e) =>
+                  updateSavedMessage(msg.id, { body: e.target.value })
+                }
                 placeholder="Message body…"
                 rows={2}
                 className="input text-xs font-mono resize-none py-1.5"
@@ -917,7 +1104,9 @@ export function WebSocketClient() {
                 <input
                   type="checkbox"
                   checked={msg.autoSend}
-                  onChange={(e) => updateSavedMessage(msg.id, { autoSend: e.target.checked })}
+                  onChange={(e) =>
+                    updateSavedMessage(msg.id, { autoSend: e.target.checked })
+                  }
                   className="accent-[var(--accent)]"
                 />
                 Auto-send on connect
@@ -939,22 +1128,24 @@ export function WebSocketClient() {
               </button>
               {showTemplates && (
                 <div className="absolute left-0 top-full mt-1 z-50 bg-[var(--surface-1)] border border-[var(--border)] rounded shadow-lg min-w-48">
-                  {Object.entries(PROTOCOL_TEMPLATES).map(([group, templates]) => (
-                    <div key={group}>
-                      <div className="px-3 py-1 text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wide border-b border-[var(--border)]">
-                        {group}
+                  {Object.entries(PROTOCOL_TEMPLATES).map(
+                    ([group, templates]) => (
+                      <div key={group}>
+                        <div className="px-3 py-1 text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wide border-b border-[var(--border)]">
+                          {group}
+                        </div>
+                        {templates.map((tpl) => (
+                          <button
+                            key={tpl.label}
+                            onClick={() => addFromTemplate(tpl)}
+                            className="w-full text-left px-3 py-1.5 text-xs text-[var(--text-1)] hover:bg-[var(--surface-2)] transition-colors"
+                          >
+                            {tpl.label}
+                          </button>
+                        ))}
                       </div>
-                      {templates.map((tpl) => (
-                        <button
-                          key={tpl.label}
-                          onClick={() => addFromTemplate(tpl)}
-                          className="w-full text-left px-3 py-1.5 text-xs text-[var(--text-1)] hover:bg-[var(--surface-2)] transition-colors"
-                        >
-                          {tpl.label}
-                        </button>
-                      ))}
-                    </div>
-                  ))}
+                    ),
+                  )}
                 </div>
               )}
             </div>
@@ -966,16 +1157,22 @@ export function WebSocketClient() {
       {innerTab === "options" && (
         <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-28 shrink-0">Sub-protocols</label>
+            <label className="text-xs text-[var(--text-2)] w-28 shrink-0">
+              Sub-protocols
+            </label>
             <input
               value={websocketRequest.protocols ?? ""}
-              onChange={(e) => setWebsocketRequest({ protocols: e.target.value })}
+              onChange={(e) =>
+                setWebsocketRequest({ protocols: e.target.value })
+              }
               placeholder="chat, superchat"
               className="input text-xs flex-1"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-28 shrink-0">Origin header</label>
+            <label className="text-xs text-[var(--text-2)] w-28 shrink-0">
+              Origin header
+            </label>
             <input
               value={websocketRequest.origin ?? ""}
               onChange={(e) => setWebsocketRequest({ origin: e.target.value })}
@@ -984,11 +1181,15 @@ export function WebSocketClient() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-28 shrink-0">Timeout (ms)</label>
+            <label className="text-xs text-[var(--text-2)] w-28 shrink-0">
+              Timeout (ms)
+            </label>
             <input
               type="number"
               value={websocketRequest.timeoutMs ?? 30000}
-              onChange={(e) => setWebsocketRequest({ timeoutMs: Number(e.target.value) })}
+              onChange={(e) =>
+                setWebsocketRequest({ timeoutMs: Number(e.target.value) })
+              }
               min={0}
               className="input text-xs w-28"
             />
@@ -997,19 +1198,27 @@ export function WebSocketClient() {
             <input
               type="checkbox"
               checked={websocketRequest.autoReconnect ?? false}
-              onChange={(e) => setWebsocketRequest({ autoReconnect: e.target.checked })}
+              onChange={(e) =>
+                setWebsocketRequest({ autoReconnect: e.target.checked })
+              }
               className="accent-[var(--accent)]"
             />
-            <span className="text-xs text-[var(--text-2)]">Auto-reconnect on disconnect</span>
+            <span className="text-xs text-[var(--text-2)]">
+              Auto-reconnect on disconnect
+            </span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={websocketRequest.ndjsonMode ?? false}
-              onChange={(e) => setWebsocketRequest({ ndjsonMode: e.target.checked })}
+              onChange={(e) =>
+                setWebsocketRequest({ ndjsonMode: e.target.checked })
+              }
               className="accent-[var(--accent)]"
             />
-            <span className="text-xs text-[var(--text-2)]">NDJSON mode (split frames on newlines)</span>
+            <span className="text-xs text-[var(--text-2)]">
+              NDJSON mode (split frames on newlines)
+            </span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -1017,22 +1226,33 @@ export function WebSocketClient() {
               checked={websocketRequest.options?.verifySsl ?? true}
               onChange={(e) =>
                 setWebsocketRequest({
-                  options: { ...websocketRequest.options, verifySsl: e.target.checked },
+                  options: {
+                    ...websocketRequest.options,
+                    verifySsl: e.target.checked,
+                  },
                 })
               }
               className="accent-[var(--accent)]"
             />
-            <span className="text-xs text-[var(--text-2)]">Verify SSL certificate</span>
+            <span className="text-xs text-[var(--text-2)]">
+              Verify SSL certificate
+            </span>
           </label>
 
           {/* TLS client certificate */}
           <div className="border-t border-[var(--border)] pt-3">
-            <p className="text-xs font-medium text-[var(--text-2)] mb-2">TLS Client Certificate</p>
+            <p className="text-xs font-medium text-[var(--text-2)] mb-2">
+              TLS Client Certificate
+            </p>
             <div className="flex flex-col gap-2">
               <div>
-                <label className="text-2xs text-[var(--text-3)] mb-1 block">CA Certificate (PEM)</label>
+                <label className="text-2xs text-[var(--text-3)] mb-1 block">
+                  CA Certificate (PEM)
+                </label>
                 <textarea
-                  value={websocketRequest.options?.tlsClientConfig?.caCertPem ?? ""}
+                  value={
+                    websocketRequest.options?.tlsClientConfig?.caCertPem ?? ""
+                  }
                   onChange={(e) =>
                     setWebsocketRequest({
                       options: {
@@ -1050,9 +1270,14 @@ export function WebSocketClient() {
                 />
               </div>
               <div>
-                <label className="text-2xs text-[var(--text-3)] mb-1 block">Client Certificate (PEM)</label>
+                <label className="text-2xs text-[var(--text-3)] mb-1 block">
+                  Client Certificate (PEM)
+                </label>
                 <textarea
-                  value={websocketRequest.options?.tlsClientConfig?.clientCertPem ?? ""}
+                  value={
+                    websocketRequest.options?.tlsClientConfig?.clientCertPem ??
+                    ""
+                  }
                   onChange={(e) =>
                     setWebsocketRequest({
                       options: {
@@ -1070,9 +1295,14 @@ export function WebSocketClient() {
                 />
               </div>
               <div>
-                <label className="text-2xs text-[var(--text-3)] mb-1 block">Client Key (PEM)</label>
+                <label className="text-2xs text-[var(--text-3)] mb-1 block">
+                  Client Key (PEM)
+                </label>
                 <textarea
-                  value={websocketRequest.options?.tlsClientConfig?.clientKeyPem ?? ""}
+                  value={
+                    websocketRequest.options?.tlsClientConfig?.clientKeyPem ??
+                    ""
+                  }
                   onChange={(e) =>
                     setWebsocketRequest({
                       options: {
@@ -1090,9 +1320,13 @@ export function WebSocketClient() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-2xs text-[var(--text-3)] shrink-0">Server Name (SNI)</label>
+                <label className="text-2xs text-[var(--text-3)] shrink-0">
+                  Server Name (SNI)
+                </label>
                 <input
-                  value={websocketRequest.options?.tlsClientConfig?.serverName ?? ""}
+                  value={
+                    websocketRequest.options?.tlsClientConfig?.serverName ?? ""
+                  }
                   onChange={(e) =>
                     setWebsocketRequest({
                       options: {

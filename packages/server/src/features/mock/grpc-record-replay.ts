@@ -69,7 +69,15 @@ export function registerGrpcRecordReplayRoutes(app: Hono) {
   );
 
   app.get("/api/mock-grpc/fixtures", (c) =>
-    c.json({ fixtures: fixtures.map(({ id, name, address, createdAt, entries }) => ({ id, name, address, createdAt, entryCount: entries.length })) }),
+    c.json({
+      fixtures: fixtures.map(({ id, name, address, createdAt, entries }) => ({
+        id,
+        name,
+        address,
+        createdAt,
+        entryCount: entries.length,
+      })),
+    }),
   );
 
   app.get("/api/mock-grpc/fixtures/:id", (c) => {
@@ -91,7 +99,17 @@ export function registerGrpcRecordReplayRoutes(app: Hono) {
     if (!fixture) return c.json({ error: "Fixture not found" }, 404);
 
     // Group entries by fullMethod, use responses as sequence
-    const routeMap = new Map<string, { responses: Array<{ bodyJson: string; statusCode: number; statusMessage: string; trailers: Array<{ key: string; value: string }> }> }>();
+    const routeMap = new Map<
+      string,
+      {
+        responses: Array<{
+          bodyJson: string;
+          statusCode: number;
+          statusMessage: string;
+          trailers: Array<{ key: string; value: string }>;
+        }>;
+      }
+    >();
     for (const entry of fixture.entries) {
       if (!routeMap.has(entry.fullMethod)) {
         routeMap.set(entry.fullMethod, { responses: [] });

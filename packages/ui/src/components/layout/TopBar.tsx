@@ -3,7 +3,8 @@ import { useStore } from "../../store";
 import { Select } from "../shared/Select";
 
 export function TopBar() {
-  const { environments, activeEnvironmentId, cookies, set, showSettings } = useStore();
+  const { environments, activeEnvironmentId, cookies, set, showSettings } =
+    useStore();
   const activeEnv = environments.find((e) => e.id === activeEnvironmentId);
 
   return (

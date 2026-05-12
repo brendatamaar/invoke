@@ -68,7 +68,9 @@ export function URLBar({ onSend, loading }: URLBarProps) {
         className={`bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-24 outline-none focus:border-[var(--accent)] cursor-pointer ${color}`}
       >
         {METHODS.map((m) => (
-          <option key={m} value={m}>{m}</option>
+          <option key={m} value={m}>
+            {m}
+          </option>
         ))}
       </select>
 
@@ -119,8 +121,16 @@ export function URLBar({ onSend, loading }: URLBarProps) {
 
       {/* Follow-redirects toggle */}
       <button
-        onClick={() => setRequest({ options: { ...request.options, followRedirects: !followRedirects } })}
-        title={followRedirects ? "Following redirects (click to disable)" : "Not following redirects (click to enable)"}
+        onClick={() =>
+          setRequest({
+            options: { ...request.options, followRedirects: !followRedirects },
+          })
+        }
+        title={
+          followRedirects
+            ? "Following redirects (click to disable)"
+            : "Not following redirects (click to enable)"
+        }
         className={`p-1.5 rounded border text-xs transition-colors ${followRedirects ? "border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)]" : "border-amber-500 text-amber-500"}`}
       >
         <GitMerge size={13} />
@@ -137,19 +147,26 @@ export function URLBar({ onSend, loading }: URLBarProps) {
         </button>
         {showSendN && (
           <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--surface)] border border-[var(--border)] rounded shadow-lg p-2 flex items-center gap-2 min-w-36">
-            <span className="text-2xs text-[var(--text-2)] whitespace-nowrap">Send</span>
+            <span className="text-2xs text-[var(--text-2)] whitespace-nowrap">
+              Send
+            </span>
             <input
               type="number"
               min={1}
               max={500}
               value={sendCount}
-              onChange={(e) => setSendCount(Math.max(1, Number(e.target.value)))}
+              onChange={(e) =>
+                setSendCount(Math.max(1, Number(e.target.value)))
+              }
               className="input text-xs py-0.5 w-14"
               autoFocus
             />
             <span className="text-2xs text-[var(--text-2)]">times</span>
             <button
-              onClick={() => { setShowSendN(false); set({ showBatchRunner: true }); }}
+              onClick={() => {
+                setShowSendN(false);
+                set({ showBatchRunner: true });
+              }}
               className="btn btn-primary text-2xs py-0.5 px-2"
             >
               Go

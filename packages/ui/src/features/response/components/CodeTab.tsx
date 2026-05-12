@@ -1,34 +1,46 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
-import { CODE_EXPORT_TARGETS, GRPC_CODE_EXPORT_TARGETS, generateGrpcCodeSnippet, type GrpcCodeExportTarget, type GrpcRequestConfig } from "@invoke/core";
+import {
+  CODE_EXPORT_TARGETS,
+  GRPC_CODE_EXPORT_TARGETS,
+  generateGrpcCodeSnippet,
+  type GrpcCodeExportTarget,
+  type GrpcRequestConfig,
+} from "@invoke/core";
 import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { Select } from "../../../components/shared/Select";
 import { useStore } from "../../../store";
 
 export function CodeTab() {
-  const { codeTarget, codeSnippet, codeLoading, request, grpcRequest, set } = useStore();
+  const { codeTarget, codeSnippet, codeLoading, request, grpcRequest, set } =
+    useStore();
   const [copied, setCopied] = useState(false);
-  const [grpcTarget, setGrpcTarget] = useState<GrpcCodeExportTarget>("grpc-grpcurl");
+  const [grpcTarget, setGrpcTarget] =
+    useState<GrpcCodeExportTarget>("grpc-grpcurl");
   const [grpcSnippet, setGrpcSnippet] = useState("");
 
   const isGraphQL = request.protocol === "graphql";
   const isGrpc = request.protocol === "grpc";
 
   const visibleTargets = CODE_EXPORT_TARGETS.filter((t) =>
-    isGraphQL
-      ? true
-      : !t.target.startsWith("graphql-"),
+    isGraphQL ? true : !t.target.startsWith("graphql-"),
   );
 
   const generateGrpc = (target: GrpcCodeExportTarget) => {
-    const snippet = generateGrpcCodeSnippet(grpcRequest as GrpcRequestConfig, target);
+    const snippet = generateGrpcCodeSnippet(
+      grpcRequest as GrpcRequestConfig,
+      target,
+    );
     setGrpcSnippet(snippet.code);
     setGrpcTarget(target);
   };
 
   // Auto-generate on first render for gRPC
   if (isGrpc && !grpcSnippet && grpcRequest.address) {
-    const snippet = generateGrpcCodeSnippet(grpcRequest as GrpcRequestConfig, grpcTarget);
+    const snippet = generateGrpcCodeSnippet(
+      grpcRequest as GrpcRequestConfig,
+      grpcTarget,
+    );
     setGrpcSnippet(snippet.code);
   }
 
@@ -48,7 +60,9 @@ export function CodeTab() {
           <Select
             size="2xs"
             value={grpcTarget}
-            onChange={(e) => generateGrpc(e.target.value as GrpcCodeExportTarget)}
+            onChange={(e) =>
+              generateGrpc(e.target.value as GrpcCodeExportTarget)
+            }
             wrapperClassName="w-44"
           >
             {GRPC_CODE_EXPORT_TARGETS.map((t) => (
@@ -82,7 +96,11 @@ export function CodeTab() {
           className="ml-auto p-1 text-[var(--text-3)] hover:text-[var(--text-1)] disabled:opacity-40"
           title="Copy to clipboard"
         >
-          {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+          {copied ? (
+            <Check size={13} className="text-emerald-500" />
+          ) : (
+            <Copy size={13} />
+          )}
         </button>
       </div>
       <div className="flex-1 overflow-auto">

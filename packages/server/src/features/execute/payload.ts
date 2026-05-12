@@ -4,9 +4,10 @@ import { tlsClientConfigPayload } from "../shared/payload.js";
 type Header = { key: string; value: string; enabled?: boolean };
 type ExtraHeader = Header & { _soft?: boolean };
 
-function serializeBody(
-  input: ExecuteInput,
-): { body: Buffer; extraHeaders: ExtraHeader[] } {
+function serializeBody(input: ExecuteInput): {
+  body: Buffer;
+  extraHeaders: ExtraHeader[];
+} {
   const { bodyMode, body } = input;
 
   if (bodyMode === "urlencoded") {
@@ -19,8 +20,7 @@ function serializeBody(
       const encoded = pairs
         .filter((p) => p.enabled !== false && p.key)
         .map(
-          (p) =>
-            `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`,
+          (p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`,
         )
         .join("&");
       return {
@@ -83,7 +83,10 @@ function serializeBody(
       return {
         body: Buffer.concat(parts),
         extraHeaders: [
-          { key: "Content-Type", value: `multipart/form-data; boundary=${boundary}` },
+          {
+            key: "Content-Type",
+            value: `multipart/form-data; boundary=${boundary}`,
+          },
         ],
       };
     } catch {
@@ -169,10 +172,7 @@ function applyAuthIfNeeded(
         ).toString("base64")}`,
       });
     }
-  } else if (
-    (auth.type === "bearer" || auth.type === "oauth2") &&
-    auth.token
-  ) {
+  } else if ((auth.type === "bearer" || auth.type === "oauth2") && auth.token) {
     if (!headerKeySet.has("authorization")) {
       newHeaders.push({ key: "Authorization", value: `Bearer ${auth.token}` });
     }
@@ -185,9 +185,7 @@ function applyAuthIfNeeded(
           url = u.toString();
         }
       } catch {
-        if (
-          !url.includes(`${encodeURIComponent(auth.apiKeyName)}=`)
-        ) {
+        if (!url.includes(`${encodeURIComponent(auth.apiKeyName)}=`)) {
           url +=
             (url.includes("?") ? "&" : "?") +
             `${encodeURIComponent(auth.apiKeyName)}=${encodeURIComponent(auth.apiKeyValue)}`;
@@ -223,9 +221,15 @@ export function executePayload(input: ExecuteInput) {
   // Inject connect/read timeout as stripped internal headers (Go executor reads + removes them)
   const transportHeaders = [...finalHeaders];
   if (input.connectTimeoutMs)
-    transportHeaders.push({ key: "X-Invoke-Connect-Timeout-Ms", value: String(input.connectTimeoutMs) });
+    transportHeaders.push({
+      key: "X-Invoke-Connect-Timeout-Ms",
+      value: String(input.connectTimeoutMs),
+    });
   if (input.readTimeoutMs)
-    transportHeaders.push({ key: "X-Invoke-Read-Timeout-Ms", value: String(input.readTimeoutMs) });
+    transportHeaders.push({
+      key: "X-Invoke-Read-Timeout-Ms",
+      value: String(input.readTimeoutMs),
+    });
   if (input.allowPrivateAddresses)
     transportHeaders.push({ key: "X-Invoke-Allow-Private", value: "true" });
 

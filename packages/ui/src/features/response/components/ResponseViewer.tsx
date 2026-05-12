@@ -2,7 +2,11 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useStore, coreStore } from "../../../store";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
-import type { AssertionDraft, ExtractionDraft, ResponseTab } from "../../../types";
+import type {
+  AssertionDraft,
+  ExtractionDraft,
+  ResponseTab,
+} from "../../../types";
 import {
   AlertCircle,
   Clock,
@@ -33,7 +37,11 @@ import {
 import { fmt, fmtSize } from "./responseFormatting";
 import { TimingTab } from "./TimingTab";
 import { TLSTab } from "./TLSTab";
-import { GraphQLErrorsTab, parseGraphQLErrors, parseGraphQLCost } from "./GraphQLErrorsTab";
+import {
+  GraphQLErrorsTab,
+  parseGraphQLErrors,
+  parseGraphQLCost,
+} from "./GraphQLErrorsTab";
 import { DeferredTab } from "./DeferredTab";
 
 const STATIC_TABS: { id: ResponseTab; label: string; icon?: ReactNode }[] = [
@@ -69,8 +77,12 @@ export function ResponseViewer() {
   const isGraphQL = request.protocol === "graphql";
   const graphqlErrors = response ? parseGraphQLErrors(response.body) : [];
   const hasGraphQLErrors = graphqlErrors.length > 0;
-  const { cost: gqlCost, complexity: gqlComplexity } = response ? parseGraphQLCost(response.body) : { cost: null, complexity: null };
-  const hasGraphQLTab = isGraphQL && (hasGraphQLErrors || gqlCost !== null || gqlComplexity !== null);
+  const { cost: gqlCost, complexity: gqlComplexity } = response
+    ? parseGraphQLCost(response.body)
+    : { cost: null, complexity: null };
+  const hasGraphQLTab =
+    isGraphQL &&
+    (hasGraphQLErrors || gqlCost !== null || gqlComplexity !== null);
 
   const [overlay, setOverlay] = useState<
     | { kind: "assertion"; draft: AssertionDraft }
@@ -239,24 +251,37 @@ export function ResponseViewer() {
           )}
           {(retryAttempts ?? 0) > 0 && (
             <span className="text-2xs text-amber-600 flex items-center gap-1">
-              <RefreshCw size={11} /> {retryAttempts} retr{retryAttempts === 1 ? "y" : "ies"}
+              <RefreshCw size={11} /> {retryAttempts} retr
+              {retryAttempts === 1 ? "y" : "ies"}
             </span>
           )}
           {gqlComplexity !== null && (
-            <span className="text-2xs text-amber-600 flex items-center gap-1" title="Query complexity">
+            <span
+              className="text-2xs text-amber-600 flex items-center gap-1"
+              title="Query complexity"
+            >
               ⚡ {gqlComplexity}
             </span>
           )}
           {gqlCost !== null && typeof gqlCost === "number" && (
-            <span className="text-2xs text-amber-600 flex items-center gap-1" title="Query cost">
+            <span
+              className="text-2xs text-amber-600 flex items-center gap-1"
+              title="Query cost"
+            >
               ⚡ {gqlCost}
             </span>
           )}
-          {gqlCost !== null && typeof gqlCost === "object" && gqlCost.requestedQueryCost != null && (
-            <span className="text-2xs text-amber-600 flex items-center gap-1" title={`Max: ${gqlCost.maximumAvailable ?? "?"}`}>
-              ⚡ {gqlCost.requestedQueryCost}/{gqlCost.maximumAvailable ?? "?"}
-            </span>
-          )}
+          {gqlCost !== null &&
+            typeof gqlCost === "object" &&
+            gqlCost.requestedQueryCost != null && (
+              <span
+                className="text-2xs text-amber-600 flex items-center gap-1"
+                title={`Max: ${gqlCost.maximumAvailable ?? "?"}`}
+              >
+                ⚡ {gqlCost.requestedQueryCost}/
+                {gqlCost.maximumAvailable ?? "?"}
+              </span>
+            )}
           {totalCount > 0 && (
             <span
               className={`text-2xs flex items-center gap-1 ${passedCount === totalCount ? "text-emerald-600" : "text-red-600"}`}
@@ -285,7 +310,11 @@ export function ResponseViewer() {
             <button
               onClick={() => {
                 const [latest, previous] = history;
-                set({ diffLeftId: previous.id, diffRightId: latest.id, showDiffModal: true });
+                set({
+                  diffLeftId: previous.id,
+                  diffRightId: latest.id,
+                  showDiffModal: true,
+                });
               }}
               className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
               title="Diff last two history entries"
@@ -329,7 +358,9 @@ export function ResponseViewer() {
             onClick={() => set({ responseTab: "graphql-errors" })}
             className={`tab-btn flex items-center gap-1 ${responseTab === "graphql-errors" ? "active" : ""}`}
           >
-            {hasGraphQLErrors ? <AlertCircle size={11} className="text-red-500" /> : null}
+            {hasGraphQLErrors ? (
+              <AlertCircle size={11} className="text-red-500" />
+            ) : null}
             GraphQL
             {hasGraphQLErrors && (
               <span className="ml-0.5 text-2xs px-1 rounded bg-red-100 text-red-700">

@@ -9,7 +9,9 @@ const NODE_H = 72;
 const NODE_GAP_Y = 56;
 const CANVAS_PAD = 40;
 
-function defaultPositions(steps: FlowStep[]): Record<string, { x: number; y: number }> {
+function defaultPositions(
+  steps: FlowStep[],
+): Record<string, { x: number; y: number }> {
   const pos: Record<string, { x: number; y: number }> = {};
   steps.forEach((step, i) => {
     pos[step.id] = { x: CANVAS_PAD, y: CANVAS_PAD + i * (NODE_H + NODE_GAP_Y) };
@@ -30,9 +32,9 @@ export function FlowCanvas({
   onSelect: (i: number) => void;
   onAddStep: (type: FlowStep["type"]) => void;
 }) {
-  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>(() =>
-    defaultPositions(steps),
-  );
+  const [positions, setPositions] = useState<
+    Record<string, { x: number; y: number }>
+  >(() => defaultPositions(steps));
   const [addingAt, setAddingAt] = useState(false);
   const dragging = useRef<{ id: string; ox: number; oy: number } | null>(null);
 
@@ -110,7 +112,14 @@ export function FlowCanvas({
         }}
       >
         <defs>
-          <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <marker
+            id="arrow"
+            markerWidth="6"
+            markerHeight="6"
+            refX="5"
+            refY="3"
+            orient="auto"
+          >
             <path d="M0,0 L0,6 L6,3 z" fill="var(--border-strong)" />
           </marker>
         </defs>
@@ -137,10 +146,18 @@ export function FlowCanvas({
         })}
       </svg>
 
-      <div style={{ position: "relative", width: canvasWidth, height: canvasHeight }}>
+      <div
+        style={{
+          position: "relative",
+          width: canvasWidth,
+          height: canvasHeight,
+        }}
+      >
         {steps.map((step, i) => {
           const pos = positions[step.id] ?? { x: CANVAS_PAD, y: CANVAS_PAD };
-          const stepResult = flowResult?.steps.find((r) => r.stepId === step.id);
+          const stepResult = flowResult?.steps.find(
+            (r) => r.stepId === step.id,
+          );
           const isSelected = selectedIndex === i;
           const statusColor = stepResult
             ? stepResult.status === "passed"
@@ -167,13 +184,18 @@ export function FlowCanvas({
               onClick={() => onSelect(i)}
             >
               <div className="flex items-center gap-1.5">
-                <div className={`w-2 h-2 rounded-full shrink-0 ${STEP_COLORS[step.type]}`} />
+                <div
+                  className={`w-2 h-2 rounded-full shrink-0 ${STEP_COLORS[step.type]}`}
+                />
                 <span className="text-2xs text-[var(--text-3)] uppercase tracking-wide">
                   {step.type}
                 </span>
                 {stepResult &&
                   (stepResult.status === "passed" ? (
-                    <CheckCircle2 size={10} className="ml-auto text-emerald-500" />
+                    <CheckCircle2
+                      size={10}
+                      className="ml-auto text-emerald-500"
+                    />
                   ) : (
                     <XCircle size={10} className="ml-auto text-red-500" />
                   ))}
@@ -187,7 +209,9 @@ export function FlowCanvas({
                 </div>
               )}
               {step.type === "delay" && (
-                <div className="text-2xs text-[var(--text-3)]">{step.delayMs}ms</div>
+                <div className="text-2xs text-[var(--text-3)]">
+                  {step.delayMs}ms
+                </div>
               )}
               {stepResult?.response?.status && (
                 <div className="flex items-center gap-1 text-2xs text-[var(--text-3)]">
@@ -200,7 +224,13 @@ export function FlowCanvas({
           );
         })}
 
-        <div style={{ position: "absolute", left: CANVAS_PAD, top: canvasHeight - 52 }}>
+        <div
+          style={{
+            position: "absolute",
+            left: CANVAS_PAD,
+            top: canvasHeight - 52,
+          }}
+        >
           {addingAt ? (
             <div className="flex gap-1">
               {FLOW_STEP_TYPES.map((t) => (
@@ -212,7 +242,9 @@ export function FlowCanvas({
                   }}
                   className="flex items-center gap-1 text-2xs px-2 py-1 rounded bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-2)]"
                 >
-                  <div className={`w-1.5 h-1.5 rounded-full ${STEP_COLORS[t]}`} />
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${STEP_COLORS[t]}`}
+                  />
                   {t}
                 </button>
               ))}

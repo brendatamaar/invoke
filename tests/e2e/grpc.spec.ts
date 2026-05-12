@@ -54,9 +54,12 @@ test("reflects against the executor gRPC server", async ({ page }) => {
 
   // Disable TLS since executor runs plaintext locally
   // The TLS toggle should be accessible in the options or inline
-  await page.getByTestId("grpc-tls-toggle")?.click().catch(() => {
-    // If no dedicated toggle, try the options tab
-  });
+  await page
+    .getByTestId("grpc-tls-toggle")
+    ?.click()
+    .catch(() => {
+      // If no dedicated toggle, try the options tab
+    });
 
   await page.getByRole("button", { name: /reflect/i }).click();
 
@@ -94,7 +97,12 @@ test("mock gRPC server serves canned responses", async ({ page }) => {
         {
           fullMethod: "test.Service/Hello",
           responses: [
-            { bodyJson: '{"message":"hello from mock"}', statusCode: 0, statusMessage: "OK", trailers: [] },
+            {
+              bodyJson: '{"message":"hello from mock"}',
+              statusCode: 0,
+              statusMessage: "OK",
+              trailers: [],
+            },
           ],
           enabled: true,
         },
@@ -125,17 +133,25 @@ test("mock gRPC server returns UNIMPLEMENTED for unknown methods", async ({
   expect(body.error).toContain("No mock route");
 });
 
-test("mock gRPC server cycles through response sequences", async ({
-  page,
-}) => {
+test("mock gRPC server cycles through response sequences", async ({ page }) => {
   await page.request.put("/api/mock-grpc/routes", {
     data: {
       routes: [
         {
           fullMethod: "test.Service/Seq",
           responses: [
-            { bodyJson: '{"n":1}', statusCode: 0, statusMessage: "OK", trailers: [] },
-            { bodyJson: '{"n":2}', statusCode: 0, statusMessage: "OK", trailers: [] },
+            {
+              bodyJson: '{"n":1}',
+              statusCode: 0,
+              statusMessage: "OK",
+              trailers: [],
+            },
+            {
+              bodyJson: '{"n":2}',
+              statusCode: 0,
+              statusMessage: "OK",
+              trailers: [],
+            },
           ],
           enabled: true,
         },

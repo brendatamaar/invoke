@@ -1,4 +1,10 @@
-import type { Collection, Environment, Flow, Folder, SavedRequest } from "../types";
+import type {
+  Collection,
+  Environment,
+  Flow,
+  Folder,
+  SavedRequest,
+} from "../types";
 import type { InvokeDB } from "./db";
 
 export async function getStorageStats(

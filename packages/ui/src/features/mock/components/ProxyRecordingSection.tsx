@@ -1,20 +1,38 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CheckSquare, RefreshCw, Square, Trash2, Download, Copy, Check, HelpCircle } from "lucide-react";
+import {
+  CheckSquare,
+  RefreshCw,
+  Square,
+  Trash2,
+  Download,
+  Copy,
+  Check,
+  HelpCircle,
+} from "lucide-react";
 import type { ProxyRecord } from "../../../types";
 import { useStore } from "../../../store";
-import { clearProxyRecords, loadProxyRecords, proxyRecordsToMocks } from "../../proxy/api";
+import {
+  clearProxyRecords,
+  loadProxyRecords,
+  proxyRecordsToMocks,
+} from "../../proxy/api";
 import { formatTime } from "./mockRouteUtils";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 
 function StatusChip({ status }: { status: number }) {
   const color =
-    status >= 500 ? "text-orange-600 bg-orange-50" :
-    status >= 400 ? "text-red-600 bg-red-50" :
-    status >= 300 ? "text-amber-600 bg-amber-50" :
-    "text-emerald-700 bg-emerald-50";
+    status >= 500
+      ? "text-orange-600 bg-orange-50"
+      : status >= 400
+        ? "text-red-600 bg-red-50"
+        : status >= 300
+          ? "text-amber-600 bg-amber-50"
+          : "text-emerald-700 bg-emerald-50";
   return (
-    <span className={`inline-block rounded font-mono font-semibold text-2xs px-1.5 py-px leading-none ${color}`}>
+    <span
+      className={`inline-block rounded font-mono font-semibold text-2xs px-1.5 py-px leading-none ${color}`}
+    >
       {status}
     </span>
   );
@@ -29,7 +47,8 @@ function ProxyUrlTooltip({ url }: { url: string }) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (btnRef.current && !btnRef.current.contains(e.target as Node)) setOpen(false);
+      if (btnRef.current && !btnRef.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -59,23 +78,31 @@ function ProxyUrlTooltip({ url }: { url: string }) {
       >
         <HelpCircle size={11} />
       </button>
-      {open && createPortal(
-        <div
-          className="fixed z-50 w-72 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg p-3"
-          style={{ top: pos.top, left: pos.left }}
-        >
-          <p className="text-2xs text-[var(--text-2)] mb-2">
-            Point your HTTP client at this URL. Invoke will forward the request and record it here so you can import it as a mock.
-          </p>
-          <div className="flex items-center gap-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1">
-            <code className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate">{url}</code>
-            <button onClick={copy} className="p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] shrink-0" title="Copy">
-              {copied ? <Check size={11} /> : <Copy size={11} />}
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
+      {open &&
+        createPortal(
+          <div
+            className="fixed z-50 w-72 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg p-3"
+            style={{ top: pos.top, left: pos.left }}
+          >
+            <p className="text-2xs text-[var(--text-2)] mb-2">
+              Point your HTTP client at this URL. Invoke will forward the
+              request and record it here so you can import it as a mock.
+            </p>
+            <div className="flex items-center gap-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1">
+              <code className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate">
+                {url}
+              </code>
+              <button
+                onClick={copy}
+                className="p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] shrink-0"
+                title="Copy"
+              >
+                {copied ? <Check size={11} /> : <Copy size={11} />}
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
@@ -100,7 +127,9 @@ export function ProxyRecordingSection() {
     }
   }, [addToast]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const clearAll = async () => {
     await clearProxyRecords();
@@ -113,7 +142,10 @@ export function ProxyRecordingSection() {
       const ids = selected.size > 0 ? [...selected] : undefined;
       const result = await proxyRecordsToMocks(ids);
       set({ mockRoutes: result.routes });
-      addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`);
+      addToast(
+        "success",
+        `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`,
+      );
       setSelected(new Set());
     } catch (e) {
       addToast("error", String(e));
@@ -162,7 +194,11 @@ export function ProxyRecordingSection() {
             <button
               onClick={importSelected}
               className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
-              title={selected.size > 0 ? "Import selected as mocks" : "Import all as mocks"}
+              title={
+                selected.size > 0
+                  ? "Import selected as mocks"
+                  : "Import all as mocks"
+              }
             >
               <Download size={11} />
               {selected.size > 0 ? `Import (${selected.size})` : "Import all"}
@@ -190,7 +226,10 @@ export function ProxyRecordingSection() {
         <>
           {/* List header with select-all */}
           <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] bg-[var(--surface-2)]">
-            <button onClick={toggleAll} className="text-[var(--text-3)] hover:text-[var(--accent)] shrink-0">
+            <button
+              onClick={toggleAll}
+              className="text-[var(--text-3)] hover:text-[var(--accent)] shrink-0"
+            >
               {allSelected ? (
                 <CheckSquare size={11} className="text-[var(--accent)]" />
               ) : someSelected ? (
@@ -199,10 +238,16 @@ export function ProxyRecordingSection() {
                 <Square size={11} />
               )}
             </button>
-            <span className="text-2xs text-[var(--text-3)] w-14 shrink-0">Method</span>
+            <span className="text-2xs text-[var(--text-3)] w-14 shrink-0">
+              Method
+            </span>
             <span className="flex-1 text-2xs text-[var(--text-3)]">Path</span>
-            <span className="text-2xs text-[var(--text-3)] w-10 shrink-0 text-right">Status</span>
-            <span className="text-2xs text-[var(--text-3)] w-16 shrink-0 text-right">Time</span>
+            <span className="text-2xs text-[var(--text-3)] w-10 shrink-0 text-right">
+              Status
+            </span>
+            <span className="text-2xs text-[var(--text-3)] w-16 shrink-0 text-right">
+              Time
+            </span>
           </div>
 
           {records.map((r) => (
@@ -210,21 +255,31 @@ export function ProxyRecordingSection() {
               key={r.id}
               onClick={() => toggleSelect(r.id)}
               className={`flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors ${
-                selected.has(r.id) ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--surface-2)]"
+                selected.has(r.id)
+                  ? "bg-[var(--accent-subtle)]"
+                  : "hover:bg-[var(--surface-2)]"
               }`}
             >
               <button
-                onClick={(e) => { e.stopPropagation(); toggleSelect(r.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSelect(r.id);
+                }}
                 className="shrink-0 text-[var(--text-3)]"
               >
-                {selected.has(r.id)
-                  ? <CheckSquare size={11} className="text-[var(--accent)]" />
-                  : <Square size={11} />}
+                {selected.has(r.id) ? (
+                  <CheckSquare size={11} className="text-[var(--accent)]" />
+                ) : (
+                  <Square size={11} />
+                )}
               </button>
               <span className="w-14 shrink-0">
                 <MethodBadge method={r.method} />
               </span>
-              <span className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate" title={r.path}>
+              <span
+                className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate"
+                title={r.path}
+              >
                 {r.path}
               </span>
               <span className="w-10 shrink-0 flex justify-end">

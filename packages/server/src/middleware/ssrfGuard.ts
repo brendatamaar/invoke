@@ -15,14 +15,14 @@ const PRIVATE_PATTERNS: RegExp[] = [
   /^10\.\d+\.\d+\.\d+$/,
   /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/,
   /^192\.168\.\d+\.\d+$/,
-  /^169\.254\.\d+\.\d+$/,  // link-local + AWS IMDS (169.254.169.254)
-  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+$/,  // CGNAT
+  /^169\.254\.\d+\.\d+$/, // link-local + AWS IMDS (169.254.169.254)
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+$/, // CGNAT
   /^0\.\d+\.\d+\.\d+$/,
   /^::1$/,
   /^0\.0\.0\.0$/,
-  /^fc[0-9a-f]{2}:/i,  // IPv6 unique-local fc00::/7
-  /^fd[0-9a-f]{2}:/i,  // IPv6 unique-local fd00::/8
-  /^fe80:/i,            // IPv6 link-local
+  /^fc[0-9a-f]{2}:/i, // IPv6 unique-local fc00::/7
+  /^fd[0-9a-f]{2}:/i, // IPv6 unique-local fd00::/8
+  /^fe80:/i, // IPv6 link-local
 ];
 
 const ALLOWED_SCHEMES = new Set(["ws:", "wss:", "http:", "https:"]);

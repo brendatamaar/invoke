@@ -55,10 +55,16 @@ function HistoryItem({
             autoFocus
             value={labelDraft}
             onChange={(e) => setLabelDraft(e.target.value)}
-            onBlur={() => { setEditingLabel(false); onLabel(entry, labelDraft.trim()); }}
+            onBlur={() => {
+              setEditingLabel(false);
+              onLabel(entry, labelDraft.trim());
+            }}
             onKeyDown={(e) => {
               e.stopPropagation();
-              if (e.key === "Enter") { setEditingLabel(false); onLabel(entry, labelDraft.trim()); }
+              if (e.key === "Enter") {
+                setEditingLabel(false);
+                onLabel(entry, labelDraft.trim());
+              }
               if (e.key === "Escape") setEditingLabel(false);
             }}
             onClick={(e) => e.stopPropagation()}
@@ -66,7 +72,9 @@ function HistoryItem({
             className="input text-xs py-0 px-1 w-32 mt-0.5"
           />
         ) : entry.label ? (
-          <span className="text-2xs text-[var(--accent)] truncate">{entry.label}</span>
+          <span className="text-2xs text-[var(--accent)] truncate">
+            {entry.label}
+          </span>
         ) : null}
       </div>
       <StatusBadge status={entry.response?.status ?? 0} />
@@ -88,23 +96,36 @@ function HistoryItem({
             <CollectionMenuItem
               icon={<Tag size={12} />}
               label={entry.label ? "Edit Label" : "Add Label"}
-              onClick={() => { setMenuOpen(false); setLabelDraft(entry.label ?? ""); setEditingLabel(true); }}
+              onClick={() => {
+                setMenuOpen(false);
+                setLabelDraft(entry.label ?? "");
+                setEditingLabel(true);
+              }}
             />
             <CollectionMenuItem
               icon={<Cpu size={12} />}
               label="Create Mock"
-              onClick={() => { setMenuOpen(false); onCreateMock(entry); }}
+              onClick={() => {
+                setMenuOpen(false);
+                onCreateMock(entry);
+              }}
             />
             <CollectionMenuItem
               icon={entry.pinned ? <PinOff size={12} /> : <Pin size={12} />}
               label={entry.pinned ? "Unpin" : "Pin"}
-              onClick={() => { setMenuOpen(false); onPin(entry, !entry.pinned); }}
+              onClick={() => {
+                setMenuOpen(false);
+                onPin(entry, !entry.pinned);
+              }}
             />
             <div className="h-px bg-[var(--border)] my-1" />
             <CollectionMenuItem
               icon={<Trash2 size={12} />}
               label="Delete"
-              onClick={() => { setMenuOpen(false); onDelete(entry); }}
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete(entry);
+              }}
               danger
             />
           </div>
@@ -230,9 +251,7 @@ export function HistoryPanel() {
     try {
       await coreStore.pinHistoryEntry(entry.id, pinned);
       set({
-        history: history.map((h) =>
-          h.id === entry.id ? { ...h, pinned } : h,
-        ),
+        history: history.map((h) => (h.id === entry.id ? { ...h, pinned } : h)),
       });
     } catch (e) {
       addToast("error", String(e));

@@ -63,9 +63,7 @@ export function AssertionsPanel() {
           <span className="w-28 shrink-0 text-2xs text-[var(--text-3)]">
             Matcher
           </span>
-          <span className="flex-1 text-2xs text-[var(--text-3)]">
-            Expected
-          </span>
+          <span className="flex-1 text-2xs text-[var(--text-3)]">Expected</span>
         </div>
       )}
       {assertionRules.map((rule, index) => {
@@ -264,9 +262,9 @@ export function RetryPanel() {
   };
 
   const update = (patch: Partial<RetryPolicy>) =>
-    setRequest({ retryPolicy: { ...policy, ...patch } } as Partial<
-      RequestDraft
-    >);
+    setRequest({
+      retryPolicy: { ...policy, ...patch },
+    } as Partial<RequestDraft>);
 
   const enabled = policy.maxRetries > 0;
 
@@ -328,9 +326,7 @@ export function RetryPanel() {
                 <input
                   type="checkbox"
                   checked={policy.retryOnTimeout}
-                  onChange={(e) =>
-                    update({ retryOnTimeout: e.target.checked })
-                  }
+                  onChange={(e) => update({ retryOnTimeout: e.target.checked })}
                   className="accent-[var(--accent)]"
                 />
                 Timeout

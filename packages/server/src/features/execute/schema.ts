@@ -7,7 +7,15 @@ export const executeSchema = z.object({
   headers: z.array(headerSchema).default([]),
   body: z.string().default(""),
   bodyMode: z
-    .enum(["none", "json", "form-data", "urlencoded", "raw", "file", "graphql-multipart"])
+    .enum([
+      "none",
+      "json",
+      "form-data",
+      "urlencoded",
+      "raw",
+      "file",
+      "graphql-multipart",
+    ])
     .optional(),
   auth: z
     .object({

@@ -78,7 +78,9 @@ export const useStore = create<AppState>((set, get) => ({
     set((s) => {
       const remaining = s.wsSessions.filter((sess) => sess.id !== id);
       const nextSession =
-        remaining.length > 0 ? remaining[remaining.length - 1] : makeWsSession("Session 1");
+        remaining.length > 0
+          ? remaining[remaining.length - 1]
+          : makeWsSession("Session 1");
       return {
         wsSessions: remaining.length > 0 ? remaining : [nextSession],
         activeWsSessionId:

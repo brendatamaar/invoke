@@ -1,7 +1,9 @@
 import { emptyGrpcRequest } from "../request";
 import type { GrpcRequestConfig } from "../types";
 
-export function parseGrpcurl(command: string): Partial<GrpcRequestConfig> | null {
+export function parseGrpcurl(
+  command: string,
+): Partial<GrpcRequestConfig> | null {
   const tokens =
     command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map(stripQuotes) ?? [];
   if (!tokens.length || tokens[0] !== "grpcurl") return null;
@@ -21,17 +23,29 @@ export function parseGrpcurl(command: string): Partial<GrpcRequestConfig> | null
       const raw = tokens[++i] ?? "";
       const [key, ...rest] = raw.split(":");
       if (key.trim()) {
-        request.metadata.push({ key: key.trim(), value: rest.join(":").trim(), enabled: true });
+        request.metadata.push({
+          key: key.trim(),
+          value: rest.join(":").trim(),
+          enabled: true,
+        });
       }
     } else if (token === "-authority") {
-      request.metadata.push({ key: ":authority", value: tokens[++i] ?? "", enabled: true });
+      request.metadata.push({
+        key: ":authority",
+        value: tokens[++i] ?? "",
+        enabled: true,
+      });
     } else if (token === "-connect-timeout") {
       const secs = parseFloat(tokens[++i] ?? "30");
       request.timeoutMs = Math.round(secs * 1000);
     } else if (token === "-max-time") {
       const secs = parseFloat(tokens[++i] ?? "30");
       request.timeoutMs = Math.round(secs * 1000);
-    } else if (token === "-import-path" || token === "-proto" || token === "-protoset") {
+    } else if (
+      token === "-import-path" ||
+      token === "-proto" ||
+      token === "-protoset"
+    ) {
       i += 1; // skip the path value, not applicable to in-app config
     } else if (!token.startsWith("-")) {
       // Positional args: first is address, second is full method

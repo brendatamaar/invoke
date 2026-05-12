@@ -1,5 +1,19 @@
-import { emptyGrpcRequest, emptyRequest, id, toRequestConfig } from "../request";
-import type { AuthConfig, BodyMode, Collection, Environment, Folder, GrpcRequestConfig, HttpMethod, SavedRequest } from "../types";
+import {
+  emptyGrpcRequest,
+  emptyRequest,
+  id,
+  toRequestConfig,
+} from "../request";
+import type {
+  AuthConfig,
+  BodyMode,
+  Collection,
+  Environment,
+  Folder,
+  GrpcRequestConfig,
+  HttpMethod,
+  SavedRequest,
+} from "../types";
 import { recordToKeyValues } from "./shared";
 
 export function importInsomniaExport(doc: any) {
@@ -41,7 +55,10 @@ export function importInsomniaExport(doc: any) {
   }
 
   const requests: SavedRequest[] = resources
-    .filter((item: any) => item?._type === "request" || item?._type === "grpc_request")
+    .filter(
+      (item: any) =>
+        item?._type === "request" || item?._type === "grpc_request",
+    )
     .map((item: any, index: number) => {
       if (item._type === "grpc_request") {
         return insomniaGrpcRequest(item, collection.id, folderMap, now + index);
@@ -134,7 +151,6 @@ function insomniaAuth(authentication: any): AuthConfig {
   return { type: "none" };
 }
 
-
 function insomniaGrpcRequest(
   item: any,
   collectionId: string,
@@ -166,9 +182,10 @@ function insomniaGrpcRequest(
   return {
     id: id(),
     collectionId,
-    folderId: item.parentId && folderMap.has(item.parentId)
-      ? folderMap.get(item.parentId)!.id
-      : null,
+    folderId:
+      item.parentId && folderMap.has(item.parentId)
+        ? folderMap.get(item.parentId)!.id
+        : null,
     name: item.name ?? `${service}/${method}`,
     protocol: "grpc",
     request,

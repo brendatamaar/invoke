@@ -1,14 +1,35 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { BookmarkPlus, CheckCircle2, Send, Trash2, XCircle, ArrowLeftRight, Gauge } from "lucide-react";
+import {
+  BookmarkPlus,
+  CheckCircle2,
+  Send,
+  Trash2,
+  XCircle,
+  ArrowLeftRight,
+  Gauge,
+} from "lucide-react";
 import { compareResponses } from "@invoke/core";
 import { useStore } from "../../../store";
 import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { KeyValueEditor } from "../../../components/shared/KeyValueEditor";
 import { Select } from "../../../components/shared/Select";
 import { grpcStreamSend } from "../api";
-import type { AuthConfig, GrpcExecuteResponse, GrpcMethodInfo, GrpcSavedMessage, KeyValue } from "@invoke/core";
+import type {
+  AuthConfig,
+  GrpcExecuteResponse,
+  GrpcMethodInfo,
+  GrpcSavedMessage,
+  KeyValue,
+} from "@invoke/core";
 
-type GrpcTab = "message" | "metadata" | "auth" | "scripts" | "options" | "saved" | "stress";
+type GrpcTab =
+  | "message"
+  | "metadata"
+  | "auth"
+  | "scripts"
+  | "options"
+  | "saved"
+  | "stress";
 
 function formatGrpcTimeout(ms: number): string {
   if (ms <= 0) return "0m";
@@ -30,10 +51,28 @@ const TABS: { id: GrpcTab; label: string }[] = [
   { id: "stress", label: "Stress" },
 ];
 
-function streamBadge(method: { serverStreaming?: boolean; clientStreaming?: boolean }) {
-  if (method.serverStreaming && method.clientStreaming) return <span className="text-2xs px-1 rounded bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">bidi</span>;
-  if (method.serverStreaming) return <span className="text-2xs px-1 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">server-stream</span>;
-  if (method.clientStreaming) return <span className="text-2xs px-1 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">client-stream</span>;
+function streamBadge(method: {
+  serverStreaming?: boolean;
+  clientStreaming?: boolean;
+}) {
+  if (method.serverStreaming && method.clientStreaming)
+    return (
+      <span className="text-2xs px-1 rounded bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+        bidi
+      </span>
+    );
+  if (method.serverStreaming)
+    return (
+      <span className="text-2xs px-1 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+        server-stream
+      </span>
+    );
+  if (method.clientStreaming)
+    return (
+      <span className="text-2xs px-1 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+        client-stream
+      </span>
+    );
   return null;
 }
 
@@ -62,9 +101,10 @@ function GrpcMethodPicker({
       )
     : methods;
 
-  const selectedLabel = selectedService && selectedMethod
-    ? `${selectedService} / ${selectedMethod}`
-    : "Select method…";
+  const selectedLabel =
+    selectedService && selectedMethod
+      ? `${selectedService} / ${selectedMethod}`
+      : "Select method…";
 
   const choose = (m: GrpcMethodInfo) => {
     onSelect(m.service, m.method);
@@ -74,10 +114,18 @@ function GrpcMethodPicker({
   };
 
   const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown") { e.preventDefault(); setCursor((c) => Math.min(c + 1, filtered.length - 1)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)); }
-    else if (e.key === "Enter") { if (filtered[cursor]) choose(filtered[cursor]); }
-    else if (e.key === "Escape") { setOpen(false); setQuery(""); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setCursor((c) => Math.min(c + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setCursor((c) => Math.max(c - 1, 0));
+    } else if (e.key === "Enter") {
+      if (filtered[cursor]) choose(filtered[cursor]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      setQuery("");
+    }
   };
 
   return (
@@ -90,7 +138,10 @@ function GrpcMethodPicker({
             className="w-full bg-[var(--surface-2)] border border-[var(--accent)] rounded px-2 py-1 text-xs outline-none"
             placeholder="Filter methods…"
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setCursor(0);
+            }}
             onKeyDown={onKey}
             onBlur={(e) => {
               if (!listRef.current?.contains(e.relatedTarget as Node)) {
@@ -117,12 +168,17 @@ function GrpcMethodPicker({
                 key={`${m.service}/${m.method}`}
                 tabIndex={-1}
                 className={`w-full text-left px-3 py-1.5 text-2xs hover:bg-[var(--surface-2)] flex items-center justify-between gap-2 ${i === cursor ? "bg-[var(--surface-2)]" : ""}`}
-                onMouseDown={(e) => { e.preventDefault(); choose(m); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  choose(m);
+                }}
                 onMouseEnter={() => setCursor(i)}
               >
                 <span className="truncate">
                   <span className="text-[var(--text-3)]">{m.service} / </span>
-                  <span className="font-medium text-[var(--text-1)]">{m.method}</span>
+                  <span className="font-medium text-[var(--text-1)]">
+                    {m.method}
+                  </span>
                 </span>
                 {streamBadge(m)}
               </button>
@@ -130,10 +186,14 @@ function GrpcMethodPicker({
           </div>
         )}
       </div>
-      {selectedService && selectedMethod && (() => {
-        const m = methods.find((x) => x.service === selectedService && x.method === selectedMethod);
-        return m ? streamBadge(m) : null;
-      })()}
+      {selectedService &&
+        selectedMethod &&
+        (() => {
+          const m = methods.find(
+            (x) => x.service === selectedService && x.method === selectedMethod,
+          );
+          return m ? streamBadge(m) : null;
+        })()}
     </div>
   );
 }
@@ -141,56 +201,114 @@ function GrpcMethodPicker({
 function GrpcAuthPanel() {
   const { grpcRequest, setGrpcRequest } = useStore();
   const auth: AuthConfig = grpcRequest.auth ?? { type: "none" };
-  const set = (patch: Partial<AuthConfig>) => setGrpcRequest({ auth: { ...auth, ...patch } });
+  const set = (patch: Partial<AuthConfig>) =>
+    setGrpcRequest({ auth: { ...auth, ...patch } });
   const inputCls = "input text-xs py-1 flex-1";
   return (
     <div className="p-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Type</label>
-        <Select value={auth.type} onChange={(e) => setGrpcRequest({ auth: { type: e.target.value as AuthConfig["type"] } })}>
+        <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+          Type
+        </label>
+        <Select
+          value={auth.type}
+          onChange={(e) =>
+            setGrpcRequest({
+              auth: { type: e.target.value as AuthConfig["type"] },
+            })
+          }
+        >
           {["none", "bearer", "basic", "api-key", "oauth2"].map((t) => (
-            <option key={t} value={t}>{t}</option>
+            <option key={t} value={t}>
+              {t}
+            </option>
           ))}
         </Select>
       </div>
       {auth.type === "bearer" && (
         <div className="flex items-center gap-2">
-          <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Token</label>
-          <input className={inputCls} value={auth.token ?? ""} onChange={(e) => set({ token: e.target.value })} placeholder="{{token}}" />
+          <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+            Token
+          </label>
+          <input
+            className={inputCls}
+            value={auth.token ?? ""}
+            onChange={(e) => set({ token: e.target.value })}
+            placeholder="{{token}}"
+          />
         </div>
       )}
       {auth.type === "basic" && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Username</label>
-            <input className={inputCls} value={auth.username ?? ""} onChange={(e) => set({ username: e.target.value })} />
+            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+              Username
+            </label>
+            <input
+              className={inputCls}
+              value={auth.username ?? ""}
+              onChange={(e) => set({ username: e.target.value })}
+            />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Password</label>
-            <input className={inputCls} type="password" value={auth.password ?? ""} onChange={(e) => set({ password: e.target.value })} />
+            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+              Password
+            </label>
+            <input
+              className={inputCls}
+              type="password"
+              value={auth.password ?? ""}
+              onChange={(e) => set({ password: e.target.value })}
+            />
           </div>
         </>
       )}
       {auth.type === "api-key" && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Key name</label>
-            <input className={inputCls} value={auth.apiKeyName ?? ""} onChange={(e) => set({ apiKeyName: e.target.value })} placeholder="x-api-key" />
+            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+              Key name
+            </label>
+            <input
+              className={inputCls}
+              value={auth.apiKeyName ?? ""}
+              onChange={(e) => set({ apiKeyName: e.target.value })}
+              placeholder="x-api-key"
+            />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Key value</label>
-            <input className={inputCls} value={auth.apiKeyValue ?? ""} onChange={(e) => set({ apiKeyValue: e.target.value })} placeholder="{{api_key}}" />
+            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+              Key value
+            </label>
+            <input
+              className={inputCls}
+              value={auth.apiKeyValue ?? ""}
+              onChange={(e) => set({ apiKeyValue: e.target.value })}
+              placeholder="{{api_key}}"
+            />
           </div>
         </>
       )}
       {auth.type === "oauth2" && (
         <div className="flex items-center gap-2">
-          <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Access token</label>
-          <input className={inputCls} value={auth.accessToken ?? auth.token ?? ""} onChange={(e) => set({ accessToken: e.target.value, token: e.target.value })} placeholder="{{access_token}}" />
+          <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
+            Access token
+          </label>
+          <input
+            className={inputCls}
+            value={auth.accessToken ?? auth.token ?? ""}
+            onChange={(e) =>
+              set({ accessToken: e.target.value, token: e.target.value })
+            }
+            placeholder="{{access_token}}"
+          />
         </div>
       )}
       {auth.type !== "none" && (
-        <p className="text-2xs text-[var(--text-3)]">Auth is injected as an <code>authorization</code> metadata header on each call.</p>
+        <p className="text-2xs text-[var(--text-3)]">
+          Auth is injected as an <code>authorization</code> metadata header on
+          each call.
+        </p>
       )}
     </div>
   );
@@ -202,13 +320,34 @@ function GrpcScriptsPanel() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-1 px-3 py-1.5 border-b border-[var(--border)]">
-        <button onClick={() => setActive("pre")} className={`tab-btn text-2xs ${active === "pre" ? "active" : ""}`}>Pre-request</button>
-        <button onClick={() => setActive("post")} className={`tab-btn text-2xs ${active === "post" ? "active" : ""}`}>Post-response</button>
+        <button
+          onClick={() => setActive("pre")}
+          className={`tab-btn text-2xs ${active === "pre" ? "active" : ""}`}
+        >
+          Pre-request
+        </button>
+        <button
+          onClick={() => setActive("post")}
+          className={`tab-btn text-2xs ${active === "post" ? "active" : ""}`}
+        >
+          Post-response
+        </button>
       </div>
       <div className="flex-1 overflow-hidden">
         <CodeEditor
-          value={active === "pre" ? (grpcRequest.scripts?.preRequest ?? "") : (grpcRequest.scripts?.postResponse ?? "")}
-          onChange={(v) => setGrpcRequest({ scripts: { ...(grpcRequest.scripts ?? {}), ...(active === "pre" ? { preRequest: v } : { postResponse: v }) } })}
+          value={
+            active === "pre"
+              ? (grpcRequest.scripts?.preRequest ?? "")
+              : (grpcRequest.scripts?.postResponse ?? "")
+          }
+          onChange={(v) =>
+            setGrpcRequest({
+              scripts: {
+                ...(grpcRequest.scripts ?? {}),
+                ...(active === "pre" ? { preRequest: v } : { postResponse: v }),
+              },
+            })
+          }
           lang="javascript"
           minHeight="200px"
         />
@@ -216,7 +355,9 @@ function GrpcScriptsPanel() {
       {scriptLogs.length > 0 && (
         <div className="border-t border-[var(--border)] p-2 max-h-28 overflow-auto">
           {scriptLogs.map((log, i) => (
-            <div key={i} className="text-2xs font-mono text-[var(--text-2)]">{log}</div>
+            <div key={i} className="text-2xs font-mono text-[var(--text-2)]">
+              {log}
+            </div>
           ))}
         </div>
       )}
@@ -227,9 +368,11 @@ function GrpcScriptsPanel() {
 function GrpcOptionsPanel() {
   const { grpcRequest, setGrpcRequest } = useStore();
   const options = grpcRequest.options ?? {};
-  const setOpt = (patch: object) => setGrpcRequest({ options: { ...options, ...patch } });
+  const setOpt = (patch: object) =>
+    setGrpcRequest({ options: { ...options, ...patch } });
   const tls = options.tlsClientConfig ?? {};
-  const setTls = (patch: object) => setOpt({ tlsClientConfig: { ...tls, ...patch } });
+  const setTls = (patch: object) =>
+    setOpt({ tlsClientConfig: { ...tls, ...patch } });
 
   const handleProtosetFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -239,7 +382,8 @@ function GrpcOptionsPanel() {
       const ab = reader.result as ArrayBuffer;
       const bytes = new Uint8Array(ab);
       let b64 = "";
-      for (let i = 0; i < bytes.length; i++) b64 += String.fromCharCode(bytes[i]);
+      for (let i = 0; i < bytes.length; i++)
+        b64 += String.fromCharCode(bytes[i]);
       setGrpcRequest({ protosetBase64: btoa(b64) });
     };
     reader.readAsArrayBuffer(file);
@@ -249,78 +393,172 @@ function GrpcOptionsPanel() {
   return (
     <div className="p-3 flex flex-col gap-3 overflow-auto">
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">Timeout (ms)</label>
-        <input type="number" min={0} step={1000} className="input text-xs py-1 w-28"
+        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">
+          Timeout (ms)
+        </label>
+        <input
+          type="number"
+          min={0}
+          step={1000}
+          className="input text-xs py-1 w-28"
           value={grpcRequest.timeoutMs ?? 30000}
-          onChange={(e) => setGrpcRequest({ timeoutMs: Math.max(0, Number(e.target.value)) })} />
-        <span className="text-2xs text-[var(--text-3)] font-mono">grpc-timeout: {formatGrpcTimeout(grpcRequest.timeoutMs ?? 30000)}</span>
+          onChange={(e) =>
+            setGrpcRequest({ timeoutMs: Math.max(0, Number(e.target.value)) })
+          }
+        />
+        <span className="text-2xs text-[var(--text-3)] font-mono">
+          grpc-timeout: {formatGrpcTimeout(grpcRequest.timeoutMs ?? 30000)}
+        </span>
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">Verify SSL</label>
-        <input type="checkbox" checked={options.verifySsl ?? true} className="accent-[var(--accent)]"
-          onChange={(e) => setOpt({ verifySsl: e.target.checked })} />
+        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">
+          Verify SSL
+        </label>
+        <input
+          type="checkbox"
+          checked={options.verifySsl ?? true}
+          className="accent-[var(--accent)]"
+          onChange={(e) => setOpt({ verifySsl: e.target.checked })}
+        />
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">Compression</label>
-        <Select value={grpcRequest.compression ?? "none"} onChange={(e) => setGrpcRequest({ compression: e.target.value as "none" | "gzip" })}>
+        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">
+          Compression
+        </label>
+        <Select
+          value={grpcRequest.compression ?? "none"}
+          onChange={(e) =>
+            setGrpcRequest({ compression: e.target.value as "none" | "gzip" })
+          }
+        >
           <option value="none">None</option>
           <option value="gzip">gzip</option>
         </Select>
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">Max recv msg (MB)</label>
-        <input type="number" min={1} max={256} step={1} className="input text-xs py-1 w-28"
-          value={Math.round((grpcRequest.maxRecvMsgSize ?? 16 * 1024 * 1024) / (1024 * 1024))}
-          onChange={(e) => setGrpcRequest({ maxRecvMsgSize: Math.max(1, Number(e.target.value)) * 1024 * 1024 })} />
+        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">
+          Max recv msg (MB)
+        </label>
+        <input
+          type="number"
+          min={1}
+          max={256}
+          step={1}
+          className="input text-xs py-1 w-28"
+          value={Math.round(
+            (grpcRequest.maxRecvMsgSize ?? 16 * 1024 * 1024) / (1024 * 1024),
+          )}
+          onChange={(e) =>
+            setGrpcRequest({
+              maxRecvMsgSize: Math.max(1, Number(e.target.value)) * 1024 * 1024,
+            })
+          }
+        />
         {(grpcRequest.maxRecvMsgSize ?? 0) >= 256 * 1024 * 1024 && (
-          <span className="text-2xs text-amber-500">⚠ Large messages may exhaust memory</span>
+          <span className="text-2xs text-amber-500">
+            ⚠ Large messages may exhaust memory
+          </span>
         )}
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">Max send msg (MB)</label>
-        <input type="number" min={1} max={256} step={1} className="input text-xs py-1 w-28"
-          value={Math.round((grpcRequest.maxSendMsgSize ?? 16 * 1024 * 1024) / (1024 * 1024))}
-          onChange={(e) => setGrpcRequest({ maxSendMsgSize: Math.max(1, Number(e.target.value)) * 1024 * 1024 })} />
+        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">
+          Max send msg (MB)
+        </label>
+        <input
+          type="number"
+          min={1}
+          max={256}
+          step={1}
+          className="input text-xs py-1 w-28"
+          value={Math.round(
+            (grpcRequest.maxSendMsgSize ?? 16 * 1024 * 1024) / (1024 * 1024),
+          )}
+          onChange={(e) =>
+            setGrpcRequest({
+              maxSendMsgSize: Math.max(1, Number(e.target.value)) * 1024 * 1024,
+            })
+          }
+        />
       </div>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-[var(--text-3)] pt-1">Protoset (FileDescriptorSet)</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-[var(--text-3)] pt-1">
+        Protoset (FileDescriptorSet)
+      </p>
       <div className="flex flex-col gap-1">
-        <p className="text-2xs text-[var(--text-3)]">Upload a pre-compiled <code>.pb</code> file (<code>buf build -o desc.pb</code>) to use without server reflection.</p>
+        <p className="text-2xs text-[var(--text-3)]">
+          Upload a pre-compiled <code>.pb</code> file (
+          <code>buf build -o desc.pb</code>) to use without server reflection.
+        </p>
         <div className="flex items-center gap-2">
           <label className="btn text-2xs cursor-pointer">
             {grpcRequest.protosetBase64 ? "Replace .pb" : "Upload .pb"}
-            <input type="file" accept=".pb,.bin" className="hidden" onChange={handleProtosetFile} />
+            <input
+              type="file"
+              accept=".pb,.bin"
+              className="hidden"
+              onChange={handleProtosetFile}
+            />
           </label>
           {grpcRequest.protosetBase64 && (
-            <button className="text-2xs text-red-500 hover:underline" onClick={() => setGrpcRequest({ protosetBase64: undefined })}>
+            <button
+              className="text-2xs text-red-500 hover:underline"
+              onClick={() => setGrpcRequest({ protosetBase64: undefined })}
+            >
               Remove
             </button>
           )}
           {grpcRequest.protosetBase64 && (
-            <span className="text-2xs text-emerald-600">✓ Protoset loaded ({Math.round(grpcRequest.protosetBase64.length * 0.75 / 1024)}KB)</span>
+            <span className="text-2xs text-emerald-600">
+              ✓ Protoset loaded (
+              {Math.round((grpcRequest.protosetBase64.length * 0.75) / 1024)}KB)
+            </span>
           )}
         </div>
       </div>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-[var(--text-3)] pt-1">mTLS</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-[var(--text-3)] pt-1">
+        mTLS
+      </p>
       <div className="flex flex-col gap-2">
-        <label className="text-xs text-[var(--text-2)]">Client cert (PEM)</label>
-        <textarea rows={3} className="input text-2xs font-mono py-1" placeholder="-----BEGIN CERTIFICATE-----"
+        <label className="text-xs text-[var(--text-2)]">
+          Client cert (PEM)
+        </label>
+        <textarea
+          rows={3}
+          className="input text-2xs font-mono py-1"
+          placeholder="-----BEGIN CERTIFICATE-----"
           value={(tls as Record<string, string>).clientCertPem ?? ""}
-          onChange={(e) => setTls({ clientCertPem: e.target.value })} />
+          onChange={(e) => setTls({ clientCertPem: e.target.value })}
+        />
         <label className="text-xs text-[var(--text-2)]">Client key (PEM)</label>
-        <textarea rows={3} className="input text-2xs font-mono py-1" placeholder="-----BEGIN PRIVATE KEY-----"
+        <textarea
+          rows={3}
+          className="input text-2xs font-mono py-1"
+          placeholder="-----BEGIN PRIVATE KEY-----"
           value={(tls as Record<string, string>).clientKeyPem ?? ""}
-          onChange={(e) => setTls({ clientKeyPem: e.target.value })} />
+          onChange={(e) => setTls({ clientKeyPem: e.target.value })}
+        />
         {(tls as Record<string, string>).clientKeyPem && (
-          <p className="text-2xs text-amber-500">⚠ Private key material is stored locally. Enable a passphrase in Settings to encrypt it at rest.</p>
+          <p className="text-2xs text-amber-500">
+            ⚠ Private key material is stored locally. Enable a passphrase in
+            Settings to encrypt it at rest.
+          </p>
         )}
         <label className="text-xs text-[var(--text-2)]">CA cert (PEM)</label>
-        <textarea rows={3} className="input text-2xs font-mono py-1" placeholder="-----BEGIN CERTIFICATE-----"
+        <textarea
+          rows={3}
+          className="input text-2xs font-mono py-1"
+          placeholder="-----BEGIN CERTIFICATE-----"
           value={(tls as Record<string, string>).caCertPem ?? ""}
-          onChange={(e) => setTls({ caCertPem: e.target.value })} />
-        <label className="text-xs text-[var(--text-2)]">Server name override</label>
-        <input className="input text-xs py-1" placeholder="example.com"
+          onChange={(e) => setTls({ caCertPem: e.target.value })}
+        />
+        <label className="text-xs text-[var(--text-2)]">
+          Server name override
+        </label>
+        <input
+          className="input text-xs py-1"
+          placeholder="example.com"
           value={(tls as Record<string, string>).serverName ?? ""}
-          onChange={(e) => setTls({ serverName: e.target.value })} />
+          onChange={(e) => setTls({ serverName: e.target.value })}
+        />
       </div>
     </div>
   );
@@ -334,32 +572,50 @@ function GrpcSavedMessagesPanel() {
 
   const saveCurrentBody = () => {
     const name = `Message ${saved.length + 1}`;
-    const newMsg: GrpcSavedMessage = { id: crypto.randomUUID(), name, body: grpcRequest.body ?? "{}" };
+    const newMsg: GrpcSavedMessage = {
+      id: crypto.randomUUID(),
+      name,
+      body: grpcRequest.body ?? "{}",
+    };
     setGrpcRequest({ savedMessages: [...saved, newMsg] });
   };
 
-  const remove = (id: string) => setGrpcRequest({ savedMessages: saved.filter((m) => m.id !== id) });
+  const remove = (id: string) =>
+    setGrpcRequest({ savedMessages: saved.filter((m) => m.id !== id) });
 
   const load = (body: string) => setGrpcRequest({ body });
 
   const rename = (id: string, name: string) => {
-    setGrpcRequest({ savedMessages: saved.map((m) => m.id === id ? { ...m, name } : m) });
+    setGrpcRequest({
+      savedMessages: saved.map((m) => (m.id === id ? { ...m, name } : m)),
+    });
     setEditingId(null);
   };
 
   return (
     <div className="flex flex-col h-full overflow-auto">
       <div className="px-3 py-1.5 border-b border-[var(--border)] flex items-center justify-between">
-        <span className="text-2xs text-[var(--text-3)]">{saved.length} saved message{saved.length !== 1 ? "s" : ""}</span>
-        <button onClick={saveCurrentBody} className="flex items-center gap-1 text-2xs text-[var(--accent)] hover:underline">
+        <span className="text-2xs text-[var(--text-3)]">
+          {saved.length} saved message{saved.length !== 1 ? "s" : ""}
+        </span>
+        <button
+          onClick={saveCurrentBody}
+          className="flex items-center gap-1 text-2xs text-[var(--accent)] hover:underline"
+        >
           <BookmarkPlus size={11} /> Save current
         </button>
       </div>
       {saved.length === 0 && (
-        <p className="p-3 text-2xs text-[var(--text-3)]">No saved messages. Compose a body and click "Save current" to create one.</p>
+        <p className="p-3 text-2xs text-[var(--text-3)]">
+          No saved messages. Compose a body and click "Save current" to create
+          one.
+        </p>
       )}
       {saved.map((msg) => (
-        <div key={msg.id} className="border-b border-[var(--border)] px-3 py-2 flex flex-col gap-1 last:border-0">
+        <div
+          key={msg.id}
+          className="border-b border-[var(--border)] px-3 py-2 flex flex-col gap-1 last:border-0"
+        >
           <div className="flex items-center gap-1">
             {editingId === msg.id ? (
               <input
@@ -368,21 +624,40 @@ function GrpcSavedMessagesPanel() {
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onBlur={() => rename(msg.id, editName || msg.name)}
-                onKeyDown={(e) => { if (e.key === "Enter") rename(msg.id, editName || msg.name); if (e.key === "Escape") setEditingId(null); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") rename(msg.id, editName || msg.name);
+                  if (e.key === "Escape") setEditingId(null);
+                }}
               />
             ) : (
               <span
                 className="text-2xs font-medium text-[var(--text-1)] flex-1 cursor-pointer hover:underline truncate"
-                onDoubleClick={() => { setEditingId(msg.id); setEditName(msg.name); }}
+                onDoubleClick={() => {
+                  setEditingId(msg.id);
+                  setEditName(msg.name);
+                }}
                 title="Double-click to rename"
-              >{msg.name}</span>
+              >
+                {msg.name}
+              </span>
             )}
-            <button onClick={() => load(msg.body)} className="text-2xs text-[var(--accent)] hover:underline shrink-0">Use</button>
-            <button onClick={() => remove(msg.id)} className="p-0.5 text-[var(--text-3)] hover:text-red-500 shrink-0">
+            <button
+              onClick={() => load(msg.body)}
+              className="text-2xs text-[var(--accent)] hover:underline shrink-0"
+            >
+              Use
+            </button>
+            <button
+              onClick={() => remove(msg.id)}
+              className="p-0.5 text-[var(--text-3)] hover:text-red-500 shrink-0"
+            >
               <Trash2 size={10} />
             </button>
           </div>
-          <pre className="text-2xs font-mono text-[var(--text-3)] truncate">{msg.body.slice(0, 80)}{msg.body.length > 80 ? "…" : ""}</pre>
+          <pre className="text-2xs font-mono text-[var(--text-3)] truncate">
+            {msg.body.slice(0, 80)}
+            {msg.body.length > 80 ? "…" : ""}
+          </pre>
         </div>
       ))}
     </div>
@@ -391,20 +666,31 @@ function GrpcSavedMessagesPanel() {
 
 function GrpcResponsePanel({ res }: { res: GrpcExecuteResponse }) {
   const { grpcAssertionResults } = useStore();
-  const statusName = res.statusCode === 0 ? "OK" : res.statusMessage ?? String(res.statusCode);
+  const statusName =
+    res.statusCode === 0 ? "OK" : (res.statusMessage ?? String(res.statusCode));
   const isOk = !res.error && res.statusCode === 0;
   return (
-    <div className="border-t border-[var(--border)] flex flex-col" style={{ maxHeight: 320 }}>
+    <div
+      className="border-t border-[var(--border)] flex flex-col"
+      style={{ maxHeight: 320 }}
+    >
       <div className="px-3 py-1 text-2xs border-b border-[var(--border)] bg-[var(--surface-2)] flex items-center gap-2">
-        <span className={`font-semibold ${isOk ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
+        <span
+          className={`font-semibold ${isOk ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}
+        >
           {res.statusCode} {statusName}
         </span>
         {res.durationMs != null && (
-          <span className="text-[var(--text-3)]">{res.durationMs.toFixed(0)}ms</span>
+          <span className="text-[var(--text-3)]">
+            {res.durationMs.toFixed(0)}ms
+          </span>
         )}
         {grpcAssertionResults.length > 0 && (
-          <span className={`ml-auto text-2xs font-semibold ${grpcAssertionResults.every((r) => r.passed) ? "text-emerald-600" : "text-red-500"}`}>
-            {grpcAssertionResults.filter((r) => r.passed).length}/{grpcAssertionResults.length} assertions
+          <span
+            className={`ml-auto text-2xs font-semibold ${grpcAssertionResults.every((r) => r.passed) ? "text-emerald-600" : "text-red-500"}`}
+          >
+            {grpcAssertionResults.filter((r) => r.passed).length}/
+            {grpcAssertionResults.length} assertions
           </span>
         )}
       </div>
@@ -419,17 +705,28 @@ function GrpcResponsePanel({ res }: { res: GrpcExecuteResponse }) {
         )}
         {(res as any).statusDetailsJson && (
           <div className="border-t border-[var(--border)] px-3 py-1.5">
-            <p className="text-2xs font-semibold text-[var(--text-2)] mb-1">Error details</p>
-            <pre className="text-2xs font-mono text-red-400 whitespace-pre-wrap break-all">{(res as any).statusDetailsJson}</pre>
+            <p className="text-2xs font-semibold text-[var(--text-2)] mb-1">
+              Error details
+            </p>
+            <pre className="text-2xs font-mono text-red-400 whitespace-pre-wrap break-all">
+              {(res as any).statusDetailsJson}
+            </pre>
           </div>
         )}
         {(res.metadata?.length > 0 || res.trailers?.length > 0) && (
           <div className="border-t border-[var(--border)] px-3 py-1 text-2xs text-[var(--text-3)]">
             {res.metadata?.map((h, i) => (
-              <div key={`md-${i}`}><span className="font-mono">{h.key}:</span> {h.value}</div>
+              <div key={`md-${i}`}>
+                <span className="font-mono">{h.key}:</span> {h.value}
+              </div>
             ))}
             {res.trailers?.map((h, i) => (
-              <div key={`tr-${i}`}><span className="font-mono text-[var(--text-2)]">{h.key} (trailer):</span> {h.value}</div>
+              <div key={`tr-${i}`}>
+                <span className="font-mono text-[var(--text-2)]">
+                  {h.key} (trailer):
+                </span>{" "}
+                {h.value}
+              </div>
             ))}
           </div>
         )}
@@ -437,8 +734,19 @@ function GrpcResponsePanel({ res }: { res: GrpcExecuteResponse }) {
           <div className="border-t border-[var(--border)] px-3 py-1 flex flex-col gap-1">
             {grpcAssertionResults.map((r, i) => (
               <div key={i} className="flex items-center gap-2 text-2xs">
-                {r.passed ? <CheckCircle2 size={11} className="text-emerald-600 shrink-0" /> : <XCircle size={11} className="text-red-500 shrink-0" />}
-                <span className={r.passed ? "text-emerald-600" : "text-red-500"}>{r.message ?? (r.passed ? "passed" : "failed")}</span>
+                {r.passed ? (
+                  <CheckCircle2
+                    size={11}
+                    className="text-emerald-600 shrink-0"
+                  />
+                ) : (
+                  <XCircle size={11} className="text-red-500 shrink-0" />
+                )}
+                <span
+                  className={r.passed ? "text-emerald-600" : "text-red-500"}
+                >
+                  {r.message ?? (r.passed ? "passed" : "failed")}
+                </span>
               </div>
             ))}
           </div>
@@ -454,7 +762,10 @@ function GrpcDeadlineCountdown() {
   const [remaining, setRemaining] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!grpcDeadlineEnd) { setRemaining(null); return; }
+    if (!grpcDeadlineEnd) {
+      setRemaining(null);
+      return;
+    }
     const tick = () => {
       const ms = grpcDeadlineEnd - Date.now();
       setRemaining(ms > 0 ? ms : 0);
@@ -468,7 +779,9 @@ function GrpcDeadlineCountdown() {
   const secs = (remaining / 1000).toFixed(1);
   const urgent = remaining < 5000;
   return (
-    <span className={`font-mono text-2xs shrink-0 ${urgent ? "text-red-500 animate-pulse" : "text-[var(--text-3)]"}`}>
+    <span
+      className={`font-mono text-2xs shrink-0 ${urgent ? "text-red-500 animate-pulse" : "text-[var(--text-3)]"}`}
+    >
       ⏱ {secs}s
     </span>
   );
@@ -485,13 +798,27 @@ function GrpcMessageDiffModal({
   onClose: () => void;
 }) {
   const fakeResponse = (body: string) => ({
-    status: 200, statusText: "OK", headers: [], body,
-    timing: { dnsMs: 0, tcpMs: 0, tlsMs: 0, ttfbMs: 0, transferMs: 0, totalMs: 0 },
-    requestSize: 0, responseSize: 0,
+    status: 200,
+    statusText: "OK",
+    headers: [],
+    body,
+    timing: {
+      dnsMs: 0,
+      tcpMs: 0,
+      tlsMs: 0,
+      ttfbMs: 0,
+      transferMs: 0,
+      totalMs: 0,
+    },
+    requestSize: 0,
+    responseSize: 0,
   });
   const diff = compareResponses(fakeResponse(left), fakeResponse(right));
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
         style={{ width: "80vw", maxHeight: "80vh" }}
@@ -503,18 +830,33 @@ function GrpcMessageDiffModal({
           <span className="ml-auto flex items-center gap-2 text-2xs">
             <span className="text-emerald-600">+{diff.summary.additions}</span>
             <span className="text-red-600">−{diff.summary.deletions}</span>
-            {diff.summary.changes > 0 && <span className="text-yellow-600">~{diff.summary.changes}</span>}
+            {diff.summary.changes > 0 && (
+              <span className="text-yellow-600">~{diff.summary.changes}</span>
+            )}
           </span>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] ml-2">✕</button>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] ml-2"
+          >
+            ✕
+          </button>
         </div>
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 border-r border-[var(--border)] overflow-auto">
-            <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)]">Left (baseline)</div>
-            <pre className="p-2 text-2xs font-mono whitespace-pre-wrap break-all text-[var(--text-1)]">{diff.leftText}</pre>
+            <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)]">
+              Left (baseline)
+            </div>
+            <pre className="p-2 text-2xs font-mono whitespace-pre-wrap break-all text-[var(--text-1)]">
+              {diff.leftText}
+            </pre>
           </div>
           <div className="flex-1 overflow-auto">
-            <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)]">Right (comparison)</div>
-            <pre className="p-2 text-2xs font-mono whitespace-pre-wrap break-all text-[var(--text-1)]">{diff.rightText}</pre>
+            <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)]">
+              Right (comparison)
+            </div>
+            <pre className="p-2 text-2xs font-mono whitespace-pre-wrap break-all text-[var(--text-1)]">
+              {diff.rightText}
+            </pre>
           </div>
         </div>
       </div>
@@ -538,7 +880,12 @@ function percentile(sorted: number[], p: number) {
 
 /** Stress mode: send N msgs/sec for X seconds, report stats */
 function GrpcStressPanel({ streamId }: { streamId: string }) {
-  const { grpcRequest, set, grpcStreamSentMessages, grpcStreamReceivedMessages } = useStore();
+  const {
+    grpcRequest,
+    set,
+    grpcStreamSentMessages,
+    grpcStreamReceivedMessages,
+  } = useStore();
   const [rate, setRate] = useState(5);
   const [duration, setDuration] = useState(10);
   const [stats, setStats] = useState<StressStats | null>(null);
@@ -557,54 +904,103 @@ function GrpcStressPanel({ streamId }: { streamId: string }) {
 
     while (Date.now() < endAt && !stopRef.current) {
       const t0 = Date.now();
-      const res = await grpcStreamSend(streamId, body).catch(() => ({ error: "send failed" }));
+      const res = await grpcStreamSend(streamId, body).catch(() => ({
+        error: "send failed",
+      }));
       if (!res.error) {
         sent++;
         // Optimistically count received from store delta
-        const nowReceived = useStore.getState().grpcStreamReceivedMessages.filter((m) => !m.done).length;
+        const nowReceived = useStore
+          .getState()
+          .grpcStreamReceivedMessages.filter((m) => !m.done).length;
         if (nowReceived > received) {
           rtts.push(Date.now() - t0);
           received = nowReceived;
         }
       }
-      setStats({ sent, received, lost: sent - received, rtts: [...rtts], running: true });
+      setStats({
+        sent,
+        received,
+        lost: sent - received,
+        rtts: [...rtts],
+        running: true,
+      });
       const elapsed = Date.now() - t0;
-      if (elapsed < intervalMs) await new Promise((r) => setTimeout(r, intervalMs - elapsed));
+      if (elapsed < intervalMs)
+        await new Promise((r) => setTimeout(r, intervalMs - elapsed));
     }
 
     const sorted = [...rtts].sort((a, b) => a - b);
-    setStats({ sent, received, lost: sent - received, rtts: sorted, running: false });
+    setStats({
+      sent,
+      received,
+      lost: sent - received,
+      rtts: sorted,
+      running: false,
+    });
   }, [streamId, rate, duration, grpcRequest.body]);
 
-  const stop = () => { stopRef.current = true; };
+  const stop = () => {
+    stopRef.current = true;
+  };
 
   return (
     <div className="p-3 flex flex-col gap-3">
-      <p className="text-2xs text-[var(--text-3)]">Send messages at a fixed rate on the open stream and measure throughput.</p>
+      <p className="text-2xs text-[var(--text-3)]">
+        Send messages at a fixed rate on the open stream and measure throughput.
+      </p>
       <div className="flex items-center gap-3">
-        <label className="text-xs text-[var(--text-2)] w-24 shrink-0">Rate (msg/s)</label>
-        <input type="number" min={1} max={100} className="input text-xs py-1 w-20"
-          value={rate} onChange={(e) => setRate(Math.max(1, Number(e.target.value)))} />
+        <label className="text-xs text-[var(--text-2)] w-24 shrink-0">
+          Rate (msg/s)
+        </label>
+        <input
+          type="number"
+          min={1}
+          max={100}
+          className="input text-xs py-1 w-20"
+          value={rate}
+          onChange={(e) => setRate(Math.max(1, Number(e.target.value)))}
+        />
       </div>
       <div className="flex items-center gap-3">
-        <label className="text-xs text-[var(--text-2)] w-24 shrink-0">Duration (s)</label>
-        <input type="number" min={1} max={300} className="input text-xs py-1 w-20"
-          value={duration} onChange={(e) => setDuration(Math.max(1, Number(e.target.value)))} />
+        <label className="text-xs text-[var(--text-2)] w-24 shrink-0">
+          Duration (s)
+        </label>
+        <input
+          type="number"
+          min={1}
+          max={300}
+          className="input text-xs py-1 w-20"
+          value={duration}
+          onChange={(e) => setDuration(Math.max(1, Number(e.target.value)))}
+        />
       </div>
       <div className="flex gap-2">
-        <button className="btn btn-primary text-xs flex items-center gap-1" onClick={run} disabled={!streamId || (stats?.running ?? false)}>
+        <button
+          className="btn btn-primary text-xs flex items-center gap-1"
+          onClick={run}
+          disabled={!streamId || (stats?.running ?? false)}
+        >
           <Gauge size={12} /> Start
         </button>
         {stats?.running && (
-          <button className="btn btn-danger text-xs" onClick={stop}>Stop</button>
+          <button className="btn btn-danger text-xs" onClick={stop}>
+            Stop
+          </button>
         )}
       </div>
       {stats && (
         <div className="bg-[var(--surface-2)] rounded p-2 flex flex-col gap-1 text-2xs font-mono">
           <div className="flex gap-4">
-            <span>Sent: <b>{stats.sent}</b></span>
-            <span>Received: <b>{stats.received}</b></span>
-            <span className={stats.lost > 0 ? "text-red-500" : ""}>Lost: <b>{stats.lost}</b></span>
+            <span>
+              Sent: <b>{stats.sent}</b>
+            </span>
+            <span>
+              Received: <b>{stats.received}</b>
+            </span>
+            <span className={stats.lost > 0 ? "text-red-500" : ""}>
+              Lost: <b>{stats.lost}</b>
+            </span>
           </div>
           {stats.rtts.length > 0 && (
             <div className="flex gap-4 text-[var(--text-2)]">
@@ -613,7 +1009,11 @@ function GrpcStressPanel({ streamId }: { streamId: string }) {
               <span>p99: {percentile(stats.rtts, 99)}ms</span>
             </div>
           )}
-          {stats.running && <span className="text-[var(--accent)] animate-pulse">● running…</span>}
+          {stats.running && (
+            <span className="text-[var(--accent)] animate-pulse">
+              ● running…
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -621,7 +1021,14 @@ function GrpcStressPanel({ streamId }: { streamId: string }) {
 }
 
 function GrpcStreamComposer({ streamId }: { streamId: string }) {
-  const { set, grpcRequest, setGrpcRequest, grpcStreaming, grpcStreamReceivedMessages, grpcStreamSentMessages } = useStore();
+  const {
+    set,
+    grpcRequest,
+    setGrpcRequest,
+    grpcStreaming,
+    grpcStreamReceivedMessages,
+    grpcStreamSentMessages,
+  } = useStore();
   const [sending, setSending] = useState(false);
   const [diffLeft, setDiffLeft] = useState<string | null>(null);
   const [diffRight, setDiffRight] = useState<string | null>(null);
@@ -630,7 +1037,10 @@ function GrpcStreamComposer({ streamId }: { streamId: string }) {
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
+    logRef.current?.scrollTo({
+      top: logRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [grpcStreamSentMessages.length, grpcStreamReceivedMessages.length]);
 
   const send = async () => {
@@ -662,32 +1072,59 @@ function GrpcStreamComposer({ streamId }: { streamId: string }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const receivedBodies = grpcStreamReceivedMessages.filter((m) => !m.done && m.bodyJson);
+  const receivedBodies = grpcStreamReceivedMessages.filter(
+    (m) => !m.done && m.bodyJson,
+  );
 
   const selectForDiff = (body: string) => {
-    if (!diffLeft) { setDiffLeft(body); return; }
-    if (!diffRight) { setDiffRight(body); setShowDiff(true); return; }
-    setDiffLeft(body); setDiffRight(null);
+    if (!diffLeft) {
+      setDiffLeft(body);
+      return;
+    }
+    if (!diffRight) {
+      setDiffRight(body);
+      setShowDiff(true);
+      return;
+    }
+    setDiffLeft(body);
+    setDiffRight(null);
   };
 
   return (
     <>
       {showDiff && diffLeft && diffRight && (
-        <GrpcMessageDiffModal left={diffLeft} right={diffRight} onClose={() => { setShowDiff(false); setDiffLeft(null); setDiffRight(null); }} />
+        <GrpcMessageDiffModal
+          left={diffLeft}
+          right={diffRight}
+          onClose={() => {
+            setShowDiff(false);
+            setDiffLeft(null);
+            setDiffRight(null);
+          }}
+        />
       )}
-      <div className="border-t border-[var(--border)] flex flex-col" style={{ maxHeight: 300 }}>
+      <div
+        className="border-t border-[var(--border)] flex flex-col"
+        style={{ maxHeight: 300 }}
+      >
         <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)] flex items-center gap-2">
           <span>Stream transcript</span>
-          {grpcStreaming && <span className="text-[var(--accent)] animate-pulse">● live</span>}
+          {grpcStreaming && (
+            <span className="text-[var(--accent)] animate-pulse">● live</span>
+          )}
           <GrpcDeadlineCountdown />
           <span className="ml-auto text-2xs">
-            {grpcStreamSentMessages.length} sent · {grpcStreamReceivedMessages.filter((m) => !m.done).length} received
+            {grpcStreamSentMessages.length} sent ·{" "}
+            {grpcStreamReceivedMessages.filter((m) => !m.done).length} received
           </span>
           {receivedBodies.length >= 2 && (
             <button
               className="flex items-center gap-1 text-2xs text-[var(--accent)] hover:underline shrink-0"
               title="Select two received messages to diff (click first, then second)"
-              onClick={() => { setDiffLeft(null); setDiffRight(null); }}
+              onClick={() => {
+                setDiffLeft(null);
+                setDiffRight(null);
+              }}
             >
               <ArrowLeftRight size={10} />
               {diffLeft ? "pick 2nd" : "Diff msgs"}
@@ -696,35 +1133,65 @@ function GrpcStreamComposer({ streamId }: { streamId: string }) {
           <button
             className="text-2xs text-[var(--text-3)] hover:text-[var(--text-1)] shrink-0"
             title="Clear log (Ctrl+L)"
-            onClick={() => set({ grpcStreamSentMessages: [], grpcStreamReceivedMessages: [] })}
+            onClick={() =>
+              set({
+                grpcStreamSentMessages: [],
+                grpcStreamReceivedMessages: [],
+              })
+            }
           >
             Clear
           </button>
         </div>
         <div ref={logRef} className="overflow-y-auto flex-1">
-          {grpcStreamSentMessages.length === 0 && grpcStreamReceivedMessages.length === 0 && (
-            <p className="p-3 text-2xs text-[var(--text-3)]">Compose a message below and press Enter or click Send.</p>
-          )}
+          {grpcStreamSentMessages.length === 0 &&
+            grpcStreamReceivedMessages.length === 0 && (
+              <p className="p-3 text-2xs text-[var(--text-3)]">
+                Compose a message below and press Enter or click Send.
+              </p>
+            )}
           {grpcStreamSentMessages.map((body, i) => (
-            <div key={`s${i}`} className="px-3 py-1.5 border-b border-[var(--border)] last:border-0 flex items-start gap-2">
-              <span className="text-2xs font-semibold text-[var(--accent)] shrink-0">→</span>
-              <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all flex-1">{body}</pre>
+            <div
+              key={`s${i}`}
+              className="px-3 py-1.5 border-b border-[var(--border)] last:border-0 flex items-start gap-2"
+            >
+              <span className="text-2xs font-semibold text-[var(--accent)] shrink-0">
+                →
+              </span>
+              <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all flex-1">
+                {body}
+              </pre>
             </div>
           ))}
           {grpcStreamReceivedMessages.map((msg, i) => (
-            <div key={`r${i}`} className={`px-3 py-1.5 border-b border-[var(--border)] last:border-0 flex items-start gap-2 ${msg.done ? "bg-[var(--surface-2)]" : ""}`}>
+            <div
+              key={`r${i}`}
+              className={`px-3 py-1.5 border-b border-[var(--border)] last:border-0 flex items-start gap-2 ${msg.done ? "bg-[var(--surface-2)]" : ""}`}
+            >
               {msg.done ? (
-                <span className={`text-2xs font-semibold ${msg.error ? "text-red-500" : "text-emerald-600"}`}>
-                  {msg.error ? `Error: ${msg.statusMessage || msg.error}` : `Done${msg.durationMs != null ? ` — ${msg.durationMs.toFixed(0)}ms` : ""}`}
+                <span
+                  className={`text-2xs font-semibold ${msg.error ? "text-red-500" : "text-emerald-600"}`}
+                >
+                  {msg.error
+                    ? `Error: ${msg.statusMessage || msg.error}`
+                    : `Done${msg.durationMs != null ? ` — ${msg.durationMs.toFixed(0)}ms` : ""}`}
                 </span>
               ) : (
                 <>
-                  <span className="text-2xs font-semibold text-emerald-600 shrink-0">←</span>
+                  <span className="text-2xs font-semibold text-emerald-600 shrink-0">
+                    ←
+                  </span>
                   <pre
                     className={`text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all flex-1 cursor-pointer ${diffLeft === msg.bodyJson ? "bg-yellow-100 dark:bg-yellow-900/20 rounded" : ""}`}
-                    title={diffLeft ? "Click to select as right side of diff" : "Click to select as left side of diff"}
+                    title={
+                      diffLeft
+                        ? "Click to select as right side of diff"
+                        : "Click to select as left side of diff"
+                    }
                     onClick={() => msg.bodyJson && selectForDiff(msg.bodyJson)}
-                  >{msg.bodyJson}</pre>
+                  >
+                    {msg.bodyJson}
+                  </pre>
                 </>
               )}
             </div>
@@ -734,7 +1201,12 @@ function GrpcStreamComposer({ streamId }: { streamId: string }) {
           <div
             className="flex-1 min-h-[56px]"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey &&
+                !e.ctrlKey &&
+                !e.metaKey
+              ) {
                 e.preventDefault();
                 if (!sending && streamId) send();
               }
@@ -763,7 +1235,16 @@ function GrpcStreamComposer({ streamId }: { streamId: string }) {
 }
 
 export function GRPCClient() {
-  const { grpcRequest, setGrpcRequest, grpcMethods, grpcStatus, grpcStreaming, grpcStreamMessages, grpcResponse, grpcStreamId } = useStore();
+  const {
+    grpcRequest,
+    setGrpcRequest,
+    grpcMethods,
+    grpcStatus,
+    grpcStreaming,
+    grpcStreamMessages,
+    grpcResponse,
+    grpcStreamId,
+  } = useStore();
   const [activeTab, setActiveTab] = useState<GrpcTab>("message");
   const [diffLeft, setDiffLeft] = useState<string | null>(null);
   const [diffRight, setDiffRight] = useState<string | null>(null);
@@ -772,21 +1253,41 @@ export function GRPCClient() {
   const selectedMethod = grpcMethods.find(
     (m) => m.service === grpcRequest.service && m.method === grpcRequest.method,
   );
-  const isServerStreaming = (selectedMethod?.serverStreaming ?? false) && !selectedMethod?.clientStreaming;
+  const isServerStreaming =
+    (selectedMethod?.serverStreaming ?? false) &&
+    !selectedMethod?.clientStreaming;
   const isClientStream = selectedMethod?.clientStreaming ?? false;
 
-  const receivedStreamBodies = grpcStreamMessages.filter((m) => !m.done && m.bodyJson);
+  const receivedStreamBodies = grpcStreamMessages.filter(
+    (m) => !m.done && m.bodyJson,
+  );
 
   const selectForDiff = (body: string) => {
-    if (!diffLeft) { setDiffLeft(body); return; }
-    if (!diffRight) { setDiffRight(body); setShowDiff(true); return; }
-    setDiffLeft(body); setDiffRight(null);
+    if (!diffLeft) {
+      setDiffLeft(body);
+      return;
+    }
+    if (!diffRight) {
+      setDiffRight(body);
+      setShowDiff(true);
+      return;
+    }
+    setDiffLeft(body);
+    setDiffRight(null);
   };
 
   return (
     <div className="flex flex-col h-full gap-0">
       {showDiff && diffLeft && diffRight && (
-        <GrpcMessageDiffModal left={diffLeft} right={diffRight} onClose={() => { setShowDiff(false); setDiffLeft(null); setDiffRight(null); }} />
+        <GrpcMessageDiffModal
+          left={diffLeft}
+          right={diffRight}
+          onClose={() => {
+            setShowDiff(false);
+            setDiffLeft(null);
+            setDiffRight(null);
+          }}
+        />
       )}
 
       {grpcStatus && (
@@ -810,7 +1311,11 @@ export function GRPCClient() {
         <>
           <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)]">
             {TABS.map((t) => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} className={`tab-btn text-2xs ${activeTab === t.id ? "active" : ""}`}>
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`tab-btn text-2xs ${activeTab === t.id ? "active" : ""}`}
+              >
                 {t.label}
               </button>
             ))}
@@ -819,13 +1324,19 @@ export function GRPCClient() {
           <div className="flex-1 flex flex-col overflow-hidden">
             {activeTab === "message" && (
               <div className="flex-1 overflow-auto">
-                <CodeEditor value={grpcRequest.body ?? "{}"} onChange={(v) => setGrpcRequest({ body: v })} lang="json" />
+                <CodeEditor
+                  value={grpcRequest.body ?? "{}"}
+                  onChange={(v) => setGrpcRequest({ body: v })}
+                  lang="json"
+                />
               </div>
             )}
             {activeTab === "metadata" && (
               <KeyValueEditor
                 rows={(grpcRequest.metadata as KeyValue[] | undefined) ?? []}
-                onChange={(rows) => setGrpcRequest({ metadata: rows as KeyValue[] })}
+                onChange={(rows) =>
+                  setGrpcRequest({ metadata: rows as KeyValue[] })
+                }
                 keyPlaceholder="key"
                 valuePlaceholder="value"
               />
@@ -848,7 +1359,11 @@ export function GRPCClient() {
         <>
           <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)]">
             {TABS.filter((t) => t.id !== "message").map((t) => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} className={`tab-btn text-2xs ${activeTab === t.id ? "active" : ""}`}>
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`tab-btn text-2xs ${activeTab === t.id ? "active" : ""}`}
+              >
                 {t.label}
               </button>
             ))}
@@ -859,7 +1374,9 @@ export function GRPCClient() {
               {activeTab === "metadata" && (
                 <KeyValueEditor
                   rows={(grpcRequest.metadata as KeyValue[] | undefined) ?? []}
-                  onChange={(rows) => setGrpcRequest({ metadata: rows as KeyValue[] })}
+                  onChange={(rows) =>
+                    setGrpcRequest({ metadata: rows as KeyValue[] })
+                  }
                   keyPlaceholder="key"
                   valuePlaceholder="value"
                 />
@@ -868,21 +1385,24 @@ export function GRPCClient() {
               {activeTab === "scripts" && <GrpcScriptsPanel />}
               {activeTab === "options" && <GrpcOptionsPanel />}
               {activeTab === "saved" && <GrpcSavedMessagesPanel />}
-              {activeTab === "stress" && (
-                grpcStreamId
-                  ? <GrpcStressPanel streamId={grpcStreamId} />
-                  : <div className="p-3 text-2xs text-[var(--text-3)]">Open the stream first.</div>
-              )}
+              {activeTab === "stress" &&
+                (grpcStreamId ? (
+                  <GrpcStressPanel streamId={grpcStreamId} />
+                ) : (
+                  <div className="p-3 text-2xs text-[var(--text-3)]">
+                    Open the stream first.
+                  </div>
+                ))}
             </div>
           )}
 
-          {grpcStreamId && (
-            <GrpcStreamComposer streamId={grpcStreamId} />
-          )}
+          {grpcStreamId && <GrpcStreamComposer streamId={grpcStreamId} />}
 
           {!grpcStreamId && !grpcStreaming && (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-2xs text-[var(--text-3)]">Click Invoke to open the stream.</p>
+              <p className="text-2xs text-[var(--text-3)]">
+                Click Invoke to open the stream.
+              </p>
             </div>
           )}
         </>
@@ -890,19 +1410,29 @@ export function GRPCClient() {
 
       {/* Server-stream messages */}
       {isServerStreaming && (
-        <div className="border-t border-[var(--border)] flex flex-col" style={{ maxHeight: 200 }}>
+        <div
+          className="border-t border-[var(--border)] flex flex-col"
+          style={{ maxHeight: 200 }}
+        >
           <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)] flex items-center gap-2">
             <span>Stream messages</span>
-            {grpcStreaming && <span className="text-[var(--accent)] animate-pulse">● live</span>}
+            {grpcStreaming && (
+              <span className="text-[var(--accent)] animate-pulse">● live</span>
+            )}
             <GrpcDeadlineCountdown />
             {grpcStreamMessages.length > 0 && (
-              <span className="ml-auto">{grpcStreamMessages.filter((m) => !m.done).length} received</span>
+              <span className="ml-auto">
+                {grpcStreamMessages.filter((m) => !m.done).length} received
+              </span>
             )}
             {receivedStreamBodies.length >= 2 && (
               <button
                 className="flex items-center gap-1 text-2xs text-[var(--accent)] hover:underline shrink-0"
                 title="Click two messages to diff them"
-                onClick={() => { setDiffLeft(null); setDiffRight(null); }}
+                onClick={() => {
+                  setDiffLeft(null);
+                  setDiffRight(null);
+                }}
               >
                 <ArrowLeftRight size={10} />
                 {diffLeft ? "pick 2nd" : "Diff msgs"}
@@ -911,27 +1441,44 @@ export function GRPCClient() {
           </div>
           <div className="overflow-y-auto flex-1">
             {grpcStreamMessages.length === 0 && !grpcStreaming && (
-              <p className="p-3 text-2xs text-[var(--text-3)]">No messages yet. Click Invoke to start streaming.</p>
+              <p className="p-3 text-2xs text-[var(--text-3)]">
+                No messages yet. Click Invoke to start streaming.
+              </p>
             )}
             {grpcStreamMessages.map((msg, i) => (
-              <div key={i} className={`px-3 py-1.5 border-b border-[var(--border)] last:border-0 ${msg.done ? "bg-[var(--surface-2)]" : ""}`}>
+              <div
+                key={i}
+                className={`px-3 py-1.5 border-b border-[var(--border)] last:border-0 ${msg.done ? "bg-[var(--surface-2)]" : ""}`}
+              >
                 {msg.done ? (
                   <div className="flex items-center gap-2">
-                    <span className={`text-2xs font-semibold ${msg.error ? "text-red-500" : "text-emerald-600"}`}>
-                      {msg.error ? `Error: ${msg.statusMessage || msg.error}` : `Completed — ${msg.durationMs?.toFixed(0)}ms`}
+                    <span
+                      className={`text-2xs font-semibold ${msg.error ? "text-red-500" : "text-emerald-600"}`}
+                    >
+                      {msg.error
+                        ? `Error: ${msg.statusMessage || msg.error}`
+                        : `Completed — ${msg.durationMs?.toFixed(0)}ms`}
                     </span>
                     {msg.trailers && msg.trailers.length > 0 && (
                       <span className="text-2xs text-[var(--text-3)]">
-                        {msg.trailers.map((t) => `${t.key}: ${t.value}`).join(", ")}
+                        {msg.trailers
+                          .map((t) => `${t.key}: ${t.value}`)
+                          .join(", ")}
                       </span>
                     )}
                   </div>
                 ) : (
                   <pre
                     className={`text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all cursor-pointer ${diffLeft === msg.bodyJson ? "bg-yellow-100 dark:bg-yellow-900/20 rounded" : ""}`}
-                    title={diffLeft ? "Click to select as right side of diff" : "Click to select as left side of diff"}
+                    title={
+                      diffLeft
+                        ? "Click to select as right side of diff"
+                        : "Click to select as left side of diff"
+                    }
                     onClick={() => msg.bodyJson && selectForDiff(msg.bodyJson)}
-                  >{msg.bodyJson}</pre>
+                  >
+                    {msg.bodyJson}
+                  </pre>
                 )}
               </div>
             ))}
@@ -940,7 +1487,9 @@ export function GRPCClient() {
       )}
 
       {/* Unary response */}
-      {grpcResponse && !isServerStreaming && !isClientStream && <GrpcResponsePanel res={grpcResponse} />}
+      {grpcResponse && !isServerStreaming && !isClientStream && (
+        <GrpcResponsePanel res={grpcResponse} />
+      )}
     </div>
   );
 }

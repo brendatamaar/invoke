@@ -14,17 +14,24 @@ export function BodyPanel() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-1 px-3 py-1.5 border-b border-[var(--border)]">
-        {(["none", "json", "form-data", "urlencoded", "raw", "file"] as BodyMode[]).map(
-          (bodyMode) => (
-            <button
-              key={bodyMode}
-              onClick={() => setRequest({ bodyMode })}
-              className={`tab-btn text-2xs ${mode === bodyMode ? "active" : ""}`}
-            >
-              {bodyMode}
-            </button>
-          ),
-        )}
+        {(
+          [
+            "none",
+            "json",
+            "form-data",
+            "urlencoded",
+            "raw",
+            "file",
+          ] as BodyMode[]
+        ).map((bodyMode) => (
+          <button
+            key={bodyMode}
+            onClick={() => setRequest({ bodyMode })}
+            className={`tab-btn text-2xs ${mode === bodyMode ? "active" : ""}`}
+          >
+            {bodyMode}
+          </button>
+        ))}
       </div>
       <div className="flex-1 overflow-auto">
         {mode === "none" && (
@@ -38,8 +45,16 @@ export function BodyPanel() {
               <button
                 onClick={() => {
                   try {
-                    setRequest({ body: JSON.stringify(JSON.parse(request.body ?? ""), null, 2) });
-                  } catch { /* not JSON, ignore */ }
+                    setRequest({
+                      body: JSON.stringify(
+                        JSON.parse(request.body ?? ""),
+                        null,
+                        2,
+                      ),
+                    });
+                  } catch {
+                    /* not JSON, ignore */
+                  }
                 }}
                 className="tab-btn text-2xs"
                 title="Format JSON"
@@ -49,8 +64,12 @@ export function BodyPanel() {
               <button
                 onClick={() => {
                   try {
-                    setRequest({ body: JSON.stringify(JSON.parse(request.body ?? "")) });
-                  } catch { /* not JSON, ignore */ }
+                    setRequest({
+                      body: JSON.stringify(JSON.parse(request.body ?? "")),
+                    });
+                  } catch {
+                    /* not JSON, ignore */
+                  }
                 }}
                 className="tab-btn text-2xs"
                 title="Minify JSON"
@@ -102,9 +121,14 @@ export function BodyPanel() {
             {request.body && mode === "file" ? (
               <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-2)] border border-[var(--border)] rounded text-xs">
                 <Upload size={12} className="text-[var(--accent)]" />
-                <span className="font-mono text-[var(--text-1)]">{fileName || "file selected"}</span>
+                <span className="font-mono text-[var(--text-1)]">
+                  {fileName || "file selected"}
+                </span>
                 <button
-                  onClick={() => { setRequest({ body: "" }); setFileName(""); }}
+                  onClick={() => {
+                    setRequest({ body: "" });
+                    setFileName("");
+                  }}
                   className="ml-1 text-[var(--text-3)] hover:text-[var(--danger)]"
                 >
                   <X size={12} />

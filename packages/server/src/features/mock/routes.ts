@@ -158,14 +158,16 @@ export function registerMockRoutes(app: Hono) {
   });
 }
 
-export function proxyRecordsToMockRoutes(records: {
-  id: string;
-  method: string;
-  path: string;
-  status: number;
-  responseHeaders: KeyValue[];
-  responseBody: string;
-}[]) {
+export function proxyRecordsToMockRoutes(
+  records: {
+    id: string;
+    method: string;
+    path: string;
+    status: number;
+    responseHeaders: KeyValue[];
+    responseBody: string;
+  }[],
+) {
   const validMethods = new Set([
     "GET",
     "POST",

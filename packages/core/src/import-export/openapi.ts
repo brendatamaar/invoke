@@ -192,9 +192,7 @@ export function exportCollectionAsOpenApi(
 
     for (const h of (req.headers ?? []).filter(
       (h) =>
-        h.enabled !== false &&
-        h.key &&
-        !SKIP_HEADERS.has(h.key.toLowerCase()),
+        h.enabled !== false && h.key && !SKIP_HEADERS.has(h.key.toLowerCase()),
     )) {
       parameters.push({
         name: h.key,
@@ -246,7 +244,9 @@ export function exportCollectionAsOpenApi(
     openapi: "3.0.3",
     info: {
       title: collection.name,
-      ...(collection.description ? { description: collection.description } : {}),
+      ...(collection.description
+        ? { description: collection.description }
+        : {}),
       version: "1.0.0",
     },
     ...(tagNames.length ? { tags: tagNames.map((name) => ({ name })) } : {}),

@@ -26,10 +26,7 @@ export async function saveEnvironment(
   return saved;
 }
 
-export async function deleteEnvironment(
-  db: InvokeDB,
-  environmentId: string,
-) {
+export async function deleteEnvironment(db: InvokeDB, environmentId: string) {
   await db.environments.delete(environmentId);
   const active = await getActiveEnvironmentId(db);
   if (active === environmentId) await setActiveEnvironmentId(db, undefined);
@@ -39,9 +36,6 @@ export function getActiveEnvironmentId(db: InvokeDB) {
   return getMeta<string>(db, "activeEnvironment");
 }
 
-export function setActiveEnvironmentId(
-  db: InvokeDB,
-  environmentId?: string,
-) {
+export function setActiveEnvironmentId(db: InvokeDB, environmentId?: string) {
   return setMeta(db, "activeEnvironment", environmentId);
 }

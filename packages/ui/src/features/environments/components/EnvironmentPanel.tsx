@@ -22,7 +22,8 @@ import { ConfirmModal } from "../../../components/shared/ConfirmModal";
 import { Dialog } from "../../../components/shared/Dialog";
 
 export function EnvironmentPanel() {
-  const { environments, activeEnvironmentId, envDraft, set, addToast } = useStore();
+  const { environments, activeEnvironmentId, envDraft, set, addToast } =
+    useStore();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const openDraft = (env?: Environment) =>
@@ -60,7 +61,8 @@ export function EnvironmentPanel() {
       const envs = await coreStore.listEnvironments();
       set({
         environments: envs,
-        activeEnvironmentId: activeEnvironmentId === id ? undefined : activeEnvironmentId,
+        activeEnvironmentId:
+          activeEnvironmentId === id ? undefined : activeEnvironmentId,
       });
     } catch (e) {
       addToast("error", String(e));
@@ -98,14 +100,20 @@ export function EnvironmentPanel() {
               {env.variables?.length ?? 0} vars
             </span>
             <button
-              onClick={(e) => { e.stopPropagation(); openDraft(env); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openDraft(env);
+              }}
               className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
               title="Edit"
             >
               <Edit3 size={12} />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(env.id); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmDeleteId(env.id);
+              }}
               className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
               title="Delete"
             >
@@ -170,16 +178,26 @@ function EnvironmentModal({
     });
 
   const addVar = () =>
-    setDraft({ variables: [...(draft.variables ?? []), { key: "", value: "", enabled: true }] });
+    setDraft({
+      variables: [
+        ...(draft.variables ?? []),
+        { key: "", value: "", enabled: true },
+      ],
+    });
 
   const removeVar = (i: number) =>
-    setDraft({ variables: (draft.variables ?? []).filter((_, idx) => idx !== i) });
+    setDraft({
+      variables: (draft.variables ?? []).filter((_, idx) => idx !== i),
+    });
 
   const importEnvFile = async (file?: File) => {
     if (!file) return;
     try {
       const imported = parseEnvText(await file.text());
-      if (!imported.length) { addToast("warn", "No variables found in .env file"); return; }
+      if (!imported.length) {
+        addToast("warn", "No variables found in .env file");
+        return;
+      }
       setDraft({ variables: mergeVariables(draft.variables ?? [], imported) });
       addToast("success", `Imported ${imported.length} variables`);
     } catch (e) {
@@ -191,7 +209,10 @@ function EnvironmentModal({
 
   const exportEnv = (includeSensitive: boolean) => {
     const text = exportEnvText(draft.variables ?? [], { includeSensitive });
-    if (!text.trim()) { addToast("warn", "No variables to export"); return; }
+    if (!text.trim()) {
+      addToast("warn", "No variables to export");
+      return;
+    }
     const blob = new Blob([`${text}\n`], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -288,7 +309,12 @@ function EnvironmentModal({
                   setDraft({
                     variables: (draft.variables ?? []).map((item, idx) =>
                       idx === i
-                        ? { ...item, key, sensitive: item.sensitive || isSensitiveVariableName(key) }
+                        ? {
+                            ...item,
+                            key,
+                            sensitive:
+                              item.sensitive || isSensitiveVariableName(key),
+                          }
                         : item,
                     ),
                   });
@@ -317,7 +343,11 @@ function EnvironmentModal({
                   className="px-1.5 text-[var(--text-3)] disabled:opacity-25 shrink-0"
                   title={v.sensitive ? "Toggle reveal" : "Value is public"}
                 >
-                  {v.sensitive && !revealed.has(i) ? <EyeOff size={11} /> : <Eye size={11} />}
+                  {v.sensitive && !revealed.has(i) ? (
+                    <EyeOff size={11} />
+                  ) : (
+                    <Eye size={11} />
+                  )}
                 </button>
                 <button
                   onClick={() => setVar(i, "sensitive", !v.sensitive)}
@@ -346,8 +376,12 @@ function EnvironmentModal({
 
         {/* Footer */}
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)] shrink-0">
-          <button onClick={onClose} className="btn text-xs">Cancel</button>
-          <button onClick={onSave} className="btn btn-primary text-xs">Save</button>
+          <button onClick={onClose} className="btn text-xs">
+            Cancel
+          </button>
+          <button onClick={onSave} className="btn btn-primary text-xs">
+            Save
+          </button>
         </div>
 
         <div

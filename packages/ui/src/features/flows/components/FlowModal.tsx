@@ -15,7 +15,13 @@ import { FlowStepList } from "./FlowStepList";
 import { makeStep } from "./flowStepUtils";
 import { StepEditorPanel } from "./StepEditorPanel";
 
-export function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
+export function FlowModal({
+  flow,
+  onClose,
+}: {
+  flow: Flow;
+  onClose: () => void;
+}) {
   const {
     set,
     addToast,

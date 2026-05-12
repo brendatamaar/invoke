@@ -8,5 +8,8 @@ export {
   importYamlFiles,
 } from "./import-export/invoke-yaml";
 export { importInsomniaExport } from "./import-export/insomnia";
-export { exportCollectionAsOpenApi, importOpenApiSpec } from "./import-export/openapi";
+export {
+  exportCollectionAsOpenApi,
+  importOpenApiSpec,
+} from "./import-export/openapi";
 export { importPostmanCollection } from "./import-export/postman";

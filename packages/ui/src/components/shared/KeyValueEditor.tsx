@@ -34,7 +34,9 @@ export function KeyValueEditor({
     <div className="flex flex-col">
       {keyDatalist && (
         <datalist id={datalistId}>
-          {keyDatalist.map((h) => <option key={h} value={h} />)}
+          {keyDatalist.map((h) => (
+            <option key={h} value={h} />
+          ))}
         </datalist>
       )}
       {rows.length > 0 && (

@@ -577,9 +577,7 @@ function parseGQLBody(request: RequestConfig): ParsedGQLBody | null {
 
 function gqlConstName(gql: ParsedGQLBody): string {
   if (gql.operationName) {
-    return gql.operationName
-      .replace(/([a-z])([A-Z])/g, "$1_$2")
-      .toUpperCase();
+    return gql.operationName.replace(/([a-z])([A-Z])/g, "$1_$2").toUpperCase();
   }
   return gql.operationKind.toUpperCase() + "_OPERATION";
 }
@@ -846,34 +844,69 @@ function phpArray(value: Record<string, string>) {
 // ─── WebSocket code generation ───────────────────────────────────────────────
 
 export const WS_CODE_EXPORT_TARGETS: Array<Omit<WsCodeSnippet, "code">> = [
-  { target: "ws-wscat", label: "wscat", language: "shell", filename: "websocket.sh" },
-  { target: "ws-websocat", label: "websocat", language: "shell", filename: "websocket.sh" },
-  { target: "ws-javascript", label: "Browser WebSocket", language: "javascript", filename: "websocket.js" },
-  { target: "ws-node-ws", label: "Node.js ws", language: "javascript", filename: "websocket.node.js" },
-  { target: "ws-python-websockets", label: "Python websockets", language: "python", filename: "websocket.py" },
+  {
+    target: "ws-wscat",
+    label: "wscat",
+    language: "shell",
+    filename: "websocket.sh",
+  },
+  {
+    target: "ws-websocat",
+    label: "websocat",
+    language: "shell",
+    filename: "websocket.sh",
+  },
+  {
+    target: "ws-javascript",
+    label: "Browser WebSocket",
+    language: "javascript",
+    filename: "websocket.js",
+  },
+  {
+    target: "ws-node-ws",
+    label: "Node.js ws",
+    language: "javascript",
+    filename: "websocket.node.js",
+  },
+  {
+    target: "ws-python-websockets",
+    label: "Python websockets",
+    language: "python",
+    filename: "websocket.py",
+  },
 ];
 
 export function generateWsCodeSnippet(
   request: WebSocketRequestConfig,
   target: WsCodeExportTarget,
 ): WsCodeSnippet {
-  const meta = WS_CODE_EXPORT_TARGETS.find((t) => t.target === target) ?? WS_CODE_EXPORT_TARGETS[0];
+  const meta =
+    WS_CODE_EXPORT_TARGETS.find((t) => t.target === target) ??
+    WS_CODE_EXPORT_TARGETS[0];
   const code = wsGeneratorFor(target)(request);
   return { ...meta, code };
 }
 
 function wsGeneratorFor(target: WsCodeExportTarget) {
   switch (target) {
-    case "ws-wscat": return generateWscat;
-    case "ws-websocat": return generateWebsocat;
-    case "ws-javascript": return generateWsJavaScript;
-    case "ws-node-ws": return generateWsNodeWs;
-    case "ws-python-websockets": return generateWsPython;
-    default: return generateWscat;
+    case "ws-wscat":
+      return generateWscat;
+    case "ws-websocat":
+      return generateWebsocat;
+    case "ws-javascript":
+      return generateWsJavaScript;
+    case "ws-node-ws":
+      return generateWsNodeWs;
+    case "ws-python-websockets":
+      return generateWsPython;
+    default:
+      return generateWscat;
   }
 }
 
-function wsEffectiveHeaders(request: WebSocketRequestConfig): Array<{ key: string; value: string }> {
+function wsEffectiveHeaders(
+  request: WebSocketRequestConfig,
+): Array<{ key: string; value: string }> {
   const headers = (request.headers ?? [])
     .filter((h) => h.enabled !== false && h.key)
     .map((h) => ({ key: h.key, value: h.value }));
@@ -884,7 +917,12 @@ function wsEffectiveHeaders(request: WebSocketRequestConfig): Array<{ key: strin
   } else if (auth.type === "basic" && auth.username) {
     const encoded = btoa(`${auth.username}:${auth.password ?? ""}`);
     headers.push({ key: "Authorization", value: `Basic ${encoded}` });
-  } else if (auth.type === "api-key" && auth.apiKeyName && auth.apiKeyValue && auth.apiKeyIn !== "query") {
+  } else if (
+    auth.type === "api-key" &&
+    auth.apiKeyName &&
+    auth.apiKeyValue &&
+    auth.apiKeyIn !== "query"
+  ) {
     headers.push({ key: auth.apiKeyName, value: auth.apiKeyValue });
   }
   return headers;
@@ -896,11 +934,17 @@ function generateWscat(request: WebSocketRequestConfig): string {
     parts.push("-H", shellQuote(`${h.key}: ${h.value}`));
   }
   if (request.protocols) {
-    for (const p of request.protocols.split(",").map((s) => s.trim()).filter(Boolean)) {
+    for (const p of request.protocols
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)) {
       parts.push("--protocol", shellQuote(p));
     }
   }
-  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
+  return parts.reduce(
+    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
+    "",
+  );
 }
 
 function generateWebsocat(request: WebSocketRequestConfig): string {
@@ -908,12 +952,20 @@ function generateWebsocat(request: WebSocketRequestConfig): string {
   for (const h of wsEffectiveHeaders(request)) {
     parts.push(`-H ${shellQuote(`${h.key}: ${h.value}`)}`);
   }
-  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
+  return parts.reduce(
+    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
+    "",
+  );
 }
 
 function generateWsJavaScript(request: WebSocketRequestConfig): string {
   const protocols = request.protocols
-    ? `, ${JSON.stringify(request.protocols.split(",").map((p) => p.trim()).filter(Boolean))}`
+    ? `, ${JSON.stringify(
+        request.protocols
+          .split(",")
+          .map((p) => p.trim())
+          .filter(Boolean),
+      )}`
     : "";
   const initMsg = request.message
     ? `\n  ws.send(${JSON.stringify(request.message)});`
@@ -943,12 +995,18 @@ function generateWsNodeWs(request: WebSocketRequestConfig): string {
     ? `\n  headers: ${JSON.stringify(Object.fromEntries(hdrs.map((h) => [h.key, h.value])), null, 4).replace(/\n/g, "\n  ")},`
     : "";
   const protocols = request.protocols
-    ? `\n  protocols: ${JSON.stringify(request.protocols.split(",").map((p) => p.trim()).filter(Boolean))},`
+    ? `\n  protocols: ${JSON.stringify(
+        request.protocols
+          .split(",")
+          .map((p) => p.trim())
+          .filter(Boolean),
+      )},`
     : "";
   const initMsg = request.message
     ? `\n  ws.send(${JSON.stringify(request.message)});`
     : "";
-  const options = protocols || headersObj ? `, {${protocols}${headersObj}\n}` : "";
+  const options =
+    protocols || headersObj ? `, {${protocols}${headersObj}\n}` : "";
   return `import WebSocket from "ws";
 
 const ws = new WebSocket(${JSON.stringify(request.url)}${options});
@@ -990,38 +1048,82 @@ async def main():
 asyncio.run(main())`;
 }
 
-
 // ─── gRPC code generation ────────────────────────────────────────────────────
 
 export const GRPC_CODE_EXPORT_TARGETS: Array<Omit<GrpcCodeSnippet, "code">> = [
-  { target: "grpc-grpcurl", label: "grpcurl", language: "shell", filename: "request.grpcurl.sh" },
-  { target: "grpc-go", label: "Go gRPC", language: "go", filename: "request.grpc.go" },
-  { target: "grpc-node", label: "Node @grpc/grpc-js", language: "javascript", filename: "request.grpc.js" },
-  { target: "grpc-python", label: "Python grpcio", language: "python", filename: "request.grpc.py" },
-  { target: "grpc-java", label: "Java gRPC", language: "java", filename: "Request.grpc.java" },
-  { target: "grpc-csharp", label: "C# Grpc.Net.Client", language: "csharp", filename: "Request.grpc.cs" },
-  { target: "grpc-kotlin", label: "Kotlin gRPC", language: "kotlin", filename: "Request.grpc.kt" },
+  {
+    target: "grpc-grpcurl",
+    label: "grpcurl",
+    language: "shell",
+    filename: "request.grpcurl.sh",
+  },
+  {
+    target: "grpc-go",
+    label: "Go gRPC",
+    language: "go",
+    filename: "request.grpc.go",
+  },
+  {
+    target: "grpc-node",
+    label: "Node @grpc/grpc-js",
+    language: "javascript",
+    filename: "request.grpc.js",
+  },
+  {
+    target: "grpc-python",
+    label: "Python grpcio",
+    language: "python",
+    filename: "request.grpc.py",
+  },
+  {
+    target: "grpc-java",
+    label: "Java gRPC",
+    language: "java",
+    filename: "Request.grpc.java",
+  },
+  {
+    target: "grpc-csharp",
+    label: "C# Grpc.Net.Client",
+    language: "csharp",
+    filename: "Request.grpc.cs",
+  },
+  {
+    target: "grpc-kotlin",
+    label: "Kotlin gRPC",
+    language: "kotlin",
+    filename: "Request.grpc.kt",
+  },
 ];
 
 export function generateGrpcCodeSnippet(
   request: GrpcRequestConfig,
   target: GrpcCodeExportTarget,
 ): GrpcCodeSnippet {
-  const meta = GRPC_CODE_EXPORT_TARGETS.find((t) => t.target === target) ?? GRPC_CODE_EXPORT_TARGETS[0];
+  const meta =
+    GRPC_CODE_EXPORT_TARGETS.find((t) => t.target === target) ??
+    GRPC_CODE_EXPORT_TARGETS[0];
   const code = grpcGeneratorFor(target)(request);
   return { ...meta, code };
 }
 
 function grpcGeneratorFor(target: GrpcCodeExportTarget) {
   switch (target) {
-    case "grpc-grpcurl": return generateGrpcurl;
-    case "grpc-go": return generateGrpcGo;
-    case "grpc-node": return generateGrpcNode;
-    case "grpc-python": return generateGrpcPython;
-    case "grpc-java": return generateGrpcJava;
-    case "grpc-csharp": return generateGrpcCSharp;
-    case "grpc-kotlin": return generateGrpcKotlin;
-    default: return generateGrpcurl;
+    case "grpc-grpcurl":
+      return generateGrpcurl;
+    case "grpc-go":
+      return generateGrpcGo;
+    case "grpc-node":
+      return generateGrpcNode;
+    case "grpc-python":
+      return generateGrpcPython;
+    case "grpc-java":
+      return generateGrpcJava;
+    case "grpc-csharp":
+      return generateGrpcCSharp;
+    case "grpc-kotlin":
+      return generateGrpcKotlin;
+    default:
+      return generateGrpcurl;
   }
 }
 
@@ -1029,8 +1131,12 @@ function grpcFullMethod(request: GrpcRequestConfig): string {
   return `${request.service}/${request.method}`;
 }
 
-function grpcEnabledMetadata(request: GrpcRequestConfig): Array<{ key: string; value: string }> {
-  return (request.metadata ?? []).filter((m) => m.enabled !== false && m.key.trim());
+function grpcEnabledMetadata(
+  request: GrpcRequestConfig,
+): Array<{ key: string; value: string }> {
+  return (request.metadata ?? []).filter(
+    (m) => m.enabled !== false && m.key.trim(),
+  );
 }
 
 function generateGrpcurl(request: GrpcRequestConfig): string {
@@ -1039,11 +1145,18 @@ function generateGrpcurl(request: GrpcRequestConfig): string {
   for (const m of grpcEnabledMetadata(request)) {
     parts.push("-rpc-header", shellQuote(`${m.key}: ${m.value}`));
   }
-  if (request.body && request.body.trim() !== "{}" && request.body.trim() !== "") {
+  if (
+    request.body &&
+    request.body.trim() !== "{}" &&
+    request.body.trim() !== ""
+  ) {
     parts.push("-d", shellQuote(request.body));
   }
   parts.push(shellQuote(request.address), shellQuote(grpcFullMethod(request)));
-  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
+  return parts.reduce(
+    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
+    "",
+  );
 }
 
 export function generateGrpcBufCurl(request: GrpcRequestConfig): string {
@@ -1053,23 +1166,36 @@ export function generateGrpcBufCurl(request: GrpcRequestConfig): string {
   for (const m of grpcEnabledMetadata(request)) {
     parts.push("-H", shellQuote(`${m.key}: ${m.value}`));
   }
-  if (request.body && request.body.trim() !== "{}" && request.body.trim() !== "") {
+  if (
+    request.body &&
+    request.body.trim() !== "{}" &&
+    request.body.trim() !== ""
+  ) {
     parts.push("--data", shellQuote(request.body));
   }
   if (!request.tls) parts.push("--http2-prior-knowledge");
   parts.push(shellQuote(url));
-  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
+  return parts.reduce(
+    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
+    "",
+  );
 }
 
 function generateGrpcGo(request: GrpcRequestConfig): string {
   const meta = grpcEnabledMetadata(request);
-  const metaLines = meta.map((m) => `\tmd.Append(${goString(m.key)}, ${goString(m.value)})`).join("\n");
+  const metaLines = meta
+    .map((m) => `\tmd.Append(${goString(m.key)}, ${goString(m.value)})`)
+    .join("\n");
   const dialOpts = request.tls
     ? `grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))`
     : `grpc.WithTransportCredentials(insecure.NewCredentials())`;
   const imports = [
-    `"context"`, `"encoding/json"`, `"fmt"`, `"time"`,
-    `"google.golang.org/grpc"`, `"google.golang.org/grpc/metadata"`,
+    `"context"`,
+    `"encoding/json"`,
+    `"fmt"`,
+    `"time"`,
+    `"google.golang.org/grpc"`,
+    `"google.golang.org/grpc/metadata"`,
   ];
   if (request.tls) {
     imports.push(`"crypto/tls"`, `"google.golang.org/grpc/credentials"`);
@@ -1144,7 +1270,9 @@ client.${request.method}(request, ${meta.length ? "metadata, " : ""}{ deadline: 
 
 function generateGrpcPython(request: GrpcRequestConfig): string {
   const meta = grpcEnabledMetadata(request);
-  const metaTuples = meta.map((m) => `    (${JSON.stringify(m.key)}, ${JSON.stringify(m.value)}),`).join("\n");
+  const metaTuples = meta
+    .map((m) => `    (${JSON.stringify(m.key)}, ${JSON.stringify(m.value)}),`)
+    .join("\n");
   const channel = request.tls
     ? `grpc.secure_channel(${JSON.stringify(request.address)}, grpc.ssl_channel_credentials())`
     : `grpc.insecure_channel(${JSON.stringify(request.address)})`;
@@ -1165,9 +1293,12 @@ request_data = json.loads('''${request.body || "{}"}''')
 function generateGrpcJava(request: GrpcRequestConfig): string {
   const meta = grpcEnabledMetadata(request);
   const serviceName = request.service.split(".").pop() ?? request.service;
-  const metaLines = meta.map((m) =>
-    `    metadata.put(Metadata.Key.of(${JSON.stringify(m.key)}, Metadata.ASCII_STRING_MARSHALLER), ${JSON.stringify(m.value)});`
-  ).join("\n");
+  const metaLines = meta
+    .map(
+      (m) =>
+        `    metadata.put(Metadata.Key.of(${JSON.stringify(m.key)}, Metadata.ASCII_STRING_MARSHALLER), ${JSON.stringify(m.value)});`,
+    )
+    .join("\n");
   const channelBuilder = request.tls
     ? `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).useTransportSecurity()`
     : `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).usePlaintext()`;
@@ -1194,9 +1325,12 @@ ${meta.length ? `    Metadata metadata = new Metadata();\n${metaLines}\n` : ""} 
 function generateGrpcCSharp(request: GrpcRequestConfig): string {
   const meta = grpcEnabledMetadata(request);
   const serviceName = request.service.split(".").pop() ?? request.service;
-  const metaLines = meta.map((m) =>
-    `    headers.Add(${JSON.stringify(m.key)}, ${JSON.stringify(m.value)});`
-  ).join("\n");
+  const metaLines = meta
+    .map(
+      (m) =>
+        `    headers.Add(${JSON.stringify(m.key)}, ${JSON.stringify(m.value)});`,
+    )
+    .join("\n");
   const channelCreds = request.tls
     ? "new SslCredentials()"
     : "ChannelCredentials.Insecure";
@@ -1218,9 +1352,12 @@ ${meta.length ? `var headers = new Metadata();\n${metaLines}\n` : ""}var deadlin
 function generateGrpcKotlin(request: GrpcRequestConfig): string {
   const meta = grpcEnabledMetadata(request);
   const serviceName = request.service.split(".").pop() ?? request.service;
-  const metaLines = meta.map((m) =>
-    `    metadata.put(Metadata.Key.of(${JSON.stringify(m.key)}, Metadata.ASCII_STRING_MARSHALLER), ${JSON.stringify(m.value)})`
-  ).join("\n");
+  const metaLines = meta
+    .map(
+      (m) =>
+        `    metadata.put(Metadata.Key.of(${JSON.stringify(m.key)}, Metadata.ASCII_STRING_MARSHALLER), ${JSON.stringify(m.value)})`,
+    )
+    .join("\n");
   const channelBuilder = request.tls
     ? `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).useTransportSecurity()`
     : `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).usePlaintext()`;

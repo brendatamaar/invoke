@@ -85,7 +85,9 @@ describe("third-party imports", () => {
     expect(imported.collection.name).toBe("Hoppscotch API");
     expect(imported.folders[0].name).toBe("users");
     expect(imported.requests[0].folderId).toBe(imported.folders[0].id);
-    expect((imported.requests[0].request as RequestConfig).url).toBe("{{base_url}}/users");
+    expect((imported.requests[0].request as RequestConfig).url).toBe(
+      "{{base_url}}/users",
+    );
   });
 
   it("imports HAR entries as REST requests", () => {

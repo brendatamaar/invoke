@@ -19,7 +19,8 @@ export function DeferredTab() {
           @defer / @stream
         </span>
         <span className="text-2xs text-[var(--text-3)]">
-          {graphqlDeferredParts.length} part{graphqlDeferredParts.length !== 1 ? "s" : ""}
+          {graphqlDeferredParts.length} part
+          {graphqlDeferredParts.length !== 1 ? "s" : ""}
         </span>
       </div>
 
@@ -27,7 +28,9 @@ export function DeferredTab() {
       {initialPart && (
         <div className="border border-[var(--border)] rounded-lg p-3 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-2xs font-mono text-[var(--accent)]">Part 0 — initial</span>
+            <span className="text-2xs font-mono text-[var(--accent)]">
+              Part 0 — initial
+            </span>
             <span className="text-2xs text-[var(--text-3)]">
               hasNext: {String(initialPart.hasNext)}
             </span>
@@ -39,7 +42,8 @@ export function DeferredTab() {
           )}
           {initialPart.errors && initialPart.errors.length > 0 && (
             <p className="text-2xs text-red-500 font-mono mt-1">
-              {initialPart.errors.length} error{initialPart.errors.length !== 1 ? "s" : ""}
+              {initialPart.errors.length} error
+              {initialPart.errors.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>
@@ -61,7 +65,10 @@ export function DeferredTab() {
             </span>
           </div>
           <p className="text-2xs text-[var(--text-3)]">
-            Path: <span className="font-mono text-[var(--text-2)]">{formatPath(part.path)}</span>
+            Path:{" "}
+            <span className="font-mono text-[var(--text-2)]">
+              {formatPath(part.path)}
+            </span>
           </p>
           {part.data !== undefined && (
             <pre className="text-2xs font-mono text-[var(--text-2)] whitespace-pre-wrap break-all mt-1 max-h-40 overflow-auto bg-[var(--surface-2)] rounded p-2">

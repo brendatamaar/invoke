@@ -70,7 +70,11 @@ export function BodyTab({
                   setJsonPathInput(val);
                   if (val.trim()) {
                     const r = evaluateJsonPath(response.body, val);
-                    setJsonPathResult(r.error ? `Error: ${r.error}` : JSON.stringify(r.value, null, 2));
+                    setJsonPathResult(
+                      r.error
+                        ? `Error: ${r.error}`
+                        : JSON.stringify(r.value, null, 2),
+                    );
                   } else {
                     setJsonPathResult(null);
                   }
@@ -115,7 +119,9 @@ export function BodyTab({
         )}
       </div>
       {jsonPathResult !== null && (
-        <div className={`px-3 py-1.5 border-b border-[var(--border)] text-2xs font-mono ${jsonPathResult.startsWith("Error:") ? "text-red-500 bg-red-500/5" : "text-[var(--text-1)] bg-[var(--surface-2)]"}`}>
+        <div
+          className={`px-3 py-1.5 border-b border-[var(--border)] text-2xs font-mono ${jsonPathResult.startsWith("Error:") ? "text-red-500 bg-red-500/5" : "text-[var(--text-1)] bg-[var(--surface-2)]"}`}
+        >
           {jsonPathResult}
         </div>
       )}

@@ -63,19 +63,31 @@ import type { GQLSubMessage } from "../useGraphQLSubscription";
 
 const CACHE_PREFIX = "gql_schema_";
 
-function cacheSchema(endpoint: string, schema: GraphQLIntrospectionSchema, lastFetched: number) {
+function cacheSchema(
+  endpoint: string,
+  schema: GraphQLIntrospectionSchema,
+  lastFetched: number,
+) {
   try {
-    localStorage.setItem(CACHE_PREFIX + endpoint, JSON.stringify({ schema, lastFetched }));
+    localStorage.setItem(
+      CACHE_PREFIX + endpoint,
+      JSON.stringify({ schema, lastFetched }),
+    );
   } catch {
     // quota exceeded — ignore
   }
 }
 
-function loadCachedSchema(endpoint: string): { schema: GraphQLIntrospectionSchema; lastFetched: number } | null {
+function loadCachedSchema(
+  endpoint: string,
+): { schema: GraphQLIntrospectionSchema; lastFetched: number } | null {
   try {
     const raw = localStorage.getItem(CACHE_PREFIX + endpoint);
     if (!raw) return null;
-    return JSON.parse(raw) as { schema: GraphQLIntrospectionSchema; lastFetched: number };
+    return JSON.parse(raw) as {
+      schema: GraphQLIntrospectionSchema;
+      lastFetched: number;
+    };
   } catch {
     return null;
   }
@@ -157,7 +169,7 @@ export function extractRequiredVarNames(query: string): string[] {
     const ast = gqlParse(query);
     return ast.definitions
       .filter((d) => d.kind === "OperationDefinition")
-      .flatMap((d) => ((d as any).variableDefinitions ?? []))
+      .flatMap((d) => (d as any).variableDefinitions ?? [])
       .filter((v: any) => v.type.kind === "NonNullType" && !v.defaultValue)
       .map((v: any) => v.variable.name.value as string);
   } catch {
@@ -167,10 +179,17 @@ export function extractRequiredVarNames(query: string): string[] {
 
 function scaffoldVariables(current: string, varNames: string[]): string {
   let parsed: Record<string, unknown> = {};
-  try { parsed = JSON.parse(current); } catch { /* keep empty */ }
+  try {
+    parsed = JSON.parse(current);
+  } catch {
+    /* keep empty */
+  }
   let changed = false;
   for (const name of varNames) {
-    if (!(name in parsed)) { parsed[name] = null; changed = true; }
+    if (!(name in parsed)) {
+      parsed[name] = null;
+      changed = true;
+    }
   }
   return changed ? JSON.stringify(parsed, null, 2) : current;
 }
@@ -188,7 +207,10 @@ function schemaToSDL(schema: GraphQLIntrospectionSchema): string {
 
 function sdlToIntrospectionSchema(sdl: string): GraphQLIntrospectionSchema {
   const schema = buildASTSchema(gqlParse(sdl));
-  const result = graphqlSync({ schema, source: getIntrospectionQuery() }) as any;
+  const result = graphqlSync({
+    schema,
+    source: getIntrospectionQuery(),
+  }) as any;
   return parseGraphQLIntrospection(JSON.stringify(result));
 }
 
@@ -215,7 +237,9 @@ function loadFragments(): SavedFragment[] {
 function saveFragments(fragments: SavedFragment[]) {
   try {
     localStorage.setItem(FRAGMENTS_KEY, JSON.stringify(fragments));
-  } catch { /* quota exceeded */ }
+  } catch {
+    /* quota exceeded */
+  }
 }
 
 function extractFragmentDefs(query: string): SavedFragment[] {
@@ -231,7 +255,9 @@ function extractFragmentDefs(query: string): SavedFragment[] {
         body: gqlPrint(def),
       });
     }
-  } catch { /* ignore parse errors */ }
+  } catch {
+    /* ignore parse errors */
+  }
   return results;
 }
 
@@ -253,7 +279,9 @@ function makeGraphQLLinter(
         try {
           const ln = view.state.doc.line(line);
           return Math.min(ln.from + col - 1, ln.to);
-        } catch { return 0; }
+        } catch {
+          return 0;
+        }
       };
 
       let ast;
@@ -298,13 +326,20 @@ function makeGraphQLLinter(
 
 function kindBadge(kind: string): { label: string; cls: string } {
   switch (kind) {
-    case "OBJECT":       return { label: "obj",    cls: "text-blue-600 bg-blue-500/10" };
-    case "INPUT_OBJECT": return { label: "inp",    cls: "text-violet-600 bg-violet-500/10" };
-    case "ENUM":         return { label: "enum",   cls: "text-amber-600 bg-amber-500/10" };
-    case "UNION":        return { label: "union",  cls: "text-emerald-600 bg-emerald-500/10" };
-    case "INTERFACE":    return { label: "iface",  cls: "text-cyan-600 bg-cyan-500/10" };
-    case "SCALAR":       return { label: "scalar", cls: "text-zinc-500 bg-zinc-500/10" };
-    default:             return { label: kind.toLowerCase(), cls: "text-zinc-500 bg-zinc-500/10" };
+    case "OBJECT":
+      return { label: "obj", cls: "text-blue-600 bg-blue-500/10" };
+    case "INPUT_OBJECT":
+      return { label: "inp", cls: "text-violet-600 bg-violet-500/10" };
+    case "ENUM":
+      return { label: "enum", cls: "text-amber-600 bg-amber-500/10" };
+    case "UNION":
+      return { label: "union", cls: "text-emerald-600 bg-emerald-500/10" };
+    case "INTERFACE":
+      return { label: "iface", cls: "text-cyan-600 bg-cyan-500/10" };
+    case "SCALAR":
+      return { label: "scalar", cls: "text-zinc-500 bg-zinc-500/10" };
+    default:
+      return { label: kind.toLowerCase(), cls: "text-zinc-500 bg-zinc-500/10" };
   }
 }
 
@@ -312,15 +347,30 @@ function kindBadge(kind: string): { label: string; cls: string } {
 
 export function GraphQLQueryPanel() {
   const {
-    graphqlRequest, setGraphqlRequest, graphqlSchema, request, set,
-    environments, activeEnvironmentId, sessionVariables,
+    graphqlRequest,
+    setGraphqlRequest,
+    graphqlSchema,
+    request,
+    set,
+    environments,
+    activeEnvironmentId,
+    sessionVariables,
   } = useStore();
   const [schemaModalOpen, setSchemaModalOpen] = useState(false);
   const [curlCopied, setCurlCopied] = useState(false);
-  const { state: subState, messages: subMessages, subscribe, unsubscribe, clearMessages } = useGraphQLSubscription();
+  const {
+    state: subState,
+    messages: subMessages,
+    subscribe,
+    unsubscribe,
+    clearMessages,
+  } = useGraphQLSubscription();
 
   const copyCurl = async () => {
-    const config = graphQLToRequestConfig({ ...graphqlRequest, url: request.url });
+    const config = graphQLToRequestConfig({
+      ...graphqlRequest,
+      url: request.url,
+    });
     const snippet = await generateCodeSnippet(config, "curl");
     await navigator.clipboard.writeText(snippet.code);
     setCurlCopied(true);
@@ -391,8 +441,12 @@ export function GraphQLQueryPanel() {
   useEffect(() => {
     const varNames = extractQueryVarDefs(graphqlRequest.query ?? "");
     if (varNames.length === 0) return;
-    const scaffolded = scaffoldVariables(graphqlRequest.variables ?? "{}", varNames);
-    if (scaffolded !== graphqlRequest.variables) setGraphqlRequest({ variables: scaffolded });
+    const scaffolded = scaffoldVariables(
+      graphqlRequest.variables ?? "{}",
+      varNames,
+    );
+    if (scaffolded !== graphqlRequest.variables)
+      setGraphqlRequest({ variables: scaffolded });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphqlRequest.query]);
 
@@ -408,7 +462,8 @@ export function GraphQLQueryPanel() {
       if (graphqlRequest.operationName !== operations[0].name)
         setGraphqlRequest({ operationName: operations[0].name });
     } else if (operations.length === 0 || !operations.some((o) => o.name)) {
-      if (graphqlRequest.operationName) setGraphqlRequest({ operationName: "" });
+      if (graphqlRequest.operationName)
+        setGraphqlRequest({ operationName: "" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [operations]);
@@ -431,7 +486,11 @@ export function GraphQLQueryPanel() {
           Import Schema
         </button>
         <button
-          onClick={() => setGraphqlRequest({ query: prettifyQuery(graphqlRequest.query ?? "") })}
+          onClick={() =>
+            setGraphqlRequest({
+              query: prettifyQuery(graphqlRequest.query ?? ""),
+            })
+          }
           className="btn text-2xs py-0.5 px-2 gap-1"
           title="Prettify query"
         >
@@ -444,7 +503,11 @@ export function GraphQLQueryPanel() {
           title="Copy as cURL"
           disabled={!request.url.trim()}
         >
-          {curlCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+          {curlCopied ? (
+            <Check size={12} className="text-emerald-500" />
+          ) : (
+            <Copy size={12} />
+          )}
           {curlCopied ? "Copied!" : "cURL"}
         </button>
         <label
@@ -473,8 +536,8 @@ export function GraphQLQueryPanel() {
           />
           Batch
         </label>
-        {isSubscription && (
-          subState === "subscribed" || subState === "connecting" ? (
+        {isSubscription &&
+          (subState === "subscribed" || subState === "connecting" ? (
             <button
               onClick={unsubscribe}
               className="btn btn-danger text-2xs py-0.5 px-2 gap-1 ml-auto"
@@ -484,27 +547,30 @@ export function GraphQLQueryPanel() {
             </button>
           ) : (
             <button
-              onClick={() => subscribe({
-                url: request.url,
-                headers: graphqlRequest.headers ?? [],
-                query: graphqlRequest.query ?? "",
-                variables: graphqlRequest.variables,
-                operationName: graphqlRequest.operationName,
-              })}
+              onClick={() =>
+                subscribe({
+                  url: request.url,
+                  headers: graphqlRequest.headers ?? [],
+                  query: graphqlRequest.query ?? "",
+                  variables: graphqlRequest.variables,
+                  operationName: graphqlRequest.operationName,
+                })
+              }
               disabled={!request.url.trim()}
               className="btn btn-primary text-2xs py-0.5 px-2 gap-1 ml-auto"
             >
               <Zap size={12} />
               Subscribe
             </button>
-          )
-        )}
+          ))}
         {operations.length > 1 && (
           <div className="flex items-center gap-1 ml-auto">
             <span className="text-2xs text-[var(--text-3)]">Operation:</span>
             <select
               value={graphqlRequest.operationName ?? ""}
-              onChange={(e) => setGraphqlRequest({ operationName: e.target.value })}
+              onChange={(e) =>
+                setGraphqlRequest({ operationName: e.target.value })
+              }
               className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-1.5 py-0.5 text-2xs font-mono outline-none focus:border-[var(--accent)]"
             >
               <option value="">— pick —</option>
@@ -535,7 +601,9 @@ export function GraphQLQueryPanel() {
             onInsertField={insertField}
             onNavigate={(typeName) =>
               set((s) => ({
-                expandedGraphQLTypeNames: s.expandedGraphQLTypeNames.includes(typeName)
+                expandedGraphQLTypeNames: s.expandedGraphQLTypeNames.includes(
+                  typeName,
+                )
                   ? s.expandedGraphQLTypeNames
                   : [...s.expandedGraphQLTypeNames, typeName],
               }))
@@ -544,7 +612,9 @@ export function GraphQLQueryPanel() {
         )}
       </div>
 
-      {(subMessages.length > 0 || subState === "subscribed" || subState === "connecting") && (
+      {(subMessages.length > 0 ||
+        subState === "subscribed" ||
+        subState === "connecting") && (
         <GQLSubscriptionLog
           state={subState}
           messages={subMessages}
@@ -580,15 +650,25 @@ function GQLSubscriptionLog({
   };
 
   return (
-    <div className="border-t border-[var(--border)] flex flex-col shrink-0" style={{ maxHeight: 200 }}>
+    <div
+      className="border-t border-[var(--border)] flex flex-col shrink-0"
+      style={{ maxHeight: 200 }}
+    >
       <div className="flex items-center gap-2 px-3 py-1 border-b border-[var(--border)] bg-[var(--surface-2)] shrink-0">
         <div className={`w-1.5 h-1.5 rounded-full ${stateColors[state]}`} />
         <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider flex-1">
           Subscription
-          {state === "subscribed" && <span className="ml-1 font-normal normal-case">— {messages.filter(m => m.kind === "data").length} messages</span>}
+          {state === "subscribed" && (
+            <span className="ml-1 font-normal normal-case">
+              — {messages.filter((m) => m.kind === "data").length} messages
+            </span>
+          )}
         </span>
         {messages.length > 0 && (
-          <button onClick={onClear} className="text-2xs text-[var(--text-3)] hover:text-[var(--text-1)]">
+          <button
+            onClick={onClear}
+            className="text-2xs text-[var(--text-3)] hover:text-[var(--text-1)]"
+          >
             Clear
           </button>
         )}
@@ -609,10 +689,13 @@ function GQLSubscriptionLog({
             <ArrowDown
               size={11}
               className={`mt-0.5 shrink-0 ${
-                msg.kind === "error" ? "text-red-500" :
-                msg.kind === "data" ? "text-emerald-500" :
-                msg.kind === "complete" ? "text-amber-500" :
-                "text-[var(--text-3)]"
+                msg.kind === "error"
+                  ? "text-red-500"
+                  : msg.kind === "data"
+                    ? "text-emerald-500"
+                    : msg.kind === "complete"
+                      ? "text-amber-500"
+                      : "text-[var(--text-3)]"
               }`}
             />
             <pre className="text-2xs font-mono text-[var(--text-1)] break-all whitespace-pre-wrap flex-1 min-w-0">
@@ -620,7 +703,9 @@ function GQLSubscriptionLog({
             </pre>
             <span className="text-2xs text-[var(--text-3)] shrink-0 mt-0.5">
               {new Date(msg.createdAt).toLocaleTimeString([], {
-                hour: "2-digit", minute: "2-digit", second: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
               })}
             </span>
           </div>
@@ -670,9 +755,10 @@ function GraphQLSchemaSidebar({
     );
   }, [allTypes, search]);
 
-  const activeType = navStack.length > 0
-    ? typeByName(schema, navStack[navStack.length - 1])
-    : undefined;
+  const activeType =
+    navStack.length > 0
+      ? typeByName(schema, navStack[navStack.length - 1])
+      : undefined;
 
   const toggleType = (name: string) =>
     set((state) => ({
@@ -716,9 +802,17 @@ function GraphQLSchemaSidebar({
       // diff for toast (P3.3)
       const diff = diffSchemas(schema, newSchema);
       const parts: string[] = [];
-      if (diff.added.length) parts.push(`+${diff.added.length} type${diff.added.length > 1 ? "s" : ""}`);
-      if (diff.removed.length) parts.push(`-${diff.removed.length} type${diff.removed.length > 1 ? "s" : ""}`);
-      const msg = parts.length ? `Schema refreshed (${parts.join(", ")})` : "Schema refreshed — no changes";
+      if (diff.added.length)
+        parts.push(
+          `+${diff.added.length} type${diff.added.length > 1 ? "s" : ""}`,
+        );
+      if (diff.removed.length)
+        parts.push(
+          `-${diff.removed.length} type${diff.removed.length > 1 ? "s" : ""}`,
+        );
+      const msg = parts.length
+        ? `Schema refreshed (${parts.join(", ")})`
+        : "Schema refreshed — no changes";
 
       set({
         graphqlSchema: newSchema,
@@ -729,7 +823,10 @@ function GraphQLSchemaSidebar({
       cacheSchema(endpoint, newSchema, lastFetched);
       addToast("success", msg);
     } catch (e) {
-      addToast("error", `Refresh failed: ${e instanceof Error ? e.message : String(e)}`);
+      addToast(
+        "error",
+        `Refresh failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
     } finally {
       setRefreshing(false);
     }
@@ -828,7 +925,10 @@ function GraphQLSchemaSidebar({
                   className="bg-transparent text-2xs outline-none flex-1 min-w-0 text-[var(--text-1)] placeholder-[var(--text-3)]"
                 />
                 {search && (
-                  <button onClick={() => setSearch("")} className="text-[var(--text-3)] hover:text-[var(--text-1)]">
+                  <button
+                    onClick={() => setSearch("")}
+                    className="text-[var(--text-3)] hover:text-[var(--text-1)]"
+                  >
                     <X size={10} />
                   </button>
                 )}
@@ -855,8 +955,14 @@ function GraphQLSchemaSidebar({
                       className="w-full flex items-center gap-1 px-2 py-1 hover:bg-[var(--border)] text-left"
                       title={type.description ?? undefined}
                     >
-                      {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
-                      <span className={`text-2xs px-1 rounded font-mono shrink-0 ${badge.cls}`}>
+                      {expanded ? (
+                        <ChevronDown size={10} />
+                      ) : (
+                        <ChevronRight size={10} />
+                      )}
+                      <span
+                        className={`text-2xs px-1 rounded font-mono shrink-0 ${badge.cls}`}
+                      >
                         {badge.label}
                       </span>
                       <span className="text-2xs font-mono text-[var(--accent)] truncate flex-1">
@@ -911,15 +1017,23 @@ function FragmentsPanel({
       <div className="flex-1 overflow-y-auto">
         {fragments.length === 0 ? (
           <p className="text-2xs text-[var(--text-3)] px-3 py-4 text-center">
-            No saved fragments. Write a fragment definition in the query and click "Save from query".
+            No saved fragments. Write a fragment definition in the query and
+            click "Save from query".
           </p>
         ) : (
           fragments.map((frag) => (
-            <div key={frag.id} className="border-b border-[var(--border)] px-2 py-1.5">
+            <div
+              key={frag.id}
+              className="border-b border-[var(--border)] px-2 py-1.5"
+            >
               <div className="flex items-start gap-1">
                 <div className="flex-1 min-w-0">
-                  <p className="text-2xs font-mono text-[var(--accent)] truncate">{frag.name}</p>
-                  <p className="text-2xs text-[var(--text-3)] truncate">on {frag.onType}</p>
+                  <p className="text-2xs font-mono text-[var(--accent)] truncate">
+                    {frag.name}
+                  </p>
+                  <p className="text-2xs text-[var(--text-3)] truncate">
+                    on {frag.onType}
+                  </p>
                 </div>
                 <button
                   onClick={() => onInsert(frag)}
@@ -971,8 +1085,12 @@ function TypeDetail({
             className={`w-full flex items-center gap-1 ${indent} pr-2 py-0.5 hover:bg-[var(--border)] text-left`}
             title={val.description ?? undefined}
           >
-            {val.isDeprecated && <AlertTriangle size={9} className="text-amber-500 shrink-0" />}
-            <span className={`text-2xs font-mono flex-1 truncate ${val.isDeprecated ? "line-through text-[var(--text-3)]" : "text-[var(--text-1)]"}`}>
+            {val.isDeprecated && (
+              <AlertTriangle size={9} className="text-amber-500 shrink-0" />
+            )}
+            <span
+              className={`text-2xs font-mono flex-1 truncate ${val.isDeprecated ? "line-through text-[var(--text-3)]" : "text-[var(--text-1)]"}`}
+            >
               {val.name}
             </span>
           </button>
@@ -1046,13 +1164,20 @@ function TypeDetail({
             className={`w-full flex items-center gap-1 ${indent} pr-2 py-0.5 hover:bg-[var(--border)] text-left`}
             title={field.description ?? undefined}
           >
-            {field.isDeprecated && <AlertTriangle size={9} className="text-amber-500 shrink-0" />}
-            <span className={`text-2xs font-mono flex-1 truncate ${field.isDeprecated ? "line-through text-[var(--text-3)]" : "text-[var(--text-1)]"}`}>
+            {field.isDeprecated && (
+              <AlertTriangle size={9} className="text-amber-500 shrink-0" />
+            )}
+            <span
+              className={`text-2xs font-mono flex-1 truncate ${field.isDeprecated ? "line-through text-[var(--text-3)]" : "text-[var(--text-1)]"}`}
+            >
               {field.name}
             </span>
             {isNavigable ? (
               <button
-                onClick={(e) => { e.stopPropagation(); onNavigate(namedType!); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate(namedType!);
+                }}
                 className="text-2xs text-[var(--text-3)] hover:text-[var(--accent)] truncate ml-1 font-mono"
                 title={`Go to ${namedType}`}
               >
@@ -1084,7 +1209,13 @@ function graphQLSchemaFailureStatus(error: unknown) {
 
 // ── Import modal ─────────────────────────────────────────────────────────────
 
-function GraphQLSchemaImportModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function GraphQLSchemaImportModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const {
     request,
     set,
@@ -1106,12 +1237,15 @@ function GraphQLSchemaImportModal({ open, onClose }: { open: boolean; onClose: (
     setSource("url");
     setWorking(false);
     // pre-fill with last known endpoint (P3.4)
-    if (graphqlSchemaEndpoint && !schemaUrl) setSchemaUrl(graphqlSchemaEndpoint);
+    if (graphqlSchemaEndpoint && !schemaUrl)
+      setSchemaUrl(graphqlSchemaEndpoint);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null;
 
-  const close = () => { if (!working) onClose(); };
+  const close = () => {
+    if (!working) onClose();
+  };
 
   const resolveSchemaUrlAndHeaders = () => {
     const env = environments.find((e) => e.id === activeEnvironmentId);
@@ -1126,14 +1260,24 @@ function GraphQLSchemaImportModal({ open, onClose }: { open: boolean; onClose: (
       r.unresolved.forEach((n) => unresolved.add(n));
       return r.value;
     };
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     request.headers?.forEach((h) => {
-      if (h.enabled !== false && h.key) headers[resolve(h.key)] = resolve(h.value);
+      if (h.enabled !== false && h.key)
+        headers[resolve(h.key)] = resolve(h.value);
     });
-    return { url: resolve(schemaUrl.trim()), headers, unresolved: [...unresolved] };
+    return {
+      url: resolve(schemaUrl.trim()),
+      headers,
+      unresolved: [...unresolved],
+    };
   };
 
-  const commitSchema = (schema: GraphQLIntrospectionSchema, endpoint: string) => {
+  const commitSchema = (
+    schema: GraphQLIntrospectionSchema,
+    endpoint: string,
+  ) => {
     const lastFetched = Date.now();
     cacheSchema(endpoint, schema, lastFetched);
     set({
@@ -1149,7 +1293,9 @@ function GraphQLSchemaImportModal({ open, onClose }: { open: boolean; onClose: (
     if (!schemaUrl.trim() || working) return;
     const { url, headers, unresolved } = resolveSchemaUrlAndHeaders();
     if (unresolved.length > 0) {
-      set({ graphqlSchemaStatus: `Missing variables: ${unresolved.slice(0, 5).join(", ")}` });
+      set({
+        graphqlSchemaStatus: `Missing variables: ${unresolved.slice(0, 5).join(", ")}`,
+      });
       return;
     }
     setWorking(true);
@@ -1162,7 +1308,9 @@ function GraphQLSchemaImportModal({ open, onClose }: { open: boolean; onClose: (
       });
       const body = await res.text();
       if (!res.ok) {
-        set({ graphqlSchemaStatus: `Failed: HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""}` });
+        set({
+          graphqlSchemaStatus: `Failed: HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""}`,
+        });
         return;
       }
       commitSchema(parseGraphQLIntrospection(body), url);
@@ -1214,7 +1362,10 @@ function GraphQLSchemaImportModal({ open, onClose }: { open: boolean; onClose: (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={close}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={close}
+    >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
         style={{ width: 520, maxWidth: "calc(100vw - 32px)" }}
@@ -1223,31 +1374,46 @@ function GraphQLSchemaImportModal({ open, onClose }: { open: boolean; onClose: (
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
           <FileUp size={14} className="text-[var(--accent)]" />
           <span className="text-sm font-semibold">Import Schema</span>
-          <button onClick={close} disabled={working} className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] disabled:opacity-50">
+          <button
+            onClick={close}
+            disabled={working}
+            className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] disabled:opacity-50"
+          >
             <X size={14} />
           </button>
         </div>
 
         <div className="p-4 flex flex-col gap-4">
           <div className="flex items-center gap-1">
-            {(["url", "file", "sdl"] as GraphQLSchemaImportSource[]).map((option) => (
-              <button
-                key={option}
-                onClick={() => setSource(option)}
-                className={`tab-btn text-2xs ${source === option ? "active" : ""}`}
-              >
-                {option === "url" ? "URL" : option === "file" ? "JSON File" : "SDL"}
-              </button>
-            ))}
+            {(["url", "file", "sdl"] as GraphQLSchemaImportSource[]).map(
+              (option) => (
+                <button
+                  key={option}
+                  onClick={() => setSource(option)}
+                  className={`tab-btn text-2xs ${source === option ? "active" : ""}`}
+                >
+                  {option === "url"
+                    ? "URL"
+                    : option === "file"
+                      ? "JSON File"
+                      : "SDL"}
+                </button>
+              ),
+            )}
           </div>
 
           {source === "url" && (
             <div className="flex flex-col gap-2">
-              <label className="text-2xs text-[var(--text-3)]">GraphQL endpoint</label>
+              <label className="text-2xs text-[var(--text-3)]">
+                GraphQL endpoint
+              </label>
               <VariableAutocompleteInput
                 value={schemaUrl}
                 onChange={setSchemaUrl}
-                onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) fetchSchema(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey))
+                    fetchSchema();
+                }}
                 placeholder="https://api.example.com/graphql"
                 className="input text-xs py-1.5 font-mono"
               />
@@ -1256,18 +1422,32 @@ function GraphQLSchemaImportModal({ open, onClose }: { open: boolean; onClose: (
 
           {source === "file" && (
             <div className="flex items-center gap-2">
-              <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden"
-                onChange={(e) => importSchemaFile(e.target.files?.[0])} />
-              <button onClick={() => fileInputRef.current?.click()} disabled={working} className="btn text-xs gap-1.5">
-                <FileUp size={13} />Choose JSON
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={(e) => importSchemaFile(e.target.files?.[0])}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={working}
+                className="btn text-xs gap-1.5"
+              >
+                <FileUp size={13} />
+                Choose JSON
               </button>
-              <span className="text-2xs text-[var(--text-3)]">Introspection result JSON</span>
+              <span className="text-2xs text-[var(--text-3)]">
+                Introspection result JSON
+              </span>
             </div>
           )}
 
           {source === "sdl" && (
             <div className="flex flex-col gap-2">
-              <label className="text-2xs text-[var(--text-3)]">Paste SDL or load a .graphql file</label>
+              <label className="text-2xs text-[var(--text-3)]">
+                Paste SDL or load a .graphql file
+              </label>
               <textarea
                 value={sdlText}
                 onChange={(e) => setSdlText(e.target.value)}
@@ -1276,31 +1456,54 @@ function GraphQLSchemaImportModal({ open, onClose }: { open: boolean; onClose: (
                 className="input text-2xs font-mono resize-y"
               />
               <div className="flex items-center gap-2">
-                <input ref={sdlFileInputRef} type="file" accept=".graphql,.gql,text/plain" className="hidden"
-                  onChange={(e) => importSDLFile(e.target.files?.[0])} />
-                <button onClick={() => sdlFileInputRef.current?.click()} disabled={working} className="btn text-xs gap-1.5">
-                  <FileUp size={13} />Load file
+                <input
+                  ref={sdlFileInputRef}
+                  type="file"
+                  accept=".graphql,.gql,text/plain"
+                  className="hidden"
+                  onChange={(e) => importSDLFile(e.target.files?.[0])}
+                />
+                <button
+                  onClick={() => sdlFileInputRef.current?.click()}
+                  disabled={working}
+                  className="btn text-xs gap-1.5"
+                >
+                  <FileUp size={13} />
+                  Load file
                 </button>
               </div>
             </div>
           )}
 
           {graphqlSchemaStatus && (
-            <p className={`px-1 text-2xs whitespace-pre-wrap break-words ${graphQLSchemaStatusClass(graphqlSchemaStatus)}`}>
+            <p
+              className={`px-1 text-2xs whitespace-pre-wrap break-words ${graphQLSchemaStatusClass(graphqlSchemaStatus)}`}
+            >
               {graphqlSchemaStatus}
             </p>
           )}
         </div>
 
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
-          <button onClick={close} disabled={working} className="btn text-xs">Cancel</button>
+          <button onClick={close} disabled={working} className="btn text-xs">
+            Cancel
+          </button>
           {source === "url" && (
-            <button onClick={fetchSchema} disabled={working || !schemaUrl.trim()} className="btn btn-primary text-xs gap-1.5">
-              <Link2 size={13} />{working ? "Fetching..." : "Fetch Schema"}
+            <button
+              onClick={fetchSchema}
+              disabled={working || !schemaUrl.trim()}
+              className="btn btn-primary text-xs gap-1.5"
+            >
+              <Link2 size={13} />
+              {working ? "Fetching..." : "Fetch Schema"}
             </button>
           )}
           {source === "sdl" && (
-            <button onClick={importSDLText} disabled={working || !sdlText.trim()} className="btn btn-primary text-xs gap-1.5">
+            <button
+              onClick={importSDLText}
+              disabled={working || !sdlText.trim()}
+              className="btn btn-primary text-xs gap-1.5"
+            >
               {working ? "Importing..." : "Import SDL"}
             </button>
           )}

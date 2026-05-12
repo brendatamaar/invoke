@@ -436,7 +436,14 @@ function dynamicVariable(name: string) {
         if (match) {
           const val = parseFloat(match[1]);
           const unit = match[2];
-          const ms = unit === "ms" ? val : unit === "s" ? val * 1000 : unit === "m" ? val * 60000 : val * 3600000;
+          const ms =
+            unit === "ms"
+              ? val
+              : unit === "s"
+                ? val * 1000
+                : unit === "m"
+                  ? val * 60000
+                  : val * 3600000;
           return new Date(Date.now() + ms).toISOString();
         }
       }

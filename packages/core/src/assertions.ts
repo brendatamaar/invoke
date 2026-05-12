@@ -166,7 +166,10 @@ function jsonPath(body: string, path: string) {
 }
 
 /** Evaluate a JSONPath expression against a JSON string. Returns the matched value or an error message. */
-export function evaluateJsonPath(body: string, path: string): { value: unknown; error?: never } | { value?: never; error: string } {
+export function evaluateJsonPath(
+  body: string,
+  path: string,
+): { value: unknown; error?: never } | { value?: never; error: string } {
   if (!path.trim()) return { error: "empty path" };
   try {
     const json = JSON.parse(body);

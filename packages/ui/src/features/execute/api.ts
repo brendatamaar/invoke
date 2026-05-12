@@ -162,7 +162,9 @@ export async function executeWithAPQ(
   let bodyObj: Record<string, unknown> = {};
   try {
     bodyObj = JSON.parse(request.body) as Record<string, unknown>;
-  } catch { /* keep empty */ }
+  } catch {
+    /* keep empty */
+  }
 
   const { query: _q, ...restFields } = bodyObj as {
     query?: string;
@@ -207,8 +209,7 @@ async function handleSseEvent(
     try {
       const parsed = JSON.parse(data) as { chunk?: string; encoding?: string };
       const rawChunk = parsed.chunk ?? "";
-      const chunk =
-        parsed.encoding === "base64" ? atob(rawChunk) : rawChunk;
+      const chunk = parsed.encoding === "base64" ? atob(rawChunk) : rawChunk;
       handlers.onChunk(chunk);
     } catch {
       handlers.onChunk(data);

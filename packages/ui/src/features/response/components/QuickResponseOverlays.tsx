@@ -193,7 +193,10 @@ export function SaveExampleOverlay({
         <button onClick={onClose} className="btn text-2xs py-0.5 px-2">
           Cancel
         </button>
-        <button onClick={onSave} className="btn btn-primary text-2xs py-0.5 px-2">
+        <button
+          onClick={onSave}
+          className="btn btn-primary text-2xs py-0.5 px-2"
+        >
           Save
         </button>
       </div>
