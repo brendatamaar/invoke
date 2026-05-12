@@ -29,6 +29,10 @@ const (
 	HttpExecutor_GrpcReflect_FullMethodName      = "/invoke.executor.HttpExecutor/GrpcReflect"
 	HttpExecutor_GrpcExecute_FullMethodName      = "/invoke.executor.HttpExecutor/GrpcExecute"
 	HttpExecutor_GrpcServerStream_FullMethodName = "/invoke.executor.HttpExecutor/GrpcServerStream"
+	HttpExecutor_GrpcStreamOpen_FullMethodName   = "/invoke.executor.HttpExecutor/GrpcStreamOpen"
+	HttpExecutor_GrpcStreamSend_FullMethodName   = "/invoke.executor.HttpExecutor/GrpcStreamSend"
+	HttpExecutor_GrpcStreamClose_FullMethodName  = "/invoke.executor.HttpExecutor/GrpcStreamClose"
+	HttpExecutor_GrpcStreamPoll_FullMethodName   = "/invoke.executor.HttpExecutor/GrpcStreamPoll"
 )
 
 // HttpExecutorClient is the client API for HttpExecutor service.
@@ -45,6 +49,10 @@ type HttpExecutorClient interface {
 	GrpcReflect(ctx context.Context, in *GrpcReflectRequest, opts ...grpc.CallOption) (*GrpcReflectResponse, error)
 	GrpcExecute(ctx context.Context, in *GrpcExecuteRequest, opts ...grpc.CallOption) (*GrpcExecuteResponse, error)
 	GrpcServerStream(ctx context.Context, in *GrpcExecuteRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GrpcStreamMessage], error)
+	GrpcStreamOpen(ctx context.Context, in *GrpcExecuteRequest, opts ...grpc.CallOption) (*GrpcStreamOpenResponse, error)
+	GrpcStreamSend(ctx context.Context, in *GrpcStreamSendRequest, opts ...grpc.CallOption) (*GrpcStreamSendResponse, error)
+	GrpcStreamClose(ctx context.Context, in *GrpcStreamCloseRequest, opts ...grpc.CallOption) (*GrpcStreamCloseResponse, error)
+	GrpcStreamPoll(ctx context.Context, in *GrpcStreamPollRequest, opts ...grpc.CallOption) (*GrpcStreamPollResponse, error)
 }
 
 type httpExecutorClient struct {
@@ -173,6 +181,46 @@ func (c *httpExecutorClient) GrpcServerStream(ctx context.Context, in *GrpcExecu
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HttpExecutor_GrpcServerStreamClient = grpc.ServerStreamingClient[GrpcStreamMessage]
 
+func (c *httpExecutorClient) GrpcStreamOpen(ctx context.Context, in *GrpcExecuteRequest, opts ...grpc.CallOption) (*GrpcStreamOpenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GrpcStreamOpenResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_GrpcStreamOpen_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *httpExecutorClient) GrpcStreamSend(ctx context.Context, in *GrpcStreamSendRequest, opts ...grpc.CallOption) (*GrpcStreamSendResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GrpcStreamSendResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_GrpcStreamSend_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *httpExecutorClient) GrpcStreamClose(ctx context.Context, in *GrpcStreamCloseRequest, opts ...grpc.CallOption) (*GrpcStreamCloseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GrpcStreamCloseResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_GrpcStreamClose_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *httpExecutorClient) GrpcStreamPoll(ctx context.Context, in *GrpcStreamPollRequest, opts ...grpc.CallOption) (*GrpcStreamPollResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GrpcStreamPollResponse)
+	err := c.cc.Invoke(ctx, HttpExecutor_GrpcStreamPoll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HttpExecutorServer is the server API for HttpExecutor service.
 // All implementations must embed UnimplementedHttpExecutorServer
 // for forward compatibility.
@@ -187,6 +235,10 @@ type HttpExecutorServer interface {
 	GrpcReflect(context.Context, *GrpcReflectRequest) (*GrpcReflectResponse, error)
 	GrpcExecute(context.Context, *GrpcExecuteRequest) (*GrpcExecuteResponse, error)
 	GrpcServerStream(*GrpcExecuteRequest, grpc.ServerStreamingServer[GrpcStreamMessage]) error
+	GrpcStreamOpen(context.Context, *GrpcExecuteRequest) (*GrpcStreamOpenResponse, error)
+	GrpcStreamSend(context.Context, *GrpcStreamSendRequest) (*GrpcStreamSendResponse, error)
+	GrpcStreamClose(context.Context, *GrpcStreamCloseRequest) (*GrpcStreamCloseResponse, error)
+	GrpcStreamPoll(context.Context, *GrpcStreamPollRequest) (*GrpcStreamPollResponse, error)
 	mustEmbedUnimplementedHttpExecutorServer()
 }
 
@@ -226,6 +278,18 @@ func (UnimplementedHttpExecutorServer) GrpcExecute(context.Context, *GrpcExecute
 }
 func (UnimplementedHttpExecutorServer) GrpcServerStream(*GrpcExecuteRequest, grpc.ServerStreamingServer[GrpcStreamMessage]) error {
 	return status.Error(codes.Unimplemented, "method GrpcServerStream not implemented")
+}
+func (UnimplementedHttpExecutorServer) GrpcStreamOpen(context.Context, *GrpcExecuteRequest) (*GrpcStreamOpenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GrpcStreamOpen not implemented")
+}
+func (UnimplementedHttpExecutorServer) GrpcStreamSend(context.Context, *GrpcStreamSendRequest) (*GrpcStreamSendResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GrpcStreamSend not implemented")
+}
+func (UnimplementedHttpExecutorServer) GrpcStreamClose(context.Context, *GrpcStreamCloseRequest) (*GrpcStreamCloseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GrpcStreamClose not implemented")
+}
+func (UnimplementedHttpExecutorServer) GrpcStreamPoll(context.Context, *GrpcStreamPollRequest) (*GrpcStreamPollResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GrpcStreamPoll not implemented")
 }
 func (UnimplementedHttpExecutorServer) mustEmbedUnimplementedHttpExecutorServer() {}
 func (UnimplementedHttpExecutorServer) testEmbeddedByValue()                      {}
@@ -414,6 +478,78 @@ func _HttpExecutor_GrpcServerStream_Handler(srv interface{}, stream grpc.ServerS
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HttpExecutor_GrpcServerStreamServer = grpc.ServerStreamingServer[GrpcStreamMessage]
 
+func _HttpExecutor_GrpcStreamOpen_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GrpcExecuteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).GrpcStreamOpen(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_GrpcStreamOpen_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).GrpcStreamOpen(ctx, req.(*GrpcExecuteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HttpExecutor_GrpcStreamSend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GrpcStreamSendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).GrpcStreamSend(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_GrpcStreamSend_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).GrpcStreamSend(ctx, req.(*GrpcStreamSendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HttpExecutor_GrpcStreamClose_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GrpcStreamCloseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).GrpcStreamClose(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_GrpcStreamClose_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).GrpcStreamClose(ctx, req.(*GrpcStreamCloseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HttpExecutor_GrpcStreamPoll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GrpcStreamPollRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HttpExecutorServer).GrpcStreamPoll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HttpExecutor_GrpcStreamPoll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HttpExecutorServer).GrpcStreamPoll(ctx, req.(*GrpcStreamPollRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HttpExecutor_ServiceDesc is the grpc.ServiceDesc for HttpExecutor service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -452,6 +588,22 @@ var HttpExecutor_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GrpcExecute",
 			Handler:    _HttpExecutor_GrpcExecute_Handler,
+		},
+		{
+			MethodName: "GrpcStreamOpen",
+			Handler:    _HttpExecutor_GrpcStreamOpen_Handler,
+		},
+		{
+			MethodName: "GrpcStreamSend",
+			Handler:    _HttpExecutor_GrpcStreamSend_Handler,
+		},
+		{
+			MethodName: "GrpcStreamClose",
+			Handler:    _HttpExecutor_GrpcStreamClose_Handler,
+		},
+		{
+			MethodName: "GrpcStreamPoll",
+			Handler:    _HttpExecutor_GrpcStreamPoll_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

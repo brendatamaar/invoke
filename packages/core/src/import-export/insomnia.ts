@@ -1,5 +1,5 @@
-import { emptyRequest, id, toRequestConfig } from "../request";
-import type { AuthConfig, BodyMode, Collection, Environment, Folder, HttpMethod, SavedRequest } from "../types";
+import { emptyGrpcRequest, emptyRequest, id, toRequestConfig } from "../request";
+import type { AuthConfig, BodyMode, Collection, Environment, Folder, GrpcRequestConfig, HttpMethod, SavedRequest } from "../types";
 import { recordToKeyValues } from "./shared";
 
 export function importInsomniaExport(doc: any) {
@@ -41,8 +41,11 @@ export function importInsomniaExport(doc: any) {
   }
 
   const requests: SavedRequest[] = resources
-    .filter((item: any) => item?._type === "request")
+    .filter((item: any) => item?._type === "request" || item?._type === "grpc_request")
     .map((item: any, index: number) => {
+      if (item._type === "grpc_request") {
+        return insomniaGrpcRequest(item, collection.id, folderMap, now + index);
+      }
       const body = insomniaBody(item.body);
       const request = toRequestConfig({
         ...emptyRequest(),
@@ -129,4 +132,48 @@ function insomniaAuth(authentication: any): AuthConfig {
     };
   }
   return { type: "none" };
+}
+
+
+function insomniaGrpcRequest(
+  item: any,
+  collectionId: string,
+  folderMap: Map<string, { id: string }>,
+  sortOrder: number,
+): SavedRequest {
+  const url = item.url ?? item.host ?? "";
+  const protoMethod = item.protoMethodName ?? item.method ?? "";
+  const parts = protoMethod.split("/").filter(Boolean);
+  const method = parts.pop() ?? "";
+  const service = parts.join("/") || parts.join(".");
+  const metadata = (item.metadata ?? item.headers ?? []).map((h: any) => ({
+    key: h.name ?? h.key ?? "",
+    value: h.value ?? "",
+    enabled: !h.disabled,
+  }));
+  const body = item.body?.text ?? item.body ?? "{}";
+  const request: GrpcRequestConfig = {
+    ...emptyGrpcRequest(),
+    address: url.replace(/^grpcs?:\/\//, ""),
+    service,
+    method,
+    metadata,
+    body: typeof body === "string" ? body : JSON.stringify(body),
+    tls: url.startsWith("grpcs://") || !url.includes("plaintext"),
+    auth: insomniaAuth(item.authentication),
+  };
+  const now = Date.now();
+  return {
+    id: id(),
+    collectionId,
+    folderId: item.parentId && folderMap.has(item.parentId)
+      ? folderMap.get(item.parentId)!.id
+      : null,
+    name: item.name ?? `${service}/${method}`,
+    protocol: "grpc",
+    request,
+    sortOrder,
+    createdAt: now,
+    updatedAt: now,
+  };
 }

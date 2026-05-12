@@ -50,6 +50,12 @@ export interface WebSocketRequestConfig {
   origin?: string;
 }
 
+export interface GrpcSavedMessage {
+  id: string;
+  name: string;
+  body: string;
+}
+
 export interface GrpcRequestConfig {
   address: string;
   service: string;
@@ -58,9 +64,19 @@ export interface GrpcRequestConfig {
   body: string;
   tls: boolean;
   timeoutMs: number;
+  auth?: AuthConfig;
   variables?: KeyValue[];
+  assertions?: Assertion[];
+  extractionRules?: ExtractionRule[];
   options?: RequestOptions;
   scripts?: RequestScripts;
+  protosetBase64?: string;
+  compression?: "none" | "gzip";
+  savedMessages?: GrpcSavedMessage[];
+  /** Max inbound message size in bytes. Default 16MB. */
+  maxRecvMsgSize?: number;
+  /** Max outbound message size in bytes. Default 16MB. */
+  maxSendMsgSize?: number;
 }
 
 export interface GrpcMethodInfo {

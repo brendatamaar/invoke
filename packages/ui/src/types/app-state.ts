@@ -12,6 +12,7 @@ import type {
   Flow,
   FlowResult,
   Folder,
+  GrpcExecuteResponse,
   GrpcMethodInfo,
   GrpcRequestConfig,
   GrpcStreamMessage,
@@ -125,6 +126,14 @@ export interface AppState {
   grpcStreaming: boolean;
   grpcStreamMessages: GrpcStreamMessage[];
   grpcStreamController: AbortController | undefined;
+  grpcResponse: GrpcExecuteResponse | undefined;
+  grpcExecuteController: AbortController | undefined;
+  grpcAssertionResults: AssertionResult[];
+  grpcStreamId: string | undefined;
+  grpcStreamSentMessages: string[];
+  grpcStreamReceivedMessages: GrpcStreamMessage[];
+  grpcLatencyMs: number | undefined;
+  grpcDeadlineEnd: number | undefined;
   history: HistoryEntry[];
   historyQuery: string;
   retentionSettings: RetentionSettings | undefined;

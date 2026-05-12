@@ -34,14 +34,22 @@ type Service struct {
 	startedAt     time.Time
 	wsMu          sync.Mutex
 	wsConnections map[string]*wsConnection
+	grpcStreamMu  sync.Mutex
+	grpcStreams    map[string]*grpcManagedStream
+	grpcStreamSenders map[string]func(string) error
+	grpcStreamClosers map[string]func() (*GrpcStreamCloseResponse, error)
 }
 
 func NewService() *Service {
 	s := &Service{
-		startedAt:     time.Now(),
-		wsConnections: make(map[string]*wsConnection),
+		startedAt:         time.Now(),
+		wsConnections:     make(map[string]*wsConnection),
+		grpcStreams:       make(map[string]*grpcManagedStream),
+		grpcStreamSenders: make(map[string]func(string) error),
+		grpcStreamClosers: make(map[string]func() (*GrpcStreamCloseResponse, error)),
 	}
 	s.startWsCleanupTicker()
+	s.startGrpcStreamCleanupTicker()
 	return s
 }
 
@@ -73,9 +81,9 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
 	}
-	connectTimeoutMs, readTimeoutMs := extractInvokeHeaders(req.GetHeaders(), httpReq)
+	connectTimeoutMs, readTimeoutMs, allowPrivate := extractInvokeHeaders(req.GetHeaders(), httpReq)
 
-	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs)
+	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
 	}
@@ -165,9 +173,9 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 	if err != nil {
 		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
 	}
-	connectTimeoutMs, readTimeoutMs := extractInvokeHeaders(req.GetHeaders(), httpReq)
+	connectTimeoutMs, readTimeoutMs, allowPrivate := extractInvokeHeaders(req.GetHeaders(), httpReq)
 
-	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs)
+	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
 	if err != nil {
 		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
 	}
@@ -269,8 +277,8 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 const maxBodyBytes = 50 * 1024 * 1024 // 50 MB
 
 // extractInvokeHeaders copies non-internal headers onto httpReq and returns
-// connect/read timeout values parsed from the X-Invoke-* internal headers.
-func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, readMs int64) {
+// connect/read timeout values and allowPrivate flag parsed from X-Invoke-* headers.
+func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, readMs int64, allowPrivate bool) {
 	for _, h := range headers {
 		key := strings.TrimSpace(h.GetKey())
 		if key == "" {
@@ -285,6 +293,8 @@ func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, 
 			if v, err := strconv.ParseInt(h.GetValue(), 10, 64); err == nil {
 				readMs = v
 			}
+		case "x-invoke-allow-private":
+			allowPrivate = strings.EqualFold(h.GetValue(), "true")
 		default:
 			httpReq.Header.Add(key, h.GetValue())
 		}
@@ -292,12 +302,12 @@ func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, 
 	return
 }
 
-func transportFor(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64) (*http.Transport, error) {
-	key := buildTransportKey(req, connectTimeoutMs, readTimeoutMs)
+func transportFor(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, allowPrivate bool) (*http.Transport, error) {
+	key := buildTransportKey(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
 	if v, ok := transportCache.Load(key); ok {
 		return v.(*http.Transport), nil
 	}
-	t, err := buildTransport(req, connectTimeoutMs, readTimeoutMs)
+	t, err := buildTransport(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
 	if err != nil {
 		return nil, err
 	}
@@ -305,9 +315,9 @@ func transportFor(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64) (*htt
 	return actual.(*http.Transport), nil
 }
 
-func buildTransportKey(req *HttpRequest, connectMs, readMs int64) string {
+func buildTransportKey(req *HttpRequest, connectMs, readMs int64, allowPrivate bool) string {
 	h := sha256.New()
-	fmt.Fprintf(h, "v=%v|ct=%d|rt=%d", req.GetVerifySsl(), connectMs, readMs)
+	fmt.Fprintf(h, "v=%v|ct=%d|rt=%d|ap=%v", req.GetVerifySsl(), connectMs, readMs, allowPrivate)
 	if cc := req.GetTlsClientConfig(); cc != nil {
 		fmt.Fprintf(h, "|sn=%s", cc.GetServerName())
 		certSum := sha256.Sum256(append(append([]byte(nil), cc.GetClientCertPem()...), cc.GetClientKeyPem()...))
@@ -321,7 +331,7 @@ func buildTransportKey(req *HttpRequest, connectMs, readMs int64) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func buildTransport(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64) (*http.Transport, error) {
+func buildTransport(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, allowPrivate bool) (*http.Transport, error) {
 	verify := req.GetVerifySsl()
 	tlsConfig, err := tlsConfigFor(verify, req.GetTlsClientConfig())
 	if err != nil {
@@ -345,7 +355,7 @@ func buildTransport(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64) (*h
 	}
 	hasProxy := req.GetProxy() != nil && strings.TrimSpace(req.GetProxy().GetUrl()) != ""
 	if !hasProxy {
-		transport.DialContext = ssrfDialContext(&net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second})
+		transport.DialContext = ssrfDialContext(&net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}, allowPrivate)
 	}
 	if hasProxy {
 		proxyURL, err := url.Parse(req.GetProxy().GetUrl())

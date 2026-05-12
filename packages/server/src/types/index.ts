@@ -98,6 +98,7 @@ export interface ExecuteInput {
   followRedirects: boolean;
   maxRedirects: number;
   verifySsl: boolean;
+  allowPrivateAddresses?: boolean;
   proxy?: {
     type: "http" | "socks5";
     url: string;
@@ -116,6 +117,17 @@ export interface WebSocketConnectInput {
   tlsClientConfig?: TlsClientConfigInput;
 }
 
+export interface GrpcAuthInput {
+  type: string;
+  username?: string;
+  password?: string;
+  token?: string;
+  apiKeyName?: string;
+  apiKeyValue?: string;
+  apiKeyIn?: "header" | "query";
+  accessToken?: string;
+}
+
 export interface GrpcReflectInput {
   address: string;
   tls: boolean;
@@ -123,11 +135,28 @@ export interface GrpcReflectInput {
   metadata: ServerHeaderInput[];
   verifySsl: boolean;
   tlsClientConfig?: TlsClientConfigInput;
+  auth?: GrpcAuthInput;
+  protosetBase64?: string;
 }
 
 export interface GrpcExecuteInput extends GrpcReflectInput {
   fullMethod: string;
   bodyJson: string;
+  compression?: "none" | "gzip";
+}
+
+export interface GrpcStreamSendInput {
+  streamId: string;
+  bodyJson: string;
+}
+
+export interface GrpcStreamCloseInput {
+  streamId: string;
+}
+
+export interface GrpcStreamPollInput {
+  streamId: string;
+  maxMessages?: number;
 }
 
 export interface ProxyRequestInput {

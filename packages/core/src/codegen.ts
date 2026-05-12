@@ -1,6 +1,9 @@
 import type {
   CodeExportTarget,
   CodeSnippet,
+  GrpcCodeExportTarget,
+  GrpcCodeSnippet,
+  GrpcRequestConfig,
   KeyValue,
   RequestConfig,
   WebSocketRequestConfig,
@@ -985,4 +988,256 @@ async def main():
             print("Received:", message)
 
 asyncio.run(main())`;
+}
+
+
+// ─── gRPC code generation ────────────────────────────────────────────────────
+
+export const GRPC_CODE_EXPORT_TARGETS: Array<Omit<GrpcCodeSnippet, "code">> = [
+  { target: "grpc-grpcurl", label: "grpcurl", language: "shell", filename: "request.grpcurl.sh" },
+  { target: "grpc-go", label: "Go gRPC", language: "go", filename: "request.grpc.go" },
+  { target: "grpc-node", label: "Node @grpc/grpc-js", language: "javascript", filename: "request.grpc.js" },
+  { target: "grpc-python", label: "Python grpcio", language: "python", filename: "request.grpc.py" },
+  { target: "grpc-java", label: "Java gRPC", language: "java", filename: "Request.grpc.java" },
+  { target: "grpc-csharp", label: "C# Grpc.Net.Client", language: "csharp", filename: "Request.grpc.cs" },
+  { target: "grpc-kotlin", label: "Kotlin gRPC", language: "kotlin", filename: "Request.grpc.kt" },
+];
+
+export function generateGrpcCodeSnippet(
+  request: GrpcRequestConfig,
+  target: GrpcCodeExportTarget,
+): GrpcCodeSnippet {
+  const meta = GRPC_CODE_EXPORT_TARGETS.find((t) => t.target === target) ?? GRPC_CODE_EXPORT_TARGETS[0];
+  const code = grpcGeneratorFor(target)(request);
+  return { ...meta, code };
+}
+
+function grpcGeneratorFor(target: GrpcCodeExportTarget) {
+  switch (target) {
+    case "grpc-grpcurl": return generateGrpcurl;
+    case "grpc-go": return generateGrpcGo;
+    case "grpc-node": return generateGrpcNode;
+    case "grpc-python": return generateGrpcPython;
+    case "grpc-java": return generateGrpcJava;
+    case "grpc-csharp": return generateGrpcCSharp;
+    case "grpc-kotlin": return generateGrpcKotlin;
+    default: return generateGrpcurl;
+  }
+}
+
+function grpcFullMethod(request: GrpcRequestConfig): string {
+  return `${request.service}/${request.method}`;
+}
+
+function grpcEnabledMetadata(request: GrpcRequestConfig): Array<{ key: string; value: string }> {
+  return (request.metadata ?? []).filter((m) => m.enabled !== false && m.key.trim());
+}
+
+function generateGrpcurl(request: GrpcRequestConfig): string {
+  const parts = ["grpcurl"];
+  if (!request.tls) parts.push("-plaintext");
+  for (const m of grpcEnabledMetadata(request)) {
+    parts.push("-rpc-header", shellQuote(`${m.key}: ${m.value}`));
+  }
+  if (request.body && request.body.trim() !== "{}" && request.body.trim() !== "") {
+    parts.push("-d", shellQuote(request.body));
+  }
+  parts.push(shellQuote(request.address), shellQuote(grpcFullMethod(request)));
+  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
+}
+
+export function generateGrpcBufCurl(request: GrpcRequestConfig): string {
+  const scheme = request.tls ? "https" : "http";
+  const url = `${scheme}://${request.address}/${grpcFullMethod(request)}`;
+  const parts = ["buf", "curl"];
+  for (const m of grpcEnabledMetadata(request)) {
+    parts.push("-H", shellQuote(`${m.key}: ${m.value}`));
+  }
+  if (request.body && request.body.trim() !== "{}" && request.body.trim() !== "") {
+    parts.push("--data", shellQuote(request.body));
+  }
+  if (!request.tls) parts.push("--http2-prior-knowledge");
+  parts.push(shellQuote(url));
+  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
+}
+
+function generateGrpcGo(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const metaLines = meta.map((m) => `\tmd.Append(${goString(m.key)}, ${goString(m.value)})`).join("\n");
+  const dialOpts = request.tls
+    ? `grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))`
+    : `grpc.WithTransportCredentials(insecure.NewCredentials())`;
+  const imports = [
+    `"context"`, `"encoding/json"`, `"fmt"`, `"time"`,
+    `"google.golang.org/grpc"`, `"google.golang.org/grpc/metadata"`,
+  ];
+  if (request.tls) {
+    imports.push(`"crypto/tls"`, `"google.golang.org/grpc/credentials"`);
+  } else {
+    imports.push(`"google.golang.org/grpc/credentials/insecure"`);
+  }
+  return `package main
+
+import (
+${imports.map((i) => `\t${i}`).join("\n")}
+)
+
+func main() {
+\tconn, err := grpc.NewClient(${goString(request.address)}, ${dialOpts})
+\tif err != nil {
+\t\tpanic(err)
+\t}
+\tdefer conn.Close()
+
+\tctx, cancel := context.WithTimeout(context.Background(), ${request.timeoutMs}*time.Millisecond)
+\tdefer cancel()
+
+${meta.length ? `\tmd := metadata.New(nil)\n${metaLines}\n\tctx = metadata.NewOutgoingContext(ctx, md)\n` : ""}\tvar request json.RawMessage = []byte(${goString(request.body || "{}")})
+\tvar response json.RawMessage
+
+\terr = conn.Invoke(ctx, ${goString("/" + grpcFullMethod(request))}, &request, &response)
+\tif err != nil {
+\t\tpanic(err)
+\t}
+\tfmt.Println(string(response))
+}
+`;
+}
+
+function generateGrpcNode(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const metaObj = meta.length
+    ? `const metadata = new grpc.Metadata();\n${meta.map((m) => `metadata.add(${JSON.stringify(m.key)}, ${JSON.stringify(m.value)});`).join("\n")}\n`
+    : "";
+  const creds = request.tls
+    ? "grpc.credentials.createSsl()"
+    : "grpc.credentials.createInsecure()";
+  return `const grpc = require("@grpc/grpc-js");
+const protoLoader = require("@grpc/proto-loader");
+
+// Load your .proto file
+const packageDefinition = protoLoader.loadSync("path/to/service.proto", {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
+const proto = grpc.loadPackageDefinition(packageDefinition);
+
+const client = new proto.${request.service}(
+  ${JSON.stringify(request.address)},
+  ${creds},
+);
+
+${metaObj}const request = ${request.body || "{}"};
+
+client.${request.method}(request, ${meta.length ? "metadata, " : ""}{ deadline: Date.now() + ${request.timeoutMs} }, (err, response) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+  console.log(JSON.stringify(response, null, 2));
+});
+`;
+}
+
+function generateGrpcPython(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const metaTuples = meta.map((m) => `    (${JSON.stringify(m.key)}, ${JSON.stringify(m.value)}),`).join("\n");
+  const channel = request.tls
+    ? `grpc.secure_channel(${JSON.stringify(request.address)}, grpc.ssl_channel_credentials())`
+    : `grpc.insecure_channel(${JSON.stringify(request.address)})`;
+  return `import grpc
+import json
+# from your_pb2_grpc import ${request.service.split(".").pop()}Stub
+# from your_pb2 import YourRequestMessage
+
+${meta.length ? `metadata = [\n${metaTuples}\n]\n` : ""}channel = ${channel}
+# stub = ${request.service.split(".").pop()}Stub(channel)
+
+request_data = json.loads('''${request.body || "{}"}''')
+# response = stub.${request.method}(YourRequestMessage(**request_data)${meta.length ? ", metadata=metadata" : ""}, timeout=${Math.max(1, Math.round(request.timeoutMs / 1000))})
+# print(response)
+`;
+}
+
+function generateGrpcJava(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const serviceName = request.service.split(".").pop() ?? request.service;
+  const metaLines = meta.map((m) =>
+    `    metadata.put(Metadata.Key.of(${JSON.stringify(m.key)}, Metadata.ASCII_STRING_MARSHALLER), ${JSON.stringify(m.value)});`
+  ).join("\n");
+  const channelBuilder = request.tls
+    ? `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).useTransportSecurity()`
+    : `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).usePlaintext()`;
+  return `import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
+import io.grpc.stub.MetadataUtils;
+import java.util.concurrent.TimeUnit;
+
+public class GrpcRequest {
+  public static void main(String[] args) throws Exception {
+    ManagedChannel channel = ${channelBuilder}.build();
+
+${meta.length ? `    Metadata metadata = new Metadata();\n${metaLines}\n` : ""}    // ${serviceName}Grpc.${serviceName}BlockingStub stub = ${serviceName}Grpc.newBlockingStub(channel)${meta.length ? "\n    //   .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadata))" : ""};
+    // stub.withDeadlineAfter(${request.timeoutMs}, TimeUnit.MILLISECONDS)
+    //   .${request.method.charAt(0).toLowerCase() + request.method.slice(1)}(request);
+
+    channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+  }
+}
+`;
+}
+
+function generateGrpcCSharp(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const serviceName = request.service.split(".").pop() ?? request.service;
+  const metaLines = meta.map((m) =>
+    `    headers.Add(${JSON.stringify(m.key)}, ${JSON.stringify(m.value)});`
+  ).join("\n");
+  const channelCreds = request.tls
+    ? "new SslCredentials()"
+    : "ChannelCredentials.Insecure";
+  return `using Grpc.Net.Client;
+using Grpc.Core;
+
+var channel = GrpcChannel.ForAddress(${JSON.stringify((request.tls ? "https://" : "http://") + request.address)});
+var client = new ${serviceName}.${serviceName}Client(channel);
+
+${meta.length ? `var headers = new Metadata();\n${metaLines}\n` : ""}var deadline = DateTime.UtcNow.AddMilliseconds(${request.timeoutMs});
+// var response = await client.${request.method}Async(
+//     request,${meta.length ? "\n//     headers: headers," : ""}
+//     deadline: deadline
+// );
+// Console.WriteLine(response);
+`;
+}
+
+function generateGrpcKotlin(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const serviceName = request.service.split(".").pop() ?? request.service;
+  const metaLines = meta.map((m) =>
+    `    metadata.put(Metadata.Key.of(${JSON.stringify(m.key)}, Metadata.ASCII_STRING_MARSHALLER), ${JSON.stringify(m.value)})`
+  ).join("\n");
+  const channelBuilder = request.tls
+    ? `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).useTransportSecurity()`
+    : `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).usePlaintext()`;
+  return `import io.grpc.ManagedChannelBuilder
+import io.grpc.Metadata
+import io.grpc.stub.MetadataUtils
+import java.util.concurrent.TimeUnit
+
+fun main() {
+    val channel = ${channelBuilder}.build()
+
+${meta.length ? `    val metadata = Metadata()\n${metaLines}\n` : ""}    // val stub = ${serviceName}Grpc.newBlockingStub(channel)${meta.length ? "\n    //     .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadata))" : ""}
+    //     .withDeadlineAfter(${request.timeoutMs}, TimeUnit.MILLISECONDS)
+    // val response = stub.${request.method.charAt(0).toLowerCase() + request.method.slice(1)}(request)
+    // println(response)
+
+    channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS)
+}
+`;
 }

@@ -1,7 +1,7 @@
 import yaml from "js-yaml";
 import JSZip from "jszip";
 import { slug } from "../format";
-import { emptyRequest, id, toRequestConfig } from "../request";
+import { emptyGrpcRequest, emptyRequest, id, toRequestConfig } from "../request";
 import { recordToKeyValues } from "./shared";
 import type {
   BodyMode,
@@ -10,6 +10,7 @@ import type {
   Folder,
   FolderDocument,
   GraphQLRequestConfig,
+  GrpcRequestConfig,
   HttpMethod,
   KeyValue,
   RequestConfig,
@@ -112,6 +113,31 @@ function flatRequestDocument(saved: SavedRequest): FlatRequestDocument {
         query: request.query,
         variables: request.variables,
         operationName: request.operationName,
+      },
+      timeoutMs: request.timeoutMs,
+    };
+  }
+
+  if (saved.protocol === "grpc") {
+    const request = saved.request as GrpcRequestConfig;
+    return {
+      invoke_version: INVOKE_YAML_VERSION,
+      type: "request",
+      id: saved.id,
+      name: saved.name,
+      protocol: "grpc",
+      folderId: saved.folderId ?? null,
+      url: request.address,
+      auth: request.auth,
+      grpc: {
+        address: request.address,
+        service: request.service,
+        method: request.method,
+        metadata: keyValuesToRecord(request.metadata),
+        body: request.body,
+        tls: request.tls,
+        timeoutMs: request.timeoutMs,
+        compression: request.compression,
       },
       timeoutMs: request.timeoutMs,
     };
@@ -255,6 +281,33 @@ function savedRequestFromDocument(
       folderId,
       name: doc.name ?? "Imported GraphQL request",
       protocol: "graphql",
+      request,
+      sortOrder,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  if (doc.protocol === "grpc") {
+    const grpc = doc.grpc ?? {};
+    const request: GrpcRequestConfig = {
+      ...emptyGrpcRequest(),
+      address: grpc.address ?? doc.url ?? "",
+      service: grpc.service ?? "",
+      method: grpc.method ?? "",
+      metadata: recordToKeyValues(grpc.metadata ?? {}),
+      body: grpc.body ?? "{}",
+      tls: grpc.tls ?? true,
+      timeoutMs: grpc.timeoutMs ?? doc.timeoutMs ?? 30000,
+      auth: doc.auth ?? { type: "none" },
+      compression: grpc.compression,
+    };
+    return {
+      id: id(),
+      collectionId,
+      folderId,
+      name: doc.name ?? `${request.service}/${request.method}`,
+      protocol: "grpc",
       request,
       sortOrder,
       createdAt: now,

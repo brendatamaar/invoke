@@ -16,6 +16,14 @@ export type ProtocolSlice = Pick<
   | "grpcStreaming"
   | "grpcStreamMessages"
   | "grpcStreamController"
+  | "grpcResponse"
+  | "grpcExecuteController"
+  | "grpcAssertionResults"
+  | "grpcStreamId"
+  | "grpcStreamSentMessages"
+  | "grpcStreamReceivedMessages"
+  | "grpcLatencyMs"
+  | "grpcDeadlineEnd"
 >;
 
 export function makeWsSession(label: string): WsSession {
@@ -45,5 +53,13 @@ export function createProtocolSlice(): ProtocolSlice {
     grpcStreaming: false,
     grpcStreamMessages: [],
     grpcStreamController: undefined,
+    grpcResponse: undefined,
+    grpcExecuteController: undefined,
+    grpcAssertionResults: [],
+    grpcStreamId: undefined,
+    grpcStreamSentMessages: [],
+    grpcStreamReceivedMessages: [],
+    grpcLatencyMs: undefined,
+    grpcDeadlineEnd: undefined,
   };
 }

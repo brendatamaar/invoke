@@ -1,4 +1,5 @@
 export { parseCurl } from "./import-export/curl";
+export { parseGrpcurl } from "./import-export/grpcurl";
 export { importHarFile } from "./import-export/har";
 export { importHoppscotchCollection } from "./import-export/hoppscotch";
 export {

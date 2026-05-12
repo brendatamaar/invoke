@@ -42,9 +42,10 @@ func isPrivateIP(ip net.IP) bool {
 }
 
 // ssrfDialContext returns a DialContext that blocks connections to private/local
-// addresses. Disabled when ALLOW_PRIVATE_ADDRESSES=true.
-func ssrfDialContext(base *net.Dialer) func(ctx context.Context, network, addr string) (net.Conn, error) {
-	if os.Getenv("ALLOW_PRIVATE_ADDRESSES") == "true" {
+// addresses. Disabled when ALLOW_PRIVATE_ADDRESSES=true env var is set, or when
+// allowPrivate is true (per-request override).
+func ssrfDialContext(base *net.Dialer, allowPrivate bool) func(ctx context.Context, network, addr string) (net.Conn, error) {
+	if allowPrivate || os.Getenv("ALLOW_PRIVATE_ADDRESSES") == "true" {
 		return base.DialContext
 	}
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {

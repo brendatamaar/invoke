@@ -96,6 +96,7 @@ export function SettingsPanel() {
   const opts = draft.options as {
     verifySsl?: boolean;
     followRedirects?: boolean;
+    allowPrivateAddresses?: boolean;
     proxy?: {
       type: "http" | "socks5";
       url: string;
@@ -315,6 +316,16 @@ export function SettingsPanel() {
                   checked={opts.verifySsl ?? true}
                   onChange={(e) =>
                     patchOptions({ verifySsl: e.target.checked })
+                  }
+                  className="w-4 h-4"
+                />
+              </Row>
+              <Row label="Allow Private IPs">
+                <input
+                  type="checkbox"
+                  checked={opts.allowPrivateAddresses ?? true}
+                  onChange={(e) =>
+                    patchOptions({ allowPrivateAddresses: e.target.checked })
                   }
                   className="w-4 h-4"
                 />

@@ -32,7 +32,11 @@ export type ExecutorUnaryMethod =
   | "WebSocketPoll"
   | "WebSocketClose"
   | "GrpcReflect"
-  | "GrpcExecute";
+  | "GrpcExecute"
+  | "GrpcStreamOpen"
+  | "GrpcStreamSend"
+  | "GrpcStreamClose"
+  | "GrpcStreamPoll";
 
 export function grpcCall<T>(
   method: ExecutorUnaryMethod,

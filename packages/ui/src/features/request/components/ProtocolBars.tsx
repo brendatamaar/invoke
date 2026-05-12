@@ -1,14 +1,40 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Activity, Plug, RefreshCw, StopCircle, Unplug, X, Zap } from "lucide-react";
-import { resolveWebSocketRequest } from "@invoke/core";
-import type { WsPreset } from "@invoke/core";
-import { useStore } from "../../../store";
+import { Activity, AlertTriangle, Heart, Plug, RefreshCw, StopCircle, Unplug, X, Zap } from "lucide-react";
+import {
+  extractVariables,
+  resolveGrpcRequest,
+  resolveWebSocketRequest,
+  runAssertions,
+  runPostResponseScript,
+  runPreRequestScript,
+} from "@invoke/core";
+import type { GrpcExecuteResponse, WsPreset } from "@invoke/core";
+import { useStore, coreStore } from "../../../store";
 import {
   webSocketClose,
   webSocketConnect,
   webSocketSend,
 } from "../../websocket/api";
-import { grpcExecute, grpcReflect, grpcServerStream } from "../../grpc/api";
+import {
+  grpcExecute,
+  grpcReflect,
+  grpcServerStream,
+  grpcStreamClose,
+  grpcStreamEvents,
+  grpcStreamOpen,
+} from "../../grpc/api";
+
+function grpcResponseToExecuteResponse(res: GrpcExecuteResponse) {
+  return {
+    status: res.error ? 500 : 200,
+    statusText: res.statusMessage ?? "OK",
+    headers: [...(res.metadata ?? []), ...(res.trailers ?? [])],
+    body: res.bodyJson ?? "",
+    timing: { dnsMs: 0, tcpMs: 0, tlsMs: 0, ttfbMs: 0, transferMs: 0, totalMs: res.durationMs ?? 0 },
+    requestSize: 0,
+    responseSize: 0,
+  };
+}
 
 type WsDirection = "sent" | "received" | "system";
 
@@ -277,12 +303,45 @@ export function WebSocketBar() {
   );
 }
 
+const REFLECT_CACHE_PREFIX = "grpc_reflect_cache:";
+const REFLECT_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min
+
+interface ReflectCache {
+  methods: import("@invoke/core").GrpcMethodInfo[];
+  cachedAt: number;
+}
+
+function saveReflectCache(address: string, methods: import("@invoke/core").GrpcMethodInfo[]) {
+  try {
+    localStorage.setItem(
+      REFLECT_CACHE_PREFIX + address,
+      JSON.stringify({ methods, cachedAt: Date.now() }),
+    );
+  } catch { /* quota exceeded — ignore */ }
+}
+
+function loadReflectCache(address: string): import("@invoke/core").GrpcMethodInfo[] | null {
+  try {
+    const raw = localStorage.getItem(REFLECT_CACHE_PREFIX + address);
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as ReflectCache;
+    if (Date.now() - cache.cachedAt > REFLECT_CACHE_TTL_MS) return null;
+    return cache.methods;
+  } catch { return null; }
+}
+
 export function GRPCBar() {
   const {
     grpcRequest,
     setGrpcRequest,
     grpcMethods,
     grpcStreaming,
+    grpcExecuteController,
+    grpcStreamId,
+    environments,
+    activeEnvironmentId,
+    sessionVariables,
+    grpcLatencyMs,
     set,
     addToast,
   } = useStore();
@@ -292,13 +351,31 @@ export function GRPCBar() {
       method.service === grpcRequest.service &&
       method.method === grpcRequest.method,
   );
-  const isServerStreaming = selectedMethod?.serverStreaming ?? false;
+  const isServerStreaming = (selectedMethod?.serverStreaming ?? false) && !(selectedMethod?.clientStreaming ?? false);
+  const isClientStream = selectedMethod?.clientStreaming ?? false;
 
-  const reflect = async () => {
+  const activeEnv = environments.find((e) => e.id === activeEnvironmentId);
+
+  const tlsLocalhostWarning =
+    grpcRequest.tls &&
+    /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(grpcRequest.address ?? "");
+
+  const reflect = async (forceRefresh = false) => {
+    const { request: resolved } = resolveGrpcRequest(grpcRequest, activeEnv, sessionVariables);
+
+    if (!forceRefresh && !resolved.protosetBase64) {
+      const cached = loadReflectCache(resolved.address);
+      if (cached) {
+        set({ grpcMethods: cached, grpcStatus: `${cached.length} methods (cached)` });
+        return;
+      }
+    }
+
     set({ grpcStatus: "Reflecting..." });
     try {
-      const { methods, error } = await grpcReflect(grpcRequest);
+      const { methods, error } = await grpcReflect(resolved);
       if (error) throw new Error(error);
+      if (!resolved.protosetBase64) saveReflectCache(resolved.address, methods);
       set({
         grpcMethods: methods,
         grpcStatus: `${methods.length} methods found`,
@@ -309,31 +386,77 @@ export function GRPCBar() {
     }
   };
 
+  const healthCheck = async () => {
+    const { request: resolved } = resolveGrpcRequest(grpcRequest, activeEnv, sessionVariables);
+    set({ grpcStatus: "Health check...", grpcLatencyMs: undefined });
+    const t0 = Date.now();
+    try {
+      const res = await grpcExecute({ ...resolved, service: "grpc.health.v1.Health", method: "Check" }, undefined);
+      const rtt = Date.now() - t0;
+      if (res.error) {
+        set({ grpcStatus: `Health: ${res.statusMessage || res.error}`, grpcLatencyMs: undefined });
+        addToast("warn", `Health check: ${res.statusMessage || res.error}`);
+      } else {
+        set({ grpcStatus: `Health: OK (${res.durationMs?.toFixed(0)}ms)`, grpcLatencyMs: rtt });
+        addToast("success", "Health check passed");
+      }
+    } catch (e) {
+      set({ grpcStatus: "Health check failed", grpcLatencyMs: undefined });
+      addToast("error", String(e));
+    }
+  };
+
   const execute = async () => {
+    let { request: resolved } = resolveGrpcRequest(grpcRequest, activeEnv, sessionVariables);
+
+    // Pre-request script
+    try {
+      const scriptResult = await runPreRequestScript(resolved, sessionVariables, resolved.scripts?.preRequest ?? "");
+      resolved = scriptResult.request;
+      if (scriptResult.logs.length) set({ scriptLogs: scriptResult.logs });
+    } catch { /* script errors are non-fatal */ }
+
     if (isServerStreaming) {
       const controller = new AbortController();
+      const deadlineEnd = resolved.timeoutMs ? Date.now() + resolved.timeoutMs : undefined;
       set({
         grpcStreaming: true,
         grpcStreamMessages: [],
         grpcStreamController: controller,
+        grpcResponse: undefined,
         grpcStatus: "Streaming...",
+        grpcDeadlineEnd: deadlineEnd,
       });
       try {
-        await grpcServerStream(grpcRequest, {
+        await grpcServerStream(resolved, {
           onMessage: (message) => {
             set((state) => ({
               grpcStreamMessages: [...state.grpcStreamMessages, message],
             }));
           },
-          onDone: (message) => {
+          onDone: async (message) => {
+            const msgCount = useStore.getState().grpcStreamMessages.filter((m) => !m.done).length;
+            const syntheticResponse = {
+              status: message.error ? 500 : 200,
+              statusText: message.statusMessage ?? "OK",
+              headers: message.trailers ?? [],
+              body: `${msgCount} stream messages`,
+              timing: { dnsMs: 0, tcpMs: 0, tlsMs: 0, ttfbMs: 0, transferMs: 0, totalMs: message.durationMs ?? 0 },
+              requestSize: 0,
+              responseSize: 0,
+            };
             set((state) => ({
               grpcStreamMessages: [...state.grpcStreamMessages, message],
               grpcStreaming: false,
               grpcStreamController: undefined,
               grpcStatus: message.error
                 ? `Error: ${message.statusMessage}`
-                : `Done - ${state.grpcStreamMessages.length + 1} messages`,
+                : `Done — ${msgCount} messages`,
+              grpcDeadlineEnd: undefined,
             }));
+            await coreStore.addHistory({ request: resolved, response: syntheticResponse, protocol: "grpc" });
+            const hist = await coreStore.listHistory(200);
+            set({ history: hist });
           },
           signal: controller.signal,
         });
@@ -343,36 +466,85 @@ export function GRPCBar() {
           grpcStreaming: false,
           grpcStreamController: undefined,
           grpcStatus: "Cancelled",
+          grpcDeadlineEnd: undefined,
         });
       }
       return;
     }
 
-    set({ grpcStatus: "Executing..." });
-    try {
-      const res = await grpcExecute(grpcRequest);
+    if (isClientStream) {
+      const deadlineEnd = resolved.timeoutMs ? Date.now() + resolved.timeoutMs : undefined;
       set({
-        grpcStatus: res.error ? `Error: ${res.statusMessage}` : "Done",
-        response: {
-          status: res.error ? 500 : 200,
-          statusText: res.statusMessage ?? "OK",
-          headers: res.metadata ?? [],
-          body: res.bodyJson ?? "",
-          timing: {
-            dnsMs: 0,
-            tcpMs: 0,
-            tlsMs: 0,
-            ttfbMs: 0,
-            transferMs: 0,
-            totalMs: res.durationMs ?? 0,
-          },
-          requestSize: 0,
-          responseSize: 0,
-        },
+        grpcStreaming: true,
+        grpcStreamSentMessages: [],
+        grpcStreamReceivedMessages: [],
+        grpcStatus: "Opening stream...",
+        grpcDeadlineEnd: deadlineEnd,
       });
+      try {
+        const { streamId, error } = await grpcStreamOpen(resolved);
+        if (error || !streamId) throw new Error(error ?? "Failed to open stream");
+        set({ grpcStreamId: streamId, grpcStatus: "Stream open" });
+        const controller = new AbortController();
+        set({ grpcStreamController: controller });
+        // Start background event reader for bidi (client-only streams have no server messages until close)
+        if (selectedMethod?.serverStreaming) {
+          grpcStreamEvents(streamId, {
+            onMessage: (msg) => {
+              set((s) => ({ grpcStreamReceivedMessages: [...s.grpcStreamReceivedMessages, msg] }));
+            },
+            onDone: (msg) => {
+              set((s) => ({
+                grpcStreamReceivedMessages: [...s.grpcStreamReceivedMessages, msg],
+                grpcStreaming: false,
+                grpcStreamId: undefined,
+                grpcStreamController: undefined,
+                grpcStatus: msg.error ? `Error: ${msg.statusMessage}` : "Stream closed",
+                grpcDeadlineEnd: undefined,
+              }));
+            },
+            signal: controller.signal,
+          }).catch(() => {});
+        }
+      } catch (e) {
+        addToast("error", String(e));
+        set({ grpcStreaming: false, grpcStatus: "Error", grpcDeadlineEnd: undefined });
+      }
+      return;
+    }
+
+    const controller = new AbortController();
+    const deadlineEnd = resolved.timeoutMs ? Date.now() + resolved.timeoutMs : undefined;
+    set({ grpcStatus: "Executing...", grpcExecuteController: controller, grpcResponse: undefined, grpcAssertionResults: [], grpcDeadlineEnd: deadlineEnd });
+    try {
+      const res = await grpcExecute(resolved, controller.signal);
+      const execResponse = grpcResponseToExecuteResponse(res);
+
+      // Post-response script
+      try {
+        const postResult = await runPostResponseScript(resolved, execResponse, sessionVariables, resolved.scripts?.postResponse ?? "");
+        if (postResult.logs.length) set({ scriptLogs: postResult.logs });
+      } catch { /* script errors are non-fatal */ }
+
+      // Assertions
+      const assertionResults = runAssertions(execResponse, resolved.assertions ?? []);
+      // Extract variables
+      const extracted = extractVariables(execResponse, resolved.extractionRules ?? []);
+
+      set({
+        grpcStatus: res.error ? `Error: ${res.statusMessage}` : `Done — ${res.durationMs?.toFixed(0)}ms`,
+        grpcExecuteController: undefined,
+        grpcResponse: res,
+        grpcAssertionResults: assertionResults,
+        sessionVariables: { ...sessionVariables, ...extracted },
+        grpcDeadlineEnd: undefined,
+      });
+      await coreStore.addHistory({ request: resolved, response: execResponse, protocol: "grpc" });
+      const hist = await coreStore.listHistory(200);
+      set({ history: hist });
     } catch (e) {
-      set({ grpcStatus: "Error" });
-      addToast("error", String(e));
+      if ((e as Error).name !== "AbortError") addToast("error", String(e));
+      set({ grpcStatus: "Error", grpcExecuteController: undefined, grpcDeadlineEnd: undefined });
     }
   };
 
@@ -383,44 +555,121 @@ export function GRPCBar() {
       grpcStreaming: false,
       grpcStreamController: undefined,
       grpcStatus: "Cancelled",
+      grpcDeadlineEnd: undefined,
     });
   };
 
+  const closeStream = async () => {
+    const { grpcStreamId: sid } = useStore.getState();
+    if (!sid) return;
+    set({ grpcStatus: "Closing stream..." });
+    try {
+      const res = await grpcStreamClose(sid);
+      const { grpcStreamController } = useStore.getState();
+      grpcStreamController?.abort();
+      set({
+        grpcStreamId: undefined,
+        grpcStreaming: false,
+        grpcStreamController: undefined,
+        grpcStatus: res.error
+          ? `Error: ${res.error}`
+          : `Done — ${res.durationMs != null ? `${res.durationMs.toFixed(0)}ms` : ""}`,
+        grpcResponse: res.bodyJson != null
+          ? { bodyJson: res.bodyJson, statusCode: res.statusCode ?? 0, statusMessage: res.statusMessage ?? "", trailers: res.trailers ?? [], metadata: [], durationMs: res.durationMs ?? 0, error: res.error }
+          : undefined,
+        grpcDeadlineEnd: undefined,
+      });
+    } catch (e) {
+      addToast("error", String(e));
+      set({ grpcStatus: "Error closing stream" });
+    }
+  };
+
+  const cancelExecute = () => {
+    grpcExecuteController?.abort();
+    set({ grpcExecuteController: undefined, grpcStatus: "Cancelled", grpcDeadlineEnd: undefined });
+  };
+
+  const isExecuting = !!grpcExecuteController;
+
+  // Keyboard shortcuts: Ctrl+R → reflect, Ctrl+L → clear stream log
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "r") {
+        e.preventDefault();
+        reflect(false);
+      } else if (e.key === "l") {
+        e.preventDefault();
+        set({ grpcStreamMessages: [], grpcStreamSentMessages: [], grpcStreamReceivedMessages: [] });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [grpcRequest, activeEnv, sessionVariables]);
+
   return (
-    <div className="flex items-center gap-2 px-3 py-2">
-      <input
-        value={grpcRequest.address}
-        onChange={(e) => setGrpcRequest({ address: e.target.value })}
-        placeholder="localhost:50051"
-        className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] transition-colors"
-      />
-      <label className="flex items-center gap-1 text-xs text-[var(--text-2)] shrink-0 cursor-pointer">
+    <div className="flex flex-col gap-0">
+      <div className="flex items-center gap-2 px-3 py-2">
         <input
-          type="checkbox"
-          checked={grpcRequest.tls ?? false}
-          onChange={(e) => setGrpcRequest({ tls: e.target.checked })}
-          className="accent-[var(--accent)]"
+          value={grpcRequest.address}
+          onChange={(e) => {
+            setGrpcRequest({ address: e.target.value, service: "", method: "" });
+            set({ grpcMethods: [], grpcStatus: "" });
+          }}
+          placeholder="localhost:50051"
+          className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] transition-colors"
         />
-        TLS
-      </label>
-      <button onClick={reflect} className="btn text-xs gap-1">
-        <RefreshCw size={12} /> Reflect
-      </button>
-      {grpcStreaming ? (
-        <button
-          onClick={cancelStream}
-          className="btn btn-danger text-xs flex items-center gap-1"
-        >
-          <StopCircle size={12} /> Cancel
+        <label className="flex items-center gap-1 text-xs text-[var(--text-2)] shrink-0 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={grpcRequest.tls ?? false}
+            onChange={(e) => setGrpcRequest({ tls: e.target.checked })}
+            className="accent-[var(--accent)]"
+          />
+          TLS
+        </label>
+        <button onClick={() => reflect(false)} className="btn text-xs gap-1" title="Reflect (Ctrl+R)">
+          <RefreshCw size={12} /> Reflect
         </button>
-      ) : (
-        <button
-          onClick={execute}
-          className="btn btn-primary text-xs flex items-center gap-1"
-        >
-          {isServerStreaming && <Zap size={12} />}
-          Invoke
+        <button onClick={healthCheck} className="btn text-xs gap-1" title="grpc.health.v1.Health/Check — measures RTT">
+          <Heart size={12} />
         </button>
+        {grpcLatencyMs !== undefined && (
+          <span
+            title="Round-trip latency from last Health/Check"
+            className="flex items-center gap-1 text-2xs text-emerald-600 font-mono shrink-0"
+          >
+            <Activity size={10} />
+            {grpcLatencyMs}ms
+          </span>
+        )}
+        {grpcStreamId ? (
+          <button onClick={closeStream} className="btn btn-danger text-xs flex items-center gap-1">
+            <StopCircle size={12} /> Close Stream
+          </button>
+        ) : grpcStreaming ? (
+          <button onClick={cancelStream} className="btn btn-danger text-xs flex items-center gap-1">
+            <StopCircle size={12} /> Cancel
+          </button>
+        ) : isExecuting ? (
+          <button onClick={cancelExecute} className="btn btn-danger text-xs flex items-center gap-1">
+            <StopCircle size={12} /> Cancel
+          </button>
+        ) : (
+          <button onClick={execute} className="btn btn-primary text-xs flex items-center gap-1">
+            {(isServerStreaming || isClientStream) && <Zap size={12} />}
+            {isClientStream ? "Open Stream" : "Invoke"}
+          </button>
+        )}
+      </div>
+      {tlsLocalhostWarning && (
+        <div className="px-3 pb-1 flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
+          <AlertTriangle size={11} />
+          TLS is enabled but the address looks like localhost — most local servers use plaintext.
+        </div>
       )}
     </div>
   );

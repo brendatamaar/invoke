@@ -39,6 +39,23 @@ function hasAuthSecrets(auth: AuthConfig | undefined): boolean {
   );
 }
 
+const SENSITIVE_METADATA_KEYS = /^(authorization|cookie|x-api-key|.*-token.*)$/i;
+
+function hasSensitiveMetadata(metadata: KeyValue[] | undefined): boolean {
+  if (!metadata?.length) return false;
+  return metadata.some((m) => m.enabled !== false && SENSITIVE_METADATA_KEYS.test(m.key));
+}
+
+function sensitiveMetadataEntries(metadata: KeyValue[]): KeyValue[] {
+  return metadata.filter((m) => m.enabled !== false && SENSITIVE_METADATA_KEYS.test(m.key));
+}
+
+function redactMetadata(metadata: KeyValue[]): KeyValue[] {
+  return metadata.map((m) =>
+    SENSITIVE_METADATA_KEYS.test(m.key) ? { ...m, value: "••••••" } : m,
+  );
+}
+
 export class InvokeStore {
   private db = new InvokeDB();
   private cryptoKey: CryptoKey | null = null;
@@ -109,11 +126,25 @@ export class InvokeStore {
   }
 
   private async decryptRequest(r: SavedRequest): Promise<SavedRequest> {
-    if (!r.encryptedAuth || !this.cryptoKey) return r;
+    if (!this.cryptoKey) return r;
+    if (!r.encryptedAuth && !r.encryptedMetadata && !r.encryptedTlsKey) return r;
     try {
-      const auth = await decryptJson<AuthConfig>(r.encryptedAuth, this.cryptoKey);
-      const req = { ...(r.request as any), auth };
-      return { ...r, request: req as ProtocolRequestConfig, encryptedAuth: undefined };
+      let req = r.request as any;
+      if (r.encryptedAuth) {
+        const auth = await decryptJson<AuthConfig>(r.encryptedAuth, this.cryptoKey);
+        req = { ...req, auth };
+      }
+      if (r.encryptedMetadata) {
+        const sensitive = await decryptJson<KeyValue[]>(r.encryptedMetadata, this.cryptoKey);
+        const redacted = (req.metadata ?? []) as KeyValue[];
+        const nonSensitive = redacted.filter((m: KeyValue) => !SENSITIVE_METADATA_KEYS.test(m.key));
+        req = { ...req, metadata: [...nonSensitive, ...sensitive] };
+      }
+      if (r.encryptedTlsKey) {
+        const clientKeyPem = await decryptJson<string>(r.encryptedTlsKey, this.cryptoKey);
+        req = { ...req, options: { ...req.options, tlsClientConfig: { ...req.options?.tlsClientConfig, clientKeyPem } } };
+      }
+      return { ...r, request: req as ProtocolRequestConfig, encryptedAuth: undefined, encryptedMetadata: undefined, encryptedTlsKey: undefined };
     } catch {
       return r;
     }
@@ -171,11 +202,34 @@ export class InvokeStore {
     );
     if (this.cryptoKey) {
       const req = saved.request as any;
+      let patched = saved;
+      let needsWrite = false;
+
       if (hasAuthSecrets(req?.auth)) {
         const encryptedAuth = await encryptJson(req.auth, this.cryptoKey);
         const redactedAuth: AuthConfig = { type: req.auth.type };
-        const patchedRequest = { ...req, auth: redactedAuth };
-        const patched = { ...saved, request: patchedRequest as ProtocolRequestConfig, encryptedAuth };
+        const patchedRequest = { ...(patched.request as any), auth: redactedAuth };
+        patched = { ...patched, request: patchedRequest as ProtocolRequestConfig, encryptedAuth };
+        needsWrite = true;
+      }
+
+      if (hasSensitiveMetadata(req?.metadata)) {
+        const sensitive = sensitiveMetadataEntries(req.metadata);
+        const encryptedMetadata = await encryptJson(sensitive, this.cryptoKey);
+        const patchedRequest = { ...(patched.request as any), metadata: redactMetadata(req.metadata) };
+        patched = { ...patched, request: patchedRequest as ProtocolRequestConfig, encryptedMetadata };
+        needsWrite = true;
+      }
+
+      const tlsKey = req?.options?.tlsClientConfig?.clientKeyPem;
+      if (tlsKey) {
+        const encryptedTlsKey = await encryptJson(tlsKey, this.cryptoKey);
+        const patchedRequest = { ...(patched.request as any), options: { ...(patched.request as any).options, tlsClientConfig: { ...(patched.request as any).options?.tlsClientConfig, clientKeyPem: "" } } };
+        patched = { ...patched, request: patchedRequest as ProtocolRequestConfig, encryptedTlsKey };
+        needsWrite = true;
+      }
+
+      if (needsWrite) {
         await this.db.requests.put(patched);
         return patched;
       }

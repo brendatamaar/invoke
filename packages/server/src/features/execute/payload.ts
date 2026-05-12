@@ -226,6 +226,8 @@ export function executePayload(input: ExecuteInput) {
     transportHeaders.push({ key: "X-Invoke-Connect-Timeout-Ms", value: String(input.connectTimeoutMs) });
   if (input.readTimeoutMs)
     transportHeaders.push({ key: "X-Invoke-Read-Timeout-Ms", value: String(input.readTimeoutMs) });
+  if (input.allowPrivateAddresses)
+    transportHeaders.push({ key: "X-Invoke-Allow-Private", value: "true" });
 
   return {
     method: input.method,

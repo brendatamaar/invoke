@@ -26,6 +26,7 @@ export const executeSchema = z.object({
   followRedirects: z.boolean().default(true),
   maxRedirects: z.number().int().default(10),
   verifySsl: z.boolean().default(true),
+  allowPrivateAddresses: z.boolean().default(true),
   proxy: z
     .object({
       type: z.enum(["http", "socks5"]).default("http"),

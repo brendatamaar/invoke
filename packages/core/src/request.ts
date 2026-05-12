@@ -82,7 +82,10 @@ export const emptyGrpcRequest = (): GrpcRequestConfig => ({
   body: "{}",
   tls: true,
   timeoutMs: 30000,
+  auth: { type: "none" },
   variables: [],
+  assertions: [],
+  extractionRules: [],
   options: { verifySsl: true, tlsClientConfig: {} },
   scripts: { preRequest: "", postResponse: "" },
 });

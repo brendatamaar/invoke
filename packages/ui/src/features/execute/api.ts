@@ -120,6 +120,7 @@ function buildExecutePayload(req: RequestConfig) {
     followRedirects: req.options?.followRedirects ?? true,
     maxRedirects: req.options?.maxRedirects ?? 10,
     verifySsl: req.options?.verifySsl ?? true,
+    allowPrivateAddresses: req.options?.allowPrivateAddresses ?? true,
     proxy: req.options?.proxy,
     tlsClientConfig: req.options?.tlsClientConfig,
   };

@@ -6,7 +6,7 @@ export type FlatRequestDocument = {
   type: "request";
   id?: string;
   name: string;
-  protocol: "rest" | "graphql";
+  protocol: "rest" | "graphql" | "grpc";
   folderId?: string | null;
   method?: HttpMethod;
   url: string;
@@ -21,6 +21,16 @@ export type FlatRequestDocument = {
     query: string;
     variables?: string;
     operationName?: string;
+  };
+  grpc?: {
+    address: string;
+    service: string;
+    method: string;
+    metadata?: Record<string, string>;
+    body?: string;
+    tls?: boolean;
+    timeoutMs?: number;
+    compression?: "none" | "gzip";
   };
   variables?: Record<string, string>;
   timeoutMs?: number;
