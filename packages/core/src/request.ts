@@ -2,15 +2,45 @@ import { v7 as uuidv7 } from "uuid";
 import type {
   GrpcRequestConfig,
   GraphQLRequestConfig,
+  ProtocolNetworkDefaults,
   ProtocolRequestConfig,
   RequestConfig,
+  RequestOptions,
   RequestDraft,
   RequestProtocol,
   WebSocketRequestConfig,
 } from "./types";
+import { NETWORK_OPTION_KEYS } from "./types/settings";
 import { normalizeExtractionRules } from "./variables";
 
 export const id = () => uuidv7();
+
+export function mergeWithDefaults(
+  reqOptions: RequestOptions | undefined,
+  defaults: ProtocolNetworkDefaults,
+): RequestOptions {
+  const requestOptions = reqOptions ?? {};
+  const merged: RequestOptions = {
+    ...defaults.options,
+    ...requestOptions,
+    tlsClientConfig: {
+      ...(defaults.options.tlsClientConfig ?? {}),
+      ...(requestOptions.tlsClientConfig ?? {}),
+    },
+  };
+
+  const proxy = requestOptions.proxy ?? defaults.options.proxy;
+  if (proxy) merged.proxy = { ...proxy };
+  else delete merged.proxy;
+
+  return merged;
+}
+
+export function stripNetworkOptions(options?: RequestOptions): RequestOptions {
+  const cleaned: RequestOptions = { ...(options ?? {}) };
+  for (const key of NETWORK_OPTION_KEYS) delete cleaned[key];
+  return cleaned;
+}
 
 export const emptyRequest = (): RequestDraft => ({
   method: "GET",
@@ -24,17 +54,13 @@ export const emptyRequest = (): RequestDraft => ({
   variables: [],
   assertions: [],
   extractionRules: [],
-  options: {
-    followRedirects: true,
-    maxRedirects: 10,
-    verifySsl: true,
-    tlsClientConfig: {},
-  },
+  options: {},
   scripts: { preRequest: "", postResponse: "" },
   protocol: "rest",
 });
 
 export const emptyGraphQLRequest = (): GraphQLRequestConfig => ({
+  protocol: "graphql",
   url: "",
   headers: [],
   auth: { type: "none" },
@@ -44,12 +70,7 @@ export const emptyGraphQLRequest = (): GraphQLRequestConfig => ({
   timeoutMs: 30000,
   assertions: [],
   extractionRules: [],
-  options: {
-    followRedirects: true,
-    maxRedirects: 10,
-    verifySsl: true,
-    tlsClientConfig: {},
-  },
+  options: {},
   scripts: { preRequest: "", postResponse: "" },
 });
 
@@ -62,8 +83,15 @@ export const emptyWebSocketRequest = (): WebSocketRequestConfig => ({
   message: "",
   timeoutMs: 30000,
   variables: [],
-  options: { verifySsl: true, tlsClientConfig: {} },
+  options: {},
   scripts: { preRequest: "", postResponse: "" },
+  savedMessages: [],
+  autoReconnect: false,
+  preset: "none",
+  presetQuery: "",
+  presetVariables: "{}",
+  ndjsonMode: false,
+  origin: "",
 });
 
 export const emptyGrpcRequest = (): GrpcRequestConfig => ({
@@ -74,8 +102,11 @@ export const emptyGrpcRequest = (): GrpcRequestConfig => ({
   body: "{}",
   tls: true,
   timeoutMs: 30000,
+  auth: { type: "none" },
   variables: [],
-  options: { verifySsl: true, tlsClientConfig: {} },
+  assertions: [],
+  extractionRules: [],
+  options: {},
   scripts: { preRequest: "", postResponse: "" },
 });
 
@@ -153,6 +184,9 @@ export function isGraphQLRequestConfig(
   request: ProtocolRequestConfig | RequestDraft,
 ): request is GraphQLRequestConfig {
   const maybe = request as Partial<GraphQLRequestConfig>;
+  // Prefer explicit protocol discriminator
+  if ((maybe as { protocol?: string }).protocol === "graphql") return true;
+  // Structural fallback for legacy data
   return (
     typeof maybe.query === "string" &&
     typeof maybe.variables === "string" &&

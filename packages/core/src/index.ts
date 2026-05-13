@@ -1,5 +1,6 @@
 export * from "./assertions";
 export * from "./cookies";
+export * from "./crypto";
 export * from "./runner";
 export * from "./auth";
 export * from "./codegen";
@@ -11,6 +12,7 @@ export * from "./graphql";
 export * from "./history";
 export * from "./import-export";
 export * from "./mock-validation";
+export * from "./redact";
 export * from "./request";
 export * from "./scripting";
 export * from "./storage";

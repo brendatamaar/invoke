@@ -108,8 +108,9 @@ export function resolveRequest(
     options: resolveOptions(request.options, resolve),
   };
   const withAuth = applyAuth(resolvedBase);
+  const baseUrl = stripQueryString(withAuth.url);
   return {
-    request: { ...withAuth, url: buildUrl(withAuth.url, withAuth.params) },
+    request: { ...withAuth, url: buildUrl(baseUrl, withAuth.params) },
     unresolved: [...unresolved],
   };
 }
@@ -427,8 +428,27 @@ function dynamicVariable(name: string) {
       return Math.random().toString(36).slice(2, 18).padEnd(16, "x");
     case "$randomBoolean":
       return String(Math.random() >= 0.5);
-    default:
+    default: {
+      // $grpcDeadline:<duration> — e.g. {{$grpcDeadline:5s}} → ISO timestamp 5s from now
+      if (name.startsWith("$grpcDeadline:")) {
+        const spec = name.slice("$grpcDeadline:".length).trim();
+        const match = /^(\d+(?:\.\d+)?)(ms|s|m|h)$/.exec(spec);
+        if (match) {
+          const val = parseFloat(match[1]);
+          const unit = match[2];
+          const ms =
+            unit === "ms"
+              ? val
+              : unit === "s"
+                ? val * 1000
+                : unit === "m"
+                  ? val * 60000
+                  : val * 3600000;
+          return new Date(Date.now() + ms).toISOString();
+        }
+      }
       return `{{${name}}}`;
+    }
   }
 }
 
@@ -473,4 +493,15 @@ function variablesFromKeyValues(variables: KeyValue[]) {
       .filter((item) => item.enabled !== false && item.key.trim())
       .map((item) => [item.key.trim(), item.value]),
   );
+}
+
+function stripQueryString(url: string) {
+  try {
+    const u = new URL(url);
+    u.search = "";
+    return u.toString();
+  } catch {
+    const idx = url.indexOf("?");
+    return idx >= 0 ? url.slice(0, idx) : url;
+  }
 }

@@ -1,4 +1,9 @@
-import type { KeyValue, MockRoute } from "./types";
+import type {
+  KeyValue,
+  MockRoute,
+  MockValidationIssue,
+  MockValidationResult,
+} from "./types";
 
 /*
  * Mock route validation is shared by the UI and server so the client can give
@@ -52,19 +57,6 @@ import type { KeyValue, MockRoute } from "./types";
  * - Body JSONPath conditions on GET/HEAD are unusual because those methods
  *   usually do not send request bodies.
  */
-
-export interface MockValidationIssue {
-  level: "error" | "warning";
-  message: string;
-  routeIndex?: number;
-  routeId?: string;
-}
-
-export interface MockValidationResult {
-  valid: boolean;
-  errors: MockValidationIssue[];
-  warnings: MockValidationIssue[];
-}
 
 const MAX_ROUTES = 500;
 const MAX_CONDITIONS_PER_ROUTE = 20;

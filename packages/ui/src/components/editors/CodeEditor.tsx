@@ -1,23 +1,82 @@
 import { useEffect, useRef } from "react";
 import { EditorView, basicSetup } from "codemirror";
-import { EditorState } from "@codemirror/state";
+import { Compartment, EditorState } from "@codemirror/state";
+import { StreamLanguage } from "@codemirror/language";
 import { json } from "@codemirror/lang-json";
 import { javascript } from "@codemirror/lang-javascript";
 import { xml } from "@codemirror/lang-xml";
 import { python } from "@codemirror/lang-python";
+import { useStore } from "../../store";
+import type { CodeEditorLang, CodeEditorProps } from "../../types";
 
-type Lang = "json" | "javascript" | "xml" | "python" | "text";
+// Minimal GraphQL stream tokenizer for syntax highlighting
+const graphqlStreamLanguage = StreamLanguage.define({
+  name: "graphql",
+  startState: () => ({ blockString: false }),
+  token(stream, state: { blockString: boolean }) {
+    if (state.blockString) {
+      if (stream.match('"""')) {
+        state.blockString = false;
+        return "string";
+      }
+      stream.next();
+      return "string";
+    }
+    if (stream.eatSpace()) return null;
+    if (stream.match("#")) {
+      stream.skipToEnd();
+      return "comment";
+    }
+    if (stream.match('"""')) {
+      state.blockString = true;
+      return "string";
+    }
+    if (stream.match('"')) {
+      while (!stream.eol()) {
+        if (stream.peek() === "\\") {
+          stream.next();
+          stream.next();
+          continue;
+        }
+        if (stream.next() === '"') break;
+      }
+      return "string";
+    }
+    if (stream.match(/^-?\d+(\.\d+)?(e[+-]?\d+)?/i)) return "number";
+    if (stream.match(/^\$[A-Za-z_]\w*/)) return "variable-2";
+    if (stream.match(/^@[A-Za-z_]\w*/)) return "meta";
+    if (stream.match("...")) return "punctuation";
+    if (stream.match(/^[A-Za-z_]\w*/)) {
+      const w = stream.current();
+      if (["query", "mutation", "subscription", "fragment", "on"].includes(w))
+        return "keyword";
+      if (
+        [
+          "type",
+          "interface",
+          "union",
+          "enum",
+          "input",
+          "scalar",
+          "schema",
+          "directive",
+          "extend",
+          "implements",
+        ].includes(w)
+      )
+        return "keyword";
+      if (["true", "false", "null"].includes(w)) return "atom";
+      if (/^[A-Z]/.test(w)) return "type";
+      return "def";
+    }
+    if (stream.match(/^[{}\[\]()!:=|&,]/)) return "punctuation";
+    stream.next();
+    return null;
+  },
+  copyState: (s) => ({ ...s }),
+});
 
-interface Props {
-  value: string;
-  onChange?: (value: string) => void;
-  lang?: Lang;
-  readOnly?: boolean;
-  minHeight?: string;
-  placeholder?: string;
-}
-
-function getLangExtension(lang: Lang) {
+function getLangExtension(lang: CodeEditorLang) {
   switch (lang) {
     case "json":
       return json();
@@ -27,6 +86,8 @@ function getLangExtension(lang: Lang) {
       return xml();
     case "python":
       return python();
+    case "graphql":
+      return graphqlStreamLanguage;
     default:
       return [];
   }
@@ -38,10 +99,13 @@ export function CodeEditor({
   lang = "text",
   readOnly = false,
   minHeight = "120px",
-}: Props) {
+  extensions: extraExtensions = [],
+}: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const wrapCompartment = useRef(new Compartment()).current;
+  const editorWordWrap = useStore((s) => s.editorWordWrap);
   onChangeRef.current = onChange;
 
   useEffect(() => {
@@ -50,11 +114,12 @@ export function CodeEditor({
     const extensions = [
       basicSetup,
       getLangExtension(lang),
+      ...extraExtensions,
       EditorView.theme({
         "&": { minHeight },
         ".cm-scroller": { fontFamily: "'JetBrains Mono', monospace" },
       }),
-      EditorView.lineWrapping,
+      wrapCompartment.of(editorWordWrap ? EditorView.lineWrapping : []),
     ];
 
     if (readOnly) {
@@ -81,6 +146,14 @@ export function CodeEditor({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, readOnly, minHeight]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({
+      effects: wrapCompartment.reconfigure(
+        editorWordWrap ? EditorView.lineWrapping : [],
+      ),
+    });
+  }, [editorWordWrap, wrapCompartment]);
 
   // sync external value changes without re-mounting
   useEffect(() => {

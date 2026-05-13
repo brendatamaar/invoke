@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -23,18 +25,32 @@ import (
 	"golang.org/x/net/proxy"
 )
 
+// transportCache caches *http.Transport keyed by config hash so TCP connections
+// and HTTP/2 sessions are reused across requests with the same settings.
+var transportCache sync.Map
+
 type Service struct {
 	executorpb.UnimplementedHttpExecutorServer
 	startedAt     time.Time
 	wsMu          sync.Mutex
 	wsConnections map[string]*wsConnection
+	grpcStreamMu  sync.Mutex
+	grpcStreams    map[string]*grpcManagedStream
+	grpcStreamSenders map[string]func(string) error
+	grpcStreamClosers map[string]func() (*GrpcStreamCloseResponse, error)
 }
 
 func NewService() *Service {
-	return &Service{
-		startedAt:     time.Now(),
-		wsConnections: make(map[string]*wsConnection),
+	s := &Service{
+		startedAt:         time.Now(),
+		wsConnections:     make(map[string]*wsConnection),
+		grpcStreams:       make(map[string]*grpcManagedStream),
+		grpcStreamSenders: make(map[string]func(string) error),
+		grpcStreamClosers: make(map[string]func() (*GrpcStreamCloseResponse, error)),
 	}
+	s.startWsCleanupTicker()
+	s.startGrpcStreamCleanupTicker()
+	return s
 }
 
 func (s *Service) Ping(context.Context, *PingRequest) (*PingResponse, error) {
@@ -65,13 +81,9 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
 	}
-	for _, header := range req.GetHeaders() {
-		if strings.TrimSpace(header.GetKey()) != "" {
-			httpReq.Header.Add(header.GetKey(), header.GetValue())
-		}
-	}
+	connectTimeoutMs, readTimeoutMs, allowPrivate := extractInvokeHeaders(req.GetHeaders(), httpReq)
 
-	transport, err := transportFor(req)
+	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
 	}
@@ -108,7 +120,7 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 	}
 	defer resp.Body.Close()
 
-	body, readErr := io.ReadAll(resp.Body)
+	body, truncated, readErr := limitedReadAll(resp.Body)
 	finishedAt := time.Now()
 	finalizeLastAttempt(attempts, finishedAt)
 	if readErr != nil {
@@ -121,10 +133,14 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 	}
 
 	timing := aggregateTiming(attempts, start, finishedAt)
+	truncatedErr := ""
+	if truncated {
+		truncatedErr = fmt.Sprintf("BODY_TRUNCATED: response exceeded %d MB limit; only the first %d MB are shown", maxBodyBytes/1024/1024, maxBodyBytes/1024/1024)
+	}
 	out := &HttpResponse{
 		Status:       int32(resp.StatusCode),
 		StatusText:   resp.Status,
-		Headers:      headersFromHTTP(resp.Header),
+		Headers:      appendHttpVersion(headersFromHTTP(resp.Header), resp.Proto),
 		Body:         body,
 		Timing:       timing,
 		Tls:          tlsInfo(resp.TLS),
@@ -132,6 +148,7 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 		Attempts:     attemptsToProto(attempts),
 		RequestSize:  int64(len(req.GetBody())),
 		ResponseSize: int64(len(body)),
+		Error:        truncatedErr,
 	}
 	return out, nil
 }
@@ -156,13 +173,9 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 	if err != nil {
 		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
 	}
-	for _, header := range req.GetHeaders() {
-		if strings.TrimSpace(header.GetKey()) != "" {
-			httpReq.Header.Add(header.GetKey(), header.GetValue())
-		}
-	}
+	connectTimeoutMs, readTimeoutMs, allowPrivate := extractInvokeHeaders(req.GetHeaders(), httpReq)
 
-	transport, err := transportFor(req)
+	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
 	if err != nil {
 		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
 	}
@@ -202,7 +215,12 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 
 	var body bytes.Buffer
 	chunk := make([]byte, 16*1024)
+	streamTruncated := false
 	for {
+		if body.Len() >= maxBodyBytes {
+			streamTruncated = true
+			break
+		}
 		n, readErr := resp.Body.Read(chunk)
 		if n > 0 {
 			part := append([]byte(nil), chunk[:n]...)
@@ -236,10 +254,14 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 
 	finishedAt := time.Now()
 	finalizeLastAttempt(attempts, finishedAt)
+	streamTruncErr := ""
+	if streamTruncated {
+		streamTruncErr = fmt.Sprintf("BODY_TRUNCATED: response exceeded %d MB limit; only the first %d MB are shown", maxBodyBytes/1024/1024, maxBodyBytes/1024/1024)
+	}
 	finalResponse := &HttpResponse{
 		Status:       int32(resp.StatusCode),
 		StatusText:   resp.Status,
-		Headers:      headersFromHTTP(resp.Header),
+		Headers:      appendHttpVersion(headersFromHTTP(resp.Header), resp.Proto),
 		Body:         body.Bytes(),
 		Timing:       aggregateTiming(attempts, start, finishedAt),
 		Tls:          tlsInfo(resp.TLS),
@@ -247,21 +269,95 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 		Attempts:     attemptsToProto(attempts),
 		RequestSize:  int64(len(req.GetBody())),
 		ResponseSize: int64(body.Len()),
+		Error:        streamTruncErr,
 	}
 	return stream.Send(&ResponseChunk{Done: true, FinalResponse: finalResponse})
 }
 
-func transportFor(req *HttpRequest) (*http.Transport, error) {
+const maxBodyBytes = 50 * 1024 * 1024 // 50 MB
+
+// extractInvokeHeaders copies non-internal headers onto httpReq and returns
+// connect/read timeout values and allowPrivate flag parsed from X-Invoke-* headers.
+func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, readMs int64, allowPrivate bool) {
+	for _, h := range headers {
+		key := strings.TrimSpace(h.GetKey())
+		if key == "" {
+			continue
+		}
+		switch strings.ToLower(key) {
+		case "x-invoke-connect-timeout-ms":
+			if v, err := strconv.ParseInt(h.GetValue(), 10, 64); err == nil {
+				connectMs = v
+			}
+		case "x-invoke-read-timeout-ms":
+			if v, err := strconv.ParseInt(h.GetValue(), 10, 64); err == nil {
+				readMs = v
+			}
+		case "x-invoke-allow-private":
+			allowPrivate = strings.EqualFold(h.GetValue(), "true")
+		default:
+			httpReq.Header.Add(key, h.GetValue())
+		}
+	}
+	return
+}
+
+func transportFor(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, allowPrivate bool) (*http.Transport, error) {
+	key := buildTransportKey(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
+	if v, ok := transportCache.Load(key); ok {
+		return v.(*http.Transport), nil
+	}
+	t, err := buildTransport(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
+	if err != nil {
+		return nil, err
+	}
+	actual, _ := transportCache.LoadOrStore(key, t)
+	return actual.(*http.Transport), nil
+}
+
+func buildTransportKey(req *HttpRequest, connectMs, readMs int64, allowPrivate bool) string {
+	h := sha256.New()
+	fmt.Fprintf(h, "v=%v|ct=%d|rt=%d|ap=%v", req.GetVerifySsl(), connectMs, readMs, allowPrivate)
+	if cc := req.GetTlsClientConfig(); cc != nil {
+		fmt.Fprintf(h, "|sn=%s", cc.GetServerName())
+		certSum := sha256.Sum256(append(append([]byte(nil), cc.GetClientCertPem()...), cc.GetClientKeyPem()...))
+		caSum := sha256.Sum256(cc.GetCaCertPem())
+		h.Write(certSum[:])
+		h.Write(caSum[:])
+	}
+	if p := req.GetProxy(); p != nil && strings.TrimSpace(p.GetUrl()) != "" {
+		fmt.Fprintf(h, "|px=%s|pu=%s|pt=%s", p.GetUrl(), p.GetUsername(), p.GetType())
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func buildTransport(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, allowPrivate bool) (*http.Transport, error) {
 	verify := req.GetVerifySsl()
 	tlsConfig, err := tlsConfigFor(verify, req.GetTlsClientConfig())
 	if err != nil {
 		return nil, err
 	}
-	transport := &http.Transport{
-		DisableKeepAlives: true,
-		TLSClientConfig:   tlsConfig,
+	var connectTimeout time.Duration
+	if connectTimeoutMs > 0 {
+		connectTimeout = time.Duration(connectTimeoutMs) * time.Millisecond
 	}
-	if req.GetProxy() != nil && strings.TrimSpace(req.GetProxy().GetUrl()) != "" {
+	transport := &http.Transport{
+		ForceAttemptHTTP2:     true,
+		TLSClientConfig:       tlsConfig,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   10,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	if readTimeoutMs > 0 {
+		transport.ResponseHeaderTimeout = time.Duration(readTimeoutMs) * time.Millisecond
+	}
+	hasProxy := req.GetProxy() != nil && strings.TrimSpace(req.GetProxy().GetUrl()) != ""
+	if !hasProxy {
+		transport.DialContext = ssrfDialContext(&net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}, allowPrivate)
+	}
+	if hasProxy {
 		proxyURL, err := url.Parse(req.GetProxy().GetUrl())
 		if err != nil {
 			return nil, fmt.Errorf("invalid proxy url: %w", err)
@@ -291,6 +387,25 @@ func transportFor(req *HttpRequest) (*http.Transport, error) {
 	return transport, nil
 }
 
+func appendHttpVersion(headers []*Header, proto string) []*Header {
+	if proto == "" {
+		return headers
+	}
+	return append(headers, &Header{Key: "X-Invoke-Http-Version", Value: proto})
+}
+
+func limitedReadAll(r io.Reader) ([]byte, bool, error) {
+	limited := io.LimitReader(r, int64(maxBodyBytes)+1)
+	data, err := io.ReadAll(limited)
+	if err != nil {
+		return data, false, err
+	}
+	if len(data) > maxBodyBytes {
+		return data[:maxBodyBytes], true, nil
+	}
+	return data, false, nil
+}
+
 func tlsConfigFor(verify bool, clientConfig *TlsClientConfig) (*tls.Config, error) {
 	config := &tls.Config{InsecureSkipVerify: !verify} //nolint:gosec
 	if clientConfig == nil {
@@ -318,6 +433,7 @@ func tlsConfigFor(verify bool, clientConfig *TlsClientConfig) (*tls.Config, erro
 	if len(caCert) > 0 {
 		pool, err := x509.SystemCertPool()
 		if err != nil || pool == nil {
+			log.Printf("warning: SystemCertPool failed (%v); custom CA will be the only trusted root", err)
 			pool = x509.NewCertPool()
 		}
 		if !pool.AppendCertsFromPEM(caCert) {
@@ -330,9 +446,11 @@ func tlsConfigFor(verify bool, clientConfig *TlsClientConfig) (*tls.Config, erro
 }
 
 func headersFromHTTP(values http.Header) []*Header {
-	headers := make([]*Header, 0, len(values))
-	for key, all := range values {
-		headers = append(headers, &Header{Key: key, Value: strings.Join(all, ", ")})
+	headers := make([]*Header, 0)
+	for key, vals := range values {
+		for _, v := range vals {
+			headers = append(headers, &Header{Key: key, Value: v})
+		}
 	}
 	return headers
 }

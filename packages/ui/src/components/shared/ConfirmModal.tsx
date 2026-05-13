@@ -1,15 +1,6 @@
 import { useEffect } from "react";
 import { Dialog } from "./Dialog";
-
-interface Props {
-  open: boolean;
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onClose: () => void;
-}
+import type { ConfirmModalProps } from "../../types";
 
 export function ConfirmModal({
   open,
@@ -19,7 +10,7 @@ export function ConfirmModal({
   danger,
   onConfirm,
   onClose,
-}: Props) {
+}: ConfirmModalProps) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -37,11 +28,11 @@ export function ConfirmModal({
       width="360px"
       footer={
         <>
-          <button className="btn text-xs" onClick={onClose}>
+          <button className="btn" onClick={onClose}>
             Cancel
           </button>
           <button
-            className={`btn text-xs ${danger ? "btn-danger" : "btn-primary"}`}
+            className={`btn ${danger ? "btn-danger" : "btn-primary"}`}
             onClick={onConfirm}
           >
             {confirmLabel}
@@ -49,7 +40,9 @@ export function ConfirmModal({
         </>
       }
     >
-      <p className="text-sm text-[var(--text-2)]">{message}</p>
+      <p style={{ fontSize: "var(--t-base)", color: "var(--fg-1)", margin: 0 }}>
+        {message}
+      </p>
     </Dialog>
   );
 }

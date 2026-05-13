@@ -7,6 +7,10 @@ import type {
   FlowStep,
   KeyValue,
   RequestConfig,
+  FlowValidationIssue,
+  FlowValidationOptions,
+  FlowValidationResult,
+  StepValidationContext,
 } from "./types";
 
 /*
@@ -69,23 +73,6 @@ import type {
  * - Conditional loops whose first check depends on a previous response may skip
  *   immediately if no earlier request exists.
  */
-
-export interface FlowValidationIssue {
-  level: "error" | "warning";
-  message: string;
-  stepId?: string;
-  path?: string;
-}
-
-export interface FlowValidationResult {
-  valid: boolean;
-  errors: FlowValidationIssue[];
-  warnings: FlowValidationIssue[];
-}
-
-export interface FlowValidationOptions {
-  requireSteps?: boolean;
-}
 
 const MAX_FLOW_NAME_LENGTH = 120;
 const MAX_STEP_NAME_LENGTH = 120;
@@ -182,15 +169,6 @@ export function validateFlow(
   const errors = issues.filter((issue) => issue.level === "error");
   const warnings = issues.filter((issue) => issue.level === "warning");
   return { valid: errors.length === 0, errors, warnings };
-}
-
-interface StepValidationContext {
-  add: (issue: FlowValidationIssue) => void;
-  stepIds: Set<string>;
-  stats: { totalSteps: number; maxDepth: number };
-  depth: number;
-  path: string;
-  hasPreviousRequest: boolean;
 }
 
 function validateSteps(steps: FlowStep[], context: StepValidationContext) {

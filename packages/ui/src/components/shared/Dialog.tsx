@@ -1,14 +1,6 @@
 import { X } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
-
-interface Props {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: ReactNode;
-  width?: string;
-  footer?: ReactNode;
-}
+import { useEffect } from "react";
+import type { DialogProps } from "../../types";
 
 export function Dialog({
   open,
@@ -17,7 +9,7 @@ export function Dialog({
   children,
   width = "480px",
   footer,
-}: Props) {
+}: DialogProps) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -31,32 +23,78 @@ export function Dialog({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-[1px]"
+      className="fixed inset-0 z-40 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.5)" }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden"
-        style={{ width }}
+        className="flex flex-col max-h-[80vh] overflow-hidden"
+        style={{
+          width,
+          background: "var(--bg-2)",
+          border: "1px solid var(--line-2)",
+          borderRadius: "var(--r-3)",
+          boxShadow: "var(--shadow-pop)",
+        }}
       >
-        {/* header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)]">
-          <span className="font-semibold text-[var(--text-1)] text-sm">
+        {/* Header */}
+        <div
+          className="flex items-center justify-between"
+          style={{
+            padding: "10px 14px",
+            borderBottom: "1px solid var(--line-1)",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "var(--t-base)",
+              fontWeight: 600,
+              color: "var(--fg-0)",
+            }}
+          >
             {title}
           </span>
           <button
             onClick={onClose}
-            className="text-[var(--text-3)] hover:text-[var(--text-1)] p-1 rounded hover:bg-[var(--surface-2)]"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--fg-3)",
+              cursor: "pointer",
+              padding: "2px",
+              display: "flex",
+              borderRadius: "var(--r-1)",
+              transition: "color var(--dur-fast)",
+            }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLElement).style.color = "var(--fg-3)")
+            }
           >
-            <X size={14} />
+            <X size={13} />
           </button>
         </div>
-        {/* body */}
-        <div className="flex-1 overflow-auto p-5">{children}</div>
-        {/* footer */}
+
+        {/* Body */}
+        <div className="flex-1 overflow-auto" style={{ padding: "14px" }}>
+          {children}
+        </div>
+
+        {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-2)]">
+          <div
+            className="flex items-center justify-end gap-2"
+            style={{
+              padding: "10px 14px",
+              borderTop: "1px solid var(--line-1)",
+              background: "var(--bg-1)",
+            }}
+          >
             {footer}
           </div>
         )}

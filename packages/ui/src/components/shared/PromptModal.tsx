@@ -1,18 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "./Dialog";
-
-interface Props {
-  open: boolean;
-  title: string;
-  label?: string;
-  defaultValue?: string;
-  placeholder?: string;
-  multiline?: boolean;
-  confirmLabel?: string;
-  allowEmpty?: boolean;
-  onConfirm: (value: string) => void;
-  onClose: () => void;
-}
+import type { PromptModalProps } from "../../types";
 
 export function PromptModal({
   open,
@@ -25,7 +13,7 @@ export function PromptModal({
   allowEmpty,
   onConfirm,
   onClose,
-}: Props) {
+}: PromptModalProps) {
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -52,11 +40,11 @@ export function PromptModal({
       width="360px"
       footer={
         <>
-          <button className="btn text-xs" onClick={onClose}>
+          <button className="btn" onClick={onClose}>
             Cancel
           </button>
           <button
-            className="btn btn-primary text-xs"
+            className="btn btn-primary"
             onClick={submit}
             disabled={!allowEmpty && !value.trim()}
           >
@@ -66,7 +54,14 @@ export function PromptModal({
       }
     >
       {label && (
-        <label className="text-xs text-[var(--text-2)] block mb-1.5">
+        <label
+          style={{
+            display: "block",
+            marginBottom: 6,
+            fontSize: "var(--t-sm)",
+            color: "var(--fg-2)",
+          }}
+        >
           {label}
         </label>
       )}
@@ -77,7 +72,8 @@ export function PromptModal({
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
           rows={4}
-          className="input text-xs font-mono resize-none"
+          className="input"
+          style={{ fontFamily: "var(--font-mono)", resize: "none" }}
         />
       ) : (
         <input
@@ -91,7 +87,7 @@ export function PromptModal({
             }
           }}
           placeholder={placeholder}
-          className="input text-xs"
+          className="input"
         />
       )}
     </Dialog>
