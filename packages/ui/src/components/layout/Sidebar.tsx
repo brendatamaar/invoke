@@ -1,12 +1,4 @@
-import {
-  Layers,
-  History,
-  Globe,
-  GitBranch,
-  Server,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Layers, History, Globe, GitBranch, Server } from "lucide-react";
 import { useStore } from "../../store";
 import { CollectionTree } from "../../features/collections/components/CollectionTree";
 import { HistoryPanel } from "../../features/history/components/HistoryPanel";
@@ -16,57 +8,99 @@ import { MockPanel } from "../../features/mock/components/MockPanel";
 import type { SidebarSection } from "../../types";
 
 const NAV: { id: SidebarSection; icon: React.ReactNode; label: string }[] = [
-  { id: "collections", icon: <Layers size={16} />, label: "Collections" },
-  { id: "history", icon: <History size={16} />, label: "History" },
-  { id: "environments", icon: <Globe size={16} />, label: "Environments" },
-  { id: "flows", icon: <GitBranch size={16} />, label: "Flows" },
-  { id: "mocks", icon: <Server size={16} />, label: "Mock" },
+  { id: "collections", icon: <Layers size={15} />, label: "Collections" },
+  { id: "history", icon: <History size={15} />, label: "History" },
+  { id: "environments", icon: <Globe size={15} />, label: "Environments" },
+  { id: "flows", icon: <GitBranch size={15} />, label: "Flows" },
+  { id: "mocks", icon: <Server size={15} />, label: "Mock" },
 ];
+
+const RAIL_WIDTH = 36;
+const PANEL_WIDTH = 240;
 
 export function Sidebar() {
   const { sidebarSection, sidebarCollapsed, set } = useStore();
 
   return (
     <aside
-      className="flex flex-col border-r border-[var(--border)] bg-[var(--surface-2)] overflow-hidden"
-      style={{ width: sidebarCollapsed ? 44 : 240, flexShrink: 0 }}
+      className="flex overflow-hidden shrink-0"
+      style={{
+        width: sidebarCollapsed ? RAIL_WIDTH : RAIL_WIDTH + PANEL_WIDTH,
+        borderRight: "1px solid var(--line-2)",
+        background: "var(--bg-1)",
+      }}
     >
-      {/* Icon nav */}
-      <nav className="flex flex-col gap-0.5 p-1.5 border-b border-[var(--border)]">
-        {NAV.map(({ id, icon, label }) => (
-          <button
-            key={id}
-            title={sidebarCollapsed ? label : undefined}
-            onClick={() => set({ sidebarSection: id, sidebarCollapsed: false })}
-            className={`flex items-center gap-2.5 px-2 py-1.5 rounded transition-colors ${sidebarCollapsed ? "justify-center" : ""} ${
-              sidebarSection === id
-                ? "bg-[var(--accent-subtle)] text-[var(--accent)]"
-                : "text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--border)]"
-            }`}
-          >
-            <span className="shrink-0">{icon}</span>
-            {!sidebarCollapsed && (
-              <span className="text-xs font-medium">{label}</span>
-            )}
-          </button>
-        ))}
-      </nav>
-
-      {/* Collapse toggle */}
-      <button
-        onClick={() => set({ sidebarCollapsed: !sidebarCollapsed })}
-        className={`flex items-center py-1.5 border-b border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--border)] transition-colors ${sidebarCollapsed ? "justify-center" : "justify-end px-2.5"}`}
+      {/* Icon rail */}
+      <div
+        className="flex flex-col shrink-0"
+        style={{
+          width: RAIL_WIDTH,
+          borderRight: sidebarCollapsed ? "none" : "1px solid var(--line-1)",
+          background: "var(--bg-1)",
+          paddingTop: 4,
+          paddingBottom: 4,
+        }}
       >
-        {sidebarCollapsed ? (
-          <ChevronRight size={13} />
-        ) : (
-          <ChevronLeft size={13} />
-        )}
-      </button>
+        {NAV.map(({ id, icon, label }) => {
+          const active = sidebarSection === id && !sidebarCollapsed;
+          return (
+            <button
+              key={id}
+              title={label}
+              onClick={() =>
+                set({
+                  sidebarSection: id,
+                  sidebarCollapsed:
+                    sidebarSection === id ? !sidebarCollapsed : false,
+                })
+              }
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: RAIL_WIDTH,
+                height: 32,
+                border: "none",
+                background: "transparent",
+                color: active ? "var(--accent)" : "var(--fg-3)",
+                cursor: "pointer",
+                transition: "color var(--dur-fast)",
+                position: "relative",
+              }}
+              onMouseEnter={(e) => {
+                if (!active)
+                  (e.currentTarget as HTMLElement).style.color = "var(--fg-1)";
+              }}
+              onMouseLeave={(e) => {
+                if (!active)
+                  (e.currentTarget as HTMLElement).style.color = "var(--fg-3)";
+              }}
+            >
+              {active && (
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "20%",
+                    bottom: "20%",
+                    width: 2,
+                    background: "var(--accent)",
+                    borderRadius: "0 1px 1px 0",
+                  }}
+                />
+              )}
+              {icon}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Panel content */}
       {!sidebarCollapsed && (
-        <div className="flex-1 overflow-hidden">
+        <div
+          className="flex flex-col flex-1 overflow-hidden"
+          style={{ width: PANEL_WIDTH, background: "var(--bg-1)" }}
+        >
           {sidebarSection === "collections" && <CollectionTree />}
           {sidebarSection === "history" && <HistoryPanel />}
           {sidebarSection === "environments" && <EnvironmentPanel />}

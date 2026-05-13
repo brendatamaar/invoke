@@ -1,23 +1,33 @@
 import type { MethodBadgeProps } from "../../types";
 
-const METHOD_STYLES: Record<string, string> = {
-  GET: "text-emerald-700 bg-emerald-50",
-  POST: "text-blue-700    bg-blue-50",
-  PUT: "text-amber-700   bg-amber-50",
-  PATCH: "text-violet-700  bg-violet-50",
-  DELETE: "text-red-700     bg-red-50",
-  HEAD: "text-zinc-600    bg-zinc-100",
-  OPTIONS: "text-zinc-600    bg-zinc-100",
+const METHOD_COLOR: Record<string, string> = {
+  GET: "var(--method-get)",
+  POST: "var(--method-post)",
+  PUT: "var(--method-put)",
+  PATCH: "var(--method-patch)",
+  DELETE: "var(--method-delete)",
+  HEAD: "var(--method-head)",
+  OPTIONS: "var(--method-options)",
 };
 
 export function MethodBadge({ method, size = "sm" }: MethodBadgeProps) {
-  const style = METHOD_STYLES[method] ?? "text-zinc-600 bg-zinc-100";
-  const px = size === "md" ? "px-2 py-0.5 text-xs" : "px-1.5 py-px text-2xs";
+  const color = METHOD_COLOR[method] ?? "var(--fg-2)";
+  const display =
+    method === "DELETE" ? "DEL" : method === "OPTIONS" ? "OPT" : method;
   return (
     <span
-      className={`inline-block rounded font-mono font-semibold tracking-tight leading-none ${px} ${style}`}
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: size === "md" ? 12 : 11,
+        fontWeight: 600,
+        color,
+        letterSpacing: 0,
+        display: "inline-block",
+        width: size === "md" ? 50 : 44,
+        flexShrink: 0,
+      }}
     >
-      {method}
+      {display}
     </span>
   );
 }

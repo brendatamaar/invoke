@@ -59,7 +59,7 @@ export function GraphQLVariablesPanel() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {jsonError && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border-b border-red-500/30 text-red-500 text-2xs shrink-0">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--danger-bg)] border-b border-[var(--danger)] text-[var(--danger)] text-2xs shrink-0">
           <AlertTriangle size={12} className="shrink-0" />
           <span className="truncate">{jsonError}</span>
         </div>
@@ -105,7 +105,7 @@ export function GraphQLVariablesPanel() {
                 </span>
                 <button
                   onClick={() => removeFile(f.id)}
-                  className="p-0.5 text-[var(--text-3)] hover:text-red-500 shrink-0"
+                  className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
                 >
                   <Trash2 size={11} />
                 </button>

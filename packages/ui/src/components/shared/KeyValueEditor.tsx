@@ -60,7 +60,7 @@ export function KeyValueEditor({
             type="checkbox"
             checked={row.enabled !== false}
             onChange={(e) => update(i, "enabled", e.target.checked)}
-            className="w-3.5 h-3.5 mr-2 accent-[var(--accent)] shrink-0"
+            className="w-3.5 h-3.5 mr-2 shrink-0"
             disabled={disabled}
           />
           <input

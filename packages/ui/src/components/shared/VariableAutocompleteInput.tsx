@@ -173,7 +173,7 @@ export function VariableAutocompleteInput({
         title={variableTitle}
       />
       {suggestions.length > 0 && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto min-w-40">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-[var(--bg-2)] border border-[var(--line-2)] rounded-md shadow-[var(--shadow-2)] py-1 max-h-48 overflow-y-auto min-w-40">
           {suggestions.map((v, i) => (
             <button
               key={v.name}

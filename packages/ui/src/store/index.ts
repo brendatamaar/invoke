@@ -17,7 +17,7 @@ export { coreStore };
 
 export const useStore = create<AppState>((set, get) => ({
   // Request
-  ...createRequestSlice(set),
+  ...createRequestSlice(set, get),
 
   // Response
   ...createResponseSlice(set),

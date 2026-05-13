@@ -1,14 +1,16 @@
 import type { ExecuteResponse, RequestConfig } from "@invoke/core";
 import { decodeBase64, ensureOk } from "../../lib/http";
+import { applyProtocolDefaults } from "../../lib/protocolDefaults";
 
 export async function execute(
   request: RequestConfig,
   signal?: AbortSignal,
 ): Promise<ExecuteResponse> {
+  const merged = applyProtocolDefaults(request);
   const response = await fetch("/api/execute", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildExecutePayload(request)),
+    body: JSON.stringify(buildExecutePayload(merged)),
     signal,
   });
   await ensureOk(response);
@@ -63,10 +65,11 @@ export async function executeStream(
     signal?: AbortSignal;
   },
 ) {
+  const merged = applyProtocolDefaults(request);
   const response = await fetch("/api/execute/stream", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildExecutePayload(request)),
+    body: JSON.stringify(buildExecutePayload(merged)),
     signal: handlers.signal,
   });
   if (!response.ok || !response.body) throw new Error(await response.text());

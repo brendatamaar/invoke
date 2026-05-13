@@ -2,6 +2,7 @@ import type {
   AuthConfig,
   CachedGraphQLSchema,
   Collection,
+  DefaultProtocolOptions,
   DiffIgnoreRule,
   Environment,
   Flow,
@@ -404,6 +405,14 @@ export class InvokeStore {
     await metaStorage.setRetentionSettings(this.db, settings);
   }
 
+  async getDefaultProtocolOptions(): Promise<DefaultProtocolOptions> {
+    return metaStorage.getDefaultProtocolOptions(this.db);
+  }
+
+  async setDefaultProtocolOptions(defaults: DefaultProtocolOptions) {
+    await metaStorage.setDefaultProtocolOptions(this.db, defaults);
+  }
+
   async getStorageStats(): Promise<Record<string, number>> {
     return workspaceStorage.getStorageStats(this.db);
   }
@@ -494,6 +503,7 @@ export class InvokeStore {
     requests: SavedRequest[];
     environments: Environment[];
     flows: Flow[];
+    defaultProtocolOptions?: DefaultProtocolOptions;
   }): Promise<void> {
     await workspaceStorage.importWorkspace(this.db, data);
   }

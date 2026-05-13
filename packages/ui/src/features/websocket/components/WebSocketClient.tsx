@@ -187,7 +187,7 @@ function SensitiveKeyValueEditor({
               type="checkbox"
               checked={row.enabled !== false}
               onChange={(e) => update(i, "enabled", e.target.checked)}
-              className="w-3.5 h-3.5 mr-2 ml-1 accent-[var(--accent)] shrink-0"
+              className="w-3.5 h-3.5 mr-2 ml-1 shrink-0"
             />
             <input
               type="text"
@@ -510,7 +510,7 @@ export function WebSocketClient() {
             <span
               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                 sess.state === "connected"
-                  ? "bg-emerald-500"
+                  ? "bg-[var(--ok-bg)]0"
                   : sess.state === "connecting"
                     ? "bg-yellow-400 animate-pulse"
                     : "bg-[var(--text-4,#888)]"
@@ -627,9 +627,9 @@ export function WebSocketClient() {
                   key={entry.id}
                   className={`rounded ${
                     entry.direction === "sent"
-                      ? "bg-blue-50 dark:bg-blue-950/30"
+                      ? "bg-[var(--info-bg)]"
                       : entry.direction === "system"
-                        ? "bg-amber-50 dark:bg-amber-950/30"
+                        ? "bg-[var(--warn-bg)]"
                         : "bg-[var(--surface-2)]"
                   }`}
                 >
@@ -648,17 +648,17 @@ export function WebSocketClient() {
                     {entry.direction === "sent" ? (
                       <ArrowUp
                         size={11}
-                        className="text-blue-600 mt-0.5 shrink-0"
+                        className="text-[var(--info)] mt-0.5 shrink-0"
                       />
                     ) : entry.direction === "system" ? (
                       <Info
                         size={11}
-                        className="text-amber-600 mt-0.5 shrink-0"
+                        className="text-[var(--warn)] mt-0.5 shrink-0"
                       />
                     ) : (
                       <ArrowDown
                         size={11}
-                        className="text-emerald-600 mt-0.5 shrink-0"
+                        className="text-[var(--ok)] mt-0.5 shrink-0"
                       />
                     )}
                     <pre className="flex-1 break-all whitespace-pre-wrap text-[var(--text-1)] font-mono">
@@ -923,7 +923,7 @@ export function WebSocketClient() {
           {websocketRequest.headers.some((h) =>
             /^(authorization|cookie|set-cookie)$/i.test(h.key),
           ) && (
-            <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-[var(--border)] text-2xs text-amber-700 dark:text-amber-400 shrink-0">
+            <div className="flex items-start gap-2 px-3 py-2 bg-[var(--warn-bg)] border-b border-[var(--border)] text-2xs text-[var(--warn)] shrink-0">
               <AlertTriangle size={11} className="mt-0.5 shrink-0" />
               <span>
                 Sensitive headers (Authorization, Cookie) are sent as plaintext
@@ -1086,7 +1086,7 @@ export function WebSocketClient() {
                 </button>
                 <button
                   onClick={() => removeSavedMessage(msg.id)}
-                  className="p-1 text-[var(--text-3)] hover:text-red-500 rounded"
+                  className="p-1 text-[var(--text-3)] hover:text-[var(--danger)] rounded"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -1107,7 +1107,6 @@ export function WebSocketClient() {
                   onChange={(e) =>
                     updateSavedMessage(msg.id, { autoSend: e.target.checked })
                   }
-                  className="accent-[var(--accent)]"
                 />
                 Auto-send on connect
               </label>
@@ -1127,7 +1126,7 @@ export function WebSocketClient() {
                 From template <ChevronDown size={11} />
               </button>
               {showTemplates && (
-                <div className="absolute left-0 top-full mt-1 z-50 bg-[var(--surface-1)] border border-[var(--border)] rounded shadow-lg min-w-48">
+                <div className="absolute left-0 top-full mt-1 z-50 bg-[var(--surface-1)] border border-[var(--border)] rounded shadow-[var(--shadow-2)] min-w-48">
                   {Object.entries(PROTOCOL_TEMPLATES).map(
                     ([group, templates]) => (
                       <div key={group}>
@@ -1201,7 +1200,6 @@ export function WebSocketClient() {
               onChange={(e) =>
                 setWebsocketRequest({ autoReconnect: e.target.checked })
               }
-              className="accent-[var(--accent)]"
             />
             <span className="text-xs text-[var(--text-2)]">
               Auto-reconnect on disconnect
@@ -1214,136 +1212,18 @@ export function WebSocketClient() {
               onChange={(e) =>
                 setWebsocketRequest({ ndjsonMode: e.target.checked })
               }
-              className="accent-[var(--accent)]"
             />
             <span className="text-xs text-[var(--text-2)]">
               NDJSON mode (split frames on newlines)
             </span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={websocketRequest.options?.verifySsl ?? true}
-              onChange={(e) =>
-                setWebsocketRequest({
-                  options: {
-                    ...websocketRequest.options,
-                    verifySsl: e.target.checked,
-                  },
-                })
-              }
-              className="accent-[var(--accent)]"
-            />
-            <span className="text-xs text-[var(--text-2)]">
-              Verify SSL certificate
-            </span>
-          </label>
-
-          {/* TLS client certificate */}
-          <div className="border-t border-[var(--border)] pt-3">
-            <p className="text-xs font-medium text-[var(--text-2)] mb-2">
-              TLS Client Certificate
-            </p>
-            <div className="flex flex-col gap-2">
-              <div>
-                <label className="text-2xs text-[var(--text-3)] mb-1 block">
-                  CA Certificate (PEM)
-                </label>
-                <textarea
-                  value={
-                    websocketRequest.options?.tlsClientConfig?.caCertPem ?? ""
-                  }
-                  onChange={(e) =>
-                    setWebsocketRequest({
-                      options: {
-                        ...websocketRequest.options,
-                        tlsClientConfig: {
-                          ...websocketRequest.options?.tlsClientConfig,
-                          caCertPem: e.target.value,
-                        },
-                      },
-                    })
-                  }
-                  placeholder="-----BEGIN CERTIFICATE-----"
-                  rows={3}
-                  className="input text-2xs font-mono resize-none py-1.5 w-full"
-                />
-              </div>
-              <div>
-                <label className="text-2xs text-[var(--text-3)] mb-1 block">
-                  Client Certificate (PEM)
-                </label>
-                <textarea
-                  value={
-                    websocketRequest.options?.tlsClientConfig?.clientCertPem ??
-                    ""
-                  }
-                  onChange={(e) =>
-                    setWebsocketRequest({
-                      options: {
-                        ...websocketRequest.options,
-                        tlsClientConfig: {
-                          ...websocketRequest.options?.tlsClientConfig,
-                          clientCertPem: e.target.value,
-                        },
-                      },
-                    })
-                  }
-                  placeholder="-----BEGIN CERTIFICATE-----"
-                  rows={3}
-                  className="input text-2xs font-mono resize-none py-1.5 w-full"
-                />
-              </div>
-              <div>
-                <label className="text-2xs text-[var(--text-3)] mb-1 block">
-                  Client Key (PEM)
-                </label>
-                <textarea
-                  value={
-                    websocketRequest.options?.tlsClientConfig?.clientKeyPem ??
-                    ""
-                  }
-                  onChange={(e) =>
-                    setWebsocketRequest({
-                      options: {
-                        ...websocketRequest.options,
-                        tlsClientConfig: {
-                          ...websocketRequest.options?.tlsClientConfig,
-                          clientKeyPem: e.target.value,
-                        },
-                      },
-                    })
-                  }
-                  placeholder="-----BEGIN PRIVATE KEY-----"
-                  rows={3}
-                  className="input text-2xs font-mono resize-none py-1.5 w-full"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-2xs text-[var(--text-3)] shrink-0">
-                  Server Name (SNI)
-                </label>
-                <input
-                  value={
-                    websocketRequest.options?.tlsClientConfig?.serverName ?? ""
-                  }
-                  onChange={(e) =>
-                    setWebsocketRequest({
-                      options: {
-                        ...websocketRequest.options,
-                        tlsClientConfig: {
-                          ...websocketRequest.options?.tlsClientConfig,
-                          serverName: e.target.value,
-                        },
-                      },
-                    })
-                  }
-                  placeholder="override.example.com"
-                  className="input text-xs flex-1"
-                />
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => set({ showSettings: true, settingsTab: "network" })}
+            className="text-left text-2xs text-[var(--text-3)] hover:text-[var(--text-1)]"
+          >
+            TLS and certificate policy is in Settings &gt; Network.
+          </button>
         </div>
       )}
     </div>

@@ -5,10 +5,10 @@ import { useStore } from "../../store";
 import { MethodBadge } from "../shared/MethodBadge";
 import type { PaletteItem } from "../../types";
 import {
-  emptyGraphQLRequest,
-  emptyWebSocketRequest,
-  emptyGrpcRequest,
-} from "@invoke/core";
+  newGraphQLRequest,
+  newGrpcRequest,
+  newWebSocketRequest,
+} from "../../lib/createRequest";
 
 export function CommandPalette() {
   const {
@@ -163,7 +163,8 @@ export function CommandPalette() {
       keywords: "new graphql request create",
       run: () => {
         resetRequest();
-        set({ requestTab: "graphql", graphqlRequest: emptyGraphQLRequest() });
+        setRequest({ protocol: "graphql" });
+        set({ requestTab: "graphql", graphqlRequest: newGraphQLRequest() });
       },
     },
     {
@@ -174,9 +175,10 @@ export function CommandPalette() {
       keywords: "new websocket ws request create",
       run: () => {
         resetRequest();
+        setRequest({ protocol: "websocket" });
         set({
           requestTab: "websocket",
-          websocketRequest: emptyWebSocketRequest(),
+          websocketRequest: newWebSocketRequest(),
         });
       },
     },
@@ -188,7 +190,8 @@ export function CommandPalette() {
       keywords: "new grpc request create",
       run: () => {
         resetRequest();
-        set({ requestTab: "grpc", grpcRequest: emptyGrpcRequest() });
+        setRequest({ protocol: "grpc" });
+        set({ requestTab: "grpc", grpcRequest: newGrpcRequest() });
       },
     },
     // Navigation
@@ -247,7 +250,7 @@ export function CommandPalette() {
       title: "Open Settings",
       subtitle: "View and edit settings",
       keywords: "settings preferences open",
-      run: () => set({ showSettings: true }),
+      run: () => set({ showSettings: true, settingsTab: undefined }),
     },
     {
       id: "open-help",
@@ -288,13 +291,13 @@ export function CommandPalette() {
     mock: "Mock",
   };
   const KIND_COLORS: Record<string, string> = {
-    request: "text-blue-600",
-    environment: "text-violet-600",
-    command: "text-zinc-600",
-    collection: "text-amber-600",
-    flow: "text-emerald-600",
-    history: "text-sky-600",
-    mock: "text-rose-600",
+    request: "text-[var(--info)]",
+    environment: "text-[var(--method-patch)]",
+    command: "text-[var(--fg-2)]",
+    collection: "text-[var(--warn)]",
+    flow: "text-[var(--ok)]",
+    history: "text-[var(--accent)]",
+    mock: "text-[var(--danger)]",
   };
 
   return (
@@ -304,7 +307,7 @@ export function CommandPalette() {
         if (e.target === e.currentTarget) set({ commandPaletteOpen: false });
       }}
     >
-      <div className="w-full max-w-lg bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-lg bg-[var(--bg-2)] border border-[var(--line-2)] rounded-md shadow-[var(--shadow-pop)] overflow-hidden">
         {/* Search input */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
           <Search size={15} className="text-[var(--text-3)] shrink-0" />
@@ -344,7 +347,7 @@ export function CommandPalette() {
                 <MethodBadge method={item.method} />
               ) : (
                 <span
-                  className={`text-2xs font-medium ${KIND_COLORS[item.kind] ?? "text-zinc-500"}`}
+                  className={`text-2xs font-medium ${KIND_COLORS[item.kind] ?? "text-[var(--fg-2)]"}`}
                 >
                   {KIND_LABELS[item.kind] ?? item.kind}
                 </span>

@@ -85,7 +85,7 @@ export function CookieManagerModal() {
       onClick={close}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 620, maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -190,17 +190,17 @@ export function CookieManagerModal() {
                         {c.path}
                       </span>
                       {c.secure && (
-                        <span className="text-2xs px-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <span className="text-2xs px-1 rounded bg-[var(--ok-bg)] text-[var(--ok)] dark:text-[var(--ok)]">
                           Secure
                         </span>
                       )}
                       {c.httpOnly && (
-                        <span className="text-2xs px-1 rounded bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                        <span className="text-2xs px-1 rounded bg-[var(--bg-3)] text-[var(--fg-2)] dark:bg-[var(--bg-3)] dark:text-[var(--fg-2)]">
                           HttpOnly
                         </span>
                       )}
                       {c.sameSite && (
-                        <span className="text-2xs px-1 rounded bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                        <span className="text-2xs px-1 rounded bg-[var(--bg-3)] text-[var(--fg-2)] dark:bg-[var(--bg-3)] dark:text-[var(--fg-2)]">
                           {c.sameSite}
                         </span>
                       )}

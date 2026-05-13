@@ -9,6 +9,7 @@ import {
 } from "@invoke/core";
 import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { Select } from "../../../components/shared/Select";
+import { applyProtocolDefaults } from "../../../lib/protocolDefaults";
 import { useStore } from "../../../store";
 
 export function CodeTab() {
@@ -28,7 +29,7 @@ export function CodeTab() {
 
   const generateGrpc = (target: GrpcCodeExportTarget) => {
     const snippet = generateGrpcCodeSnippet(
-      grpcRequest as GrpcRequestConfig,
+      applyProtocolDefaults(grpcRequest as GrpcRequestConfig, "grpc"),
       target,
     );
     setGrpcSnippet(snippet.code);
@@ -38,7 +39,7 @@ export function CodeTab() {
   // Auto-generate on first render for gRPC
   if (isGrpc && !grpcSnippet && grpcRequest.address) {
     const snippet = generateGrpcCodeSnippet(
-      grpcRequest as GrpcRequestConfig,
+      applyProtocolDefaults(grpcRequest as GrpcRequestConfig, "grpc"),
       grpcTarget,
     );
     setGrpcSnippet(snippet.code);
@@ -97,7 +98,7 @@ export function CodeTab() {
           title="Copy to clipboard"
         >
           {copied ? (
-            <Check size={13} className="text-emerald-500" />
+            <Check size={13} className="text-[var(--ok)]" />
           ) : (
             <Copy size={13} />
           )}

@@ -184,7 +184,6 @@ export function AuthPanel() {
                   onChange={(e) =>
                     setRequest({ auth: { ...auth, pkce: e.target.checked } })
                   }
-                  className="accent-[var(--accent)]"
                 />
               </div>
               <Field label="Redirect URI">
@@ -200,7 +199,7 @@ export function AuthPanel() {
               </Field>
               <div className="flex items-center gap-2 mt-1">
                 {auth.accessToken && (
-                  <span className="flex items-center gap-1 text-2xs text-emerald-600">
+                  <span className="flex items-center gap-1 text-2xs text-[var(--ok)]">
                     <CheckCircle2 size={11} />
                     Token stored
                     {auth.tokenExpiresAt && (

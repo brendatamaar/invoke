@@ -22,5 +22,6 @@ export function parseWorkspaceBackup(json: string): WorkspaceBackup {
     requests: parsed.requests ?? [],
     environments: parsed.environments ?? [],
     flows: parsed.flows ?? [],
+    defaultProtocolOptions: parsed.defaultProtocolOptions,
   };
 }

@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import { EditorView, basicSetup } from "codemirror";
-import { EditorState } from "@codemirror/state";
+import { Compartment, EditorState } from "@codemirror/state";
 import { StreamLanguage } from "@codemirror/language";
 import { json } from "@codemirror/lang-json";
 import { javascript } from "@codemirror/lang-javascript";
 import { xml } from "@codemirror/lang-xml";
 import { python } from "@codemirror/lang-python";
+import { useStore } from "../../store";
 import type { CodeEditorLang, CodeEditorProps } from "../../types";
 
 // Minimal GraphQL stream tokenizer for syntax highlighting
@@ -103,6 +104,8 @@ export function CodeEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const wrapCompartment = useRef(new Compartment()).current;
+  const editorWordWrap = useStore((s) => s.editorWordWrap);
   onChangeRef.current = onChange;
 
   useEffect(() => {
@@ -116,7 +119,7 @@ export function CodeEditor({
         "&": { minHeight },
         ".cm-scroller": { fontFamily: "'JetBrains Mono', monospace" },
       }),
-      EditorView.lineWrapping,
+      wrapCompartment.of(editorWordWrap ? EditorView.lineWrapping : []),
     ];
 
     if (readOnly) {
@@ -143,6 +146,14 @@ export function CodeEditor({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, readOnly, minHeight]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({
+      effects: wrapCompartment.reconfigure(
+        editorWordWrap ? EditorView.lineWrapping : [],
+      ),
+    });
+  }, [editorWordWrap, wrapCompartment]);
 
   // sync external value changes without re-mounting
   useEffect(() => {

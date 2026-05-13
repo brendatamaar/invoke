@@ -5,6 +5,7 @@ import type {
   CodeExportTarget,
   Collection,
   CollectionRunResult,
+  DefaultProtocolOptions,
   DiffIgnoreRule,
   Environment,
   ExecuteResponse,
@@ -33,6 +34,7 @@ import type {
 import type { ContextTarget, SidebarSection } from "./navigation";
 import type { RequestTab } from "./request";
 import type { ResponseTab } from "./response";
+import type { SettingsTab } from "./settings";
 
 export interface WebSocketLogItem {
   id: string;
@@ -102,6 +104,7 @@ export interface AppState {
   collections: Collection[];
   folders: Folder[];
   requests: SavedRequest[];
+  protocolDefaults: DefaultProtocolOptions;
   expandedFolderIds: string[];
   sidebarCollapsed: boolean;
   sidebarSection: SidebarSection;
@@ -179,12 +182,14 @@ export interface AppState {
     folderId: string;
   };
   showSettings: boolean;
+  settingsTab: SettingsTab | undefined;
   showHelp: boolean;
   showClearHistoryModal: boolean;
   showPassphraseModal: boolean;
   passphraseMode: "setup" | "unlock";
   passphraseCallback: ((passphrase: string | null) => void) | null;
   uiFontSize: number;
+  editorWordWrap: boolean;
   commandPaletteOpen: boolean;
   commandQuery: string;
   toasts: Toast[];
@@ -202,4 +207,5 @@ export interface AppState {
   removeToast: (id: string) => void;
   toggleFolder: (id: string) => void;
   resetRequest: () => void;
+  setProtocolDefaults: (defaults: DefaultProtocolOptions) => void;
 }

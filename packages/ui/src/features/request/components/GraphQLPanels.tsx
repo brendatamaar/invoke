@@ -55,6 +55,7 @@ import {
 import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 import { useStore } from "../../../store";
+import { applyProtocolDefaults } from "../../../lib/protocolDefaults";
 import type { GraphQLSchemaImportSource } from "../../../types";
 import { useGraphQLSubscription } from "../useGraphQLSubscription";
 import type { GQLSubMessage } from "../useGraphQLSubscription";
@@ -327,19 +328,25 @@ function makeGraphQLLinter(
 function kindBadge(kind: string): { label: string; cls: string } {
   switch (kind) {
     case "OBJECT":
-      return { label: "obj", cls: "text-blue-600 bg-blue-500/10" };
+      return { label: "obj", cls: "text-[var(--info)] bg-[var(--info-bg)]" };
     case "INPUT_OBJECT":
-      return { label: "inp", cls: "text-violet-600 bg-violet-500/10" };
+      return {
+        label: "inp",
+        cls: "text-[var(--method-patch)] bg-[rgba(200,156,214,0.1)]",
+      };
     case "ENUM":
-      return { label: "enum", cls: "text-amber-600 bg-amber-500/10" };
+      return { label: "enum", cls: "text-[var(--warn)] bg-[var(--warn-bg)]" };
     case "UNION":
-      return { label: "union", cls: "text-emerald-600 bg-emerald-500/10" };
+      return { label: "union", cls: "text-[var(--ok)] bg-[var(--ok-bg)]" };
     case "INTERFACE":
       return { label: "iface", cls: "text-cyan-600 bg-cyan-500/10" };
     case "SCALAR":
-      return { label: "scalar", cls: "text-zinc-500 bg-zinc-500/10" };
+      return { label: "scalar", cls: "text-[var(--fg-2)] bg-[var(--bg-3)]" };
     default:
-      return { label: kind.toLowerCase(), cls: "text-zinc-500 bg-zinc-500/10" };
+      return {
+        label: kind.toLowerCase(),
+        cls: "text-[var(--fg-2)] bg-[var(--bg-3)]",
+      };
   }
 }
 
@@ -371,7 +378,10 @@ export function GraphQLQueryPanel() {
       ...graphqlRequest,
       url: request.url,
     });
-    const snippet = await generateCodeSnippet(config, "curl");
+    const snippet = await generateCodeSnippet(
+      applyProtocolDefaults(config, "graphql"),
+      "curl",
+    );
     await navigator.clipboard.writeText(snippet.code);
     setCurlCopied(true);
     setTimeout(() => setCurlCopied(false), 1500);
@@ -504,7 +514,7 @@ export function GraphQLQueryPanel() {
           disabled={!request.url.trim()}
         >
           {curlCopied ? (
-            <Check size={12} className="text-emerald-500" />
+            <Check size={12} className="text-[var(--ok)]" />
           ) : (
             <Copy size={12} />
           )}
@@ -518,7 +528,6 @@ export function GraphQLQueryPanel() {
             type="checkbox"
             checked={graphqlRequest.apq ?? false}
             onChange={(e) => setGraphqlRequest({ apq: e.target.checked })}
-            className="accent-[var(--accent)]"
             disabled={graphqlRequest.batchMode}
           />
           APQ
@@ -531,7 +540,6 @@ export function GraphQLQueryPanel() {
             type="checkbox"
             checked={graphqlRequest.batchMode ?? false}
             onChange={(e) => setGraphqlRequest({ batchMode: e.target.checked })}
-            className="accent-[var(--accent)]"
             disabled={graphqlRequest.apq}
           />
           Batch
@@ -644,9 +652,9 @@ function GQLSubscriptionLog({
   const stateColors: Record<typeof state, string> = {
     idle: "bg-zinc-400",
     connecting: "bg-yellow-400 animate-pulse",
-    subscribed: "bg-emerald-500 animate-pulse",
+    subscribed: "bg-[var(--ok)] animate-pulse",
     complete: "bg-zinc-400",
-    error: "bg-red-500",
+    error: "bg-[var(--danger)]",
   };
 
   return (
@@ -690,11 +698,11 @@ function GQLSubscriptionLog({
               size={11}
               className={`mt-0.5 shrink-0 ${
                 msg.kind === "error"
-                  ? "text-red-500"
+                  ? "text-[var(--danger)]"
                   : msg.kind === "data"
-                    ? "text-emerald-500"
+                    ? "text-[var(--ok)]"
                     : msg.kind === "complete"
-                      ? "text-amber-500"
+                      ? "text-[var(--warn)]"
                       : "text-[var(--text-3)]"
               }`}
             />
@@ -1044,7 +1052,7 @@ function FragmentsPanel({
                 </button>
                 <button
                   onClick={() => onDelete(frag.id)}
-                  className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)] hover:text-red-500 shrink-0"
+                  className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
                   title="Delete fragment"
                 >
                   <Trash2 size={10} />
@@ -1086,7 +1094,7 @@ function TypeDetail({
             title={val.description ?? undefined}
           >
             {val.isDeprecated && (
-              <AlertTriangle size={9} className="text-amber-500 shrink-0" />
+              <AlertTriangle size={9} className="text-[var(--warn)] shrink-0" />
             )}
             <span
               className={`text-2xs font-mono flex-1 truncate ${val.isDeprecated ? "line-through text-[var(--text-3)]" : "text-[var(--text-1)]"}`}
@@ -1165,7 +1173,7 @@ function TypeDetail({
             title={field.description ?? undefined}
           >
             {field.isDeprecated && (
-              <AlertTriangle size={9} className="text-amber-500 shrink-0" />
+              <AlertTriangle size={9} className="text-[var(--warn)] shrink-0" />
             )}
             <span
               className={`text-2xs font-mono flex-1 truncate ${field.isDeprecated ? "line-through text-[var(--text-3)]" : "text-[var(--text-1)]"}`}
@@ -1367,7 +1375,7 @@ function GraphQLSchemaImportModal({
       onClick={close}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 520, maxWidth: "calc(100vw - 32px)" }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -120,13 +120,13 @@ export function BodyTab({
       </div>
       {jsonPathResult !== null && (
         <div
-          className={`px-3 py-1.5 border-b border-[var(--border)] text-2xs font-mono ${jsonPathResult.startsWith("Error:") ? "text-red-500 bg-red-500/5" : "text-[var(--text-1)] bg-[var(--surface-2)]"}`}
+          className={`px-3 py-1.5 border-b border-[var(--border)] text-2xs font-mono ${jsonPathResult.startsWith("Error:") ? "text-[var(--danger)] bg-[var(--danger-bg)]" : "text-[var(--text-1)] bg-[var(--surface-2)]"}`}
         >
           {jsonPathResult}
         </div>
       )}
       {response.error?.startsWith("BODY_TRUNCATED:") && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/30 text-amber-500 text-2xs">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--warn-bg)] border-b border-[var(--warn)] text-[var(--warn)] text-2xs">
           <AlertTriangle size={12} className="shrink-0" />
           <span>Response body truncated at 50 MB</span>
         </div>

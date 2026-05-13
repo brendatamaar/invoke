@@ -1,3 +1,4 @@
+import { INITIAL_PROTOCOL_DEFAULTS } from "@invoke/core";
 import type { StateCreator } from "zustand";
 import type { AppState } from "../../types";
 
@@ -6,6 +7,7 @@ export type WorkspaceSlice = Pick<
   | "collections"
   | "folders"
   | "requests"
+  | "protocolDefaults"
   | "expandedFolderIds"
   | "environments"
   | "activeEnvironmentId"
@@ -14,6 +16,7 @@ export type WorkspaceSlice = Pick<
   | "envDraft"
   | "variableEditor"
   | "toggleFolder"
+  | "setProtocolDefaults"
 >;
 
 type StoreSet = Parameters<StateCreator<AppState>>[0];
@@ -23,6 +26,7 @@ export function createWorkspaceSlice(set: StoreSet): WorkspaceSlice {
     collections: [],
     folders: [],
     requests: [],
+    protocolDefaults: INITIAL_PROTOCOL_DEFAULTS,
     expandedFolderIds: [],
     environments: [],
     activeEnvironmentId: undefined,
@@ -30,6 +34,8 @@ export function createWorkspaceSlice(set: StoreSet): WorkspaceSlice {
     showEnvPanel: false,
     envDraft: undefined,
     variableEditor: { open: false, name: "", variables: [] },
+
+    setProtocolDefaults: (defaults) => set({ protocolDefaults: defaults }),
 
     toggleFolder: (id) =>
       set((state) => ({

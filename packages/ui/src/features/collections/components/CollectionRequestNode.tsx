@@ -60,7 +60,7 @@ export function CollectionRequestNode({
           </button>
           {menuOpen && (
             <div
-              className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]"
+              className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] py-1 min-w-[140px]"
               onClick={(e) => e.stopPropagation()}
             >
               <CollectionMenuItem

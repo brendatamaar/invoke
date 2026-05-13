@@ -5,6 +5,7 @@ import type {
   WebSocketRequestConfig,
 } from "@invoke/core";
 import { readJson } from "../../lib/http";
+import { applyProtocolDefaults } from "../../lib/protocolDefaults";
 
 export async function webSocketConnect(
   request: WebSocketRequestConfig,
@@ -92,6 +93,7 @@ function applyWsAuth(headers: KeyValue[], auth: AuthConfig): KeyValue[] {
 }
 
 function buildWsPayload(req: WebSocketRequestConfig) {
+  req = applyProtocolDefaults(req, "websocket");
   let headers = applyWsAuth(req.headers, req.auth);
   if (req.origin?.trim()) {
     headers = headers.filter((h) => h.key.toLowerCase() !== "origin");

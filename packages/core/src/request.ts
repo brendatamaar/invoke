@@ -2,15 +2,45 @@ import { v7 as uuidv7 } from "uuid";
 import type {
   GrpcRequestConfig,
   GraphQLRequestConfig,
+  ProtocolNetworkDefaults,
   ProtocolRequestConfig,
   RequestConfig,
+  RequestOptions,
   RequestDraft,
   RequestProtocol,
   WebSocketRequestConfig,
 } from "./types";
+import { NETWORK_OPTION_KEYS } from "./types/settings";
 import { normalizeExtractionRules } from "./variables";
 
 export const id = () => uuidv7();
+
+export function mergeWithDefaults(
+  reqOptions: RequestOptions | undefined,
+  defaults: ProtocolNetworkDefaults,
+): RequestOptions {
+  const requestOptions = reqOptions ?? {};
+  const merged: RequestOptions = {
+    ...defaults.options,
+    ...requestOptions,
+    tlsClientConfig: {
+      ...(defaults.options.tlsClientConfig ?? {}),
+      ...(requestOptions.tlsClientConfig ?? {}),
+    },
+  };
+
+  const proxy = requestOptions.proxy ?? defaults.options.proxy;
+  if (proxy) merged.proxy = { ...proxy };
+  else delete merged.proxy;
+
+  return merged;
+}
+
+export function stripNetworkOptions(options?: RequestOptions): RequestOptions {
+  const cleaned: RequestOptions = { ...(options ?? {}) };
+  for (const key of NETWORK_OPTION_KEYS) delete cleaned[key];
+  return cleaned;
+}
 
 export const emptyRequest = (): RequestDraft => ({
   method: "GET",
@@ -24,12 +54,7 @@ export const emptyRequest = (): RequestDraft => ({
   variables: [],
   assertions: [],
   extractionRules: [],
-  options: {
-    followRedirects: true,
-    maxRedirects: 10,
-    verifySsl: true,
-    tlsClientConfig: {},
-  },
+  options: {},
   scripts: { preRequest: "", postResponse: "" },
   protocol: "rest",
 });
@@ -45,12 +70,7 @@ export const emptyGraphQLRequest = (): GraphQLRequestConfig => ({
   timeoutMs: 30000,
   assertions: [],
   extractionRules: [],
-  options: {
-    followRedirects: true,
-    maxRedirects: 10,
-    verifySsl: true,
-    tlsClientConfig: {},
-  },
+  options: {},
   scripts: { preRequest: "", postResponse: "" },
 });
 
@@ -63,7 +83,7 @@ export const emptyWebSocketRequest = (): WebSocketRequestConfig => ({
   message: "",
   timeoutMs: 30000,
   variables: [],
-  options: { verifySsl: true, tlsClientConfig: {} },
+  options: {},
   scripts: { preRequest: "", postResponse: "" },
   savedMessages: [],
   autoReconnect: false,
@@ -86,7 +106,7 @@ export const emptyGrpcRequest = (): GrpcRequestConfig => ({
   variables: [],
   assertions: [],
   extractionRules: [],
-  options: { verifySsl: true, tlsClientConfig: {} },
+  options: {},
   scripts: { preRequest: "", postResponse: "" },
 });
 

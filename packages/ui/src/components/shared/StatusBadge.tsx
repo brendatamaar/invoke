@@ -1,16 +1,42 @@
 import type { StatusBadgeProps } from "../../types";
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  let cls = "text-zinc-600 bg-zinc-100";
-  if (status === 0) cls = "text-red-700 bg-red-50";
-  else if (status >= 200 && status < 300)
-    cls = "text-emerald-700 bg-emerald-50";
-  else if (status >= 300 && status < 400) cls = "text-blue-700 bg-blue-50";
-  else if (status >= 400 && status < 500) cls = "text-amber-700 bg-amber-50";
-  else if (status >= 500) cls = "text-red-700 bg-red-50";
+  let color = "var(--fg-2)";
+  let bg = "transparent";
+  let border = "var(--line-2)";
+
+  if (status === 0) {
+    color = "var(--danger)";
+    bg = "var(--danger-bg)";
+    border = "var(--danger)";
+  } else if (status >= 200 && status < 300) {
+    color = "var(--ok)";
+    bg = "var(--ok-bg)";
+    border = "var(--ok)";
+  } else if (status >= 300 && status < 400) {
+    color = "var(--info)";
+    bg = "var(--info-bg)";
+    border = "var(--info)";
+  } else if (status >= 400) {
+    color = "var(--danger)";
+    bg = "var(--danger-bg)";
+    border = "var(--danger)";
+  }
+
   return (
     <span
-      className={`inline-block rounded px-1.5 py-px text-2xs font-mono font-semibold ${cls}`}
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        fontWeight: 600,
+        padding: "2px 7px",
+        borderRadius: "var(--r-2)",
+        color,
+        background: bg,
+        border: `1px solid ${border}`,
+        display: "inline-block",
+        lineHeight: "16px",
+      }}
     >
       {status === 0 ? "ERR" : status}
     </span>

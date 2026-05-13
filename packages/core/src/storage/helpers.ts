@@ -10,6 +10,7 @@ import {
   isWebSocketRequestConfig,
   toRequestConfig,
 } from "../request";
+import { stripNetworkOptionsFromProtocolRequest } from "./migrations";
 
 export const HISTORY_LIMIT = 10000;
 
@@ -44,7 +45,11 @@ export function normalizeSavedRequest(
     isWebSocketRequestConfig(request) ||
     isGrpcRequestConfig(request)
   ) {
-    return request as ProtocolRequestConfig;
+    return stripNetworkOptionsFromProtocolRequest(
+      request as ProtocolRequestConfig,
+    );
   }
-  return toRequestConfig(request as RequestConfig | RequestDraft);
+  return stripNetworkOptionsFromProtocolRequest(
+    toRequestConfig(request as RequestConfig | RequestDraft),
+  );
 }

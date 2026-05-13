@@ -28,11 +28,11 @@ export function ConfirmModal({
       width="360px"
       footer={
         <>
-          <button className="btn text-xs" onClick={onClose}>
+          <button className="btn" onClick={onClose}>
             Cancel
           </button>
           <button
-            className={`btn text-xs ${danger ? "btn-danger" : "btn-primary"}`}
+            className={`btn ${danger ? "btn-danger" : "btn-primary"}`}
             onClick={onConfirm}
           >
             {confirmLabel}
@@ -40,7 +40,9 @@ export function ConfirmModal({
         </>
       }
     >
-      <p className="text-sm text-[var(--text-2)]">{message}</p>
+      <p style={{ fontSize: "var(--t-base)", color: "var(--fg-1)", margin: 0 }}>
+        {message}
+      </p>
     </Dialog>
   );
 }

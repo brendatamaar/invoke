@@ -161,8 +161,8 @@ export function FlowCanvas({
           const isSelected = selectedIndex === i;
           const statusColor = stepResult
             ? stepResult.status === "passed"
-              ? "border-emerald-500"
-              : "border-red-500"
+              ? "border-[var(--ok)]"
+              : "border-[var(--danger)]"
             : isSelected
               ? "border-[var(--accent)]"
               : "border-[var(--border)]";
@@ -179,7 +179,7 @@ export function FlowCanvas({
                 cursor: "grab",
                 userSelect: "none",
               }}
-              className={`bg-[var(--surface)] rounded-lg border-2 shadow-sm flex flex-col px-3 py-2 gap-0.5 ${statusColor} ${isSelected ? "shadow-md" : ""}`}
+              className={`bg-[var(--surface)] rounded-md border-2 shadow-sm flex flex-col px-3 py-2 gap-0.5 ${statusColor} ${isSelected ? "shadow-md" : ""}`}
               onMouseDown={(e) => onMouseDown(e, step.id)}
               onClick={() => onSelect(i)}
             >
@@ -194,10 +194,13 @@ export function FlowCanvas({
                   (stepResult.status === "passed" ? (
                     <CheckCircle2
                       size={10}
-                      className="ml-auto text-emerald-500"
+                      className="ml-auto text-[var(--ok)]"
                     />
                   ) : (
-                    <XCircle size={10} className="ml-auto text-red-500" />
+                    <XCircle
+                      size={10}
+                      className="ml-auto text-[var(--danger)]"
+                    />
                   ))}
               </div>
               <div className="text-xs font-medium text-[var(--text-1)] truncate">

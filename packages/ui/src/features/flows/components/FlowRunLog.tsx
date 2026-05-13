@@ -16,9 +16,9 @@ export function FlowRunLog({
           key={i}
           className={
             line.startsWith("OK")
-              ? "text-emerald-600"
+              ? "text-[var(--ok)]"
               : line.startsWith("ERR")
-                ? "text-red-600"
+                ? "text-[var(--danger)]"
                 : "text-[var(--text-2)]"
           }
         >
@@ -27,7 +27,7 @@ export function FlowRunLog({
       ))}
       {flowResult && (
         <div
-          className={`mt-1 p-1.5 rounded text-xs font-sans ${flowResult.status === "passed" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}
+          className={`mt-1 p-1.5 rounded text-xs font-sans ${flowResult.status === "passed" ? "bg-[var(--ok-bg)] text-[var(--ok)]" : "bg-[var(--danger-bg)] text-[var(--danger)]"}`}
         >
           Flow {flowResult.status} in{" "}
           {flowResult.completedAt - flowResult.startedAt}ms

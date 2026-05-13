@@ -19,7 +19,7 @@ export function ClearHistoryModal() {
       onClick={close}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 360 }}
         onClick={(e) => e.stopPropagation()}
       >

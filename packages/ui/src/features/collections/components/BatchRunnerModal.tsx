@@ -106,7 +106,7 @@ export function BatchRunnerModal() {
       onClick={close}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 500, maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -180,7 +180,6 @@ export function BatchRunnerModal() {
                     type="checkbox"
                     checked={stopOnFailure}
                     onChange={(e) => setStopOnFailure(e.target.checked)}
-                    className="accent-[var(--accent)]"
                   />
                   Stop on failure
                 </label>
@@ -255,14 +254,14 @@ export function BatchRunnerModal() {
               {/* Errors */}
               {result.errors.length > 0 && (
                 <div>
-                  <p className="text-2xs font-semibold text-red-600 uppercase tracking-wider mb-1">
+                  <p className="text-2xs font-semibold text-[var(--danger)] uppercase tracking-wider mb-1">
                     Errors ({result.errors.length})
                   </p>
                   <div className="max-h-24 overflow-y-auto flex flex-col gap-1">
                     {result.errors.map((err, i) => (
                       <span
                         key={i}
-                        className="text-2xs font-mono text-red-500 truncate"
+                        className="text-2xs font-mono text-[var(--danger)] truncate"
                       >
                         {err}
                       </span>

@@ -71,7 +71,7 @@ export function DiffModal() {
       onClick={close}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: "90vw", maxHeight: "100vh", minHeight: "50vh" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -208,10 +208,10 @@ export function DiffModal() {
                       Comparison
                     </span>
                     <span className="ml-auto text-2xs flex items-center gap-2">
-                      <span className="text-emerald-600">
+                      <span className="text-[var(--ok)]">
                         +{diff.summary.additions}
                       </span>
-                      <span className="text-red-600">
+                      <span className="text-[var(--danger)]">
                         −{diff.summary.deletions}
                       </span>
                       {diff.summary.changes > 0 && (
@@ -221,7 +221,7 @@ export function DiffModal() {
                       )}
                       {diff.responseTimeDeltaMs !== 0 && (
                         <span
-                          className={`font-mono ${diff.responseTimeDeltaMs > 0 ? "text-red-500" : "text-emerald-500"}`}
+                          className={`font-mono ${diff.responseTimeDeltaMs > 0 ? "text-[var(--danger)]" : "text-[var(--ok)]"}`}
                         >
                           {diff.responseTimeDeltaMs > 0 ? "+" : ""}
                           {diff.responseTimeDeltaMs}ms

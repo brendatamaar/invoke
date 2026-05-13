@@ -109,7 +109,7 @@ export function PassphraseModal() {
             />
           </div>
         )}
-        {error && <p className="text-2xs text-red-500">{error}</p>}
+        {error && <p className="text-2xs text-[var(--danger)]">{error}</p>}
       </div>
     </Dialog>
   );

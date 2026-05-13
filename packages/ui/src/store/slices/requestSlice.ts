@@ -25,8 +25,12 @@ export type RequestSlice = Pick<
 >;
 
 type StoreSet = Parameters<StateCreator<AppState>>[0];
+type StoreGet = Parameters<StateCreator<AppState>>[1];
 
-export function createRequestSlice(set: StoreSet): RequestSlice {
+export function createRequestSlice(
+  set: StoreSet,
+  _get: StoreGet,
+): RequestSlice {
   return {
     request: emptyRequest(),
     graphqlRequest: emptyGraphQLRequest(),

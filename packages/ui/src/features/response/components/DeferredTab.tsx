@@ -26,7 +26,7 @@ export function DeferredTab() {
 
       {/* Initial part */}
       {initialPart && (
-        <div className="border border-[var(--border)] rounded-lg p-3 flex flex-col gap-1">
+        <div className="border border-[var(--border)] rounded-md p-3 flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <span className="text-2xs font-mono text-[var(--accent)]">
               Part 0 — initial
@@ -41,7 +41,7 @@ export function DeferredTab() {
             </pre>
           )}
           {initialPart.errors && initialPart.errors.length > 0 && (
-            <p className="text-2xs text-red-500 font-mono mt-1">
+            <p className="text-2xs text-[var(--danger)] font-mono mt-1">
               {initialPart.errors.length} error
               {initialPart.errors.length !== 1 ? "s" : ""}
             </p>
@@ -53,7 +53,7 @@ export function DeferredTab() {
       {incrementalParts.map((part, i) => (
         <div
           key={`${part.partIndex}-${i}`}
-          className="border border-[var(--border)] rounded-lg p-3 flex flex-col gap-1"
+          className="border border-[var(--border)] rounded-md p-3 flex flex-col gap-1"
         >
           <div className="flex items-center justify-between">
             <span className="text-2xs font-mono text-[var(--text-2)]">
@@ -76,7 +76,7 @@ export function DeferredTab() {
             </pre>
           )}
           {part.errors && part.errors.length > 0 && (
-            <p className="text-2xs text-red-500 font-mono mt-1">
+            <p className="text-2xs text-[var(--danger)] font-mono mt-1">
               {part.errors.length} error{part.errors.length !== 1 ? "s" : ""}
             </p>
           )}

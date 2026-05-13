@@ -72,7 +72,7 @@ export function AssertionsPanel() {
         return (
           <div
             key={index}
-            className={`flex items-center gap-2 p-2 rounded border ${result ? (result.passed ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50") : "border-[var(--border)]"}`}
+            className={`flex items-center gap-2 p-2 rounded border ${result ? (result.passed ? "border-[var(--ok)] bg-[var(--ok-bg)]" : "border-[var(--danger)] bg-[var(--danger-bg)]") : "border-[var(--border)]"}`}
           >
             <div className="w-28 shrink-0">
               <Select
@@ -276,7 +276,6 @@ export function RetryPanel() {
           id="retry-enable"
           checked={enabled}
           onChange={(e) => update({ maxRetries: e.target.checked ? 3 : 0 })}
-          className="accent-[var(--accent)]"
         />
         <label
           htmlFor="retry-enable"
@@ -318,7 +317,6 @@ export function RetryPanel() {
                   type="checkbox"
                   checked={policy.retryOn5xx}
                   onChange={(e) => update({ retryOn5xx: e.target.checked })}
-                  className="accent-[var(--accent)]"
                 />
                 5xx errors
               </label>
@@ -327,7 +325,6 @@ export function RetryPanel() {
                   type="checkbox"
                   checked={policy.retryOnTimeout}
                   onChange={(e) => update({ retryOnTimeout: e.target.checked })}
-                  className="accent-[var(--accent)]"
                 />
                 Timeout
               </label>

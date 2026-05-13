@@ -108,7 +108,7 @@ export function FlowStepList({
                   )}
                   {stepResult && (
                     <div
-                      className={`flex items-center gap-1 text-2xs mt-0.5 ${stepResult.status === "passed" ? "text-emerald-600" : "text-red-500"}`}
+                      className={`flex items-center gap-1 text-2xs mt-0.5 ${stepResult.status === "passed" ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
                     >
                       {stepResult.status === "passed" ? (
                         <CheckCircle2 size={10} />

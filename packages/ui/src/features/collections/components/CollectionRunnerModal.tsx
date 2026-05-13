@@ -159,9 +159,9 @@ export function CollectionRunnerModal() {
 
   const statusIcon = (status: RequestRunResult["status"]) => {
     if (status === "passed")
-      return <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />;
+      return <CheckCircle2 size={13} className="text-[var(--ok)] shrink-0" />;
     if (status === "failed" || status === "error")
-      return <XCircle size={13} className="text-red-500 shrink-0" />;
+      return <XCircle size={13} className="text-[var(--danger)] shrink-0" />;
     return <SkipForward size={13} className="text-[var(--text-3)] shrink-0" />;
   };
 
@@ -171,7 +171,7 @@ export function CollectionRunnerModal() {
       onClick={close}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 600, maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -202,7 +202,6 @@ export function CollectionRunnerModal() {
                 type="checkbox"
                 checked={stopOnFailure}
                 onChange={(e) => setStopOnFailure(e.target.checked)}
-                className="accent-[var(--accent)]"
               />
               Stop on failure
             </label>
@@ -233,7 +232,7 @@ export function CollectionRunnerModal() {
               </span>
               {r.assertions && r.assertions.length > 0 && (
                 <span
-                  className={`text-2xs ${r.assertions.every((a) => a.passed) ? "text-emerald-600" : "text-red-600"}`}
+                  className={`text-2xs ${r.assertions.every((a) => a.passed) ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
                 >
                   {r.assertions.filter((a) => a.passed).length}/
                   {r.assertions.length}
@@ -267,7 +266,7 @@ export function CollectionRunnerModal() {
           {runResult && (
             <div className="flex items-center gap-3 mr-auto">
               <span
-                className={`text-xs font-semibold ${runResult.status === "passed" ? "text-emerald-600" : "text-red-600"}`}
+                className={`text-xs font-semibold ${runResult.status === "passed" ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
               >
                 {runResult.passedCount}/{runResult.results.length} passed
               </span>

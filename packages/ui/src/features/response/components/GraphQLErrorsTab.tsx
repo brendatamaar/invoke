@@ -85,11 +85,14 @@ export function GraphQLErrorsTab() {
       {errors.map((err, i) => (
         <div
           key={i}
-          className="border border-red-500/30 rounded-lg p-3 bg-red-500/5 flex flex-col gap-1"
+          className="border border-[var(--danger)] rounded-md p-3 bg-[var(--danger-bg)] flex flex-col gap-1"
         >
           <div className="flex items-start gap-2">
-            <AlertCircle size={13} className="text-red-500 shrink-0 mt-0.5" />
-            <p className="text-xs font-medium text-red-500 break-words flex-1">
+            <AlertCircle
+              size={13}
+              className="text-[var(--danger)] shrink-0 mt-0.5"
+            />
+            <p className="text-xs font-medium text-[var(--danger)] break-words flex-1">
               {err.message}
             </p>
           </div>
@@ -113,9 +116,9 @@ export function GraphQLErrorsTab() {
       ))}
 
       {hasCostInfo && (
-        <div className="border border-[var(--border)] rounded-lg p-3 bg-[var(--surface-2)] flex flex-col gap-0.5">
+        <div className="border border-[var(--border)] rounded-md p-3 bg-[var(--surface-2)] flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5 mb-1">
-            <Zap size={12} className="text-amber-500" />
+            <Zap size={12} className="text-[var(--warn)]" />
             <span className="text-2xs font-semibold text-[var(--text-2)]">
               Query Cost
             </span>

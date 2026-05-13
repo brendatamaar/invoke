@@ -92,7 +92,7 @@ export function AuthDebugTab() {
                   value={
                     auth.tokenExpiresAt ? (
                       auth.tokenExpiresAt < Date.now() ? (
-                        <span className="text-red-500">
+                        <span className="text-[var(--danger)]">
                           Expired (
                           {new Date(auth.tokenExpiresAt).toLocaleString()})
                         </span>
@@ -193,7 +193,7 @@ export function AuthDebugTab() {
                     const soon =
                       exp.getTime() - Date.now() < 30 * 24 * 60 * 60 * 1000;
                     return (
-                      <span className={soon ? "text-amber-500" : ""}>
+                      <span className={soon ? "text-[var(--warn)]" : ""}>
                         {exp.toLocaleDateString()}
                       </span>
                     );

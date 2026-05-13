@@ -311,9 +311,9 @@ export function WebSocketBar() {
 
   const state = activeSession?.state ?? "disconnected";
   const stateColor = {
-    disconnected: "bg-red-500",
+    disconnected: "bg-[var(--danger)]",
     connecting: "bg-yellow-400 animate-pulse",
-    connected: "bg-emerald-500",
+    connected: "bg-[var(--ok)]",
   }[state];
 
   return (
@@ -341,7 +341,7 @@ export function WebSocketBar() {
       {state === "connected" && activeSession?.latencyMs !== undefined && (
         <span
           title="Round-trip latency from last ping"
-          className="flex items-center gap-1 text-2xs text-emerald-600 font-mono shrink-0"
+          className="flex items-center gap-1 text-2xs text-[var(--ok)] font-mono shrink-0"
         >
           <Activity size={10} />
           {activeSession.latencyMs}ms
@@ -826,7 +826,7 @@ export function GRPCBar() {
             });
             set({ grpcMethods: [], grpcStatus: "" });
           }}
-          placeholder="localhost:50051"
+          placeholder="grpc.example.com:443"
           className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] transition-colors"
         />
         <label className="flex items-center gap-1 text-xs text-[var(--text-2)] shrink-0 cursor-pointer">
@@ -834,7 +834,6 @@ export function GRPCBar() {
             type="checkbox"
             checked={grpcRequest.tls ?? false}
             onChange={(e) => setGrpcRequest({ tls: e.target.checked })}
-            className="accent-[var(--accent)]"
           />
           TLS
         </label>
@@ -855,7 +854,7 @@ export function GRPCBar() {
         {grpcLatencyMs !== undefined && (
           <span
             title="Round-trip latency from last Health/Check"
-            className="flex items-center gap-1 text-2xs text-emerald-600 font-mono shrink-0"
+            className="flex items-center gap-1 text-2xs text-[var(--ok)] font-mono shrink-0"
           >
             <Activity size={10} />
             {grpcLatencyMs}ms
@@ -893,7 +892,7 @@ export function GRPCBar() {
         )}
       </div>
       {tlsLocalhostWarning && (
-        <div className="px-3 pb-1 flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
+        <div className="px-3 pb-1 flex items-center gap-1 text-2xs text-[var(--warn)]">
           <AlertTriangle size={11} />
           TLS is enabled but the address looks like localhost — most local
           servers use plaintext.

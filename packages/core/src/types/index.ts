@@ -14,6 +14,7 @@ export * from "./request";
 export * from "./response";
 export * from "./runner";
 export * from "./script";
+export * from "./settings";
 export * from "./validation";
 export * from "./variables";
 export * from "./workspace";

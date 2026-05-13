@@ -237,7 +237,7 @@ function EnvironmentModal({
       onClick={onClose}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 640, maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -300,7 +300,7 @@ function EnvironmentModal({
                 type="checkbox"
                 checked={v.enabled !== false}
                 onChange={(e) => setVar(i, "enabled", e.target.checked)}
-                className="w-3.5 h-3.5 mx-2 accent-[var(--accent)] shrink-0"
+                className="w-3.5 h-3.5 mx-2 shrink-0"
               />
               <input
                 value={v.key}

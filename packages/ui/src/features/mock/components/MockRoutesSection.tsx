@@ -64,7 +64,7 @@ export function MockRoutesSection({
                 onToggleEnabled(route.id);
               }}
               onClick={(e) => e.stopPropagation()}
-              className="accent-[var(--accent)] shrink-0"
+              className="shrink-0"
             />
             <MethodBadge method={route.method} />
             <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
@@ -76,7 +76,7 @@ export function MockRoutesSection({
               </span>
             ) : (
               <span
-                className={`text-2xs shrink-0 ${route.status >= 400 ? "text-red-500" : "text-[var(--text-3)]"}`}
+                className={`text-2xs shrink-0 ${route.status >= 400 ? "text-[var(--danger)]" : "text-[var(--text-3)]"}`}
               >
                 {route.status}
               </span>

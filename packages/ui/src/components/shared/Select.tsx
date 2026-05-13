@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import React from "react";
 import type {
   SelectOptionItem,
@@ -90,26 +90,41 @@ export function Select({
 
   return (
     <div ref={wrapRef} className={`relative ${wrapperClassName}`}>
-      {/* Trigger */}
       <button
         type="button"
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={onKeyDown}
-        className={`flex items-center w-full bg-[var(--surface)] border rounded px-2 pr-6 text-[var(--text-1)] cursor-pointer outline-none transition-colors text-left disabled:opacity-45 disabled:pointer-events-none ${s.trigger} ${open ? "border-[var(--accent)]" : "border-[var(--border)] hover:border-[var(--border-strong)]"} ${className}`}
+        className={`flex items-center w-full px-2 pr-6 text-left cursor-pointer outline-none disabled:opacity-40 disabled:pointer-events-none ${s.trigger} ${className}`}
+        style={{
+          fontFamily: "var(--font-mono)",
+          background: "var(--bg-2)",
+          border: `1px solid ${open ? "var(--accent)" : "var(--line-2)"}`,
+          borderRadius: "var(--r-2)",
+          color: "var(--fg-0)",
+          transition: "border-color var(--dur-fast)",
+        }}
       >
         <span className="flex-1 truncate">
-          {selected?.label ?? <span className="text-[var(--text-3)]">—</span>}
+          {selected?.label ?? <span style={{ color: "var(--fg-3)" }}>—</span>}
         </span>
         <ChevronDown
           size={s.chevron}
-          className={`absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          className={`absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          style={{ color: "var(--fg-3)" }}
         />
       </button>
 
-      {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 top-full left-0 mt-0.5 min-w-full bg-[var(--surface)] border border-[var(--border)] rounded shadow-lg overflow-hidden">
+        <div
+          className="absolute z-50 top-full left-0 mt-0.5 min-w-full overflow-hidden"
+          style={{
+            background: "var(--bg-2)",
+            border: "1px solid var(--line-2)",
+            borderRadius: "var(--r-2)",
+            boxShadow: "var(--shadow-2)",
+          }}
+        >
           {options.map((opt) => {
             const active = opt.value === value;
             return (
@@ -117,11 +132,25 @@ export function Select({
                 key={opt.value}
                 type="button"
                 onClick={() => pick(opt.value)}
-                className={`flex items-center gap-1.5 w-full text-left whitespace-nowrap transition-colors ${s.item} ${
-                  active
-                    ? "bg-[var(--accent-subtle)] text-[var(--accent)]"
-                    : "text-[var(--text-1)] hover:bg-[var(--surface-2)]"
-                }`}
+                className={`flex items-center gap-1.5 w-full text-left whitespace-nowrap ${s.item}`}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  background: active ? "var(--accent-faint)" : "transparent",
+                  color: active ? "var(--accent)" : "var(--fg-0)",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "background var(--dur-fast)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!active)
+                    (e.currentTarget as HTMLElement).style.background =
+                      "var(--bg-3)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!active)
+                    (e.currentTarget as HTMLElement).style.background =
+                      "transparent";
+                }}
               >
                 <span className="w-3 shrink-0 flex items-center justify-center">
                   {active && <Check size={s.chevron - 1} />}

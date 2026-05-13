@@ -9,12 +9,14 @@ export type UiSlice = Pick<
   | "contextMenu"
   | "saveDialog"
   | "showSettings"
+  | "settingsTab"
   | "showHelp"
   | "showClearHistoryModal"
   | "showPassphraseModal"
   | "passphraseMode"
   | "passphraseCallback"
   | "uiFontSize"
+  | "editorWordWrap"
   | "commandPaletteOpen"
   | "commandQuery"
   | "toasts"
@@ -33,12 +35,14 @@ export function createUiSlice(set: StoreSet, get: StoreGet): UiSlice {
     contextMenu: { open: false, x: 0, y: 0 },
     saveDialog: { open: false, name: "", collectionId: "", folderId: "" },
     showSettings: false,
+    settingsTab: undefined,
     showHelp: false,
     showClearHistoryModal: false,
     showPassphraseModal: false,
     passphraseMode: "setup" as const,
     passphraseCallback: null,
     uiFontSize: Number(localStorage.getItem("uiFontSize") ?? 13),
+    editorWordWrap: localStorage.getItem("editorWordWrap") !== "false",
     commandPaletteOpen: false,
     commandQuery: "",
     toasts: [],

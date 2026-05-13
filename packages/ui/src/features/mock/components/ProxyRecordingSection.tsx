@@ -25,10 +25,10 @@ function StatusChip({ status }: { status: number }) {
     status >= 500
       ? "text-orange-600 bg-orange-50"
       : status >= 400
-        ? "text-red-600 bg-red-50"
+        ? "text-[var(--danger)] bg-[var(--danger-bg)]"
         : status >= 300
-          ? "text-amber-600 bg-amber-50"
-          : "text-emerald-700 bg-emerald-50";
+          ? "text-[var(--warn)] bg-[var(--warn-bg)]"
+          : "text-[var(--ok)] bg-[var(--ok-bg)]";
   return (
     <span
       className={`inline-block rounded font-mono font-semibold text-2xs px-1.5 py-px leading-none ${color}`}
@@ -81,7 +81,7 @@ function ProxyUrlTooltip({ url }: { url: string }) {
       {open &&
         createPortal(
           <div
-            className="fixed z-50 w-72 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg p-3"
+            className="fixed z-50 w-72 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] p-3"
             style={{ top: pos.top, left: pos.left }}
           >
             <p className="text-2xs text-[var(--text-2)] mb-2">

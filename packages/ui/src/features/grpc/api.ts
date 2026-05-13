@@ -5,6 +5,7 @@ import type {
   GrpcStreamMessage,
 } from "@invoke/core";
 import { readJson } from "../../lib/http";
+import { applyProtocolDefaults } from "../../lib/protocolDefaults";
 
 export async function grpcServerStream(
   request: GrpcRequestConfig,
@@ -87,6 +88,7 @@ export async function grpcExecute(
 }
 
 function buildGrpcPayload(req: GrpcRequestConfig) {
+  req = applyProtocolDefaults(req, "grpc");
   return {
     address: req.address,
     tls: req.tls,
@@ -127,9 +129,7 @@ export async function grpcStreamSend(
   return readJson<{ error?: string }>(response);
 }
 
-export async function grpcStreamClose(
-  streamId: string,
-): Promise<{
+export async function grpcStreamClose(streamId: string): Promise<{
   bodyJson?: string;
   error?: string;
   statusCode?: number;

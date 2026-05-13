@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Zap, RefreshCw, Layers, X, GitMerge, Repeat } from "lucide-react";
+import { Zap, RefreshCw, Layers, X, Repeat } from "lucide-react";
 import { useStore } from "../../../store";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 import {
@@ -23,13 +23,13 @@ const METHODS: HttpMethod[] = [
 ];
 
 const METHOD_COLORS: Record<string, string> = {
-  GET: "text-emerald-700",
-  POST: "text-blue-700",
-  PUT: "text-amber-700",
-  PATCH: "text-violet-700",
-  DELETE: "text-red-700",
-  HEAD: "text-zinc-600",
-  OPTIONS: "text-zinc-600",
+  GET: "text-[var(--method-get)]",
+  POST: "text-[var(--method-post)]",
+  PUT: "text-[var(--method-put)]",
+  PATCH: "text-[var(--method-patch)]",
+  DELETE: "text-[var(--method-delete)]",
+  HEAD: "text-[var(--fg-2)]",
+  OPTIONS: "text-[var(--fg-2)]",
 };
 
 export function URLBar({ onSend, loading }: URLBarProps) {
@@ -43,8 +43,7 @@ export function URLBar({ onSend, loading }: URLBarProps) {
     sessionVariables,
     loadController,
   } = useStore();
-  const color = METHOD_COLORS[request.method] ?? "text-zinc-600";
-  const followRedirects = request.options?.followRedirects ?? true;
+  const color = METHOD_COLORS[request.method] ?? "text-[var(--fg-2)]";
   const [showSendN, setShowSendN] = useState(false);
   const [sendCount, setSendCount] = useState(5);
   const sendNRef = useRef<HTMLDivElement>(null);
@@ -119,23 +118,6 @@ export function URLBar({ onSend, loading }: URLBarProps) {
         )}
       </div>
 
-      {/* Follow-redirects toggle */}
-      <button
-        onClick={() =>
-          setRequest({
-            options: { ...request.options, followRedirects: !followRedirects },
-          })
-        }
-        title={
-          followRedirects
-            ? "Following redirects (click to disable)"
-            : "Not following redirects (click to enable)"
-        }
-        className={`p-1.5 rounded border text-xs transition-colors ${followRedirects ? "border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)]" : "border-amber-500 text-amber-500"}`}
-      >
-        <GitMerge size={13} />
-      </button>
-
       {/* Send N times */}
       <div className="relative" ref={sendNRef}>
         <button
@@ -146,7 +128,7 @@ export function URLBar({ onSend, loading }: URLBarProps) {
           <Repeat size={13} />
         </button>
         {showSendN && (
-          <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--surface)] border border-[var(--border)] rounded shadow-lg p-2 flex items-center gap-2 min-w-36">
+          <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--surface)] border border-[var(--border)] rounded shadow-[var(--shadow-2)] p-2 flex items-center gap-2 min-w-36">
             <span className="text-2xs text-[var(--text-2)] whitespace-nowrap">
               Send
             </span>

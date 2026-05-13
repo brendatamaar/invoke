@@ -57,19 +57,19 @@ function streamBadge(method: {
 }) {
   if (method.serverStreaming && method.clientStreaming)
     return (
-      <span className="text-2xs px-1 rounded bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+      <span className="text-2xs px-1 rounded bg-[rgba(200,156,214,0.1)] text-[var(--method-patch)]">
         bidi
       </span>
     );
   if (method.serverStreaming)
     return (
-      <span className="text-2xs px-1 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+      <span className="text-2xs px-1 rounded bg-[var(--info-bg)] text-[var(--info)]">
         server-stream
       </span>
     );
   if (method.clientStreaming)
     return (
-      <span className="text-2xs px-1 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+      <span className="text-2xs px-1 rounded bg-[var(--warn-bg)] text-[var(--warn)]">
         client-stream
       </span>
     );
@@ -161,7 +161,7 @@ function GrpcMethodPicker({
         {open && filtered.length > 0 && (
           <div
             ref={listRef}
-            className="absolute top-full left-0 right-0 z-50 mt-0.5 bg-[var(--surface-1)] border border-[var(--border)] rounded shadow-lg max-h-56 overflow-y-auto"
+            className="absolute top-full left-0 right-0 z-50 mt-0.5 bg-[var(--surface-1)] border border-[var(--border)] rounded shadow-[var(--shadow-2)] max-h-56 overflow-y-auto"
           >
             {filtered.map((m, i) => (
               <button
@@ -366,13 +366,7 @@ function GrpcScriptsPanel() {
 }
 
 function GrpcOptionsPanel() {
-  const { grpcRequest, setGrpcRequest } = useStore();
-  const options = grpcRequest.options ?? {};
-  const setOpt = (patch: object) =>
-    setGrpcRequest({ options: { ...options, ...patch } });
-  const tls = options.tlsClientConfig ?? {};
-  const setTls = (patch: object) =>
-    setOpt({ tlsClientConfig: { ...tls, ...patch } });
+  const { grpcRequest, setGrpcRequest, set } = useStore();
 
   const handleProtosetFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -410,17 +404,13 @@ function GrpcOptionsPanel() {
           grpc-timeout: {formatGrpcTimeout(grpcRequest.timeoutMs ?? 30000)}
         </span>
       </div>
-      <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-36 shrink-0">
-          Verify SSL
-        </label>
-        <input
-          type="checkbox"
-          checked={options.verifySsl ?? true}
-          className="accent-[var(--accent)]"
-          onChange={(e) => setOpt({ verifySsl: e.target.checked })}
-        />
-      </div>
+      <button
+        type="button"
+        onClick={() => set({ showSettings: true, settingsTab: "network" })}
+        className="text-left text-2xs text-[var(--text-3)] hover:text-[var(--text-1)]"
+      >
+        TLS and certificate policy is in Settings &gt; Network.
+      </button>
       <div className="flex items-center gap-2">
         <label className="text-xs text-[var(--text-2)] w-36 shrink-0">
           Compression
@@ -455,7 +445,7 @@ function GrpcOptionsPanel() {
           }
         />
         {(grpcRequest.maxRecvMsgSize ?? 0) >= 256 * 1024 * 1024 && (
-          <span className="text-2xs text-amber-500">
+          <span className="text-2xs text-[var(--warn)]">
             ⚠ Large messages may exhaust memory
           </span>
         )}
@@ -500,65 +490,19 @@ function GrpcOptionsPanel() {
           </label>
           {grpcRequest.protosetBase64 && (
             <button
-              className="text-2xs text-red-500 hover:underline"
+              className="text-2xs text-[var(--danger)] hover:underline"
               onClick={() => setGrpcRequest({ protosetBase64: undefined })}
             >
               Remove
             </button>
           )}
           {grpcRequest.protosetBase64 && (
-            <span className="text-2xs text-emerald-600">
+            <span className="text-2xs text-[var(--ok)]">
               ✓ Protoset loaded (
               {Math.round((grpcRequest.protosetBase64.length * 0.75) / 1024)}KB)
             </span>
           )}
         </div>
-      </div>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-[var(--text-3)] pt-1">
-        mTLS
-      </p>
-      <div className="flex flex-col gap-2">
-        <label className="text-xs text-[var(--text-2)]">
-          Client cert (PEM)
-        </label>
-        <textarea
-          rows={3}
-          className="input text-2xs font-mono py-1"
-          placeholder="-----BEGIN CERTIFICATE-----"
-          value={(tls as Record<string, string>).clientCertPem ?? ""}
-          onChange={(e) => setTls({ clientCertPem: e.target.value })}
-        />
-        <label className="text-xs text-[var(--text-2)]">Client key (PEM)</label>
-        <textarea
-          rows={3}
-          className="input text-2xs font-mono py-1"
-          placeholder="-----BEGIN PRIVATE KEY-----"
-          value={(tls as Record<string, string>).clientKeyPem ?? ""}
-          onChange={(e) => setTls({ clientKeyPem: e.target.value })}
-        />
-        {(tls as Record<string, string>).clientKeyPem && (
-          <p className="text-2xs text-amber-500">
-            ⚠ Private key material is stored locally. Enable a passphrase in
-            Settings to encrypt it at rest.
-          </p>
-        )}
-        <label className="text-xs text-[var(--text-2)]">CA cert (PEM)</label>
-        <textarea
-          rows={3}
-          className="input text-2xs font-mono py-1"
-          placeholder="-----BEGIN CERTIFICATE-----"
-          value={(tls as Record<string, string>).caCertPem ?? ""}
-          onChange={(e) => setTls({ caCertPem: e.target.value })}
-        />
-        <label className="text-xs text-[var(--text-2)]">
-          Server name override
-        </label>
-        <input
-          className="input text-xs py-1"
-          placeholder="example.com"
-          value={(tls as Record<string, string>).serverName ?? ""}
-          onChange={(e) => setTls({ serverName: e.target.value })}
-        />
       </div>
     </div>
   );
@@ -649,7 +593,7 @@ function GrpcSavedMessagesPanel() {
             </button>
             <button
               onClick={() => remove(msg.id)}
-              className="p-0.5 text-[var(--text-3)] hover:text-red-500 shrink-0"
+              className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
             >
               <Trash2 size={10} />
             </button>
@@ -676,7 +620,7 @@ function GrpcResponsePanel({ res }: { res: GrpcExecuteResponse }) {
     >
       <div className="px-3 py-1 text-2xs border-b border-[var(--border)] bg-[var(--surface-2)] flex items-center gap-2">
         <span
-          className={`font-semibold ${isOk ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}
+          className={`font-semibold ${isOk ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
         >
           {res.statusCode} {statusName}
         </span>
@@ -687,7 +631,7 @@ function GrpcResponsePanel({ res }: { res: GrpcExecuteResponse }) {
         )}
         {grpcAssertionResults.length > 0 && (
           <span
-            className={`ml-auto text-2xs font-semibold ${grpcAssertionResults.every((r) => r.passed) ? "text-emerald-600" : "text-red-500"}`}
+            className={`ml-auto text-2xs font-semibold ${grpcAssertionResults.every((r) => r.passed) ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
           >
             {grpcAssertionResults.filter((r) => r.passed).length}/
             {grpcAssertionResults.length} assertions
@@ -701,14 +645,14 @@ function GrpcResponsePanel({ res }: { res: GrpcExecuteResponse }) {
           </pre>
         )}
         {res.error && !res.bodyJson && (
-          <p className="p-2 text-2xs text-red-500">{res.error}</p>
+          <p className="p-2 text-2xs text-[var(--danger)]">{res.error}</p>
         )}
         {(res as any).statusDetailsJson && (
           <div className="border-t border-[var(--border)] px-3 py-1.5">
             <p className="text-2xs font-semibold text-[var(--text-2)] mb-1">
               Error details
             </p>
-            <pre className="text-2xs font-mono text-red-400 whitespace-pre-wrap break-all">
+            <pre className="text-2xs font-mono text-[var(--danger)] whitespace-pre-wrap break-all">
               {(res as any).statusDetailsJson}
             </pre>
           </div>
@@ -737,13 +681,18 @@ function GrpcResponsePanel({ res }: { res: GrpcExecuteResponse }) {
                 {r.passed ? (
                   <CheckCircle2
                     size={11}
-                    className="text-emerald-600 shrink-0"
+                    className="text-[var(--ok)] shrink-0"
                   />
                 ) : (
-                  <XCircle size={11} className="text-red-500 shrink-0" />
+                  <XCircle
+                    size={11}
+                    className="text-[var(--danger)] shrink-0"
+                  />
                 )}
                 <span
-                  className={r.passed ? "text-emerald-600" : "text-red-500"}
+                  className={
+                    r.passed ? "text-[var(--ok)]" : "text-[var(--danger)]"
+                  }
                 >
                   {r.message ?? (r.passed ? "passed" : "failed")}
                 </span>
@@ -780,7 +729,7 @@ function GrpcDeadlineCountdown() {
   const urgent = remaining < 5000;
   return (
     <span
-      className={`font-mono text-2xs shrink-0 ${urgent ? "text-red-500 animate-pulse" : "text-[var(--text-3)]"}`}
+      className={`font-mono text-2xs shrink-0 ${urgent ? "text-[var(--danger)] animate-pulse" : "text-[var(--text-3)]"}`}
     >
       ⏱ {secs}s
     </span>
@@ -820,7 +769,7 @@ function GrpcMessageDiffModal({
       onClick={onClose}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: "80vw", maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -828,8 +777,10 @@ function GrpcMessageDiffModal({
           <ArrowLeftRight size={13} className="text-[var(--accent)]" />
           <span className="text-xs font-semibold">Diff Messages</span>
           <span className="ml-auto flex items-center gap-2 text-2xs">
-            <span className="text-emerald-600">+{diff.summary.additions}</span>
-            <span className="text-red-600">−{diff.summary.deletions}</span>
+            <span className="text-[var(--ok)]">+{diff.summary.additions}</span>
+            <span className="text-[var(--danger)]">
+              −{diff.summary.deletions}
+            </span>
             {diff.summary.changes > 0 && (
               <span className="text-yellow-600">~{diff.summary.changes}</span>
             )}
@@ -998,7 +949,7 @@ function GrpcStressPanel({ streamId }: { streamId: string }) {
             <span>
               Received: <b>{stats.received}</b>
             </span>
-            <span className={stats.lost > 0 ? "text-red-500" : ""}>
+            <span className={stats.lost > 0 ? "text-[var(--danger)]" : ""}>
               Lost: <b>{stats.lost}</b>
             </span>
           </div>
@@ -1170,7 +1121,7 @@ function GrpcStreamComposer({ streamId }: { streamId: string }) {
             >
               {msg.done ? (
                 <span
-                  className={`text-2xs font-semibold ${msg.error ? "text-red-500" : "text-emerald-600"}`}
+                  className={`text-2xs font-semibold ${msg.error ? "text-[var(--danger)]" : "text-[var(--ok)]"}`}
                 >
                   {msg.error
                     ? `Error: ${msg.statusMessage || msg.error}`
@@ -1178,7 +1129,7 @@ function GrpcStreamComposer({ streamId }: { streamId: string }) {
                 </span>
               ) : (
                 <>
-                  <span className="text-2xs font-semibold text-emerald-600 shrink-0">
+                  <span className="text-2xs font-semibold text-[var(--ok)] shrink-0">
                     ←
                   </span>
                   <pre
@@ -1453,7 +1404,7 @@ export function GRPCClient() {
                 {msg.done ? (
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-2xs font-semibold ${msg.error ? "text-red-500" : "text-emerald-600"}`}
+                      className={`text-2xs font-semibold ${msg.error ? "text-[var(--danger)]" : "text-[var(--ok)]"}`}
                     >
                       {msg.error
                         ? `Error: ${msg.statusMessage || msg.error}`

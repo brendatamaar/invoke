@@ -115,14 +115,14 @@ export function ResponseViewer() {
   if (response?.status === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-8">
-        <div className="w-10 h-10 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mb-2">
-          <Code2 size={18} className="text-red-400" />
+        <div className="w-10 h-10 rounded bg-[var(--danger-bg)] border border-[var(--danger)] flex items-center justify-center mb-2">
+          <Code2 size={18} className="text-[var(--danger)]" />
         </div>
         <p className="text-sm text-[var(--text-2)] font-medium">
           Request failed
         </p>
         {response.error && (
-          <p className="text-xs text-red-500 font-mono max-w-md break-all">
+          <p className="text-xs text-[var(--danger)] font-mono max-w-md break-all">
             {response.error}
           </p>
         )}
@@ -250,14 +250,14 @@ export function ResponseViewer() {
             </span>
           )}
           {(retryAttempts ?? 0) > 0 && (
-            <span className="text-2xs text-amber-600 flex items-center gap-1">
+            <span className="text-2xs text-[var(--warn)] flex items-center gap-1">
               <RefreshCw size={11} /> {retryAttempts} retr
               {retryAttempts === 1 ? "y" : "ies"}
             </span>
           )}
           {gqlComplexity !== null && (
             <span
-              className="text-2xs text-amber-600 flex items-center gap-1"
+              className="text-2xs text-[var(--warn)] flex items-center gap-1"
               title="Query complexity"
             >
               ⚡ {gqlComplexity}
@@ -265,7 +265,7 @@ export function ResponseViewer() {
           )}
           {gqlCost !== null && typeof gqlCost === "number" && (
             <span
-              className="text-2xs text-amber-600 flex items-center gap-1"
+              className="text-2xs text-[var(--warn)] flex items-center gap-1"
               title="Query cost"
             >
               ⚡ {gqlCost}
@@ -275,7 +275,7 @@ export function ResponseViewer() {
             typeof gqlCost === "object" &&
             gqlCost.requestedQueryCost != null && (
               <span
-                className="text-2xs text-amber-600 flex items-center gap-1"
+                className="text-2xs text-[var(--warn)] flex items-center gap-1"
                 title={`Max: ${gqlCost.maximumAvailable ?? "?"}`}
               >
                 ⚡ {gqlCost.requestedQueryCost}/
@@ -284,7 +284,7 @@ export function ResponseViewer() {
             )}
           {totalCount > 0 && (
             <span
-              className={`text-2xs flex items-center gap-1 ${passedCount === totalCount ? "text-emerald-600" : "text-red-600"}`}
+              className={`text-2xs flex items-center gap-1 ${passedCount === totalCount ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
             >
               <CheckCircle size={11} /> {passedCount}/{totalCount}
             </span>
@@ -346,7 +346,7 @@ export function ResponseViewer() {
             {tab.icon} {tab.label}
             {tab.id === "assertions" && totalCount > 0 && (
               <span
-                className={`ml-0.5 text-2xs px-1 rounded ${passedCount === totalCount ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+                className={`ml-0.5 text-2xs px-1 rounded ${passedCount === totalCount ? "bg-[var(--ok-bg)] text-[var(--ok)]" : "bg-[var(--danger-bg)] text-[var(--danger)]"}`}
               >
                 {passedCount}/{totalCount}
               </span>
@@ -359,11 +359,11 @@ export function ResponseViewer() {
             className={`tab-btn flex items-center gap-1 ${responseTab === "graphql-errors" ? "active" : ""}`}
           >
             {hasGraphQLErrors ? (
-              <AlertCircle size={11} className="text-red-500" />
+              <AlertCircle size={11} className="text-[var(--danger)]" />
             ) : null}
             GraphQL
             {hasGraphQLErrors && (
-              <span className="ml-0.5 text-2xs px-1 rounded bg-red-100 text-red-700">
+              <span className="ml-0.5 text-2xs px-1 rounded bg-[var(--danger-bg)] text-[var(--danger)]">
                 {graphqlErrors.length}
               </span>
             )}

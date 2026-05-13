@@ -1,9 +1,12 @@
 import type {
   CachedGraphQLSchema,
+  DefaultProtocolOptions,
   DiffIgnoreRule,
+  ProtocolNetworkDefaults,
   ResponseExample,
   RetentionSettings,
 } from "../types";
+import { INITIAL_PROTOCOL_DEFAULTS } from "../types";
 import { clonePlain } from "../request";
 import type { InvokeDB } from "./db";
 import { schemaCacheKey } from "./helpers";
@@ -44,6 +47,60 @@ export function setRetentionSettings(
   settings: RetentionSettings,
 ) {
   return setMeta(db, "retentionSettings", settings);
+}
+
+function mergeProtocolDefaults(
+  initial: ProtocolNetworkDefaults,
+  stored: Partial<ProtocolNetworkDefaults> | undefined,
+): ProtocolNetworkDefaults {
+  const storedOptions = stored?.options ?? {};
+  return {
+    options: {
+      ...initial.options,
+      ...storedOptions,
+      tlsClientConfig: {
+        ...(initial.options.tlsClientConfig ?? {}),
+        ...(storedOptions.tlsClientConfig ?? {}),
+      },
+      ...(storedOptions.proxy ? { proxy: { ...storedOptions.proxy } } : {}),
+    },
+  };
+}
+
+export function mergeDefaults(
+  initial: DefaultProtocolOptions,
+  stored?: Partial<
+    Record<keyof DefaultProtocolOptions, Partial<ProtocolNetworkDefaults>>
+  >,
+): DefaultProtocolOptions {
+  return {
+    rest: mergeProtocolDefaults(initial.rest, stored?.rest),
+    graphql: mergeProtocolDefaults(initial.graphql, stored?.graphql),
+    websocket: mergeProtocolDefaults(initial.websocket, stored?.websocket),
+    grpc: mergeProtocolDefaults(initial.grpc, stored?.grpc),
+  };
+}
+
+export async function getDefaultProtocolOptions(
+  db: InvokeDB,
+): Promise<DefaultProtocolOptions> {
+  const stored = await getMeta<
+    Partial<
+      Record<keyof DefaultProtocolOptions, Partial<ProtocolNetworkDefaults>>
+    >
+  >(db, "defaultProtocolOptions");
+  return mergeDefaults(INITIAL_PROTOCOL_DEFAULTS, stored);
+}
+
+export function setDefaultProtocolOptions(
+  db: InvokeDB,
+  defaults: DefaultProtocolOptions,
+) {
+  return setMeta(
+    db,
+    "defaultProtocolOptions",
+    mergeDefaults(INITIAL_PROTOCOL_DEFAULTS, defaults),
+  );
 }
 
 export async function listResponseExamples(

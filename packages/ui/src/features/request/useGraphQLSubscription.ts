@@ -1,6 +1,10 @@
 import { useRef, useState } from "react";
-import { webSocketClose, webSocketPoll, webSocketSend } from "../websocket/api";
-import { readJson } from "../../lib/http";
+import {
+  webSocketClose,
+  webSocketConnect,
+  webSocketPoll,
+  webSocketSend,
+} from "../websocket/api";
 import type { KeyValue } from "@invoke/core";
 
 export interface GQLSubMessage {
@@ -77,23 +81,18 @@ export function useGraphQLSubscription() {
     );
 
     try {
-      const res = await fetch("/api/websocket/connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: wsUrl,
-          headers: (opts.headers ?? []).filter(
-            (h) => h.enabled !== false && h.key.trim(),
-          ),
-          protocols: ["graphql-transport-ws"],
-          timeoutMs: 30000,
-          verifySsl: true,
-        }),
+      const { connectionId, error: connErr } = await webSocketConnect({
+        url: wsUrl,
+        headers: (opts.headers ?? []).filter(
+          (h) => h.enabled !== false && h.key.trim(),
+        ),
+        auth: { type: "none" },
+        protocols: "graphql-transport-ws",
+        messageMode: "text",
+        message: "",
+        timeoutMs: 30000,
+        options: {},
       });
-      const { connectionId, error: connErr } = await readJson<{
-        connectionId: string;
-        error?: string;
-      }>(res);
       if (connErr) throw new Error(connErr);
       connIdRef.current = connectionId;
 
