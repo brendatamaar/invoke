@@ -45,6 +45,7 @@ export interface OAuth2PendingResult {
   expiresIn?: number;
   error?: string;
   timestamp: number;
+  codeVerifier?: string;
 }
 
 export interface WebhookValidationResult {
@@ -81,15 +82,23 @@ export interface ExecuteInput {
   url: string;
   headers: ServerHeaderInput[];
   body: string;
+  bodyMode?: "none" | "json" | "form-data" | "urlencoded" | "raw" | "file";
   auth?: {
     type: string;
     username?: string;
     password?: string;
+    token?: string;
+    apiKeyName?: string;
+    apiKeyValue?: string;
+    apiKeyIn?: "header" | "query";
   };
   timeoutMs: number;
+  connectTimeoutMs?: number;
+  readTimeoutMs?: number;
   followRedirects: boolean;
   maxRedirects: number;
   verifySsl: boolean;
+  allowPrivateAddresses?: boolean;
   proxy?: {
     type: "http" | "socks5";
     url: string;
@@ -108,6 +117,17 @@ export interface WebSocketConnectInput {
   tlsClientConfig?: TlsClientConfigInput;
 }
 
+export interface GrpcAuthInput {
+  type: string;
+  username?: string;
+  password?: string;
+  token?: string;
+  apiKeyName?: string;
+  apiKeyValue?: string;
+  apiKeyIn?: "header" | "query";
+  accessToken?: string;
+}
+
 export interface GrpcReflectInput {
   address: string;
   tls: boolean;
@@ -115,11 +135,28 @@ export interface GrpcReflectInput {
   metadata: ServerHeaderInput[];
   verifySsl: boolean;
   tlsClientConfig?: TlsClientConfigInput;
+  auth?: GrpcAuthInput;
+  protosetBase64?: string;
 }
 
 export interface GrpcExecuteInput extends GrpcReflectInput {
   fullMethod: string;
   bodyJson: string;
+  compression?: "none" | "gzip";
+}
+
+export interface GrpcStreamSendInput {
+  streamId: string;
+  bodyJson: string;
+}
+
+export interface GrpcStreamCloseInput {
+  streamId: string;
+}
+
+export interface GrpcStreamPollInput {
+  streamId: string;
+  maxMessages?: number;
 }
 
 export interface ProxyRequestInput {
@@ -139,6 +176,7 @@ export interface OAuth2AuthCodeStartInput {
   pkce: boolean;
   codeChallenge: string;
   codeChallengeMethod: string;
+  codeVerifier: string;
 }
 
 export type OAuth2AuthCodePending = OAuth2PendingResult &

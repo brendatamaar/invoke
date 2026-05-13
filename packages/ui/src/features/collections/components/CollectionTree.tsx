@@ -50,7 +50,7 @@ export function CollectionTree() {
                 <Upload size={13} />
               </button>
               {importMenuOpen && (
-                <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[180px]">
+                <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] py-1 min-w-[180px]">
                   {COLLECTION_IMPORT_OPTIONS.map((opt) => (
                     <button
                       key={opt.type}

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { TopBar } from "./components/layout/TopBar";
 import { Sidebar } from "./components/layout/Sidebar";
 import { RequestBuilder } from "./features/request/components/RequestBuilder";
@@ -10,6 +10,7 @@ import { VariableEditorModal } from "./features/variables/components/VariableEdi
 import { HelpModal } from "./features/help/components/HelpModal";
 import { ClearHistoryModal } from "./features/history/components/ClearHistoryModal";
 import { SettingsPanel } from "./features/settings/components/SettingsPanel";
+import { PassphraseModal } from "./features/settings/components/PassphraseModal";
 import { CollectionRunnerModal } from "./features/collections/components/CollectionRunnerModal";
 import { BatchRunnerModal } from "./features/collections/components/BatchRunnerModal";
 import { CookieManagerModal } from "./features/cookies/components/CookieManagerModal";
@@ -18,15 +19,23 @@ import { useCodeSnippetGeneration } from "./features/codegen/useCodeSnippetGener
 import { useActiveEnvironmentPersistence } from "./features/environments/useActiveEnvironmentPersistence";
 import { useRequestExecution } from "./features/execution/useRequestExecution";
 import { useResizablePane } from "./hooks/useResizablePane";
+import { checkAndUnlockOnStartup } from "./features/settings/useCrypto";
+import { useStore } from "./store";
 
 export default function App() {
-  const { size: requestHeight, onMouseDown: onResizeMouseDown } =
-    useResizablePane(320);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { size: requestWidth, onMouseDown: onResizeMouseDown } =
+    useResizablePane(520, "horizontal", containerRef, 480);
   const { handleSend } = useRequestExecution();
+  const set = useStore((s) => s.set);
 
   useAppBootstrap();
   useActiveEnvironmentPersistence();
   useCodeSnippetGeneration();
+
+  useEffect(() => {
+    checkAndUnlockOnStartup(set).catch(() => {});
+  }, [set]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -45,17 +54,17 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div ref={containerRef} className="flex-1 flex overflow-hidden">
           <div
-            className="overflow-hidden"
-            style={{ height: requestHeight, flexShrink: 0 }}
+            className="overflow-hidden flex-shrink-0"
+            style={{ width: requestWidth, minWidth: 600 }}
           >
             <RequestBuilder onSend={handleSend} />
           </div>
 
-          <div className="resize-handle-v" onMouseDown={onResizeMouseDown} />
+          <div className="resize-handle-h" onMouseDown={onResizeMouseDown} />
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden" style={{ minWidth: 480 }}>
             <ResponseViewer />
           </div>
         </div>
@@ -68,6 +77,7 @@ export default function App() {
       <HelpModal />
       <ClearHistoryModal />
       <SettingsPanel />
+      <PassphraseModal />
       <CollectionRunnerModal />
       <BatchRunnerModal />
       <CookieManagerModal />

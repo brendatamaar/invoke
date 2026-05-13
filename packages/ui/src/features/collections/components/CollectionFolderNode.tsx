@@ -84,7 +84,7 @@ export function CollectionFolderNode({
               <MoreHorizontal size={13} />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] py-1 min-w-[140px]">
                 <CollectionMenuItem
                   icon={<Play size={12} />}
                   label="Run"

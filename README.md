@@ -8,9 +8,9 @@ It combines a React web app, a TypeScript core engine, a thin Node.js proxy, and
 
 - **Local-first by default** - collections, environments, history, flows, cookies, response examples, mock routes, and settings live in browser storage.
 - **No required account** - use the app without sign-up, user management, or a hosted workspace.
-- **Protocol-aware** - build and inspect REST, GraphQL, WebSocket, gRPC unary and server-streaming, and streaming HTTP requests in one interface.
+- **Protocol-aware** - build and inspect REST, GraphQL, WebSocket, gRPC (unary, server-streaming, client-streaming, bidirectional), and streaming HTTP requests in one interface.
 - **Accurate execution data** - capture detailed HTTP timing through a Go executor using `net/http/httptrace`.
-- **Repeatable API checks** - run assertions, extraction rules, scripts, request flows, collection runs, and batch runs locally.
+- **Repeatable API checks** - run assertions, extraction rules, scripts, request flows, collection runs, and batch runs locally across all protocols.
 - **Portable API work** - import existing API work, export OpenAPI specs, workspace backups, and code snippets, then self-host with Docker Compose.
 
 ## Features
@@ -19,12 +19,72 @@ It combines a React web app, a TypeScript core engine, a thin Node.js proxy, and
 
 invoke can create, send, save, and inspect API requests across multiple protocols:
 
-- REST requests with common HTTP methods.
-- GraphQL queries with variables, schema introspection, and schema browsing.
-- WebSocket connections with custom upgrade headers, subprotocols, auth headers, TLS options, message composer, and chronological message log.
-- WebSocket polling for received messages and connection events.
-- gRPC server reflection, unary calls, and server-streaming calls with metadata, TLS/plaintext modes, mTLS material, and protobuf JSON request/response handling.
-- Streaming HTTP responses through the Go executor and server-side forwarding.
+**REST / HTTP:**
+
+- Common HTTP methods and custom methods (PROPFIND, MKCOL, etc.).
+- Form-data body with per-part type, filename, and content-type.
+- URL-encoded body with proper encoding.
+- File upload and binary body mode.
+- Separate connect, read, and total timeouts.
+- HTTP/2 with ALPN negotiation and protocol display.
+- Connection pooling with configurable idle connections and max connections per host.
+- Request cancellation via AbortController.
+- Retry visibility with per-attempt timing.
+
+**GraphQL:**
+
+- GraphQL syntax highlighting via `@codemirror/lang-graphql`.
+- Schema-aware autocomplete for fields, arguments, enums, fragments, and directives.
+- Query validation against the fetched schema with inline diagnostics.
+- Operation picker for multi-operation documents.
+- Variables panel with auto-detection of `$variables` from the query and type hints.
+- Full introspection coverage including input objects, enums, unions, interfaces, scalars, deprecation markers, and directives.
+- Schema explorer with search, type navigation, breadcrumb stack, and SDL view.
+- Schema persistence per endpoint with refresh and diff notifications.
+- SDL import from paste or file when introspection is disabled.
+- Prettify / format query action.
+- Subscriptions over `graphql-ws` and `graphql-transport-ws` protocols.
+- File uploads via the `graphql-multipart-request-spec`.
+- Batched queries (array body).
+- Automatic Persisted Queries (APQ) with hash-only-first and fallback.
+- `@defer` / `@stream` incremental delivery via `multipart/mixed`.
+- Fragments library with saved fragments per workspace.
+- Dedicated `errors[]` panel with message, path, locations, and extensions.
+
+**WebSocket:**
+
+- Text and binary frame composer with file picker for binary payloads.
+- Authentication on handshake (bearer, basic, api-key, OAuth2, SigV4 injected into upgrade headers).
+- Multiple concurrent sessions per request (tabbed).
+- Auto-reconnect with configurable exponential backoff.
+- Saved messages and composer presets with send-on-connect queue.
+- Ping/pong heartbeat with live latency display.
+- Close frame with code and reason (send and receive).
+- Handshake details panel (request/response headers, negotiated subprotocol, extensions, TLS info, handshake RTT).
+- `permessage-deflate` compression toggle.
+- Real-time inbound delivery via SSE (sub-100ms latency, replacing HTTP polling).
+- Protocol presets: `graphql-transport-ws`, `graphql-ws`, MQTT-over-WS, STOMP, SignalR, Socket.IO templates.
+- JSON pretty-print and hex/raw view for received frames.
+- Session transcript export (JSON, NDJSON, text).
+- Log toolbar with search, filter, pause/resume, and clear.
+- Cookie injection on handshake from the cookie store.
+
+**gRPC:**
+
+- Server reflection with v1 and v1alpha fallback.
+- Unary, server-streaming, client-streaming, and bidirectional streaming calls.
+- `.proto` file upload and pre-compiled `FileDescriptorSet` import when reflection is disabled.
+- gRPC-Web transport (`application/grpc-web+proto`, `application/grpc-web-text`).
+- Structured body editor with enum dropdowns, repeated field lists, oneof radio groups, and map key/value rows alongside the JSON editor.
+- Method search and filter with fuzzy matching and service grouping.
+- Inline schema viewer showing field names, types, comments, and enum values from the descriptor.
+- Connection pooling with keepalive (30s ping, 10s timeout) and channel reuse.
+- Per-call compression toggle (none / gzip).
+- Reflection cache persisted in IndexedDB per address.
+- Collection-scoped proto registry shared across requests.
+- Saved message templates per method.
+- Stream UI with sent/received columns, per-message timing, and transcript export.
+- Health check probe via `grpc.health.v1.Health/Check`.
 
 REST requests support headers, query parameters, request bodies, auth configuration, variable resolution, retry policies, timeouts, TLS options, cookie handling, and proxy settings.
 
@@ -38,10 +98,21 @@ The response view is designed for debugging:
 - Timing waterfall visualization.
 - Redirect tracking with per-hop response details.
 - TLS certificate details for HTTPS requests.
+- HTTP version and ALPN protocol display.
 - Assertion results after request execution.
 - Saved response examples for collection requests.
 - Captured cookies from `Set-Cookie` headers.
 - History entries that preserve request and response context.
+- Per-attempt timing chart for retried requests.
+
+**gRPC response view:**
+
+- gRPC status code and name (OK, NOT_FOUND, INVALID_ARGUMENT, etc.).
+- Status message and decoded `google.rpc.Status` details (BadRequest, RetryInfo, DebugInfo).
+- Initial metadata and trailers as separate panels.
+- Per-message timing in server-streams and bidi-streams.
+- Message count and compression ratio.
+- Stream transcript with collapsed/expanded JSON per message.
 
 ### Collections and Environments
 
@@ -68,14 +139,22 @@ invoke includes common authentication and transport options used by real service
 - Bearer token.
 - API key in header or query.
 - OAuth2 client credentials.
-- OAuth2 authorization-code helper.
+- OAuth2 authorization-code helper with PKCE (S256) and refresh-token rotation.
+- OAuth2 implicit, device flow, and OIDC `id_token`.
 - Digest auth.
-- AWS SigV4 signing.
+- AWS SigV4 signing (with session token support).
+- NTLM auth.
 - Cookie manager with persisted cookie jar support.
 - mTLS client certificates.
 - Custom CA bundles.
 - TLS verification controls.
 - HTTP proxy configuration.
+
+Auth is applied to all protocols:
+
+- REST/GraphQL: resolved into the outgoing HTTP request.
+- WebSocket: injected into handshake upgrade headers.
+- gRPC: translated into `authorization` metadata (bearer, basic, api-key, OAuth2, SigV4).
 
 These options are resolved into the final outgoing request before the Node server forwards execution to the Go sidecar.
 
@@ -94,6 +173,22 @@ invoke includes local testing primitives so requests can become repeatable check
 - Batch runner for repeated request execution with iterations, concurrency, delay, stop-on-failure, and latency stats.
 - Flow runner with request steps, delays, conditions, loops, extraction, cancellation, progress hooks, and saved flow persistence.
 - Browser flow editor in Settings with saved flows, request/delay steps, reordering, execution, and live step logs.
+
+**WebSocket assertions and scripts:**
+
+- Assertions on received frames: body (JSONPath), frame type, direction, with index selectors (first, last, nth, any).
+- Pre-connect and post-close scripts.
+- `onMessage` hook that runs per inbound frame with `frame`, `session.send`, `session.close` exposed.
+
+**gRPC assertions, extraction, and scripts:**
+
+- Assertions on `grpc.statusCode`, `grpc.statusMessage`, `grpc.bodyJson` (JSONPath), `grpc.metadata[key]`, `grpc.trailers[key]`, `grpc.durationMs`.
+- Stream message index selectors (first, last, nth, any) for server-stream and bidi assertions.
+- Extraction rules from response body, metadata, and trailers into session variables.
+- Pre-request and post-response scripts with `pm.request.metadata.add`, `pm.environment.set`, `pm.expect`.
+- `onStreamMessage` hook for server-stream and bidi-stream messages.
+- gRPC requests as flow steps with assert/extract/scripts support.
+- Protocol-aware collection runner that dispatches REST, GraphQL, and gRPC requests.
 
 ### Diffing and History
 
@@ -125,6 +220,12 @@ invoke can run browser-managed mock routes through the Node server:
 - Webhook receiver endpoints can capture incoming requests, show logs, and enforce simple validation settings.
 - Proxy recording can capture upstream traffic and turn it into mockable route data.
 
+**gRPC mock server:**
+
+- Accept a `FileDescriptorSet` and a map of canned responses keyed by full method.
+- Serve unary and server-streaming mock responses for offline, CI, and demo use.
+- Connection record/replay for regression testing against captured transcripts.
+
 Mock state is intentionally local and in-memory on the Node side. The browser remains the owner of the mock configuration and can re-sync it when needed.
 
 ### Import, Export, and Code Generation
@@ -133,19 +234,21 @@ invoke is built to fit existing API workflows:
 
 Supported imports:
 
-- Postman collection format.
+- Postman collection format (including gRPC requests from Postman ≥ v10).
 - OpenAPI 3.x.
 - cURL paste.
-- Insomnia export.
+- Insomnia export (including gRPC workspace items).
 - Hoppscotch export.
 - HAR files from browser DevTools.
 - invoke ZIP/YAML export format.
+- `grpcurl` command paste.
 
 Supported exports:
 
 - OpenAPI 3.0.3 YAML from REST collections.
 - Workspace JSON backup.
 - `.env` environment files.
+- Copy as `grpcurl` / `buf curl` command.
 
 Code export targets include:
 
@@ -164,6 +267,25 @@ Code export targets include:
 - Rust `reqwest`.
 - PowerShell.
 - HTTPie.
+
+**WebSocket code generation:**
+
+- `wscat`.
+- `websocat`.
+- JavaScript `WebSocket`.
+- Node `ws`.
+- Python `websockets`.
+- Go `nhooyr.io/websocket`.
+
+**gRPC code generation:**
+
+- `grpcurl` command.
+- Go `google.golang.org/grpc`.
+- Node `@grpc/grpc-js`.
+- Python `grpcio`.
+- Java `io.grpc`.
+- C# `Grpc.Net.Client`.
+- Kotlin `grpc-kotlin-stub`.
 
 ## Screenshots
 
@@ -230,25 +352,28 @@ Its responsibilities are:
 
 - Forward resolved HTTP requests to the Go executor.
 - Forward streaming responses.
-- Relay WebSocket operations.
-- Proxy gRPC reflection, unary execution, and server-streaming execution.
-- Host the in-memory mock server.
+- Relay WebSocket operations via real-time SSE transport.
+- Proxy gRPC reflection, unary, server-streaming, client-streaming, and bidirectional streaming execution.
+- Host the in-memory mock server (HTTP and gRPC).
 - Host webhook capture routes and logs.
 - Support OAuth2 authorization-code callback handling.
+- Apply auth configuration to outgoing requests across all protocols.
 - Serve as the bridge between browser APIs and the Go sidecar.
 
 ### Go Executor
 
 The Go executor performs network operations that need more control than browser APIs provide:
 
-- HTTP request execution.
+- HTTP request execution with connection pooling and HTTP/2.
 - DNS, TCP, TLS, TTFB, transfer, and total timing.
 - TLS certificate inspection.
 - Redirect handling.
 - Streaming response execution.
-- WebSocket connection management.
-- gRPC reflection, unary execution, and server-streaming execution.
+- WebSocket connection management with `nhooyr.io/websocket`, ping/pong, `permessage-deflate`, and proper close handshake.
+- gRPC reflection (v1 and v1alpha), unary, server-streaming, client-streaming, and bidirectional streaming execution with keepalive.
+- gRPC-Web transport.
 - mTLS and custom CA handling.
+- SSRF guard with configurable address denylist.
 
 The executor communicates with the Node server through gRPC. The contract lives in `proto/executor.proto`.
 
@@ -264,6 +389,9 @@ invoke's local-first model is simple:
 - History retention settings live in browser storage.
 - Diff ignore rules live in browser storage.
 - Saved flows live in browser storage.
+- GraphQL schema cache lives in browser storage (per endpoint).
+- gRPC reflection cache lives in browser storage (per address).
+- Proto registries live in browser storage (per collection).
 - Mock configuration is managed by the browser.
 - Webhook logs and mock runtime state are in memory on the Node server.
 - No account is required to use the app.
@@ -478,8 +606,9 @@ Expected server responsibilities:
 - Forward work to the Go executor.
 - Stream responses back to the browser.
 - Relay protocol-specific operations.
-- Proxy gRPC reflection, unary execution, and server-streaming execution.
-- Host mock routes from browser-provided configuration.
+- Apply auth configuration to outgoing requests across all protocols.
+- Proxy gRPC reflection, unary, server-streaming, client-streaming, and bidirectional streaming execution.
+- Host mock routes from browser-provided configuration (HTTP and gRPC).
 - Host webhook capture routes and logs.
 - Support OAuth2 authorization-code callback handling.
 - Normalize errors into UI-friendly responses.
@@ -498,8 +627,11 @@ Important areas:
 - Custom CA handling.
 - Request cancellation and timeouts.
 - Streaming responses.
-- WebSocket lifecycle.
-- gRPC reflection, unary execution, and server-streaming execution.
+- Connection pooling and keepalive.
+- WebSocket lifecycle (ping/pong, close handshake, compression).
+- gRPC reflection (v1 + v1alpha), unary, server-streaming, client-streaming, and bidirectional streaming execution.
+- gRPC-Web transport.
+- SSRF guard enforcement.
 
 Run:
 

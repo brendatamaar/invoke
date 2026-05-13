@@ -1,5 +1,17 @@
-import type { Collection, Environment, Flow, Folder, SavedRequest } from "../types";
+import type {
+  Collection,
+  DefaultProtocolOptions,
+  Environment,
+  Flow,
+  Folder,
+  SavedRequest,
+} from "../types";
 import type { InvokeDB } from "./db";
+import { getDefaultProtocolOptions, setDefaultProtocolOptions } from "./meta";
+import {
+  stripNetworkOptionsFromFlow,
+  stripNetworkOptionsFromSavedRequest,
+} from "./migrations";
 
 export async function getStorageStats(
   db: InvokeDB,
@@ -17,15 +29,29 @@ export async function getStorageStats(
 }
 
 export async function exportWorkspace(db: InvokeDB) {
-  const [collections, folders, requests, environments, flows] =
-    await Promise.all([
-      db.collections.toArray(),
-      db.folders.toArray(),
-      db.requests.toArray(),
-      db.environments.toArray(),
-      db.flows.toArray(),
-    ]);
-  return { collections, folders, requests, environments, flows };
+  const [
+    collections,
+    folders,
+    requests,
+    environments,
+    flows,
+    defaultProtocolOptions,
+  ] = await Promise.all([
+    db.collections.toArray(),
+    db.folders.toArray(),
+    db.requests.toArray(),
+    db.environments.toArray(),
+    db.flows.toArray(),
+    getDefaultProtocolOptions(db),
+  ]);
+  return {
+    collections,
+    folders,
+    requests,
+    environments,
+    flows,
+    defaultProtocolOptions,
+  };
 }
 
 export async function importWorkspace(
@@ -36,13 +62,20 @@ export async function importWorkspace(
     requests: SavedRequest[];
     environments: Environment[];
     flows: Flow[];
+    defaultProtocolOptions?: DefaultProtocolOptions;
   },
 ): Promise<void> {
-  await Promise.all([
+  const writes: Array<Promise<unknown>> = [
     db.collections.bulkPut(data.collections),
     db.folders.bulkPut(data.folders),
-    db.requests.bulkPut(data.requests),
+    db.requests.bulkPut(data.requests.map(stripNetworkOptionsFromSavedRequest)),
     db.environments.bulkPut(data.environments),
-    db.flows.bulkPut(data.flows),
-  ]);
+    db.flows.bulkPut(data.flows.map(stripNetworkOptionsFromFlow)),
+  ];
+
+  if (data.defaultProtocolOptions) {
+    writes.push(setDefaultProtocolOptions(db, data.defaultProtocolOptions));
+  }
+
+  await Promise.all(writes);
 }

@@ -1,7 +1,14 @@
+import type React from "react";
 import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
 import type { KeyValue } from "@invoke/core";
 
-export type CodeEditorLang = "json" | "javascript" | "xml" | "python" | "text";
+export type CodeEditorLang =
+  | "json"
+  | "javascript"
+  | "xml"
+  | "python"
+  | "text"
+  | "graphql";
 
 export interface CodeEditorProps {
   value: string;
@@ -10,6 +17,7 @@ export interface CodeEditorProps {
   readOnly?: boolean;
   minHeight?: string;
   placeholder?: string;
+  extensions?: import("@codemirror/state").Extension[];
 }
 
 export interface DialogProps {
@@ -51,6 +59,7 @@ export interface KeyValueEditorProps {
   valuePlaceholder?: string;
   disabled?: boolean;
   variableAutocomplete?: boolean;
+  keyDatalist?: string[];
 }
 
 export interface MethodBadgeProps {
@@ -89,6 +98,7 @@ export interface VariableAutocompleteInputProps {
   value: string;
   onChange: (value: string) => void;
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   placeholder?: string;
   className?: string;
   spellCheck?: boolean;

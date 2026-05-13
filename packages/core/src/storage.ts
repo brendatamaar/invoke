@@ -1,11 +1,14 @@
 import type {
+  AuthConfig,
   CachedGraphQLSchema,
   Collection,
+  DefaultProtocolOptions,
   DiffIgnoreRule,
   Environment,
   Flow,
   Folder,
   HistoryEntry,
+  KeyValue,
   ProtocolRequestConfig,
   RequestDraft,
   RequestProtocol,
@@ -14,6 +17,7 @@ import type {
   SavedRequest,
   StoredCookie,
 } from "./types";
+import { encryptJson, decryptJson } from "./crypto";
 import * as collectionStorage from "./storage/collections";
 import * as cookieStorage from "./storage/cookies";
 import { InvokeDB } from "./storage/db";
@@ -23,8 +27,86 @@ import * as historyStorage from "./storage/history";
 import * as metaStorage from "./storage/meta";
 import * as workspaceStorage from "./storage/workspace";
 
+function hasAuthSecrets(auth: AuthConfig | undefined): boolean {
+  if (!auth || auth.type === "none") return false;
+  return !!(
+    auth.password ||
+    auth.token ||
+    auth.clientSecret ||
+    auth.awsSecretAccessKey ||
+    auth.accessToken ||
+    auth.refreshToken ||
+    auth.apiKeyValue
+  );
+}
+
+const SENSITIVE_METADATA_KEYS =
+  /^(authorization|cookie|x-api-key|.*-token.*)$/i;
+
+function hasSensitiveMetadata(metadata: KeyValue[] | undefined): boolean {
+  if (!metadata?.length) return false;
+  return metadata.some(
+    (m) => m.enabled !== false && SENSITIVE_METADATA_KEYS.test(m.key),
+  );
+}
+
+function sensitiveMetadataEntries(metadata: KeyValue[]): KeyValue[] {
+  return metadata.filter(
+    (m) => m.enabled !== false && SENSITIVE_METADATA_KEYS.test(m.key),
+  );
+}
+
+function redactMetadata(metadata: KeyValue[]): KeyValue[] {
+  return metadata.map((m) =>
+    SENSITIVE_METADATA_KEYS.test(m.key) ? { ...m, value: "••••••" } : m,
+  );
+}
+
 export class InvokeStore {
   private db = new InvokeDB();
+  private cryptoKey: CryptoKey | null = null;
+
+  setCryptoKey(key: CryptoKey) {
+    this.cryptoKey = key;
+  }
+
+  clearCryptoKey() {
+    this.cryptoKey = null;
+  }
+
+  hasCryptoKey(): boolean {
+    return this.cryptoKey !== null;
+  }
+
+  async hasSalt(): Promise<boolean> {
+    const salt = await metaStorage.getMeta<string>(this.db, "crypto:salt");
+    return !!salt;
+  }
+
+  async getCryptoSalt(): Promise<string | undefined> {
+    return metaStorage.getMeta<string>(this.db, "crypto:salt");
+  }
+
+  async initializeCrypto(key: CryptoKey, saltBase64: string) {
+    this.cryptoKey = key;
+    await metaStorage.setMeta(this.db, "crypto:salt", saltBase64);
+    const verifyBlob = await encryptJson("invoke-verify-v1", key);
+    await metaStorage.setMeta(this.db, "crypto:verify", verifyBlob);
+  }
+
+  async verifyCryptoKey(key: CryptoKey): Promise<boolean> {
+    const verifyBlob = await metaStorage.getMeta<string>(
+      this.db,
+      "crypto:verify",
+    );
+    if (!verifyBlob) return false;
+    try {
+      const value = await decryptJson<string>(verifyBlob, key);
+      return value === "invoke-verify-v1";
+    } catch {
+      return false;
+    }
+  }
 
   close() {
     this.db.close();
@@ -47,7 +129,61 @@ export class InvokeStore {
   }
 
   async listRequests(collectionId?: string) {
-    return collectionStorage.listRequests(this.db, collectionId);
+    const requests = await collectionStorage.listRequests(
+      this.db,
+      collectionId,
+    );
+    if (!this.cryptoKey) return requests;
+    return Promise.all(requests.map((r) => this.decryptRequest(r)));
+  }
+
+  private async decryptRequest(r: SavedRequest): Promise<SavedRequest> {
+    if (!this.cryptoKey) return r;
+    if (!r.encryptedAuth && !r.encryptedMetadata && !r.encryptedTlsKey)
+      return r;
+    try {
+      let req = r.request as any;
+      if (r.encryptedAuth) {
+        const auth = await decryptJson<AuthConfig>(
+          r.encryptedAuth,
+          this.cryptoKey,
+        );
+        req = { ...req, auth };
+      }
+      if (r.encryptedMetadata) {
+        const sensitive = await decryptJson<KeyValue[]>(
+          r.encryptedMetadata,
+          this.cryptoKey,
+        );
+        const redacted = (req.metadata ?? []) as KeyValue[];
+        const nonSensitive = redacted.filter(
+          (m: KeyValue) => !SENSITIVE_METADATA_KEYS.test(m.key),
+        );
+        req = { ...req, metadata: [...nonSensitive, ...sensitive] };
+      }
+      if (r.encryptedTlsKey) {
+        const clientKeyPem = await decryptJson<string>(
+          r.encryptedTlsKey,
+          this.cryptoKey,
+        );
+        req = {
+          ...req,
+          options: {
+            ...req.options,
+            tlsClientConfig: { ...req.options?.tlsClientConfig, clientKeyPem },
+          },
+        };
+      }
+      return {
+        ...r,
+        request: req as ProtocolRequestConfig,
+        encryptedAuth: undefined,
+        encryptedMetadata: undefined,
+        encryptedTlsKey: undefined,
+      };
+    } catch {
+      return r;
+    }
   }
 
   async listFolders(collectionId?: string) {
@@ -93,13 +229,75 @@ export class InvokeStore {
       createdAt?: number;
     } = {},
   ) {
-    return collectionStorage.saveRequest(
+    const saved = await collectionStorage.saveRequest(
       this.db,
       request,
       name,
       collectionId,
       options,
     );
+    if (this.cryptoKey) {
+      const req = saved.request as any;
+      let patched = saved;
+      let needsWrite = false;
+
+      if (hasAuthSecrets(req?.auth)) {
+        const encryptedAuth = await encryptJson(req.auth, this.cryptoKey);
+        const redactedAuth: AuthConfig = { type: req.auth.type };
+        const patchedRequest = {
+          ...(patched.request as any),
+          auth: redactedAuth,
+        };
+        patched = {
+          ...patched,
+          request: patchedRequest as ProtocolRequestConfig,
+          encryptedAuth,
+        };
+        needsWrite = true;
+      }
+
+      if (hasSensitiveMetadata(req?.metadata)) {
+        const sensitive = sensitiveMetadataEntries(req.metadata);
+        const encryptedMetadata = await encryptJson(sensitive, this.cryptoKey);
+        const patchedRequest = {
+          ...(patched.request as any),
+          metadata: redactMetadata(req.metadata),
+        };
+        patched = {
+          ...patched,
+          request: patchedRequest as ProtocolRequestConfig,
+          encryptedMetadata,
+        };
+        needsWrite = true;
+      }
+
+      const tlsKey = req?.options?.tlsClientConfig?.clientKeyPem;
+      if (tlsKey) {
+        const encryptedTlsKey = await encryptJson(tlsKey, this.cryptoKey);
+        const patchedRequest = {
+          ...(patched.request as any),
+          options: {
+            ...(patched.request as any).options,
+            tlsClientConfig: {
+              ...(patched.request as any).options?.tlsClientConfig,
+              clientKeyPem: "",
+            },
+          },
+        };
+        patched = {
+          ...patched,
+          request: patchedRequest as ProtocolRequestConfig,
+          encryptedTlsKey,
+        };
+        needsWrite = true;
+      }
+
+      if (needsWrite) {
+        await this.db.requests.put(patched);
+        return patched;
+      }
+    }
+    return saved;
   }
 
   async deleteRequest(requestId: string) {
@@ -107,12 +305,55 @@ export class InvokeStore {
   }
 
   async listEnvironments() {
-    return environmentStorage.listEnvironments(this.db);
+    const envs = await environmentStorage.listEnvironments(this.db);
+    if (!this.cryptoKey) return envs;
+    return Promise.all(envs.map((e) => this.decryptEnvironment(e)));
+  }
+
+  private async decryptEnvironment(e: Environment): Promise<Environment> {
+    if (!e.encryptedVariables || !this.cryptoKey) return e;
+    try {
+      const sensitive = await decryptJson<KeyValue[]>(
+        e.encryptedVariables,
+        this.cryptoKey,
+      );
+      const nonSensitive = e.variables.filter((v) => !v.sensitive);
+      return {
+        ...e,
+        variables: [...nonSensitive, ...sensitive],
+        encryptedVariables: undefined,
+      };
+    } catch {
+      return e;
+    }
   }
 
   async saveEnvironment(
     environment: Partial<Environment> & Pick<Environment, "name" | "variables">,
   ) {
+    if (this.cryptoKey) {
+      const sensitiveVars = environment.variables.filter(
+        (v) => v.sensitive && v.value,
+      );
+      const plainVars = environment.variables.filter(
+        (v) => !v.sensitive || !v.value,
+      );
+      if (sensitiveVars.length > 0) {
+        const encryptedVariables = await encryptJson(
+          sensitiveVars,
+          this.cryptoKey,
+        );
+        const redactedSensitive = sensitiveVars.map((v) => ({
+          ...v,
+          value: "[redacted]",
+        }));
+        return environmentStorage.saveEnvironment(this.db, {
+          ...environment,
+          variables: [...plainVars, ...redactedSensitive],
+          encryptedVariables,
+        });
+      }
+    }
     return environmentStorage.saveEnvironment(this.db, environment);
   }
 
@@ -162,6 +403,14 @@ export class InvokeStore {
 
   async setRetentionSettings(settings: RetentionSettings) {
     await metaStorage.setRetentionSettings(this.db, settings);
+  }
+
+  async getDefaultProtocolOptions(): Promise<DefaultProtocolOptions> {
+    return metaStorage.getDefaultProtocolOptions(this.db);
+  }
+
+  async setDefaultProtocolOptions(defaults: DefaultProtocolOptions) {
+    await metaStorage.setDefaultProtocolOptions(this.db, defaults);
   }
 
   async getStorageStats(): Promise<Record<string, number>> {
@@ -254,6 +503,7 @@ export class InvokeStore {
     requests: SavedRequest[];
     environments: Environment[];
     flows: Flow[];
+    defaultProtocolOptions?: DefaultProtocolOptions;
   }): Promise<void> {
     await workspaceStorage.importWorkspace(this.db, data);
   }

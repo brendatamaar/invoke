@@ -9,6 +9,7 @@ export interface GraphQLIntrospectionSchema {
   mutationType?: { name: string } | null;
   subscriptionType?: { name: string } | null;
   types: GraphQLIntrospectionType[];
+  directives?: GraphQLIntrospectionDirective[];
 }
 
 export interface GraphQLIntrospectionType {
@@ -16,6 +17,10 @@ export interface GraphQLIntrospectionType {
   name: string;
   description?: string | null;
   fields?: GraphQLIntrospectionField[] | null;
+  inputFields?: GraphQLIntrospectionInputValue[] | null;
+  enumValues?: GraphQLIntrospectionEnumValue[] | null;
+  interfaces?: GraphQLIntrospectionTypeRef[] | null;
+  possibleTypes?: GraphQLIntrospectionTypeRef[] | null;
 }
 
 export interface GraphQLIntrospectionField {
@@ -23,6 +28,8 @@ export interface GraphQLIntrospectionField {
   description?: string | null;
   args?: GraphQLIntrospectionInputValue[] | null;
   type: GraphQLIntrospectionTypeRef;
+  isDeprecated?: boolean;
+  deprecationReason?: string | null;
 }
 
 export interface GraphQLIntrospectionInputValue {
@@ -32,8 +39,23 @@ export interface GraphQLIntrospectionInputValue {
   defaultValue?: string | null;
 }
 
+export interface GraphQLIntrospectionEnumValue {
+  name: string;
+  description?: string | null;
+  isDeprecated?: boolean;
+  deprecationReason?: string | null;
+}
+
 export interface GraphQLIntrospectionTypeRef {
   kind: string;
   name?: string | null;
   ofType?: GraphQLIntrospectionTypeRef | null;
+}
+
+export interface GraphQLIntrospectionDirective {
+  name: string;
+  description?: string | null;
+  locations: string[];
+  args?: GraphQLIntrospectionInputValue[];
+  isRepeatable?: boolean;
 }

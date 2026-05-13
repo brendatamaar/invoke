@@ -15,7 +15,13 @@ import { FlowStepList } from "./FlowStepList";
 import { makeStep } from "./flowStepUtils";
 import { StepEditorPanel } from "./StepEditorPanel";
 
-export function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
+export function FlowModal({
+  flow,
+  onClose,
+}: {
+  flow: Flow;
+  onClose: () => void;
+}) {
   const {
     set,
     addToast,
@@ -159,7 +165,7 @@ export function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }
       }}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col overflow-hidden"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col overflow-hidden"
         style={{ width: viewMode === "canvas" ? "90vw" : 720, height: "82vh" }}
       >
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[var(--border)] shrink-0">

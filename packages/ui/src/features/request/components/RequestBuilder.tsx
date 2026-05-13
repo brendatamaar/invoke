@@ -9,15 +9,61 @@ import { AuthPanel } from "./AuthPanel";
 import { GraphQLQueryPanel } from "./GraphQLPanels";
 import { GRPCBar, WebSocketBar } from "./ProtocolBars";
 import { GraphQLVariablesPanel, ScriptsPanel } from "./ScriptPanels";
-import { AssertionsPanel, ExtractPanel, RetryPanel } from "./RulePanels";
-import type {
-  KeyValue,
-  RequestProtocol,
-} from "@invoke/core";
-import type {
-  RequestBuilderProps,
-  RequestTab,
-} from "../../../types";
+import { AssertionsPanel, ExtractPanel } from "./RulePanels";
+import { OptionsPanel } from "./OptionsPanel";
+import type { KeyValue, RequestProtocol } from "@invoke/core";
+import type { RequestBuilderProps, RequestTab } from "../../../types";
+
+const COMMON_HEADERS = [
+  "Accept",
+  "Accept-Charset",
+  "Accept-Encoding",
+  "Accept-Language",
+  "Authorization",
+  "Cache-Control",
+  "Content-Disposition",
+  "Content-Encoding",
+  "Content-Language",
+  "Content-Length",
+  "Content-Type",
+  "Cookie",
+  "DNT",
+  "Date",
+  "ETag",
+  "Expect",
+  "From",
+  "Host",
+  "If-Match",
+  "If-Modified-Since",
+  "If-None-Match",
+  "If-Unmodified-Since",
+  "Keep-Alive",
+  "Last-Modified",
+  "Link",
+  "Location",
+  "Origin",
+  "Pragma",
+  "Range",
+  "Referer",
+  "Retry-After",
+  "Set-Cookie",
+  "TE",
+  "Transfer-Encoding",
+  "Upgrade",
+  "User-Agent",
+  "Vary",
+  "Via",
+  "Warning",
+  "WWW-Authenticate",
+  "X-Api-Key",
+  "X-Auth-Token",
+  "X-Content-Type-Options",
+  "X-Forwarded-For",
+  "X-Frame-Options",
+  "X-Request-ID",
+  "X-Requested-With",
+  "X-XSS-Protection",
+];
 
 const PROTOCOLS: { id: RequestProtocol; label: string }[] = [
   { id: "rest", label: "REST" },
@@ -34,7 +80,7 @@ const REST_TABS: { id: RequestTab; label: string }[] = [
   { id: "scripts", label: "Scripts" },
   { id: "assertions", label: "Assertions" },
   { id: "extract", label: "Extract" },
-  { id: "retry", label: "Retry" },
+  { id: "options", label: "Options" },
 ];
 
 const GQL_TABS: { id: RequestTab; label: string }[] = [
@@ -54,23 +100,24 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header row: protocol pills + URL bar */}
+      {/* Header row: protocol dropdown + URL bar */}
       <div className="flex items-center border-b border-[var(--border)]">
-        <div className="flex items-center gap-0.5 px-2 py-1.5 border-r border-[var(--border)]">
-          {PROTOCOLS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => {
-                setRequest({ protocol: p.id });
-                set({
-                  requestTab: p.id === "graphql" ? "graphql" : "params",
-                });
-              }}
-              className={`tab-btn text-2xs ${protocol === p.id ? "active" : ""}`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center px-2 py-1.5 border-r border-[var(--border)]">
+          <select
+            value={protocol}
+            onChange={(e) => {
+              const p = e.target.value as RequestProtocol;
+              setRequest({ protocol: p });
+              set({ requestTab: p === "graphql" ? "graphql" : "params" });
+            }}
+            className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-28 outline-none focus:border-[var(--accent)] text-[var(--text-1)] cursor-pointer"
+          >
+            {PROTOCOLS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex-1">
           {(protocol === "rest" || protocol === "graphql") && (
@@ -132,6 +179,7 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
               onChange={(rows) => setRequest({ headers: rows as KeyValue[] })}
               keyPlaceholder="Header-Name"
               valuePlaceholder="value"
+              keyDatalist={COMMON_HEADERS}
             />
           )}
           {requestTab === "auth" && <AuthPanel />}
@@ -141,10 +189,9 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
           {requestTab === "scripts" && <ScriptsPanel />}
           {requestTab === "assertions" && <AssertionsPanel />}
           {requestTab === "extract" && <ExtractPanel />}
-          {requestTab === "retry" && <RetryPanel />}
+          {requestTab === "options" && <OptionsPanel />}
         </div>
       )}
     </div>
   );
 }
-

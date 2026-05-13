@@ -3,10 +3,7 @@ import { CheckCircle2, ExternalLink, RefreshCw } from "lucide-react";
 import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 import { useStore } from "../../../store";
-import {
-  oauth2AuthCodeResult,
-  oauth2AuthCodeStart,
-} from "../../oauth2/api";
+import { oauth2AuthCodeResult, oauth2AuthCodeStart } from "../../oauth2/api";
 import type { AuthTextInputProps, FieldProps } from "../../../types";
 
 export function AuthPanel() {
@@ -177,6 +174,18 @@ export function AuthPanel() {
           </Field>
           {(auth.flow ?? "client_credentials") === "authorization_code" && (
             <>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-[var(--text-2)] w-24 shrink-0">
+                  Use PKCE
+                </label>
+                <input
+                  type="checkbox"
+                  checked={auth.pkce ?? false}
+                  onChange={(e) =>
+                    setRequest({ auth: { ...auth, pkce: e.target.checked } })
+                  }
+                />
+              </div>
               <Field label="Redirect URI">
                 <AuthTextInput
                   value={
@@ -190,12 +199,13 @@ export function AuthPanel() {
               </Field>
               <div className="flex items-center gap-2 mt-1">
                 {auth.accessToken && (
-                  <span className="flex items-center gap-1 text-2xs text-emerald-600">
+                  <span className="flex items-center gap-1 text-2xs text-[var(--ok)]">
                     <CheckCircle2 size={11} />
                     Token stored
                     {auth.tokenExpiresAt && (
                       <span className="text-[var(--text-3)]">
-                        - expires {new Date(auth.tokenExpiresAt).toLocaleString()}
+                        - expires{" "}
+                        {new Date(auth.tokenExpiresAt).toLocaleString()}
                       </span>
                     )}
                   </span>
@@ -215,6 +225,27 @@ export function AuthPanel() {
                       const redirectUri =
                         auth.redirectUri ??
                         "http://localhost:4000/api/oauth2/callback";
+                      const usePkce = auth.pkce ?? false;
+                      let codeVerifier = "";
+                      let codeChallenge = "";
+                      if (usePkce) {
+                        const raw = new Uint8Array(43);
+                        crypto.getRandomValues(raw);
+                        codeVerifier = btoa(String.fromCharCode(...raw))
+                          .replace(/\+/g, "-")
+                          .replace(/\//g, "_")
+                          .replace(/=/g, "");
+                        const digest = await crypto.subtle.digest(
+                          "SHA-256",
+                          new TextEncoder().encode(codeVerifier),
+                        );
+                        codeChallenge = btoa(
+                          String.fromCharCode(...new Uint8Array(digest)),
+                        )
+                          .replace(/\+/g, "-")
+                          .replace(/\//g, "_")
+                          .replace(/=/g, "");
+                      }
                       const { authUrl: url, state } = await oauth2AuthCodeStart(
                         {
                           authUrl: auth.authUrl,
@@ -223,9 +254,10 @@ export function AuthPanel() {
                           clientSecret: auth.clientSecret ?? "",
                           scope: auth.scope ?? "",
                           redirectUri,
-                          pkce: auth.pkce ?? false,
-                          codeChallenge: "",
-                          codeChallengeMethod: "",
+                          pkce: usePkce,
+                          codeChallenge,
+                          codeChallengeMethod: usePkce ? "S256" : "",
+                          codeVerifier,
                         },
                       );
                       window.open(url, "_blank");
@@ -266,7 +298,8 @@ export function AuthPanel() {
                 >
                   {authorizing ? (
                     <>
-                      <RefreshCw size={11} className="animate-spin" /> Waiting...
+                      <RefreshCw size={11} className="animate-spin" />{" "}
+                      Waiting...
                     </>
                   ) : (
                     <>
@@ -339,6 +372,16 @@ export function AuthPanel() {
               onChange={(value) =>
                 setRequest({ auth: { ...auth, awsService: value } })
               }
+            />
+          </Field>
+          <Field label="Session Token">
+            <AuthTextInput
+              type="password"
+              value={auth.awsSessionToken ?? ""}
+              onChange={(value) =>
+                setRequest({ auth: { ...auth, awsSessionToken: value } })
+              }
+              placeholder="optional"
             />
           </Field>
         </>

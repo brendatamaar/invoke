@@ -4,6 +4,7 @@ import {
   resolveRequest,
   type RequestConfig,
 } from "@invoke/core";
+import { applyProtocolDefaults } from "../../lib/protocolDefaults";
 import { useStore } from "../../store";
 
 export function useCodeSnippetGeneration() {
@@ -27,7 +28,10 @@ export function useCodeSnippetGeneration() {
           env,
           sessionVariables,
         );
-        const snippet = await generateCodeSnippet(resolved, codeTarget);
+        const snippet = await generateCodeSnippet(
+          applyProtocolDefaults(resolved),
+          codeTarget,
+        );
         if (!cancelled) set({ codeSnippet: snippet.code, codeLoading: false });
       } catch {
         if (!cancelled) set({ codeSnippet: "", codeLoading: false });

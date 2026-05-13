@@ -12,6 +12,8 @@ export type ResponseSlice = Pick<
   | "codeSnippet"
   | "codeLoading"
   | "loading"
+  | "loadController"
+  | "retryAttempts"
   | "streaming"
   | "streamMode"
   | "streamBytes"
@@ -32,6 +34,8 @@ export function createResponseSlice(_set: StoreSet): ResponseSlice {
     codeSnippet: "",
     codeLoading: false,
     loading: false,
+    loadController: undefined,
+    retryAttempts: undefined,
     streaming: false,
     streamMode: false,
     streamBytes: 0,

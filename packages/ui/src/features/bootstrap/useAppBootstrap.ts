@@ -18,6 +18,7 @@ export function useAppBootstrap() {
           examples,
           diffRules,
           cookieList,
+          protocolDefaults,
         ] = await Promise.all([
           coreStore.listCollections(),
           coreStore.listEnvironments(),
@@ -28,6 +29,7 @@ export function useAppBootstrap() {
           coreStore.listResponseExamples(),
           coreStore.listDiffIgnoreRules(),
           coreStore.listCookies(),
+          coreStore.getDefaultProtocolOptions(),
         ]);
         const reqs = await coreStore.listRequests();
         const folds = await coreStore.listFolders();
@@ -43,6 +45,7 @@ export function useAppBootstrap() {
           responseExamples: examples,
           diffIgnoreRules: diffRules,
           cookies: cookieList,
+          protocolDefaults,
         });
       } catch (e) {
         addToast("error", `Failed to load data: ${e}`);

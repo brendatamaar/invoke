@@ -1,5 +1,13 @@
 import { useRef, useState } from "react";
-import { X, Play, StopCircle, Download, CheckCircle2, XCircle, SkipForward } from "lucide-react";
+import {
+  X,
+  Play,
+  StopCircle,
+  Download,
+  CheckCircle2,
+  XCircle,
+  SkipForward,
+} from "lucide-react";
 import {
   CollectionRunner,
   exportRunResultJson,
@@ -57,8 +65,7 @@ export function CollectionRunnerModal() {
     if (collectionRunnerTarget.type === "collection") {
       return requests
         .filter(
-          (r) =>
-            r.collectionId === collectionRunnerTarget.id && !r.folderId,
+          (r) => r.collectionId === collectionRunnerTarget.id && !r.folderId,
         )
         .sort((a, b) => a.sortOrder - b.sortOrder);
     }
@@ -77,7 +84,14 @@ export function CollectionRunnerModal() {
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const scopes: VariableScope[] = [
       { name: "environment", variables: env?.variables ?? [] },
-      { name: "session", variables: Object.entries(sessionVariables).map(([key, value]) => ({ key, value, enabled: true })) },
+      {
+        name: "session",
+        variables: Object.entries(sessionVariables).map(([key, value]) => ({
+          key,
+          value,
+          enabled: true,
+        })),
+      },
     ];
 
     const runner = new CollectionRunner();
@@ -96,7 +110,9 @@ export function CollectionRunnerModal() {
               {
                 requestId: runRequests[i].id,
                 name: runRequests[i].name,
-                method: (runRequests[i].request as { method?: string })?.method ?? "GET",
+                method:
+                  (runRequests[i].request as { method?: string })?.method ??
+                  "GET",
                 url: (runRequests[i].request as { url?: string })?.url ?? "",
                 status: "skipped",
                 durationMs: 0,
@@ -142,8 +158,10 @@ export function CollectionRunnerModal() {
   const runResult = collectionRunResult;
 
   const statusIcon = (status: RequestRunResult["status"]) => {
-    if (status === "passed") return <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />;
-    if (status === "failed" || status === "error") return <XCircle size={13} className="text-red-500 shrink-0" />;
+    if (status === "passed")
+      return <CheckCircle2 size={13} className="text-[var(--ok)] shrink-0" />;
+    if (status === "failed" || status === "error")
+      return <XCircle size={13} className="text-[var(--danger)] shrink-0" />;
     return <SkipForward size={13} className="text-[var(--text-3)] shrink-0" />;
   };
 
@@ -153,7 +171,7 @@ export function CollectionRunnerModal() {
       onClick={close}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 600, maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -184,7 +202,6 @@ export function CollectionRunnerModal() {
                 type="checkbox"
                 checked={stopOnFailure}
                 onChange={(e) => setStopOnFailure(e.target.checked)}
-                className="accent-[var(--accent)]"
               />
               Stop on failure
             </label>
@@ -195,11 +212,15 @@ export function CollectionRunnerModal() {
         <div className="flex-1 overflow-y-auto divide-y divide-[var(--border)]">
           {runRequests.length === 0 && (
             <p className="p-6 text-xs text-[var(--text-3)] text-center">
-              No requests in this {collectionRunnerTarget?.type ?? "collection"}.
+              No requests in this {collectionRunnerTarget?.type ?? "collection"}
+              .
             </p>
           )}
           {displayResults.map((r, i) => (
-            <div key={r.requestId ?? i} className="flex items-center gap-3 px-4 py-2.5">
+            <div
+              key={r.requestId ?? i}
+              className="flex items-center gap-3 px-4 py-2.5"
+            >
               {statusIcon(r.status)}
               <MethodBadge method={r.method} />
               <span className="flex-1 text-xs truncate text-[var(--text-1)]">
@@ -211,7 +232,7 @@ export function CollectionRunnerModal() {
               </span>
               {r.assertions && r.assertions.length > 0 && (
                 <span
-                  className={`text-2xs ${r.assertions.every((a) => a.passed) ? "text-emerald-600" : "text-red-600"}`}
+                  className={`text-2xs ${r.assertions.every((a) => a.passed) ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
                 >
                   {r.assertions.filter((a) => a.passed).length}/
                   {r.assertions.length}
@@ -222,9 +243,17 @@ export function CollectionRunnerModal() {
           {collectionRunning &&
             displayResults.length < runRequests.length &&
             runRequests.slice(displayResults.length).map((r) => (
-              <div key={r.id} className="flex items-center gap-3 px-4 py-2.5 opacity-40">
-                <SkipForward size={13} className="text-[var(--text-3)] shrink-0" />
-                <MethodBadge method={(r.request as { method?: string })?.method ?? "GET"} />
+              <div
+                key={r.id}
+                className="flex items-center gap-3 px-4 py-2.5 opacity-40"
+              >
+                <SkipForward
+                  size={13}
+                  className="text-[var(--text-3)] shrink-0"
+                />
+                <MethodBadge
+                  method={(r.request as { method?: string })?.method ?? "GET"}
+                />
                 <span className="flex-1 text-xs truncate text-[var(--text-2)]">
                   {r.name || (r.request as { url?: string })?.url}
                 </span>
@@ -236,7 +265,9 @@ export function CollectionRunnerModal() {
         <div className="flex items-center gap-3 px-4 py-3 border-t border-[var(--border)]">
           {runResult && (
             <div className="flex items-center gap-3 mr-auto">
-              <span className={`text-xs font-semibold ${runResult.status === "passed" ? "text-emerald-600" : "text-red-600"}`}>
+              <span
+                className={`text-xs font-semibold ${runResult.status === "passed" ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
+              >
                 {runResult.passedCount}/{runResult.results.length} passed
               </span>
               <span className="text-2xs text-[var(--text-3)]">
@@ -268,9 +299,7 @@ export function CollectionRunnerModal() {
               </button>
             </div>
           )}
-          {!runResult && (
-            <div className="mr-auto" />
-          )}
+          {!runResult && <div className="mr-auto" />}
           {collectionRunning ? (
             <button
               onClick={handleCancel}
@@ -280,7 +309,15 @@ export function CollectionRunnerModal() {
             </button>
           ) : (
             <button
-              onClick={runResult ? () => { set({ collectionRunResult: null }); setLiveResults([]); handleRun(); } : handleRun}
+              onClick={
+                runResult
+                  ? () => {
+                      set({ collectionRunResult: null });
+                      setLiveResults([]);
+                      handleRun();
+                    }
+                  : handleRun
+              }
               disabled={runRequests.length === 0}
               className="btn btn-primary text-xs flex items-center gap-1.5"
             >

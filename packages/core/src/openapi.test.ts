@@ -97,7 +97,9 @@ describe("OpenAPI import/export", () => {
       },
     });
 
-    expect(JSON.parse(String((imported.requests[0].request as RequestConfig).body))).toEqual({
+    expect(
+      JSON.parse(String((imported.requests[0].request as RequestConfig).body)),
+    ).toEqual({
       id: 123,
       name: "Nori",
       tag: "featured",

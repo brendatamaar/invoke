@@ -20,10 +20,10 @@ export function AssertionsTab({
         return (
           <div
             key={i}
-            className={`flex items-start gap-3 px-3 py-2.5 ${result.passed ? "" : "bg-red-50"}`}
+            className={`flex items-start gap-3 px-3 py-2.5 ${result.passed ? "" : "bg-[var(--danger-bg)]"}`}
           >
             <span
-              className={`mt-0.5 text-sm ${result.passed ? "text-emerald-600" : "text-red-600"}`}
+              className={`mt-0.5 text-sm ${result.passed ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
             >
               {result.passed ? "OK" : "ERR"}
             </span>

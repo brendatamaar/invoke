@@ -103,7 +103,7 @@ export function MockPanel() {
           </span>
           {mockStatus && (
             <span
-              className={`text-2xs px-1.5 py-0.5 rounded font-medium ${mockStatus === "Active" ? "bg-emerald-50 text-emerald-700" : mockStatus === "Error" ? "bg-red-50 text-red-600" : "bg-[var(--surface-2)] text-[var(--text-3)]"}`}
+              className={`text-2xs px-1.5 py-0.5 rounded font-medium ${mockStatus === "Active" ? "bg-[var(--ok-bg)] text-[var(--ok)]" : mockStatus === "Error" ? "bg-[var(--danger-bg)] text-[var(--danger)]" : "bg-[var(--surface-2)] text-[var(--text-3)]"}`}
             >
               {mockStatus}
             </span>

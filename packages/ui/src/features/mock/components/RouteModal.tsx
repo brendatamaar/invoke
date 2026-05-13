@@ -42,7 +42,7 @@ export function RouteModal({
       }}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col overflow-hidden"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col overflow-hidden"
         style={{ width: 620, maxHeight: "84vh" }}
       >
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[var(--border)] shrink-0">
@@ -161,7 +161,7 @@ export function RouteModal({
                 />
               </div>
               {sequences.length > 0 && (
-                <p className="text-2xs text-amber-600 bg-amber-50 px-3 py-2 rounded">
+                <p className="text-2xs text-[var(--warn)] bg-[var(--warn-bg)] px-3 py-2 rounded">
                   Sequences are active - this default response is overridden.
                   Switch to Sequences tab to manage.
                 </p>
@@ -178,7 +178,7 @@ export function RouteModal({
               {sequences.map((seq, i) => (
                 <div
                   key={i}
-                  className="border border-[var(--border)] rounded-lg p-3 flex flex-col gap-3"
+                  className="border border-[var(--border)] rounded-md p-3 flex flex-col gap-3"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-[var(--text-2)]">

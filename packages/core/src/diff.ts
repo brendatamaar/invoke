@@ -13,10 +13,7 @@ export function compareResponses(
   const ignorePaths = options?.ignorePaths ?? [];
   const shouldIgnore = (path: string) =>
     ignorePaths.some(
-      (p) =>
-        path === p ||
-        path.startsWith(p + ".") ||
-        path.startsWith(p + "["),
+      (p) => path === p || path.startsWith(p + ".") || path.startsWith(p + "["),
     );
 
   const leftBody = parseMaybeJson(left.body);

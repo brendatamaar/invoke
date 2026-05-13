@@ -1,4 +1,11 @@
-import { CheckCircle2, Clock, GripVertical, Plus, Trash2, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  GripVertical,
+  Plus,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import type { FlowStep, FlowStepResult } from "@invoke/core";
 import { FLOW_STEP_TYPES, STEP_COLORS } from "./flowStepUtils";
 
@@ -60,7 +67,8 @@ export function FlowStepList({
               }}
               onDragLeave={() => onSetDragOver(null)}
               onDrop={() => {
-                if (dragIndex.current !== null) onReorderStep(dragIndex.current, i);
+                if (dragIndex.current !== null)
+                  onReorderStep(dragIndex.current, i);
                 dragIndex.current = null;
                 onSetDragOver(null);
               }}
@@ -77,7 +85,9 @@ export function FlowStepList({
                   className="text-[var(--text-3)] opacity-0 group-hover:opacity-100 shrink-0 mt-1 cursor-grab"
                 />
                 <div className="relative flex flex-col items-center shrink-0 mt-1">
-                  <div className={`w-2 h-2 rounded-full ${STEP_COLORS[step.type]}`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${STEP_COLORS[step.type]}`}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-2xs text-[var(--text-3)] uppercase tracking-wide">
@@ -98,7 +108,7 @@ export function FlowStepList({
                   )}
                   {stepResult && (
                     <div
-                      className={`flex items-center gap-1 text-2xs mt-0.5 ${stepResult.status === "passed" ? "text-emerald-600" : "text-red-500"}`}
+                      className={`flex items-center gap-1 text-2xs mt-0.5 ${stepResult.status === "passed" ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
                     >
                       {stepResult.status === "passed" ? (
                         <CheckCircle2 size={10} />
@@ -148,7 +158,9 @@ export function FlowStepList({
                 onClick={() => onAddStep(t)}
                 className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--text-1)] text-left"
               >
-                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${STEP_COLORS[t]}`} />
+                <div
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${STEP_COLORS[t]}`}
+                />
                 {t}
               </button>
             ))}

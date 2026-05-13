@@ -1,11 +1,11 @@
-import { useMemo } from "react";
-import { Zap, RefreshCw, Layers } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Zap, RefreshCw, Layers, X, Repeat } from "lucide-react";
 import { useStore } from "../../../store";
-import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 import {
   resolveTemplate,
   variablesFromScopes,
+  parseCurl,
   type HttpMethod,
   type KeyValue,
   type VariableScope,
@@ -23,13 +23,13 @@ const METHODS: HttpMethod[] = [
 ];
 
 const METHOD_COLORS: Record<string, string> = {
-  GET: "text-emerald-700",
-  POST: "text-blue-700",
-  PUT: "text-amber-700",
-  PATCH: "text-violet-700",
-  DELETE: "text-red-700",
-  HEAD: "text-zinc-600",
-  OPTIONS: "text-zinc-600",
+  GET: "text-[var(--method-get)]",
+  POST: "text-[var(--method-post)]",
+  PUT: "text-[var(--method-put)]",
+  PATCH: "text-[var(--method-patch)]",
+  DELETE: "text-[var(--method-delete)]",
+  HEAD: "text-[var(--fg-2)]",
+  OPTIONS: "text-[var(--fg-2)]",
 };
 
 export function URLBar({ onSend, loading }: URLBarProps) {
@@ -41,8 +41,13 @@ export function URLBar({ onSend, loading }: URLBarProps) {
     environments,
     activeEnvironmentId,
     sessionVariables,
+    loadController,
   } = useStore();
-  const color = METHOD_COLORS[request.method] ?? "text-zinc-600";
+  const color = METHOD_COLORS[request.method] ?? "text-[var(--fg-2)]";
+  const [showSendN, setShowSendN] = useState(false);
+  const [sendCount, setSendCount] = useState(5);
+  const sendNRef = useRef<HTMLDivElement>(null);
+
   const unresolved = useMemo(() => {
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const scopes: VariableScope[] = [
@@ -56,23 +61,30 @@ export function URLBar({ onSend, loading }: URLBarProps) {
   return (
     <div className="flex items-center gap-2 px-3 py-2">
       {/* Method selector */}
-      <Select
-        size="sm"
+      <select
         value={request.method}
         onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
-        className={`bg-[var(--surface-2)] font-semibold font-mono ${color}`}
+        className={`bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-24 outline-none focus:border-[var(--accent)] cursor-pointer ${color}`}
       >
         {METHODS.map((m) => (
           <option key={m} value={m}>
             {m}
           </option>
         ))}
-      </Select>
+      </select>
 
-      {/* URL input with variable autocomplete */}
+      {/* URL input with variable autocomplete + paste-cURL detection */}
       <div className="flex-1 min-w-0">
         <VariableAutocompleteInput
           value={request.url}
+          onPaste={(e) => {
+            const text = e.clipboardData.getData("text");
+            if (text.trimStart().startsWith("curl ")) {
+              e.preventDefault();
+              const parsed = parseCurl(text);
+              if (parsed.url) setRequest({ ...parsed } as any);
+            }
+          }}
           onChange={(url) => {
             const qIdx = url.indexOf("?");
             if (qIdx !== -1) {
@@ -106,6 +118,45 @@ export function URLBar({ onSend, loading }: URLBarProps) {
         )}
       </div>
 
+      {/* Send N times */}
+      <div className="relative" ref={sendNRef}>
+        <button
+          onClick={() => setShowSendN((v) => !v)}
+          title="Send N times"
+          className="p-1.5 rounded border border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors"
+        >
+          <Repeat size={13} />
+        </button>
+        {showSendN && (
+          <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--surface)] border border-[var(--border)] rounded shadow-[var(--shadow-2)] p-2 flex items-center gap-2 min-w-36">
+            <span className="text-2xs text-[var(--text-2)] whitespace-nowrap">
+              Send
+            </span>
+            <input
+              type="number"
+              min={1}
+              max={500}
+              value={sendCount}
+              onChange={(e) =>
+                setSendCount(Math.max(1, Number(e.target.value)))
+              }
+              className="input text-xs py-0.5 w-14"
+              autoFocus
+            />
+            <span className="text-2xs text-[var(--text-2)]">times</span>
+            <button
+              onClick={() => {
+                setShowSendN(false);
+                set({ showBatchRunner: true });
+              }}
+              className="btn btn-primary text-2xs py-0.5 px-2"
+            >
+              Go
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Batch runner */}
       <button
         onClick={() => set({ showBatchRunner: true })}
@@ -123,6 +174,17 @@ export function URLBar({ onSend, loading }: URLBarProps) {
       >
         <Zap size={13} />
       </button>
+
+      {/* Cancel button (non-stream loading) */}
+      {loading && loadController && (
+        <button
+          onClick={() => loadController.abort()}
+          className="btn btn-danger px-3 gap-1 text-xs"
+          title="Cancel request"
+        >
+          <X size={13} /> Cancel
+        </button>
+      )}
 
       {/* Send button */}
       <button

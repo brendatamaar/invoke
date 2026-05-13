@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import type { KeyValue } from "@invoke/core";
 import { VariableAutocompleteInput } from "./VariableAutocompleteInput";
@@ -10,7 +11,10 @@ export function KeyValueEditor({
   valuePlaceholder = "Value",
   disabled,
   variableAutocomplete = true,
+  keyDatalist,
 }: KeyValueEditorProps) {
+  const uid = useId();
+  const datalistId = keyDatalist ? `kve-key-${uid}` : undefined;
   const update = (
     i: number,
     field: keyof KeyValue,
@@ -28,6 +32,13 @@ export function KeyValueEditor({
 
   return (
     <div className="flex flex-col">
+      {keyDatalist && (
+        <datalist id={datalistId}>
+          {keyDatalist.map((h) => (
+            <option key={h} value={h} />
+          ))}
+        </datalist>
+      )}
       {rows.length > 0 && (
         <div className="flex items-center gap-0 text-2xs text-[var(--text-3)] px-2 py-1 border-b border-[var(--border)]">
           <span className="w-4 shrink-0" />
@@ -49,7 +60,7 @@ export function KeyValueEditor({
             type="checkbox"
             checked={row.enabled !== false}
             onChange={(e) => update(i, "enabled", e.target.checked)}
-            className="w-3.5 h-3.5 mr-2 accent-[var(--accent)] shrink-0"
+            className="w-3.5 h-3.5 mr-2 shrink-0"
             disabled={disabled}
           />
           <input
@@ -58,6 +69,7 @@ export function KeyValueEditor({
             onChange={(e) => update(i, "key", e.target.value)}
             placeholder={keyPlaceholder}
             disabled={disabled}
+            list={datalistId}
             className="flex-1 bg-transparent border-0 outline-none py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
           />
           <span className="w-px h-4 bg-[var(--border)] shrink-0" />

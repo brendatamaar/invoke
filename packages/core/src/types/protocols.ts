@@ -4,6 +4,7 @@ import type { KeyValue, WebSocketMessageMode } from "./common";
 import type { RequestConfig, RequestOptions, RequestScripts } from "./request";
 
 export interface GraphQLRequestConfig {
+  protocol?: "graphql";
   url: string;
   headers: KeyValue[];
   auth: AuthConfig;
@@ -15,6 +16,18 @@ export interface GraphQLRequestConfig {
   extractionRules?: ExtractionRule[];
   options?: RequestOptions;
   scripts?: RequestScripts;
+  apq?: boolean;
+  batchMode?: boolean;
+}
+
+export type WsPreset = "none" | "graphql-transport-ws";
+
+export interface WsSavedMessage {
+  id: string;
+  label: string;
+  body: string;
+  type: "text" | "binary";
+  autoSend: boolean;
 }
 
 export interface WebSocketRequestConfig {
@@ -28,6 +41,19 @@ export interface WebSocketRequestConfig {
   variables?: KeyValue[];
   options?: RequestOptions;
   scripts?: RequestScripts;
+  savedMessages?: WsSavedMessage[];
+  autoReconnect?: boolean;
+  preset?: WsPreset;
+  presetQuery?: string;
+  presetVariables?: string;
+  ndjsonMode?: boolean;
+  origin?: string;
+}
+
+export interface GrpcSavedMessage {
+  id: string;
+  name: string;
+  body: string;
 }
 
 export interface GrpcRequestConfig {
@@ -38,9 +64,19 @@ export interface GrpcRequestConfig {
   body: string;
   tls: boolean;
   timeoutMs: number;
+  auth?: AuthConfig;
   variables?: KeyValue[];
+  assertions?: Assertion[];
+  extractionRules?: ExtractionRule[];
   options?: RequestOptions;
   scripts?: RequestScripts;
+  protosetBase64?: string;
+  compression?: "none" | "gzip";
+  savedMessages?: GrpcSavedMessage[];
+  /** Max inbound message size in bytes. Default 16MB. */
+  maxRecvMsgSize?: number;
+  /** Max outbound message size in bytes. Default 16MB. */
+  maxSendMsgSize?: number;
 }
 
 export interface GrpcMethodInfo {

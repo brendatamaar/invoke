@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Plus, Trash2 } from "lucide-react";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { useStore } from "../../../store";
 import type {
@@ -291,7 +285,7 @@ export function WebhookSection() {
                 className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
               >
                 {copied === ep.id ? (
-                  <span className="text-2xs text-emerald-600">Copied</span>
+                  <span className="text-2xs text-[var(--ok)]">Copied</span>
                 ) : (
                   <Copy size={11} />
                 )}
@@ -341,7 +335,7 @@ export function WebhookSection() {
                       <MethodBadge method={log.method} />
                       {hasValidation && (
                         <span
-                          className={`shrink-0 font-semibold ${log.validationPassed ? "text-emerald-600" : "text-red-500"}`}
+                          className={`shrink-0 font-semibold ${log.validationPassed ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
                           title={log.validationError ?? "OK"}
                         >
                           {log.validationPassed ? "OK" : "ERR"}

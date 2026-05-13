@@ -1,6 +1,11 @@
 import { useRef, useState } from "react";
 import { X, Zap, StopCircle } from "lucide-react";
-import { BatchRunner, resolveRequest, variablesFromScopes, type VariableScope } from "@invoke/core";
+import {
+  BatchRunner,
+  resolveRequest,
+  variablesFromScopes,
+  type VariableScope,
+} from "@invoke/core";
 import { useStore } from "../../../store";
 import { execute } from "../../execute/api";
 
@@ -40,9 +45,19 @@ export function BatchRunnerModal() {
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const scopes: VariableScope[] = [
       { name: "environment", variables: env?.variables ?? [] },
-      { name: "session", variables: Object.entries(sessionVariables).map(([key, value]) => ({ key, value, enabled: true })) },
+      {
+        name: "session",
+        variables: Object.entries(sessionVariables).map(([key, value]) => ({
+          key,
+          value,
+          enabled: true,
+        })),
+      },
     ];
-    const { request: resolved } = resolveRequest(request as import("@invoke/core").RequestConfig, scopes);
+    const { request: resolved } = resolveRequest(
+      request as import("@invoke/core").RequestConfig,
+      scopes,
+    );
 
     const runner = new BatchRunner();
     runnerRef.current = runner;
@@ -70,9 +85,17 @@ export function BatchRunnerModal() {
 
   const result = batchRunResult;
 
-  const StatCell = ({ label, value }: { label: string; value: string | number }) => (
+  const StatCell = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: string | number;
+  }) => (
     <div className="flex flex-col gap-0.5 p-2.5 rounded border border-[var(--border)] bg-[var(--surface-2)] text-center">
-      <span className="text-xs font-semibold text-[var(--text-1)]">{value}</span>
+      <span className="text-xs font-semibold text-[var(--text-1)]">
+        {value}
+      </span>
       <span className="text-2xs text-[var(--text-3)]">{label}</span>
     </div>
   );
@@ -83,7 +106,7 @@ export function BatchRunnerModal() {
       onClick={close}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 500, maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -106,34 +129,48 @@ export function BatchRunnerModal() {
           {!batchRunning && !result && (
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-2xs text-[var(--text-3)]">Iterations</label>
+                <label className="text-2xs text-[var(--text-3)]">
+                  Iterations
+                </label>
                 <input
                   type="number"
                   min={1}
                   max={10000}
                   value={iterations}
-                  onChange={(e) => setIterations(Math.max(1, Number(e.target.value)))}
+                  onChange={(e) =>
+                    setIterations(Math.max(1, Number(e.target.value)))
+                  }
                   className="input text-xs py-1"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-2xs text-[var(--text-3)]">Concurrency</label>
+                <label className="text-2xs text-[var(--text-3)]">
+                  Concurrency
+                </label>
                 <input
                   type="number"
                   min={1}
                   max={50}
                   value={concurrency}
-                  onChange={(e) => setConcurrency(Math.max(1, Math.min(50, Number(e.target.value))))}
+                  onChange={(e) =>
+                    setConcurrency(
+                      Math.max(1, Math.min(50, Number(e.target.value))),
+                    )
+                  }
                   className="input text-xs py-1"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-2xs text-[var(--text-3)]">Delay between batches (ms)</label>
+                <label className="text-2xs text-[var(--text-3)]">
+                  Delay between batches (ms)
+                </label>
                 <input
                   type="number"
                   min={0}
                   value={delayMs}
-                  onChange={(e) => setDelayMs(Math.max(0, Number(e.target.value)))}
+                  onChange={(e) =>
+                    setDelayMs(Math.max(0, Number(e.target.value)))
+                  }
                   className="input text-xs py-1"
                 />
               </div>
@@ -143,7 +180,6 @@ export function BatchRunnerModal() {
                     type="checkbox"
                     checked={stopOnFailure}
                     onChange={(e) => setStopOnFailure(e.target.checked)}
-                    className="accent-[var(--accent)]"
                   />
                   Stop on failure
                 </label>
@@ -156,7 +192,9 @@ export function BatchRunnerModal() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-[var(--text-2)]">Running…</span>
-                <span className="text-xs text-[var(--text-3)]">{progress}%</span>
+                <span className="text-xs text-[var(--text-3)]">
+                  {progress}%
+                </span>
               </div>
               <div className="h-2 bg-[var(--surface-2)] rounded-full overflow-hidden border border-[var(--border)]">
                 <div
@@ -199,14 +237,16 @@ export function BatchRunnerModal() {
                     Status distribution
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(result.statusCounts).map(([status, count]) => (
-                      <span
-                        key={status}
-                        className="text-2xs font-mono px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-2)]"
-                      >
-                        {status}: {count}
-                      </span>
-                    ))}
+                    {Object.entries(result.statusCounts).map(
+                      ([status, count]) => (
+                        <span
+                          key={status}
+                          className="text-2xs font-mono px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-2)]"
+                        >
+                          {status}: {count}
+                        </span>
+                      ),
+                    )}
                   </div>
                 </div>
               )}
@@ -214,12 +254,15 @@ export function BatchRunnerModal() {
               {/* Errors */}
               {result.errors.length > 0 && (
                 <div>
-                  <p className="text-2xs font-semibold text-red-600 uppercase tracking-wider mb-1">
+                  <p className="text-2xs font-semibold text-[var(--danger)] uppercase tracking-wider mb-1">
                     Errors ({result.errors.length})
                   </p>
                   <div className="max-h-24 overflow-y-auto flex flex-col gap-1">
                     {result.errors.map((err, i) => (
-                      <span key={i} className="text-2xs font-mono text-red-500 truncate">
+                      <span
+                        key={i}
+                        className="text-2xs font-mono text-[var(--danger)] truncate"
+                      >
                         {err}
                       </span>
                     ))}

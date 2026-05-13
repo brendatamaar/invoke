@@ -9,6 +9,7 @@ import type {
   StoredCookie,
 } from "../types";
 import { toRequestConfig } from "../request";
+import { migrateNetworkOptionsToDefaults } from "./migrations";
 
 export class InvokeDB extends Dexie {
   collections!: Table<Collection, string>;
@@ -131,5 +132,19 @@ export class InvokeDB extends Dexie {
       meta: "key",
       cookies: "id, domain, [domain+path+name], updatedAt",
     });
+
+    this.version(6)
+      .stores({
+        collections: "id, name, updatedAt, sortOrder",
+        folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
+        requests:
+          "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+        environments: "id, name, updatedAt",
+        history: "id, createdAt, requestId, collectionId, protocol, pinned",
+        flows: "id, name, updatedAt",
+        meta: "key",
+        cookies: "id, domain, [domain+path+name], updatedAt",
+      })
+      .upgrade(migrateNetworkOptionsToDefaults);
   }
 }

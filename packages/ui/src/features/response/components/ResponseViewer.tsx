@@ -2,24 +2,33 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useStore, coreStore } from "../../../store";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
-import type { AssertionDraft, ExtractionDraft, ResponseTab } from "../../../types";
+import type {
+  AssertionDraft,
+  ExtractionDraft,
+  ResponseTab,
+} from "../../../types";
 import {
+  AlertCircle,
   Clock,
   HardDrive,
   Shield,
   CheckCircle,
   Code2,
+  Eye,
+  GitCompare,
   List,
   PlusCircle,
   BookmarkPlus,
   Cpu,
   KeyRound,
+  RefreshCw,
 } from "lucide-react";
 import { AssertionsTab } from "./AssertionsTab";
 import { AuthDebugTab } from "./AuthDebugTab";
 import { BodyTab } from "./BodyTab";
 import { CodeTab } from "./CodeTab";
 import { HeadersTab } from "./HeadersTab";
+import { VisualizeTab } from "./VisualizeTab";
 import {
   QuickAssertionOverlay,
   QuickExtractionOverlay,
@@ -28,8 +37,14 @@ import {
 import { fmt, fmtSize } from "./responseFormatting";
 import { TimingTab } from "./TimingTab";
 import { TLSTab } from "./TLSTab";
+import {
+  GraphQLErrorsTab,
+  parseGraphQLErrors,
+  parseGraphQLCost,
+} from "./GraphQLErrorsTab";
+import { DeferredTab } from "./DeferredTab";
 
-const TABS: { id: ResponseTab; label: string; icon?: ReactNode }[] = [
+const STATIC_TABS: { id: ResponseTab; label: string; icon?: ReactNode }[] = [
   { id: "body", label: "Body" },
   { id: "headers", label: "Headers", icon: <List size={11} /> },
   { id: "timing", label: "Timing", icon: <Clock size={11} /> },
@@ -37,6 +52,7 @@ const TABS: { id: ResponseTab; label: string; icon?: ReactNode }[] = [
   { id: "assertions", label: "Assertions", icon: <CheckCircle size={11} /> },
   { id: "auth", label: "Auth", icon: <KeyRound size={11} /> },
   { id: "code", label: "Code", icon: <Code2 size={11} /> },
+  { id: "visualize", label: "Visualize", icon: <Eye size={11} /> },
 ];
 
 export function ResponseViewer() {
@@ -51,9 +67,22 @@ export function ResponseViewer() {
     extractRules,
     request,
     responseExamples,
+    history,
     mockRoutes,
     addToast,
+    retryAttempts,
+    graphqlDeferredParts,
   } = useStore();
+
+  const isGraphQL = request.protocol === "graphql";
+  const graphqlErrors = response ? parseGraphQLErrors(response.body) : [];
+  const hasGraphQLErrors = graphqlErrors.length > 0;
+  const { cost: gqlCost, complexity: gqlComplexity } = response
+    ? parseGraphQLCost(response.body)
+    : { cost: null, complexity: null };
+  const hasGraphQLTab =
+    isGraphQL &&
+    (hasGraphQLErrors || gqlCost !== null || gqlComplexity !== null);
 
   const [overlay, setOverlay] = useState<
     | { kind: "assertion"; draft: AssertionDraft }
@@ -86,14 +115,14 @@ export function ResponseViewer() {
   if (response?.status === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-8">
-        <div className="w-10 h-10 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mb-2">
-          <Code2 size={18} className="text-red-400" />
+        <div className="w-10 h-10 rounded bg-[var(--danger-bg)] border border-[var(--danger)] flex items-center justify-center mb-2">
+          <Code2 size={18} className="text-[var(--danger)]" />
         </div>
         <p className="text-sm text-[var(--text-2)] font-medium">
           Request failed
         </p>
         {response.error && (
-          <p className="text-xs text-red-500 font-mono max-w-md break-all">
+          <p className="text-xs text-[var(--danger)] font-mono max-w-md break-all">
             {response.error}
           </p>
         )}
@@ -220,9 +249,42 @@ export function ResponseViewer() {
               {response.statusText}
             </span>
           )}
+          {(retryAttempts ?? 0) > 0 && (
+            <span className="text-2xs text-[var(--warn)] flex items-center gap-1">
+              <RefreshCw size={11} /> {retryAttempts} retr
+              {retryAttempts === 1 ? "y" : "ies"}
+            </span>
+          )}
+          {gqlComplexity !== null && (
+            <span
+              className="text-2xs text-[var(--warn)] flex items-center gap-1"
+              title="Query complexity"
+            >
+              ⚡ {gqlComplexity}
+            </span>
+          )}
+          {gqlCost !== null && typeof gqlCost === "number" && (
+            <span
+              className="text-2xs text-[var(--warn)] flex items-center gap-1"
+              title="Query cost"
+            >
+              ⚡ {gqlCost}
+            </span>
+          )}
+          {gqlCost !== null &&
+            typeof gqlCost === "object" &&
+            gqlCost.requestedQueryCost != null && (
+              <span
+                className="text-2xs text-[var(--warn)] flex items-center gap-1"
+                title={`Max: ${gqlCost.maximumAvailable ?? "?"}`}
+              >
+                ⚡ {gqlCost.requestedQueryCost}/
+                {gqlCost.maximumAvailable ?? "?"}
+              </span>
+            )}
           {totalCount > 0 && (
             <span
-              className={`text-2xs flex items-center gap-1 ${passedCount === totalCount ? "text-emerald-600" : "text-red-600"}`}
+              className={`text-2xs flex items-center gap-1 ${passedCount === totalCount ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
             >
               <CheckCircle size={11} /> {passedCount}/{totalCount}
             </span>
@@ -244,6 +306,22 @@ export function ResponseViewer() {
           >
             <Cpu size={11} />
           </button>
+          {history.length >= 2 && (
+            <button
+              onClick={() => {
+                const [latest, previous] = history;
+                set({
+                  diffLeftId: previous.id,
+                  diffRightId: latest.id,
+                  showDiffModal: true,
+                });
+              }}
+              className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+              title="Diff last two history entries"
+            >
+              <GitCompare size={11} />
+            </button>
+          )}
         </div>
       )}
 
@@ -259,7 +337,7 @@ export function ResponseViewer() {
       )}
 
       <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)]">
-        {TABS.map((tab) => (
+        {STATIC_TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => set({ responseTab: tab.id })}
@@ -268,13 +346,40 @@ export function ResponseViewer() {
             {tab.icon} {tab.label}
             {tab.id === "assertions" && totalCount > 0 && (
               <span
-                className={`ml-0.5 text-2xs px-1 rounded ${passedCount === totalCount ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+                className={`ml-0.5 text-2xs px-1 rounded ${passedCount === totalCount ? "bg-[var(--ok-bg)] text-[var(--ok)]" : "bg-[var(--danger-bg)] text-[var(--danger)]"}`}
               >
                 {passedCount}/{totalCount}
               </span>
             )}
           </button>
         ))}
+        {hasGraphQLTab && (
+          <button
+            onClick={() => set({ responseTab: "graphql-errors" })}
+            className={`tab-btn flex items-center gap-1 ${responseTab === "graphql-errors" ? "active" : ""}`}
+          >
+            {hasGraphQLErrors ? (
+              <AlertCircle size={11} className="text-[var(--danger)]" />
+            ) : null}
+            GraphQL
+            {hasGraphQLErrors && (
+              <span className="ml-0.5 text-2xs px-1 rounded bg-[var(--danger-bg)] text-[var(--danger)]">
+                {graphqlErrors.length}
+              </span>
+            )}
+          </button>
+        )}
+        {graphqlDeferredParts && graphqlDeferredParts.length > 0 && (
+          <button
+            onClick={() => set({ responseTab: "graphql-deferred" })}
+            className={`tab-btn flex items-center gap-1 ${responseTab === "graphql-deferred" ? "active" : ""}`}
+          >
+            Deferred
+            <span className="ml-0.5 text-2xs px-1 rounded bg-[var(--accent-subtle)] text-[var(--accent)]">
+              {graphqlDeferredParts.filter((p) => p.partIndex > 0).length}
+            </span>
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto">
@@ -304,6 +409,9 @@ export function ResponseViewer() {
         )}
         {responseTab === "auth" && <AuthDebugTab />}
         {responseTab === "code" && <CodeTab />}
+        {responseTab === "visualize" && <VisualizeTab />}
+        {responseTab === "graphql-errors" && <GraphQLErrorsTab />}
+        {responseTab === "graphql-deferred" && <DeferredTab />}
       </div>
 
       {overlay?.kind === "assertion" && (

@@ -12,7 +12,7 @@ export type RequestTab =
   | "assertions"
   | "extract"
   | "scripts"
-  | "retry";
+  | "options";
 
 export interface URLBarProps {
   onSend: () => void;
@@ -35,4 +35,4 @@ export interface FieldProps {
   children: ReactNode;
 }
 
-export type GraphQLSchemaImportSource = "url" | "file";
+export type GraphQLSchemaImportSource = "url" | "file" | "sdl";

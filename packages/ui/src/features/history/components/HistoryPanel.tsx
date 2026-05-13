@@ -8,64 +8,14 @@ import {
   PinOff,
   Tag,
   Cpu,
+  MoreHorizontal,
 } from "lucide-react";
 import { useState } from "react";
 import { useStore, coreStore } from "../../../store";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
+import { CollectionMenuItem } from "../../collections/components/CollectionMenuItem";
 import type { HistoryEntry } from "@invoke/core";
-
-function LabelEditor({
-  value,
-  onSave,
-}: {
-  value: string;
-  onSave: (label: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  if (!editing) {
-    return (
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setDraft(value);
-          setEditing(true);
-        }}
-        className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
-        title="Add label"
-      >
-        <Tag size={11} />
-      </button>
-    );
-  }
-
-  return (
-    <input
-      autoFocus
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => {
-        setEditing(false);
-        onSave(draft.trim());
-      }}
-      onKeyDown={(e) => {
-        e.stopPropagation();
-        if (e.key === "Enter") {
-          setEditing(false);
-          onSave(draft.trim());
-        }
-        if (e.key === "Escape") {
-          setEditing(false);
-        }
-      }}
-      onClick={(e) => e.stopPropagation()}
-      placeholder="Add label…"
-      className="input text-xs py-0 px-1 w-24"
-    />
-  );
-}
 
 function HistoryItem({
   entry,
@@ -83,6 +33,10 @@ function HistoryItem({
   onCreateMock: (entry: HistoryEntry) => void;
 }) {
   const req = entry.request as { method?: string; url?: string } | undefined;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [labelDraft, setLabelDraft] = useState(entry.label ?? "");
+
   return (
     <div
       className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-b border-[var(--border)] cursor-pointer"
@@ -96,47 +50,87 @@ function HistoryItem({
         >
           {req?.url ?? "—"}
         </span>
-        {entry.label && (
+        {editingLabel ? (
+          <input
+            autoFocus
+            value={labelDraft}
+            onChange={(e) => setLabelDraft(e.target.value)}
+            onBlur={() => {
+              setEditingLabel(false);
+              onLabel(entry, labelDraft.trim());
+            }}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") {
+                setEditingLabel(false);
+                onLabel(entry, labelDraft.trim());
+              }
+              if (e.key === "Escape") setEditingLabel(false);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            placeholder="Add label…"
+            className="input text-xs py-0 px-1 w-32 mt-0.5"
+          />
+        ) : entry.label ? (
           <span className="text-2xs text-[var(--accent)] truncate">
             {entry.label}
           </span>
-        )}
+        ) : null}
       </div>
       <StatusBadge status={entry.response?.status ?? 0} />
-      <LabelEditor
-        value={entry.label ?? ""}
-        onSave={(label) => onLabel(entry, label)}
-      />
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onCreateMock(entry);
-        }}
-        className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
-        title="Create mock from this response"
+      {entry.pinned && (
+        <Pin size={11} className="text-[var(--accent)] shrink-0" />
+      )}
+      <div
+        className="opacity-0 group-hover:opacity-100 relative shrink-0"
+        onClick={(e) => e.stopPropagation()}
       >
-        <Cpu size={11} />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onPin(entry, !entry.pinned);
-        }}
-        className={`p-0.5 ${entry.pinned ? "text-[var(--accent)]" : "opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)]"}`}
-        title={entry.pinned ? "Unpin" : "Pin"}
-      >
-        {entry.pinned ? <PinOff size={11} /> : <Pin size={11} />}
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(entry);
-        }}
-        className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)]"
-        title="Delete"
-      >
-        <Trash2 size={11} />
-      </button>
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
+        >
+          <MoreHorizontal size={13} />
+        </button>
+        {menuOpen && (
+          <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] py-1 min-w-[152px]">
+            <CollectionMenuItem
+              icon={<Tag size={12} />}
+              label={entry.label ? "Edit Label" : "Add Label"}
+              onClick={() => {
+                setMenuOpen(false);
+                setLabelDraft(entry.label ?? "");
+                setEditingLabel(true);
+              }}
+            />
+            <CollectionMenuItem
+              icon={<Cpu size={12} />}
+              label="Create Mock"
+              onClick={() => {
+                setMenuOpen(false);
+                onCreateMock(entry);
+              }}
+            />
+            <CollectionMenuItem
+              icon={entry.pinned ? <PinOff size={12} /> : <Pin size={12} />}
+              label={entry.pinned ? "Unpin" : "Pin"}
+              onClick={() => {
+                setMenuOpen(false);
+                onPin(entry, !entry.pinned);
+              }}
+            />
+            <div className="h-px bg-[var(--border)] my-1" />
+            <CollectionMenuItem
+              icon={<Trash2 size={12} />}
+              label="Delete"
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete(entry);
+              }}
+              danger
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -257,9 +251,7 @@ export function HistoryPanel() {
     try {
       await coreStore.pinHistoryEntry(entry.id, pinned);
       set({
-        history: history.map((h) =>
-          h.id === entry.id ? { ...h, pinned } : h,
-        ),
+        history: history.map((h) => (h.id === entry.id ? { ...h, pinned } : h)),
       });
     } catch (e) {
       addToast("error", String(e));

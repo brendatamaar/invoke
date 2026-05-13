@@ -39,12 +39,12 @@ export function MockRequestLog({
               {log.path}
             </span>
             <span
-              className={`shrink-0 font-semibold ${log.status >= 400 ? "text-red-500" : "text-emerald-600"}`}
+              className={`shrink-0 font-semibold ${log.status >= 400 ? "text-[var(--danger)]" : "text-[var(--ok)]"}`}
             >
               {log.status}
             </span>
             {!log.matched && (
-              <span className="text-2xs text-amber-500 shrink-0">
+              <span className="text-2xs text-[var(--warn)] shrink-0">
                 unmatched
               </span>
             )}

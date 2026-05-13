@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MouseEvent } from "react";
+import type { MouseEvent, RefObject } from "react";
 
-export function useResizablePane(initial: number) {
+export function useResizablePane(
+  initial: number,
+  direction: "vertical" | "horizontal" = "vertical",
+  containerRef?: RefObject<HTMLDivElement>,
+  otherPanelMin = 320,
+) {
   const [size, setSize] = useState(initial);
   const dragging = useRef(false);
   const startPos = useRef(0);
@@ -10,23 +15,27 @@ export function useResizablePane(initial: number) {
   const onMouseDown = useCallback(
     (e: MouseEvent) => {
       dragging.current = true;
-      startPos.current = e.clientY;
+      startPos.current = direction === "horizontal" ? e.clientX : e.clientY;
       startSize.current = size;
       e.preventDefault();
     },
-    [size],
+    [size, direction],
   );
 
   useEffect(() => {
     const onMove = (e: globalThis.MouseEvent) => {
       if (!dragging.current) return;
-      const delta = e.clientY - startPos.current;
-      setSize(
-        Math.max(
-          120,
-          Math.min(startSize.current + delta, window.innerHeight - 200),
-        ),
-      );
+      const pos = direction === "horizontal" ? e.clientX : e.clientY;
+      const delta = pos - startPos.current;
+      const containerSize = containerRef?.current
+        ? direction === "horizontal"
+          ? containerRef.current.offsetWidth
+          : containerRef.current.offsetHeight
+        : direction === "horizontal"
+          ? window.innerWidth
+          : window.innerHeight;
+      const max = containerSize - otherPanelMin;
+      setSize(Math.max(120, Math.min(startSize.current + delta, max)));
     };
     const onUp = () => {
       dragging.current = false;
@@ -37,7 +46,7 @@ export function useResizablePane(initial: number) {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, []);
+  }, [direction, containerRef, otherPanelMin]);
 
   return { size, onMouseDown };
 }

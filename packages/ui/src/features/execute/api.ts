@@ -1,13 +1,17 @@
 import type { ExecuteResponse, RequestConfig } from "@invoke/core";
 import { decodeBase64, ensureOk } from "../../lib/http";
+import { applyProtocolDefaults } from "../../lib/protocolDefaults";
 
 export async function execute(
   request: RequestConfig,
+  signal?: AbortSignal,
 ): Promise<ExecuteResponse> {
+  const merged = applyProtocolDefaults(request);
   const response = await fetch("/api/execute", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildExecutePayload(request)),
+    body: JSON.stringify(buildExecutePayload(merged)),
+    signal,
   });
   await ensureOk(response);
   const payload = (await response.json()) as ExecuteResponse;
@@ -18,17 +22,19 @@ export async function execute(
 
 export async function executeWithRetry(
   request: RequestConfig,
+  signal?: AbortSignal,
 ): Promise<ExecuteResponse & { retryAttempts?: number }> {
   const policy = request.retryPolicy;
-  if (!policy || policy.maxRetries <= 0) return execute(request);
+  if (!policy || policy.maxRetries <= 0) return execute(request, signal);
 
   let lastResult: ExecuteResponse | undefined;
   let attempts = 0;
   let backoff = policy.backoffMs;
 
   for (let attempt = 0; attempt <= policy.maxRetries; attempt++) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     try {
-      const res = await execute(request);
+      const res = await execute(request, signal);
       const shouldRetry =
         (policy.retryOn5xx && res.status >= 500) ||
         (policy.retryOnTimeout &&
@@ -39,6 +45,7 @@ export async function executeWithRetry(
       lastResult = res;
       attempts = attempt + 1;
     } catch (e) {
+      if ((e as Error).name === "AbortError") throw e;
       const isTimeout =
         policy.retryOnTimeout && String(e).toLowerCase().includes("timeout");
       if (!isTimeout || attempt === policy.maxRetries) throw e;
@@ -58,10 +65,11 @@ export async function executeStream(
     signal?: AbortSignal;
   },
 ) {
+  const merged = applyProtocolDefaults(request);
   const response = await fetch("/api/execute/stream", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildExecutePayload(request)),
+    body: JSON.stringify(buildExecutePayload(merged)),
     signal: handlers.signal,
   });
   if (!response.ok || !response.body) throw new Error(await response.text());
@@ -82,20 +90,103 @@ export async function executeStream(
   if (buffer.trim()) await handleSseEvent(buffer, handlers);
 }
 
+const BODY_MODE_CONTENT_TYPES: Partial<Record<string, string>> = {
+  json: "application/json",
+  urlencoded: "application/x-www-form-urlencoded",
+};
+
 function buildExecutePayload(req: RequestConfig) {
+  let headers = req.headers;
+  const autoContentType = BODY_MODE_CONTENT_TYPES[req.bodyMode];
+  if (
+    autoContentType &&
+    !headers.some(
+      (h) => h.enabled !== false && h.key.toLowerCase() === "content-type",
+    )
+  ) {
+    headers = [
+      ...headers,
+      { key: "Content-Type", value: autoContentType, enabled: true },
+    ];
+  }
+
   return {
     method: req.method,
     url: req.url,
-    headers: req.headers,
+    headers,
     body: req.bodyMode === "none" ? "" : req.body,
+    bodyMode: req.bodyMode,
     auth: req.auth,
     timeoutMs: req.timeoutMs,
+    connectTimeoutMs: req.options?.connectTimeoutMs,
+    readTimeoutMs: req.options?.readTimeoutMs,
     followRedirects: req.options?.followRedirects ?? true,
     maxRedirects: req.options?.maxRedirects ?? 10,
     verifySsl: req.options?.verifySsl ?? true,
+    allowPrivateAddresses: req.options?.allowPrivateAddresses ?? true,
     proxy: req.options?.proxy,
     tlsClientConfig: req.options?.tlsClientConfig,
   };
+}
+
+// ── APQ (Automatic Persisted Queries) ──────────────────────────────────────
+
+async function computeQueryHash(query: string): Promise<string> {
+  const data = new TextEncoder().encode(query);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function isPersistedQueryNotFound(body: string): boolean {
+  try {
+    const parsed = JSON.parse(body) as {
+      errors?: { extensions?: { code?: string }; message?: string }[];
+    };
+    return (parsed.errors ?? []).some(
+      (e) =>
+        e?.extensions?.code === "PERSISTED_QUERY_NOT_FOUND" ||
+        e?.message === "PersistedQueryNotFound",
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function executeWithAPQ(
+  request: RequestConfig,
+  signal: AbortSignal | undefined,
+  queryText: string,
+): Promise<ExecuteResponse & { retryAttempts?: number }> {
+  const hash = await computeQueryHash(queryText);
+  const ext = { persistedQuery: { version: 1, sha256Hash: hash } };
+
+  let bodyObj: Record<string, unknown> = {};
+  try {
+    bodyObj = JSON.parse(request.body) as Record<string, unknown>;
+  } catch {
+    /* keep empty */
+  }
+
+  const { query: _q, ...restFields } = bodyObj as {
+    query?: string;
+    [k: string]: unknown;
+  };
+
+  // First attempt: hash-only (no query field)
+  const probe = await execute(
+    { ...request, body: JSON.stringify({ ...restFields, extensions: ext }) },
+    signal,
+  );
+
+  if (!isPersistedQueryNotFound(probe.body)) return probe; // cache hit
+
+  // Retry with full query + extensions
+  return executeWithRetry(
+    { ...request, body: JSON.stringify({ ...bodyObj, extensions: ext }) },
+    signal,
+  );
 }
 
 async function handleSseEvent(
@@ -119,7 +210,10 @@ async function handleSseEvent(
   const data = ev.data.join("\n");
   if (ev.event === "chunk") {
     try {
-      handlers.onChunk((JSON.parse(data) as { chunk?: string }).chunk ?? "");
+      const parsed = JSON.parse(data) as { chunk?: string; encoding?: string };
+      const rawChunk = parsed.chunk ?? "";
+      const chunk = parsed.encoding === "base64" ? atob(rawChunk) : rawChunk;
+      handlers.onChunk(chunk);
     } catch {
       handlers.onChunk(data);
     }

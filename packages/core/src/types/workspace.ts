@@ -5,6 +5,7 @@ import type {
   SavedRequest,
 } from "./collection";
 import type { Flow } from "./flow";
+import type { DefaultProtocolOptions } from "./settings";
 
 export interface WorkspaceBackup {
   version: "1.0";
@@ -14,4 +15,5 @@ export interface WorkspaceBackup {
   requests: SavedRequest[];
   environments: Environment[];
   flows: Flow[];
+  defaultProtocolOptions?: DefaultProtocolOptions;
 }

@@ -1,7 +1,10 @@
 import { zValidator } from "@hono/zod-validator";
 import type { Hono } from "hono";
 import type { ExecuteInput } from "../../types/index.js";
-import { executorClient, grpcCall } from "../../grpc/executor-client.js";
+import {
+  executorClient,
+  grpcCallWithSignal,
+} from "../../grpc/executor-client.js";
 import { executeDigest } from "./digest-auth.js";
 import { executePayload } from "./payload.js";
 import { bytesFrom, normalizeResponse } from "./response.js";
@@ -10,11 +13,30 @@ import { executeSchema } from "./schema.js";
 export function registerExecuteRoutes(app: Hono) {
   app.post("/api/execute", zValidator("json", executeSchema), async (c) => {
     const input = c.req.valid("json") as ExecuteInput;
-    const response =
-      input.auth?.type === "digest"
-        ? await executeDigest(input)
-        : await grpcCall<any>("Execute", executePayload(input));
-    return c.json(normalizeResponse(response));
+    const signal = c.req.raw.signal;
+    try {
+      const raw =
+        input.auth?.type === "digest"
+          ? await executeDigest(input)
+          : await grpcCallWithSignal<any>(
+              "Execute",
+              executePayload(input),
+              signal,
+            );
+      return c.json(normalizeResponse(raw));
+    } catch (e: any) {
+      if (signal.aborted || e?.code === "CANCELLED") {
+        return new Response(null, { status: 499 });
+      }
+      return c.json(
+        normalizeResponse({
+          error: String(e?.message ?? e),
+          body: Buffer.alloc(0),
+          headers: [],
+          timing: {},
+        }),
+      );
+    }
   });
 
   app.post(
@@ -50,7 +72,10 @@ export function registerExecuteRoutes(app: Hono) {
           stream.on("data", (chunk: any) => {
             const bytes = bytesFrom(chunk.body);
             if (bytes.length > 0)
-              send("chunk", { chunk: bytes.toString("utf8") });
+              send("chunk", {
+                chunk: bytes.toString("base64"),
+                encoding: "base64",
+              });
             if (chunk.finalResponse) {
               send("final", normalizeResponse(chunk.finalResponse));
               close();

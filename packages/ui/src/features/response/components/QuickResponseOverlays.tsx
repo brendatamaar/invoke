@@ -21,7 +21,7 @@ export function QuickAssertionOverlay({
     d.type === "header" || d.type === "bodyJsonPath" || d.type === "regex";
 
   return (
-    <div className="absolute z-20 right-3 top-12 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-3 flex flex-col gap-2 w-72">
+    <div className="absolute z-20 right-3 top-12 bg-[var(--bg-2)] border border-[var(--line-2)] rounded-md shadow-[var(--shadow-2)] p-3 flex flex-col gap-2 w-72">
       <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">
         Quick assertion
       </span>
@@ -110,7 +110,7 @@ export function QuickExtractionOverlay({
   const needsExpr = d.source !== "status";
 
   return (
-    <div className="absolute z-20 right-3 top-12 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-3 flex flex-col gap-2 w-72">
+    <div className="absolute z-20 right-3 top-12 bg-[var(--bg-2)] border border-[var(--line-2)] rounded-md shadow-[var(--shadow-2)] p-3 flex flex-col gap-2 w-72">
       <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">
         Quick extraction
       </span>
@@ -174,7 +174,7 @@ export function SaveExampleOverlay({
   onClose: () => void;
 }) {
   return (
-    <div className="absolute z-20 right-3 top-12 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-3 flex flex-col gap-2 w-60">
+    <div className="absolute z-20 right-3 top-12 bg-[var(--bg-2)] border border-[var(--line-2)] rounded-md shadow-[var(--shadow-2)] p-3 flex flex-col gap-2 w-60">
       <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">
         Save as example
       </span>
@@ -193,7 +193,10 @@ export function SaveExampleOverlay({
         <button onClick={onClose} className="btn text-2xs py-0.5 px-2">
           Cancel
         </button>
-        <button onClick={onSave} className="btn btn-primary text-2xs py-0.5 px-2">
+        <button
+          onClick={onSave}
+          className="btn btn-primary text-2xs py-0.5 px-2"
+        >
           Save
         </button>
       </div>

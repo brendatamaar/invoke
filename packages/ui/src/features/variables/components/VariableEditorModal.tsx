@@ -52,7 +52,7 @@ export function VariableEditorModal() {
       onClick={close}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl flex flex-col"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 520, maxHeight: "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >

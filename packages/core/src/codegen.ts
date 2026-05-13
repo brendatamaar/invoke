@@ -1,8 +1,14 @@
 import type {
   CodeExportTarget,
   CodeSnippet,
+  GrpcCodeExportTarget,
+  GrpcCodeSnippet,
+  GrpcRequestConfig,
   KeyValue,
   RequestConfig,
+  WebSocketRequestConfig,
+  WsCodeExportTarget,
+  WsCodeSnippet,
 } from "./types";
 
 export const CODE_EXPORT_TARGETS: Array<Omit<CodeSnippet, "code">> = [
@@ -91,6 +97,24 @@ export const CODE_EXPORT_TARGETS: Array<Omit<CodeSnippet, "code">> = [
     language: "shell",
     filename: "request.http",
   },
+  {
+    target: "graphql-fetch",
+    label: "GraphQL fetch",
+    language: "javascript",
+    filename: "query.fetch.js",
+  },
+  {
+    target: "graphql-apollo",
+    label: "GraphQL Apollo",
+    language: "javascript",
+    filename: "query.apollo.tsx",
+  },
+  {
+    target: "graphql-urql",
+    label: "GraphQL urql",
+    language: "javascript",
+    filename: "query.urql.tsx",
+  },
 ];
 
 export async function generateCodeSnippet(
@@ -135,6 +159,12 @@ function generatorFor(target: CodeExportTarget) {
       return async (request: RequestConfig) => generatePowerShell(request);
     case "httpie":
       return async (request: RequestConfig) => generateHttpie(request);
+    case "graphql-fetch":
+      return async (request: RequestConfig) => generateGraphQLFetch(request);
+    case "graphql-apollo":
+      return async (request: RequestConfig) => generateGraphQLApollo(request);
+    case "graphql-urql":
+      return async (request: RequestConfig) => generateGraphQLUrql(request);
     default:
       return async (request: RequestConfig) => generateCurl(request);
   }
@@ -502,6 +532,185 @@ async function formatJavaScript(source: string) {
   }
 }
 
+// ── GraphQL-specific generators ────────────────────────────────────────────
+
+interface ParsedGQLBody {
+  query: string;
+  variables: Record<string, unknown> | null;
+  operationName: string | null;
+  operationKind: "query" | "mutation" | "subscription";
+}
+
+function parseGQLBody(request: RequestConfig): ParsedGQLBody | null {
+  if (!hasBody(request)) return null;
+  try {
+    const parsed = JSON.parse(request.body) as {
+      query?: string;
+      variables?: unknown;
+      operationName?: string;
+    };
+    if (!parsed.query) return null;
+    const q = parsed.query.trim().replace(/^[\s\n]+/, "");
+    const lower = q.toLowerCase();
+    const operationKind: ParsedGQLBody["operationKind"] = lower.startsWith(
+      "mutation",
+    )
+      ? "mutation"
+      : lower.startsWith("subscription")
+        ? "subscription"
+        : "query";
+    return {
+      query: parsed.query,
+      variables:
+        parsed.variables !== null &&
+        typeof parsed.variables === "object" &&
+        !Array.isArray(parsed.variables)
+          ? (parsed.variables as Record<string, unknown>)
+          : null,
+      operationName: parsed.operationName ?? null,
+      operationKind,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function gqlConstName(gql: ParsedGQLBody): string {
+  if (gql.operationName) {
+    return gql.operationName.replace(/([a-z])([A-Z])/g, "$1_$2").toUpperCase();
+  }
+  return gql.operationKind.toUpperCase() + "_OPERATION";
+}
+
+async function generateGraphQLFetch(request: RequestConfig): Promise<string> {
+  const gql = parseGQLBody(request);
+  if (!gql) return generateFetch(request);
+
+  const extraHeaders = enabledHeaders(request.headers).filter(
+    (h) => h.key.toLowerCase() !== "content-type",
+  );
+  const hasVars =
+    gql.variables !== null && Object.keys(gql.variables).length > 0;
+
+  const headerLines = [
+    `    "Content-Type": "application/json"`,
+    ...extraHeaders.map((h) => `    ${jsString(h.key)}: ${jsString(h.value)}`),
+  ].join(",\n");
+
+  const bodyFields = [
+    `    query: QUERY`,
+    ...(hasVars ? [`    variables`] : []),
+    ...(gql.operationName
+      ? [`    operationName: ${jsString(gql.operationName)}`]
+      : []),
+  ].join(",\n");
+
+  const source = `
+const QUERY = \`
+${gql.query.trim()}
+\`;
+${hasVars ? `\nconst variables = ${JSON.stringify(gql.variables, null, 2)};\n` : ""}
+const response = await fetch(${jsString(request.url)}, {
+  method: "POST",
+  headers: {
+${headerLines},
+  },
+  body: JSON.stringify({
+${bodyFields},
+  }),
+});
+
+const { data, errors } = await response.json();
+console.log(data);
+if (errors) console.error(errors);
+`;
+  return formatJavaScript(source);
+}
+
+async function generateGraphQLApollo(request: RequestConfig): Promise<string> {
+  const gql = parseGQLBody(request);
+  if (!gql) return generateFetch(request);
+
+  const constName = gqlConstName(gql);
+  const hasVars =
+    gql.variables !== null && Object.keys(gql.variables).length > 0;
+  const varStr = hasVars
+    ? `,\n  variables: ${JSON.stringify(gql.variables, null, 2)}`
+    : "";
+
+  let hookImport: string;
+  let hookUsage: string;
+  if (gql.operationKind === "mutation") {
+    hookImport = "useMutation";
+    hookUsage = `const [${toCamelCase(constName)}, { data, loading, error }] = useMutation(${constName}${hasVars ? `, { variables: ${JSON.stringify(gql.variables, null, 2)} }` : ""});`;
+  } else if (gql.operationKind === "subscription") {
+    hookImport = "useSubscription";
+    hookUsage = `const { data, loading, error } = useSubscription(${constName}${hasVars ? `${varStr.replace(/^,\n/, ", ")}` : ""});`;
+  } else {
+    hookImport = "useQuery";
+    hookUsage = `const { data, loading, error } = useQuery(${constName}${varStr ? `{${varStr}\n}` : ""});`;
+  }
+
+  const source = `
+import { gql, ${hookImport} } from "@apollo/client";
+
+const ${constName} = gql\`
+${gql.query.trim()}
+\`;
+
+// Inside your component:
+${hookUsage}
+`;
+  return formatJavaScript(source);
+}
+
+async function generateGraphQLUrql(request: RequestConfig): Promise<string> {
+  const gql = parseGQLBody(request);
+  if (!gql) return generateFetch(request);
+
+  const constName = gqlConstName(gql);
+  const hasVars =
+    gql.variables !== null && Object.keys(gql.variables).length > 0;
+
+  let hookImport: string;
+  let hookUsage: string;
+  if (gql.operationKind === "mutation") {
+    hookImport = "useMutation";
+    hookUsage = `const [{ data, fetching, error }, execute] = useMutation(${constName});`;
+    if (hasVars) {
+      hookUsage += `\n// execute({ variables: ${JSON.stringify(gql.variables, null, 2)} });`;
+    }
+  } else if (gql.operationKind === "subscription") {
+    hookImport = "useSubscription";
+    hookUsage = `const [{ data, fetching, error }] = useSubscription({
+  query: ${constName},${hasVars ? `\n  variables: ${JSON.stringify(gql.variables, null, 2)},` : ""}
+});`;
+  } else {
+    hookImport = "useQuery";
+    hookUsage = `const [{ data, fetching, error }] = useQuery({
+  query: ${constName},${hasVars ? `\n  variables: ${JSON.stringify(gql.variables, null, 2)},` : ""}
+});`;
+  }
+
+  const source = `
+import { gql, ${hookImport} } from "urql";
+
+const ${constName} = gql\`
+${gql.query.trim()}
+\`;
+
+// Inside your component:
+${hookUsage}
+`;
+  return formatJavaScript(source);
+}
+
+function toCamelCase(screaming: string): string {
+  return screaming
+    .toLowerCase()
+    .replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
 function hasBody(request: RequestConfig) {
   return request.bodyMode !== "none" && request.body.trim().length > 0;
 }
@@ -630,4 +839,542 @@ function phpArray(value: Record<string, string>) {
     ([key, val]) => `${phpString(key)} => ${phpString(val)}`,
   );
   return `[${entries.join(", ")}]`;
+}
+
+// ─── WebSocket code generation ───────────────────────────────────────────────
+
+export const WS_CODE_EXPORT_TARGETS: Array<Omit<WsCodeSnippet, "code">> = [
+  {
+    target: "ws-wscat",
+    label: "wscat",
+    language: "shell",
+    filename: "websocket.sh",
+  },
+  {
+    target: "ws-websocat",
+    label: "websocat",
+    language: "shell",
+    filename: "websocket.sh",
+  },
+  {
+    target: "ws-javascript",
+    label: "Browser WebSocket",
+    language: "javascript",
+    filename: "websocket.js",
+  },
+  {
+    target: "ws-node-ws",
+    label: "Node.js ws",
+    language: "javascript",
+    filename: "websocket.node.js",
+  },
+  {
+    target: "ws-python-websockets",
+    label: "Python websockets",
+    language: "python",
+    filename: "websocket.py",
+  },
+];
+
+export function generateWsCodeSnippet(
+  request: WebSocketRequestConfig,
+  target: WsCodeExportTarget,
+): WsCodeSnippet {
+  const meta =
+    WS_CODE_EXPORT_TARGETS.find((t) => t.target === target) ??
+    WS_CODE_EXPORT_TARGETS[0];
+  const code = wsGeneratorFor(target)(request);
+  return { ...meta, code };
+}
+
+function wsGeneratorFor(target: WsCodeExportTarget) {
+  switch (target) {
+    case "ws-wscat":
+      return generateWscat;
+    case "ws-websocat":
+      return generateWebsocat;
+    case "ws-javascript":
+      return generateWsJavaScript;
+    case "ws-node-ws":
+      return generateWsNodeWs;
+    case "ws-python-websockets":
+      return generateWsPython;
+    default:
+      return generateWscat;
+  }
+}
+
+function wsEffectiveHeaders(
+  request: WebSocketRequestConfig,
+): Array<{ key: string; value: string }> {
+  const headers = (request.headers ?? [])
+    .filter((h) => h.enabled !== false && h.key)
+    .map((h) => ({ key: h.key, value: h.value }));
+  const auth = request.auth;
+  if (!auth || auth.type === "none") return headers;
+  if ((auth.type === "bearer" || auth.type === "oauth2") && auth.token) {
+    headers.push({ key: "Authorization", value: `Bearer ${auth.token}` });
+  } else if (auth.type === "basic" && auth.username) {
+    const encoded = btoa(`${auth.username}:${auth.password ?? ""}`);
+    headers.push({ key: "Authorization", value: `Basic ${encoded}` });
+  } else if (
+    auth.type === "api-key" &&
+    auth.apiKeyName &&
+    auth.apiKeyValue &&
+    auth.apiKeyIn !== "query"
+  ) {
+    headers.push({ key: auth.apiKeyName, value: auth.apiKeyValue });
+  }
+  return headers;
+}
+
+function generateWscat(request: WebSocketRequestConfig): string {
+  const parts = ["wscat", "-c", shellQuote(request.url)];
+  for (const h of wsEffectiveHeaders(request)) {
+    parts.push("-H", shellQuote(`${h.key}: ${h.value}`));
+  }
+  if (request.protocols) {
+    for (const p of request.protocols
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)) {
+      parts.push("--protocol", shellQuote(p));
+    }
+  }
+  return parts.reduce(
+    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
+    "",
+  );
+}
+
+function generateWebsocat(request: WebSocketRequestConfig): string {
+  const parts = ["websocat", shellQuote(request.url)];
+  for (const h of wsEffectiveHeaders(request)) {
+    parts.push(`-H ${shellQuote(`${h.key}: ${h.value}`)}`);
+  }
+  return parts.reduce(
+    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
+    "",
+  );
+}
+
+function generateWsJavaScript(request: WebSocketRequestConfig): string {
+  const protocols = request.protocols
+    ? `, ${JSON.stringify(
+        request.protocols
+          .split(",")
+          .map((p) => p.trim())
+          .filter(Boolean),
+      )}`
+    : "";
+  const initMsg = request.message
+    ? `\n  ws.send(${JSON.stringify(request.message)});`
+    : "";
+  return `const ws = new WebSocket(${JSON.stringify(request.url)}${protocols});
+
+ws.onopen = () => {
+  console.log("Connected");${initMsg}
+};
+
+ws.onmessage = (event) => {
+  console.log("Received:", event.data);
+};
+
+ws.onerror = (error) => {
+  console.error("Error:", error);
+};
+
+ws.onclose = (event) => {
+  console.log("Closed:", event.code, event.reason);
+};`;
+}
+
+function generateWsNodeWs(request: WebSocketRequestConfig): string {
+  const hdrs = wsEffectiveHeaders(request);
+  const headersObj = hdrs.length
+    ? `\n  headers: ${JSON.stringify(Object.fromEntries(hdrs.map((h) => [h.key, h.value])), null, 4).replace(/\n/g, "\n  ")},`
+    : "";
+  const protocols = request.protocols
+    ? `\n  protocols: ${JSON.stringify(
+        request.protocols
+          .split(",")
+          .map((p) => p.trim())
+          .filter(Boolean),
+      )},`
+    : "";
+  const initMsg = request.message
+    ? `\n  ws.send(${JSON.stringify(request.message)});`
+    : "";
+  const options =
+    protocols || headersObj ? `, {${protocols}${headersObj}\n}` : "";
+  return `import WebSocket from "ws";
+
+const ws = new WebSocket(${JSON.stringify(request.url)}${options});
+
+ws.on("open", () => {
+  console.log("Connected");${initMsg}
+});
+
+ws.on("message", (data) => {
+  console.log("Received:", data.toString());
+});
+
+ws.on("error", (err) => {
+  console.error("Error:", err);
+});
+
+ws.on("close", (code, reason) => {
+  console.log("Closed:", code, reason.toString());
+});`;
+}
+
+function generateWsPython(request: WebSocketRequestConfig): string {
+  const hdrs = wsEffectiveHeaders(request);
+  const headersDict = hdrs.length
+    ? `\nextra_headers = ${JSON.stringify(Object.fromEntries(hdrs.map((h) => [h.key, h.value])), null, 4)}\n`
+    : "\nextra_headers = {}\n";
+  const kwarg = hdrs.length ? ", additional_headers=extra_headers" : "";
+  const initMsg = request.message
+    ? `\n        await ws.send(${JSON.stringify(request.message)})`
+    : "";
+  return `import asyncio
+import websockets
+${headersDict}
+async def main():
+    async with websockets.connect(${JSON.stringify(request.url)}${kwarg}) as ws:${initMsg}
+        async for message in ws:
+            print("Received:", message)
+
+asyncio.run(main())`;
+}
+
+// ─── gRPC code generation ────────────────────────────────────────────────────
+
+export const GRPC_CODE_EXPORT_TARGETS: Array<Omit<GrpcCodeSnippet, "code">> = [
+  {
+    target: "grpc-grpcurl",
+    label: "grpcurl",
+    language: "shell",
+    filename: "request.grpcurl.sh",
+  },
+  {
+    target: "grpc-go",
+    label: "Go gRPC",
+    language: "go",
+    filename: "request.grpc.go",
+  },
+  {
+    target: "grpc-node",
+    label: "Node @grpc/grpc-js",
+    language: "javascript",
+    filename: "request.grpc.js",
+  },
+  {
+    target: "grpc-python",
+    label: "Python grpcio",
+    language: "python",
+    filename: "request.grpc.py",
+  },
+  {
+    target: "grpc-java",
+    label: "Java gRPC",
+    language: "java",
+    filename: "Request.grpc.java",
+  },
+  {
+    target: "grpc-csharp",
+    label: "C# Grpc.Net.Client",
+    language: "csharp",
+    filename: "Request.grpc.cs",
+  },
+  {
+    target: "grpc-kotlin",
+    label: "Kotlin gRPC",
+    language: "kotlin",
+    filename: "Request.grpc.kt",
+  },
+];
+
+export function generateGrpcCodeSnippet(
+  request: GrpcRequestConfig,
+  target: GrpcCodeExportTarget,
+): GrpcCodeSnippet {
+  const meta =
+    GRPC_CODE_EXPORT_TARGETS.find((t) => t.target === target) ??
+    GRPC_CODE_EXPORT_TARGETS[0];
+  const code = grpcGeneratorFor(target)(request);
+  return { ...meta, code };
+}
+
+function grpcGeneratorFor(target: GrpcCodeExportTarget) {
+  switch (target) {
+    case "grpc-grpcurl":
+      return generateGrpcurl;
+    case "grpc-go":
+      return generateGrpcGo;
+    case "grpc-node":
+      return generateGrpcNode;
+    case "grpc-python":
+      return generateGrpcPython;
+    case "grpc-java":
+      return generateGrpcJava;
+    case "grpc-csharp":
+      return generateGrpcCSharp;
+    case "grpc-kotlin":
+      return generateGrpcKotlin;
+    default:
+      return generateGrpcurl;
+  }
+}
+
+function grpcFullMethod(request: GrpcRequestConfig): string {
+  return `${request.service}/${request.method}`;
+}
+
+function grpcEnabledMetadata(
+  request: GrpcRequestConfig,
+): Array<{ key: string; value: string }> {
+  return (request.metadata ?? []).filter(
+    (m) => m.enabled !== false && m.key.trim(),
+  );
+}
+
+function generateGrpcurl(request: GrpcRequestConfig): string {
+  const parts = ["grpcurl"];
+  if (!request.tls) parts.push("-plaintext");
+  for (const m of grpcEnabledMetadata(request)) {
+    parts.push("-rpc-header", shellQuote(`${m.key}: ${m.value}`));
+  }
+  if (
+    request.body &&
+    request.body.trim() !== "{}" &&
+    request.body.trim() !== ""
+  ) {
+    parts.push("-d", shellQuote(request.body));
+  }
+  parts.push(shellQuote(request.address), shellQuote(grpcFullMethod(request)));
+  return parts.reduce(
+    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
+    "",
+  );
+}
+
+export function generateGrpcBufCurl(request: GrpcRequestConfig): string {
+  const scheme = request.tls ? "https" : "http";
+  const url = `${scheme}://${request.address}/${grpcFullMethod(request)}`;
+  const parts = ["buf", "curl"];
+  for (const m of grpcEnabledMetadata(request)) {
+    parts.push("-H", shellQuote(`${m.key}: ${m.value}`));
+  }
+  if (
+    request.body &&
+    request.body.trim() !== "{}" &&
+    request.body.trim() !== ""
+  ) {
+    parts.push("--data", shellQuote(request.body));
+  }
+  if (!request.tls) parts.push("--http2-prior-knowledge");
+  parts.push(shellQuote(url));
+  return parts.reduce(
+    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
+    "",
+  );
+}
+
+function generateGrpcGo(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const metaLines = meta
+    .map((m) => `\tmd.Append(${goString(m.key)}, ${goString(m.value)})`)
+    .join("\n");
+  const dialOpts = request.tls
+    ? `grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))`
+    : `grpc.WithTransportCredentials(insecure.NewCredentials())`;
+  const imports = [
+    `"context"`,
+    `"encoding/json"`,
+    `"fmt"`,
+    `"time"`,
+    `"google.golang.org/grpc"`,
+    `"google.golang.org/grpc/metadata"`,
+  ];
+  if (request.tls) {
+    imports.push(`"crypto/tls"`, `"google.golang.org/grpc/credentials"`);
+  } else {
+    imports.push(`"google.golang.org/grpc/credentials/insecure"`);
+  }
+  return `package main
+
+import (
+${imports.map((i) => `\t${i}`).join("\n")}
+)
+
+func main() {
+\tconn, err := grpc.NewClient(${goString(request.address)}, ${dialOpts})
+\tif err != nil {
+\t\tpanic(err)
+\t}
+\tdefer conn.Close()
+
+\tctx, cancel := context.WithTimeout(context.Background(), ${request.timeoutMs}*time.Millisecond)
+\tdefer cancel()
+
+${meta.length ? `\tmd := metadata.New(nil)\n${metaLines}\n\tctx = metadata.NewOutgoingContext(ctx, md)\n` : ""}\tvar request json.RawMessage = []byte(${goString(request.body || "{}")})
+\tvar response json.RawMessage
+
+\terr = conn.Invoke(ctx, ${goString("/" + grpcFullMethod(request))}, &request, &response)
+\tif err != nil {
+\t\tpanic(err)
+\t}
+\tfmt.Println(string(response))
+}
+`;
+}
+
+function generateGrpcNode(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const metaObj = meta.length
+    ? `const metadata = new grpc.Metadata();\n${meta.map((m) => `metadata.add(${JSON.stringify(m.key)}, ${JSON.stringify(m.value)});`).join("\n")}\n`
+    : "";
+  const creds = request.tls
+    ? "grpc.credentials.createSsl()"
+    : "grpc.credentials.createInsecure()";
+  return `const grpc = require("@grpc/grpc-js");
+const protoLoader = require("@grpc/proto-loader");
+
+// Load your .proto file
+const packageDefinition = protoLoader.loadSync("path/to/service.proto", {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
+const proto = grpc.loadPackageDefinition(packageDefinition);
+
+const client = new proto.${request.service}(
+  ${JSON.stringify(request.address)},
+  ${creds},
+);
+
+${metaObj}const request = ${request.body || "{}"};
+
+client.${request.method}(request, ${meta.length ? "metadata, " : ""}{ deadline: Date.now() + ${request.timeoutMs} }, (err, response) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+  console.log(JSON.stringify(response, null, 2));
+});
+`;
+}
+
+function generateGrpcPython(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const metaTuples = meta
+    .map((m) => `    (${JSON.stringify(m.key)}, ${JSON.stringify(m.value)}),`)
+    .join("\n");
+  const channel = request.tls
+    ? `grpc.secure_channel(${JSON.stringify(request.address)}, grpc.ssl_channel_credentials())`
+    : `grpc.insecure_channel(${JSON.stringify(request.address)})`;
+  return `import grpc
+import json
+# from your_pb2_grpc import ${request.service.split(".").pop()}Stub
+# from your_pb2 import YourRequestMessage
+
+${meta.length ? `metadata = [\n${metaTuples}\n]\n` : ""}channel = ${channel}
+# stub = ${request.service.split(".").pop()}Stub(channel)
+
+request_data = json.loads('''${request.body || "{}"}''')
+# response = stub.${request.method}(YourRequestMessage(**request_data)${meta.length ? ", metadata=metadata" : ""}, timeout=${Math.max(1, Math.round(request.timeoutMs / 1000))})
+# print(response)
+`;
+}
+
+function generateGrpcJava(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const serviceName = request.service.split(".").pop() ?? request.service;
+  const metaLines = meta
+    .map(
+      (m) =>
+        `    metadata.put(Metadata.Key.of(${JSON.stringify(m.key)}, Metadata.ASCII_STRING_MARSHALLER), ${JSON.stringify(m.value)});`,
+    )
+    .join("\n");
+  const channelBuilder = request.tls
+    ? `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).useTransportSecurity()`
+    : `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).usePlaintext()`;
+  return `import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
+import io.grpc.stub.MetadataUtils;
+import java.util.concurrent.TimeUnit;
+
+public class GrpcRequest {
+  public static void main(String[] args) throws Exception {
+    ManagedChannel channel = ${channelBuilder}.build();
+
+${meta.length ? `    Metadata metadata = new Metadata();\n${metaLines}\n` : ""}    // ${serviceName}Grpc.${serviceName}BlockingStub stub = ${serviceName}Grpc.newBlockingStub(channel)${meta.length ? "\n    //   .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadata))" : ""};
+    // stub.withDeadlineAfter(${request.timeoutMs}, TimeUnit.MILLISECONDS)
+    //   .${request.method.charAt(0).toLowerCase() + request.method.slice(1)}(request);
+
+    channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+  }
+}
+`;
+}
+
+function generateGrpcCSharp(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const serviceName = request.service.split(".").pop() ?? request.service;
+  const metaLines = meta
+    .map(
+      (m) =>
+        `    headers.Add(${JSON.stringify(m.key)}, ${JSON.stringify(m.value)});`,
+    )
+    .join("\n");
+  const channelCreds = request.tls
+    ? "new SslCredentials()"
+    : "ChannelCredentials.Insecure";
+  return `using Grpc.Net.Client;
+using Grpc.Core;
+
+var channel = GrpcChannel.ForAddress(${JSON.stringify((request.tls ? "https://" : "http://") + request.address)});
+var client = new ${serviceName}.${serviceName}Client(channel);
+
+${meta.length ? `var headers = new Metadata();\n${metaLines}\n` : ""}var deadline = DateTime.UtcNow.AddMilliseconds(${request.timeoutMs});
+// var response = await client.${request.method}Async(
+//     request,${meta.length ? "\n//     headers: headers," : ""}
+//     deadline: deadline
+// );
+// Console.WriteLine(response);
+`;
+}
+
+function generateGrpcKotlin(request: GrpcRequestConfig): string {
+  const meta = grpcEnabledMetadata(request);
+  const serviceName = request.service.split(".").pop() ?? request.service;
+  const metaLines = meta
+    .map(
+      (m) =>
+        `    metadata.put(Metadata.Key.of(${JSON.stringify(m.key)}, Metadata.ASCII_STRING_MARSHALLER), ${JSON.stringify(m.value)})`,
+    )
+    .join("\n");
+  const channelBuilder = request.tls
+    ? `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).useTransportSecurity()`
+    : `ManagedChannelBuilder.forTarget(${JSON.stringify(request.address)}).usePlaintext()`;
+  return `import io.grpc.ManagedChannelBuilder
+import io.grpc.Metadata
+import io.grpc.stub.MetadataUtils
+import java.util.concurrent.TimeUnit
+
+fun main() {
+    val channel = ${channelBuilder}.build()
+
+${meta.length ? `    val metadata = Metadata()\n${metaLines}\n` : ""}    // val stub = ${serviceName}Grpc.newBlockingStub(channel)${meta.length ? "\n    //     .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadata))" : ""}
+    //     .withDeadlineAfter(${request.timeoutMs}, TimeUnit.MILLISECONDS)
+    // val response = stub.${request.method.charAt(0).toLowerCase() + request.method.slice(1)}(request)
+    // println(response)
+
+    channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS)
+}
+`;
 }

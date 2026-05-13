@@ -1,6 +1,7 @@
 import type { HistoryEntry, RequestDraft } from "../types";
 import { searchHistory as filterHistory } from "../history";
 import { clonePlain, id } from "../request";
+import { redactHistoryEntry } from "../redact";
 import type { InvokeDB } from "./db";
 import { HISTORY_LIMIT } from "./helpers";
 import { getRetentionSettings } from "./meta";
@@ -10,7 +11,7 @@ export async function addHistory(
   entry: Omit<HistoryEntry, "id" | "createdAt">,
 ) {
   const request = entry.request as RequestDraft;
-  const saved: HistoryEntry = {
+  const raw: HistoryEntry = {
     ...clonePlain(entry),
     id: id(),
     requestId: entry.requestId ?? request.id,
@@ -18,6 +19,7 @@ export async function addHistory(
     protocol: entry.protocol ?? request.protocol ?? "rest",
     createdAt: Date.now(),
   };
+  const saved = redactHistoryEntry(raw);
   await db.history.add(saved);
   await applyRetention(db);
   return saved;
@@ -86,10 +88,6 @@ export function listHistory(db: InvokeDB, limit = 100) {
   return db.history.orderBy("createdAt").reverse().limit(limit).toArray();
 }
 
-export async function searchHistory(
-  db: InvokeDB,
-  query: string,
-  limit = 100,
-) {
+export async function searchHistory(db: InvokeDB, query: string, limit = 100) {
   return filterHistory(await listHistory(db, HISTORY_LIMIT), query, limit);
 }
