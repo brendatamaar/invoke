@@ -25,7 +25,7 @@ export function MockRequestLog({
           </button>
         )}
       </div>
-      <div className="font-mono text-2xs">
+      <div className="text-2xs">
         {logs.map((log) => (
           <div
             key={log.id}

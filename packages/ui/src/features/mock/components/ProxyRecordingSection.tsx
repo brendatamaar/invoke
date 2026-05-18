@@ -216,7 +216,7 @@ export function ProxyRecordingSection() {
 
       {/* Empty state */}
       {records.length === 0 && (
-        <p className="p-4 text-2xs text-[var(--text-3)] text-center">
+        <p className="p-4 text-xs text-[var(--text-3)] text-center">
           No recorded requests yet.
         </p>
       )}
