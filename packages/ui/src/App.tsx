@@ -24,8 +24,8 @@ import { useStore } from "./store";
 
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { size: requestWidth, onMouseDown: onResizeMouseDown } =
-    useResizablePane(520, "horizontal", containerRef, 480);
+  const { size: requestHeight, onMouseDown: onResizeMouseDown } =
+    useResizablePane(380, "vertical", containerRef, 300);
   const { handleSend } = useRequestExecution();
   const set = useStore((s) => s.set);
 
@@ -54,17 +54,17 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        <div ref={containerRef} className="flex-1 flex overflow-hidden">
+        <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden">
           <div
             className="overflow-hidden flex-shrink-0"
-            style={{ width: requestWidth, minWidth: 600 }}
+            style={{ height: requestHeight, minHeight: 200 }}
           >
             <RequestBuilder onSend={handleSend} />
           </div>
 
-          <div className="resize-handle-h" onMouseDown={onResizeMouseDown} />
+          <div className="resize-handle-v" onMouseDown={onResizeMouseDown} />
 
-          <div className="flex-1 overflow-hidden" style={{ minWidth: 480 }}>
+          <div className="flex-1 overflow-hidden" style={{ minHeight: 300 }}>
             <ResponseViewer />
           </div>
         </div>
