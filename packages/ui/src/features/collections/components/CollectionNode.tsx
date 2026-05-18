@@ -38,6 +38,9 @@ export function CollectionNode({ collection }: { collection: Collection }) {
   const colRequests = requests.filter(
     (r) => r.collectionId === collection.id && !r.folderId,
   );
+  const totalRequests = requests.filter(
+    (r) => r.collectionId === collection.id,
+  ).length;
 
   const del = async () => {
     setDeleteModal(false);
@@ -194,7 +197,7 @@ export function CollectionNode({ collection }: { collection: Collection }) {
             </span>
           )}
           <span className="text-2xs text-[var(--text-3)]">
-            {colRequests.length}
+            {totalRequests}
           </span>
           <div
             className="opacity-0 group-hover:opacity-100 relative ml-1"
