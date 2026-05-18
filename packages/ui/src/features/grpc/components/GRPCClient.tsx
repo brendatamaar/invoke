@@ -367,6 +367,7 @@ function GrpcScriptsPanel() {
 
 function GrpcOptionsPanel() {
   const { grpcRequest, setGrpcRequest, set } = useStore();
+  const grpcTimeout = formatGrpcTimeout(grpcRequest.timeoutMs ?? 30000);
 
   const handleProtosetFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -400,8 +401,12 @@ function GrpcOptionsPanel() {
             setGrpcRequest({ timeoutMs: Math.max(0, Number(e.target.value)) })
           }
         />
-        <span className="text-2xs text-[var(--text-3)] font-mono">
-          grpc-timeout: {formatGrpcTimeout(grpcRequest.timeoutMs ?? 30000)}
+        <span
+          className="text-2xs text-[var(--text-3)] font-mono"
+          title={`grpc-timeout: ${grpcTimeout}`}
+          aria-label={`grpc-timeout: ${grpcTimeout}`}
+        >
+          {grpcTimeout}
         </span>
       </div>
       <button
