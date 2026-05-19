@@ -1,6 +1,105 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
+import {
+  ArrowRight,
+  Cookie,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LockKeyhole,
+  Route,
+  ShieldCheck,
+  ShieldOff,
+} from "lucide-react";
 import { useStore } from "../../../store";
+
+function Section({
+  title,
+  icon,
+  meta,
+  children,
+}: {
+  title: string;
+  icon: ReactNode;
+  meta?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)]">
+          {icon}
+        </span>
+        <span className="text-xs font-semibold text-[var(--text-1)]">
+          {title}
+        </span>
+        {meta && <div className="ml-auto">{meta}</div>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Badge({
+  children,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  tone?: "neutral" | "ok" | "warn" | "danger" | "accent";
+}) {
+  const tones = {
+    neutral: "border-[var(--border)] bg-[var(--surface)] text-[var(--text-3)]",
+    ok: "border-[var(--ok)] bg-[var(--ok-bg)] text-[var(--ok)]",
+    warn: "border-[var(--warn)] bg-[var(--warn-bg)] text-[var(--warn)]",
+    danger: "border-[var(--danger)] bg-[var(--danger-bg)] text-[var(--danger)]",
+    accent:
+      "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]",
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-2xs font-medium ${tones[tone]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function EmptyState({
+  icon,
+  children,
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded border border-dashed border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 text-xs text-[var(--text-3)]">
+      <span className="text-[var(--text-3)]">{icon}</span>
+      {children}
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  mono = true,
+}: {
+  label: string;
+  value: ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-[minmax(7rem,10rem)_minmax(0,1fr)] gap-3 border-b border-[var(--border)] px-3 py-2.5 last:border-0">
+      <span className="text-2xs font-medium text-[var(--text-3)]">{label}</span>
+      <span
+        className={`min-w-0 break-all text-xs text-[var(--text-1)] ${mono ? "font-mono" : ""}`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
 
 export function AuthDebugTab() {
   const { response, resolvedRequest, cookies } = useStore();
@@ -24,64 +123,78 @@ export function AuthDebugTab() {
   })();
 
   const redirects = response?.redirects ?? [];
-
-  const Row = ({
-    label,
-    value,
-    mono = true,
-  }: {
-    label: string;
-    value: ReactNode;
-    mono?: boolean;
-  }) => (
-    <div className="flex items-start gap-3 py-1.5 border-b border-[var(--border)] last:border-0">
-      <span className="text-2xs text-[var(--text-3)] w-28 shrink-0 pt-0.5">
-        {label}
-      </span>
-      <span
-        className={`flex-1 text-xs break-all ${mono ? "font-mono" : ""} text-[var(--text-1)]`}
-      >
-        {value}
-      </span>
-    </div>
-  );
+  const sentCookies = sentCookieHeader
+    ? sentCookieHeader
+        .split(";")
+        .map((pair) => pair.trim())
+        .filter(Boolean)
+    : [];
+  const firstCertificate = response?.tls?.certificates[0];
+  const tokenExpiresAt =
+    auth?.type === "oauth2" && auth.flow === "authorization_code"
+      ? auth.tokenExpiresAt
+      : undefined;
+  const tokenExpired =
+    typeof tokenExpiresAt === "number" ? tokenExpiresAt < Date.now() : false;
 
   if (!resolvedRequest && !response) {
     return (
-      <p className="p-4 text-xs text-[var(--text-3)]">
-        Send a request to see auth debug info.
-      </p>
+      <div className="flex h-full flex-col items-center justify-center gap-2 px-8 py-12 text-center">
+        <div className="flex h-10 w-10 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)]">
+          <KeyRound size={18} className="text-[var(--text-3)]" />
+        </div>
+        <p className="text-sm font-medium text-[var(--text-2)]">
+          Send a request to inspect auth
+        </p>
+        <p className="max-w-sm text-xs text-[var(--text-3)]">
+          Authorization headers, cookies, redirects, and TLS details appear here
+          after execution.
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="p-3 flex flex-col gap-4 text-xs">
-      <section>
-        <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">
-          Authentication
-        </p>
-        <div className="rounded border border-[var(--border)]">
+    <div className="flex flex-col gap-5 p-4 text-xs">
+      <Section
+        title="Authentication"
+        icon={<KeyRound size={13} />}
+        meta={
+          sentAuthHeader ? (
+            <Badge tone={tokenExpired ? "danger" : "ok"}>
+              {tokenExpired ? "Expired" : "Sent"}
+            </Badge>
+          ) : (
+            <Badge>No header</Badge>
+          )
+        }
+      >
+        <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-2)]">
           {sentAuthHeader ? (
             <Row
               label="Authorization"
               value={
-                <span className="flex items-center gap-1">
-                  <span className={showToken ? "" : "blur-[3px] select-none"}>
+                <span className="flex min-w-0 items-start gap-2">
+                  <span
+                    className={`min-w-0 flex-1 ${showToken ? "" : "select-none blur-[3px]"}`}
+                  >
                     {sentAuthHeader}
                   </span>
                   <button
+                    type="button"
                     onClick={() => setShowToken((v) => !v)}
-                    className="shrink-0 text-[var(--text-3)] hover:text-[var(--text-1)] ml-1"
+                    className="mt-[-2px] shrink-0 rounded p-1 text-[var(--text-3)] hover:bg-[var(--surface)] hover:text-[var(--text-1)]"
+                    title={showToken ? "Hide token" : "Reveal token"}
                   >
-                    {showToken ? "hide" : "show"}
+                    {showToken ? <EyeOff size={12} /> : <Eye size={12} />}
                   </button>
                 </span>
               }
             />
           ) : (
-            <div className="py-2 px-3 text-2xs text-[var(--text-3)]">
-              No Authorization header sent
-            </div>
+            <EmptyState icon={<ShieldOff size={14} />}>
+              No Authorization header was sent with this request.
+            </EmptyState>
           )}
           {auth?.type === "oauth2" && auth.flow === "authorization_code" && (
             <>
@@ -109,17 +222,24 @@ export function AuthDebugTab() {
             </>
           )}
         </div>
-      </section>
+      </Section>
 
-      <section>
-        <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">
-          Cookies ({sentCookieHeader ? sentCookieHeader.split(";").length : 0}{" "}
-          sent, {cookies.length} stored)
-        </p>
-        <div className="rounded border border-[var(--border)]">
-          {sentCookieHeader ? (
-            sentCookieHeader.split(";").map((pair, i) => {
-              const [name, ...rest] = pair.trim().split("=");
+      <Section
+        title="Cookies"
+        icon={<Cookie size={13} />}
+        meta={
+          <div className="flex items-center gap-1.5">
+            <Badge tone={sentCookies.length > 0 ? "accent" : "neutral"}>
+              {sentCookies.length} sent
+            </Badge>
+            <Badge>{cookies.length} stored</Badge>
+          </div>
+        }
+      >
+        <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-2)]">
+          {sentCookies.length > 0 ? (
+            sentCookies.map((pair, i) => {
+              const [name, ...rest] = pair.split("=");
               return (
                 <Row
                   key={i}
@@ -129,28 +249,30 @@ export function AuthDebugTab() {
               );
             })
           ) : (
-            <div className="py-2 px-3 text-2xs text-[var(--text-3)]">
-              No cookies sent
-            </div>
+            <EmptyState icon={<Cookie size={14} />}>
+              No Cookie header was sent with this request.
+            </EmptyState>
           )}
         </div>
-      </section>
+      </Section>
 
       {redirects.length > 0 && (
-        <section>
-          <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">
-            Redirects ({redirects.length})
-          </p>
-          <div className="rounded border border-[var(--border)]">
+        <Section
+          title="Redirects"
+          icon={<Route size={13} />}
+          meta={<Badge tone="accent">{redirects.length} hops</Badge>}
+        >
+          <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-2)]">
             {redirects.map((r, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 py-1.5 px-3 border-b border-[var(--border)] last:border-0"
+                className="grid grid-cols-[2.5rem_auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-[var(--border)] px-3 py-2.5 last:border-0"
               >
-                <span className="text-2xs font-mono text-[var(--text-3)] w-8">
+                <span className="font-mono text-2xs text-[var(--text-3)]">
                   {r.status}
                 </span>
-                <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
+                <ArrowRight size={12} className="text-[var(--text-3)]" />
+                <span className="min-w-0 truncate font-mono text-xs text-[var(--text-1)]">
                   {r.url}
                 </span>
                 {r.timing && (
@@ -161,35 +283,43 @@ export function AuthDebugTab() {
               </div>
             ))}
           </div>
-        </section>
+        </Section>
       )}
 
       {response?.tls && (
-        <section>
-          <p className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider mb-2">
-            TLS
-          </p>
-          <div className="rounded border border-[var(--border)]">
+        <Section
+          title="TLS"
+          icon={<LockKeyhole size={13} />}
+          meta={
+            firstCertificate ? (
+              <Badge tone="ok">
+                <ShieldCheck size={10} />
+                Certificate
+              </Badge>
+            ) : (
+              <Badge>Session</Badge>
+            )
+          }
+        >
+          <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-2)]">
             <Row label="Version" value={response.tls.version} />
             <Row label="Cipher" value={response.tls.cipherSuite} />
-            {response.tls.certificates[0] && (
+            {firstCertificate && (
               <>
                 <Row
                   label="Subject"
-                  value={response.tls.certificates[0].subject}
+                  value={firstCertificate.subject}
                   mono={false}
                 />
                 <Row
                   label="Issuer"
-                  value={response.tls.certificates[0].issuer}
+                  value={firstCertificate.issuer}
                   mono={false}
                 />
                 <Row
                   label="Expires"
                   value={(() => {
-                    const exp = new Date(
-                      response.tls!.certificates[0].notAfter,
-                    );
+                    const exp = new Date(firstCertificate.notAfter);
                     const soon =
                       exp.getTime() - Date.now() < 30 * 24 * 60 * 60 * 1000;
                     return (
@@ -203,7 +333,7 @@ export function AuthDebugTab() {
               </>
             )}
           </div>
-        </section>
+        </Section>
       )}
     </div>
   );

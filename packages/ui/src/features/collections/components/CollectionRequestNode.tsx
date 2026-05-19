@@ -19,7 +19,13 @@ export function CollectionRequestNode({
 
   const open = () => {
     const draft = request.request as Parameters<typeof setRequest>[0];
-    setRequest({ ...draft, id: request.id, name: request.name });
+    setRequest({
+      ...draft,
+      id: request.id,
+      name: request.name,
+      collectionId: request.collectionId,
+      folderId: request.folderId,
+    });
   };
 
   const del = async () => {

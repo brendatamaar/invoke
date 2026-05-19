@@ -168,11 +168,15 @@ function SensitiveKeyValueEditor({
   return (
     <div className="flex flex-col">
       {rows.length > 0 && (
-        <div className="flex items-center gap-0 text-2xs text-[var(--text-3)] px-2 py-1 border-b border-[var(--border)]">
-          <span className="w-4 shrink-0 mr-1" />
-          <span className="flex-1">Key</span>
-          <span className="flex-1">Value</span>
-          <span className="w-12 shrink-0" />
+        <div className="grid grid-cols-[4px_14px_8px_1fr_1px_1fr_24px_24px] items-center text-2xs text-[var(--text-3)] py-1 border-b border-[var(--border)]">
+          <span />
+          <span />
+          <span />
+          <span>Key</span>
+          <span />
+          <span className="pl-2">Value</span>
+          <span />
+          <span />
         </div>
       )}
       {rows.map((row, i) => {
@@ -181,41 +185,41 @@ function SensitiveKeyValueEditor({
         return (
           <div
             key={i}
-            className="group flex items-center gap-0 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+            className="group grid grid-cols-[4px_14px_8px_1fr_1px_1fr_24px_24px] items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
           >
+            <span />
             <input
               type="checkbox"
               checked={row.enabled !== false}
               onChange={(e) => update(i, "enabled", e.target.checked)}
-              className="w-3.5 h-3.5 mr-2 ml-1 shrink-0"
+              className="w-3.5 h-3.5"
             />
+            <span />
             <input
               type="text"
               value={row.key}
               onChange={(e) => update(i, "key", e.target.value)}
               placeholder="Header"
-              className="flex-1 bg-transparent border-0 outline-none py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
+              className="w-full bg-transparent border-0 outline-none py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
             />
-            <span className="w-px h-4 bg-[var(--border)] shrink-0" />
+            <span className="h-4 bg-[var(--border)]" />
             <input
               type={isSensitive && !isRevealed ? "password" : "text"}
               value={row.value}
               onChange={(e) => update(i, "value", e.target.value)}
               placeholder="Value"
-              className="flex-1 bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
+              className="w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
             />
-            {isSensitive && (
-              <button
-                onClick={() => toggleReveal(i)}
-                title={isRevealed ? "Hide value" : "Reveal value"}
-                className="w-6 shrink-0 flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text-1)]"
-              >
-                {isRevealed ? <EyeOff size={11} /> : <Eye size={11} />}
-              </button>
-            )}
+            <button
+              onClick={() => toggleReveal(i)}
+              title={isRevealed ? "Hide value" : "Reveal value"}
+              className={`w-6 flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text-1)] ${!isSensitive ? "invisible" : ""}`}
+            >
+              {isRevealed ? <EyeOff size={11} /> : <Eye size={11} />}
+            </button>
             <button
               onClick={() => remove(i)}
-              className="w-6 shrink-0 flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100"
+              className="w-6 flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100"
             >
               <Trash2 size={11} />
             </button>

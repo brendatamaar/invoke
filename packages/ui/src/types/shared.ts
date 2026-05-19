@@ -92,6 +92,7 @@ export interface SelectProps {
 
 export interface StatusBadgeProps {
   status: number;
+  showLabel?: boolean;
 }
 
 export interface VariableAutocompleteInputProps {

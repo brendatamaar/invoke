@@ -4,6 +4,8 @@ import type { KeyValue } from "@invoke/core";
 import { VariableAutocompleteInput } from "./VariableAutocompleteInput";
 import type { KeyValueEditorProps } from "../../types";
 
+const COL_TEMPLATE = "grid-cols-[16px_14px_8px_1fr_1px_1fr_28px]";
+
 export function KeyValueEditor({
   rows,
   onChange,
@@ -40,29 +42,32 @@ export function KeyValueEditor({
         </datalist>
       )}
       {rows.length > 0 && (
-        <div className="flex items-center gap-0 text-2xs text-[var(--text-3)] px-2 py-1 border-b border-[var(--border)]">
-          <span className="w-4 shrink-0" />
-          <span className="w-4 shrink-0 mr-1" />
-          <span className="flex-1">Key</span>
-          <span className="flex-1">Value</span>
-          <span className="w-7 shrink-0" />
+        <div className={`grid ${COL_TEMPLATE} items-center text-2xs text-[var(--text-3)] py-1 border-b border-[var(--border)]`}>
+          <span />
+          <span />
+          <span />
+          <span>Key</span>
+          <span />
+          <span className="pl-2">Value</span>
+          <span />
         </div>
       )}
       {rows.map((row, i) => (
         <div
           key={i}
-          className="group flex items-center gap-0 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+          className={`group grid ${COL_TEMPLATE} items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]`}
         >
-          <span className="w-4 shrink-0 flex items-center justify-center text-[var(--text-3)] opacity-0 group-hover:opacity-100 cursor-grab">
+          <span className="flex items-center justify-center text-[var(--text-3)] opacity-0 group-hover:opacity-100 cursor-grab">
             <GripVertical size={12} />
           </span>
           <input
             type="checkbox"
             checked={row.enabled !== false}
             onChange={(e) => update(i, "enabled", e.target.checked)}
-            className="w-3.5 h-3.5 mr-2 shrink-0"
+            className="w-3.5 h-3.5"
             disabled={disabled}
           />
+          <span />
           <input
             type="text"
             value={row.key}
@@ -70,9 +75,9 @@ export function KeyValueEditor({
             placeholder={keyPlaceholder}
             disabled={disabled}
             list={datalistId}
-            className="flex-1 bg-transparent border-0 outline-none py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
+            className="w-full bg-transparent border-0 outline-none py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
           />
-          <span className="w-px h-4 bg-[var(--border)] shrink-0" />
+          <span className="h-4 bg-[var(--border)]" />
           {variableAutocomplete ? (
             <VariableAutocompleteInput
               value={row.value}
@@ -88,13 +93,13 @@ export function KeyValueEditor({
               onChange={(e) => update(i, "value", e.target.value)}
               placeholder={valuePlaceholder}
               disabled={disabled}
-              className="flex-1 bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
+              className="w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
             />
           )}
           <button
             onClick={() => remove(i)}
             disabled={disabled}
-            className="w-7 shrink-0 flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100"
+            className="flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100"
           >
             <Trash2 size={12} />
           </button>

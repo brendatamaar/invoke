@@ -283,25 +283,29 @@ function EnvironmentModal({
         {/* Variable table */}
         <div className="flex-1 overflow-y-auto">
           {/* Column headers */}
-          <div className="flex items-center border-b border-[var(--border)] text-2xs text-[var(--text-3)] bg-[var(--surface-2)]">
-            <span className="w-7 shrink-0" />
-            <span className="flex-1 px-2 py-1.5">Key</span>
-            <span className="w-px h-4 bg-[var(--border)] shrink-0" />
-            <span className="flex-1 px-2 py-1.5">Value</span>
-            <span className="w-16 shrink-0" />
+          <div className="grid grid-cols-[8px_14px_8px_1fr_1px_1fr_32px] items-center border-b border-[var(--border)] text-2xs text-[var(--text-3)] bg-[var(--surface-2)]">
+            <span />
+            <span />
+            <span />
+            <span className="px-2 py-1.5">Key</span>
+            <span />
+            <span className="px-2 py-1.5">Value</span>
+            <span />
           </div>
 
           {(draft.variables ?? []).map((v, i) => (
             <div
               key={i}
-              className="flex items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+              className="grid grid-cols-[8px_14px_8px_1fr_1px_1fr_32px] items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
             >
+              <span />
               <input
                 type="checkbox"
                 checked={v.enabled !== false}
                 onChange={(e) => setVar(i, "enabled", e.target.checked)}
-                className="w-3.5 h-3.5 mx-2 shrink-0"
+                className="w-3.5 h-3.5"
               />
+              <span />
               <input
                 value={v.key}
                 onChange={(e) => {
@@ -320,10 +324,10 @@ function EnvironmentModal({
                   });
                 }}
                 placeholder="KEY"
-                className="flex-1 bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono min-w-0"
+                className="w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono min-w-0"
               />
-              <span className="w-px h-4 bg-[var(--border)] shrink-0" />
-              <div className="flex-1 flex items-center min-w-0">
+              <span className="h-4 bg-[var(--border)]" />
+              <div className="flex items-center min-w-0">
                 <input
                   type={v.sensitive && !revealed.has(i) ? "password" : "text"}
                   value={v.value}
@@ -359,7 +363,7 @@ function EnvironmentModal({
               </div>
               <button
                 onClick={() => removeVar(i)}
-                className="px-2 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
+                className="flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)]"
               >
                 <X size={12} />
               </button>

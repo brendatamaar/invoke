@@ -410,16 +410,20 @@ export function SettingsPanel() {
       const text = await file.text();
       const backup = parseWorkspaceBackup(text);
       await coreStore.importWorkspace(backup);
-      const [envs, colls, defaults] = await Promise.all([
+      const [envs, colls, folds, fls, defaults] = await Promise.all([
         coreStore.listEnvironments(),
         coreStore.listCollections(),
+        coreStore.listFolders(),
+        coreStore.listFlows(),
         coreStore.getDefaultProtocolOptions(),
       ]);
       const reqs = await coreStore.listRequests();
       set({
         environments: envs,
         collections: colls,
+        folders: folds,
         requests: reqs,
+        flows: fls,
         protocolDefaults: defaults,
       });
       addToast(
