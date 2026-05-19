@@ -3,7 +3,9 @@ import type { HttpMethod, RequestConfig } from "../types";
 
 export function parseCurl(command: string): Partial<RequestConfig> {
   const tokens =
-    command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map(stripQuotes) ?? [];
+    command
+      .match(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"']+/g)
+      ?.map(stripQuotes) ?? [];
   const request = emptyRequest();
   if (tokens[0] !== "curl") return {};
   for (let i = 1; i < tokens.length; i += 1) {
@@ -37,5 +39,8 @@ export function parseCurl(command: string): Partial<RequestConfig> {
 }
 
 function stripQuotes(value: string) {
-  return value.replace(/^["']|["']$/g, "");
+  return value
+    .replace(/^["']|["']$/g, "")
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'");
 }
