@@ -17,6 +17,7 @@ export type UiSlice = Pick<
   | "passphraseCallback"
   | "uiFontSize"
   | "editorWordWrap"
+  | "showSaveActionModal"
   | "commandPaletteOpen"
   | "commandQuery"
   | "toasts"
@@ -43,6 +44,7 @@ export function createUiSlice(set: StoreSet, get: StoreGet): UiSlice {
     passphraseCallback: null,
     uiFontSize: Number(localStorage.getItem("uiFontSize") ?? 13),
     editorWordWrap: localStorage.getItem("editorWordWrap") !== "false",
+    showSaveActionModal: false,
     commandPaletteOpen: false,
     commandQuery: "",
     toasts: [],

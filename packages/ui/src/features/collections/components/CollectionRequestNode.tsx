@@ -1,10 +1,21 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Copy, MoreHorizontal, Trash2 } from "lucide-react";
-import type { SavedRequest } from "@invoke/core";
+import type { RequestConfig, SavedRequest } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
 import { CollectionMenuItem } from "./CollectionMenuItem";
+
+const COMPARE_FIELDS: (keyof RequestConfig)[] = [
+  "method", "url", "params", "headers", "bodyMode", "body", "auth",
+  "timeoutMs", "variables", "assertions", "extractionRules", "options",
+  "scripts", "retryPolicy",
+];
+
+function pickFields(obj: unknown) {
+  const o = obj as Record<string, unknown>;
+  return Object.fromEntries(COMPARE_FIELDS.map((k) => [k, o[k]]));
+}
 
 export function CollectionRequestNode({
   request,
@@ -13,9 +24,18 @@ export function CollectionRequestNode({
   request: SavedRequest;
   collectionId: string;
 }) {
-  const { set, setRequest, addToast } = useStore();
+  const { set, setRequest, addToast, request: activeRequest } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const isActive = activeRequest.id === request.id;
+  const isDirty = useMemo(() => {
+    if (!isActive) return false;
+    return (
+      JSON.stringify(pickFields(activeRequest)) !==
+      JSON.stringify(pickFields(request.request))
+    );
+  }, [isActive, activeRequest, request.request]);
 
   const open = () => {
     const draft = request.request as Parameters<typeof setRequest>[0];
@@ -54,6 +74,12 @@ export function CollectionRequestNode({
             (request.request as { url?: string })?.url ||
             "Untitled"}
         </span>
+        {isDirty && (
+          <span
+            title="Unsaved changes"
+            className="shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--warn)]"
+          />
+        )}
         <div
           className="opacity-0 group-hover:opacity-100 relative"
           onClick={(e) => e.stopPropagation()}
