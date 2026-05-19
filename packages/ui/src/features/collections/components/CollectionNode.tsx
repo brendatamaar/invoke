@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
   Download,
   Edit3,
   FileText,
+  FolderPlus,
   MoreHorizontal,
   Play,
   Plus,
@@ -28,6 +29,19 @@ export function CollectionNode({ collection }: { collection: Collection }) {
     useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [addReqModal, setAddReqModal] = useState(false);
+  const [addFolderModal, setAddFolderModal] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+        setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
   const [renameModal, setRenameModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [descModal, setDescModal] = useState(false);
@@ -53,6 +67,46 @@ export function CollectionNode({ collection }: { collection: Collection }) {
         folders: folders.filter((f) => f.collectionId !== collection.id),
       });
       addToast("success", "Collection deleted");
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes(`collection/${collection.id}`)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const requestId = e.dataTransfer.getData("requestId");
+    const sourceCollectionId = e.dataTransfer.getData("collectionId");
+    if (!requestId || sourceCollectionId !== collection.id) return;
+    const req = requests.find((r) => r.id === requestId);
+    if (!req?.folderId) return;
+    try {
+      await coreStore.moveRequest(requestId, null);
+      const reqs = await coreStore.listRequests();
+      set({ requests: reqs });
+    } catch (err) {
+      addToast("error", String(err));
+    }
+  };
+
+  const addFolder = async (name: string) => {
+    setAddFolderModal(false);
+    try {
+      await coreStore.createFolder(collection.id, name);
+      const folds = await coreStore.listFolders();
+      set({ folders: folds });
+      if (!expandedFolderIds.includes(collection.id)) toggleFolder(collection.id);
     } catch (e) {
       addToast("error", String(e));
     }
@@ -177,8 +231,11 @@ export function CollectionNode({ collection }: { collection: Collection }) {
     <>
       <div className="mb-0.5">
         <div
-          className="group flex items-center gap-1.5 px-3 py-1.5 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1"
+          className={`group flex items-center gap-1.5 px-3 py-1.5 cursor-pointer rounded mx-1 transition-colors ${isDragOver ? "bg-[var(--accent-subtle,var(--surface-2))] ring-1 ring-inset ring-[var(--accent,var(--border))]" : "hover:bg-[var(--surface-2)]"}`}
           onClick={() => toggleFolder(collection.id)}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
         >
           {expanded ? (
             <ChevronDown size={13} className="text-[var(--text-3)]" />
@@ -200,6 +257,7 @@ export function CollectionNode({ collection }: { collection: Collection }) {
             {totalRequests}
           </span>
           <div
+            ref={menuRef}
             className="opacity-0 group-hover:opacity-100 relative ml-1"
             onClick={(e) => e.stopPropagation()}
           >
@@ -217,6 +275,14 @@ export function CollectionNode({ collection }: { collection: Collection }) {
                   onClick={() => {
                     setMenuOpen(false);
                     setAddReqModal(true);
+                  }}
+                />
+                <CollectionMenuItem
+                  icon={<FolderPlus size={12} />}
+                  label="New Folder"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setAddFolderModal(true);
                   }}
                 />
                 <CollectionMenuItem
@@ -301,6 +367,14 @@ export function CollectionNode({ collection }: { collection: Collection }) {
       </div>
 
       <PromptModal
+        open={addFolderModal}
+        title="New Folder"
+        label="Name"
+        placeholder="My Folder"
+        onConfirm={addFolder}
+        onClose={() => setAddFolderModal(false)}
+      />
+      <PromptModal
         open={addReqModal}
         title="New Request"
         label="Name"
@@ -319,7 +393,13 @@ export function CollectionNode({ collection }: { collection: Collection }) {
       <ConfirmModal
         open={deleteModal}
         title="Delete Collection"
-        message={`Delete "${collection.name}" and all its requests? This cannot be undone.`}
+        message={
+          <span className="flex flex-col gap-2">
+            <span>Are you sure you want to delete:</span>
+            <strong className="break-all">{collection.name}</strong>
+            <span>This action cannot be undone.</span>
+          </span>
+        }
         confirmLabel="Delete"
         danger
         onConfirm={del}
