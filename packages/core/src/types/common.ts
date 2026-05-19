@@ -52,4 +52,6 @@ export interface KeyValue {
   value: string;
   enabled?: boolean;
   sensitive?: boolean;
+  type?: "text" | "file";
+  fileName?: string;
 }

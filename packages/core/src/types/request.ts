@@ -16,6 +16,7 @@ export interface RequestConfig {
   headers: KeyValue[];
   bodyMode: BodyMode;
   body: string;
+  bodyFileName?: string;
   auth: AuthConfig;
   timeoutMs: number;
   variables?: KeyValue[];
