@@ -23,7 +23,7 @@ export function MethodBadge({ method, size = "sm" }: MethodBadgeProps) {
         color,
         letterSpacing: 0,
         display: "inline-block",
-        width: size === "md" ? 50 : 44,
+        width: size === "md" ? 50 : 35,
         flexShrink: 0,
       }}
     >

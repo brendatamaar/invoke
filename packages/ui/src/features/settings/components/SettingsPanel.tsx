@@ -30,6 +30,7 @@ import type {
   TlsClientConfig,
 } from "@invoke/core";
 import { coreStore, useStore } from "../../../store";
+import { Select } from "../../../components/shared/Select";
 import type { GeneralDraft, SettingsTab, ThemeMode } from "../../../types";
 
 const PROTOCOLS: RequestProtocol[] = ["rest", "graphql", "websocket", "grpc"];
@@ -410,16 +411,20 @@ export function SettingsPanel() {
       const text = await file.text();
       const backup = parseWorkspaceBackup(text);
       await coreStore.importWorkspace(backup);
-      const [envs, colls, defaults] = await Promise.all([
+      const [envs, colls, folds, fls, defaults] = await Promise.all([
         coreStore.listEnvironments(),
         coreStore.listCollections(),
+        coreStore.listFolders(),
+        coreStore.listFlows(),
         coreStore.getDefaultProtocolOptions(),
       ]);
       const reqs = await coreStore.listRequests();
       set({
         environments: envs,
         collections: colls,
+        folders: folds,
         requests: reqs,
+        flows: fls,
         protocolDefaults: defaults,
       });
       addToast(
@@ -815,18 +820,19 @@ export function SettingsPanel() {
         {activeProxy ? (
           <div className="flex flex-col gap-3 border-t border-[var(--border)] pt-4">
             <FieldRow label="Type">
-              <select
+              <Select
                 value={activeProxy.type}
                 onChange={(e) =>
                   patchProxy({
-                    type: e.currentTarget.value as "http" | "socks5",
+                    type: e.target.value as "http" | "socks5",
                   })
                 }
-                className="input w-32 text-xs"
+                size="xs"
+                wrapperClassName="w-32"
               >
                 <option value="http">HTTP</option>
                 <option value="socks5">SOCKS5</option>
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label="URL">
               <input

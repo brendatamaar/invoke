@@ -99,7 +99,7 @@ export function CommandPalette() {
       title: f.name,
       subtitle: `${f.steps?.length ?? 0} steps`,
       keywords: `flow ${f.name}`,
-      run: () => set({ sidebarSection: "flows", flowDraft: f }),
+      run: () => set({ sidebarSection: "flows", sidebarCollapsed: false, flowDraft: f }),
     })),
     // Collections
     ...collections.map((c) => ({
@@ -108,7 +108,7 @@ export function CommandPalette() {
       title: c.name,
       subtitle: "Collection",
       keywords: `collection ${c.name}`,
-      run: () => set({ sidebarSection: "collections" }),
+      run: () => set({ sidebarSection: "collections", sidebarCollapsed: false }),
     })),
     // History entries (most recent 50 only)
     ...history.slice(0, 50).map((h) => {
@@ -132,7 +132,7 @@ export function CommandPalette() {
               >[0]["headers"]) ?? [],
             body: (req as { body?: string })?.body ?? "",
           });
-          set({ sidebarSection: "history" });
+          set({ sidebarSection: "history", sidebarCollapsed: false });
         },
       };
     }),
@@ -144,14 +144,14 @@ export function CommandPalette() {
       subtitle: `Mock · ${m.status}`,
       keywords: `mock ${m.method} ${m.pathPattern}`,
       method: m.method,
-      run: () => set({ sidebarSection: "mocks" }),
+      run: () => set({ sidebarSection: "mocks", sidebarCollapsed: false }),
     })),
     // New request commands
     {
       id: "new-request",
       kind: "command" as const,
-      title: "New Request",
-      subtitle: "Start a blank HTTP request",
+      title: "New REST Request",
+      subtitle: "Start a blank REST request",
       keywords: "new request create http",
       run: () => resetRequest(),
     },
@@ -201,7 +201,7 @@ export function CommandPalette() {
       title: "Go to Collections",
       subtitle: "Open Collections sidebar",
       keywords: "go navigate collections sidebar",
-      run: () => set({ sidebarSection: "collections" }),
+      run: () => set({ sidebarSection: "collections", sidebarCollapsed: false }),
     },
     {
       id: "nav-history",
@@ -209,7 +209,7 @@ export function CommandPalette() {
       title: "Go to History",
       subtitle: "Open History sidebar",
       keywords: "go navigate history sidebar",
-      run: () => set({ sidebarSection: "history" }),
+      run: () => set({ sidebarSection: "history", sidebarCollapsed: false }),
     },
     {
       id: "nav-environments",
@@ -217,7 +217,7 @@ export function CommandPalette() {
       title: "Go to Environments",
       subtitle: "Open Environments sidebar",
       keywords: "go navigate environments sidebar",
-      run: () => set({ sidebarSection: "environments" }),
+      run: () => set({ sidebarSection: "environments", sidebarCollapsed: false }),
     },
     {
       id: "nav-flows",
@@ -225,7 +225,7 @@ export function CommandPalette() {
       title: "Go to Flows",
       subtitle: "Open Flows sidebar",
       keywords: "go navigate flows sidebar",
-      run: () => set({ sidebarSection: "flows" }),
+      run: () => set({ sidebarSection: "flows", sidebarCollapsed: false }),
     },
     {
       id: "nav-mocks",
@@ -233,7 +233,7 @@ export function CommandPalette() {
       title: "Go to Mocks",
       subtitle: "Open Mock server sidebar",
       keywords: "go navigate mocks mock server sidebar",
-      run: () => set({ sidebarSection: "mocks" }),
+      run: () => set({ sidebarSection: "mocks", sidebarCollapsed: false }),
     },
     // UI toggles
     {

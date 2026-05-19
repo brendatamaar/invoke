@@ -220,7 +220,7 @@ export function ResponseViewer() {
     <div className="flex flex-col h-full relative">
       {response && (
         <div className="flex items-center gap-3 px-3 py-2 border-b border-[var(--border)] bg-[var(--surface-2)]">
-          <StatusBadge status={response.status} />
+          <StatusBadge status={response.status} showLabel />
           <button
             onClick={() =>
               setOverlay({
@@ -244,11 +244,6 @@ export function ResponseViewer() {
           <span className="text-2xs text-[var(--text-3)] flex items-center gap-1">
             <HardDrive size={11} /> {fmtSize(response.responseSize ?? 0)}
           </span>
-          {response.statusText && response.status !== 0 && (
-            <span className="text-2xs text-[var(--text-3)] font-mono">
-              {response.statusText}
-            </span>
-          )}
           {(retryAttempts ?? 0) > 0 && (
             <span className="text-2xs text-[var(--warn)] flex items-center gap-1">
               <RefreshCw size={11} /> {retryAttempts} retr

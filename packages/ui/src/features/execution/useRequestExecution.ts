@@ -35,6 +35,9 @@ export function useRequestExecution() {
   const streamMode = useStore((state) => state.streamMode);
   const cookies = useStore((state) => state.cookies);
   const enableCookies = useStore((state) => state.enableCookies);
+  const collections = useStore((state) => state.collections);
+  const folders = useStore((state) => state.folders);
+  const requests = useStore((state) => state.requests);
   const loading = useStore((state) => state.loading);
   const streaming = useStore((state) => state.streaming);
   const set = useStore((state) => state.set);
@@ -129,10 +132,24 @@ export function useRequestExecution() {
     }
 
     const env = environments.find((e) => e.id === activeEnvironmentId);
-    const varScopes: VariableScope[] = [
+    // Look up collectionId/folderId from the saved requests store first (authoritative),
+    // then fall back to whatever is on the active request draft.
+    const savedReq = request.id ? requests.find((r) => r.id === request.id) : undefined;
+    const collectionId = savedReq?.collectionId ?? request.collectionId;
+    const folderId = savedReq?.folderId ?? request.folderId;
+    const collection = collections.find((c) => c.id === collectionId);
+    const folder = folders.find((f) => f.id === folderId);
+
+    // Priority (lowest → highest): environment → collection → folder → request → session
+    const buildScopes = (req: RequestConfig): VariableScope[] => [
       { name: "environment", variables: env?.variables ?? [] },
+      { name: "collection", variables: collection?.variables ?? [] },
+      { name: "folder", variables: folder?.variables ?? [] },
+      { name: "request", variables: req.variables ?? [] },
       { name: "session", variables: sessionVariables },
     ];
+
+    const varScopes = buildScopes(activeRequest as RequestConfig);
     const vars = variablesFromScopes(varScopes);
 
     let resolved: RequestConfig;
@@ -143,18 +160,14 @@ export function useRequestExecution() {
         vars,
         activeRequest.scripts?.preRequest ?? "",
       );
-      const result = resolveRequest(
-        (scriptCtx.request ?? activeRequest) as RequestConfig,
-        env,
-        sessionVariables,
-      );
+      const effectiveReq = (scriptCtx.request ?? activeRequest) as RequestConfig;
+      const result = resolveRequest(effectiveReq, buildScopes(effectiveReq));
       resolved = result.request;
       unresolved = result.unresolved;
     } catch {
       const result = resolveRequest(
         activeRequest as RequestConfig,
-        env,
-        sessionVariables,
+        buildScopes(activeRequest as RequestConfig),
       );
       resolved = result.request;
       unresolved = result.unresolved;
@@ -295,11 +308,14 @@ export function useRequestExecution() {
     activeEnvironmentId,
     addToast,
     assertionRules,
+    collections,
     cookies,
     enableCookies,
     environments,
     extractRules,
+    folders,
     graphqlFileUploads,
+    requests,
     graphqlRequest,
     loading,
     request,

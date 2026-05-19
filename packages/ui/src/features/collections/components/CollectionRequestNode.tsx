@@ -1,10 +1,21 @@
-import { useState } from "react";
-import { Copy, MoreHorizontal, Trash2 } from "lucide-react";
-import type { SavedRequest } from "@invoke/core";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
+import type { RequestConfig, SavedRequest } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
 import { CollectionMenuItem } from "./CollectionMenuItem";
+
+const COMPARE_FIELDS: (keyof RequestConfig)[] = [
+  "method", "url", "params", "headers", "bodyMode", "body", "auth",
+  "timeoutMs", "variables", "assertions", "extractionRules", "options",
+  "scripts", "retryPolicy",
+];
+
+function pickFields(obj: unknown) {
+  const o = obj as Record<string, unknown>;
+  return Object.fromEntries(COMPARE_FIELDS.map((k) => [k, o[k]]));
+}
 
 export function CollectionRequestNode({
   request,
@@ -13,13 +24,40 @@ export function CollectionRequestNode({
   request: SavedRequest;
   collectionId: string;
 }) {
-  const { set, setRequest, addToast } = useStore();
+  const { set, setRequest, addToast, request: activeRequest } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+        setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  const isActive = activeRequest.id === request.id;
+  const isDirty = useMemo(() => {
+    if (!isActive) return false;
+    return (
+      JSON.stringify(pickFields(activeRequest)) !==
+      JSON.stringify(pickFields(request.request))
+    );
+  }, [isActive, activeRequest, request.request]);
 
   const open = () => {
     const draft = request.request as Parameters<typeof setRequest>[0];
-    setRequest({ ...draft, id: request.id, name: request.name });
+    setRequest({
+      ...draft,
+      id: request.id,
+      name: request.name,
+      collectionId: request.collectionId,
+      folderId: request.folderId,
+    });
   };
 
   const del = async () => {
@@ -37,9 +75,22 @@ export function CollectionRequestNode({
   return (
     <>
       <div
-        className="group relative flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1"
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData("requestId", request.id);
+          e.dataTransfer.setData("collectionId", request.collectionId);
+          e.dataTransfer.setData(`collection/${request.collectionId}`, "");
+          e.dataTransfer.effectAllowed = "move";
+          setDragging(true);
+        }}
+        onDragEnd={() => setDragging(false)}
+        className={`group relative flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 transition-opacity ${dragging ? "opacity-40" : ""}`}
         onClick={open}
       >
+        <GripVertical
+          size={11}
+          className="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--text-3)] cursor-grab"
+        />
         <MethodBadge
           method={(request.request as { method?: string })?.method ?? "GET"}
         />
@@ -48,7 +99,14 @@ export function CollectionRequestNode({
             (request.request as { url?: string })?.url ||
             "Untitled"}
         </span>
+        {isDirty && (
+          <span
+            title="Unsaved changes"
+            className="shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--warn)]"
+          />
+        )}
         <div
+          ref={menuRef}
           className="opacity-0 group-hover:opacity-100 relative"
           onClick={(e) => e.stopPropagation()}
         >
@@ -85,7 +143,13 @@ export function CollectionRequestNode({
       <ConfirmModal
         open={confirmDelete}
         title="Delete Request"
-        message={`Delete "${request.name}"? This cannot be undone.`}
+        message={
+          <span className="flex flex-col gap-2">
+            <span>Are you sure you want to delete:</span>
+            <strong className="break-all">{request.name || "Untitled"}</strong>
+            <span>This action cannot be undone.</span>
+          </span>
+        }
         confirmLabel="Delete"
         danger
         onConfirm={del}

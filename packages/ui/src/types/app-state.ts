@@ -190,6 +190,7 @@ export interface AppState {
   passphraseCallback: ((passphrase: string | null) => void) | null;
   uiFontSize: number;
   editorWordWrap: boolean;
+  showSaveActionModal: boolean;
   commandPaletteOpen: boolean;
   commandQuery: string;
   toasts: Toast[];

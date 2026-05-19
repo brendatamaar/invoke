@@ -40,7 +40,7 @@ export function ConfirmModal({
         </>
       }
     >
-      <p style={{ fontSize: "var(--t-base)", color: "var(--fg-1)", margin: 0 }}>
+      <p style={{ fontSize: "var(--t-base)", color: "var(--fg-1)", margin: 0, overflowWrap: "break-word" }}>
         {message}
       </p>
     </Dialog>

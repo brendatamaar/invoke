@@ -32,7 +32,7 @@ export interface DialogProps {
 export interface ConfirmModalProps {
   open: boolean;
   title: string;
-  message: string;
+  message: import("react").ReactNode;
   confirmLabel?: string;
   danger?: boolean;
   onConfirm: () => void;
@@ -92,6 +92,7 @@ export interface SelectProps {
 
 export interface StatusBadgeProps {
   status: number;
+  showLabel?: boolean;
 }
 
 export interface VariableAutocompleteInputProps {

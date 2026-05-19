@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Select } from "../../../components/shared/Select";
 import {
   AlertTriangle,
   ArrowDown,
@@ -574,12 +575,12 @@ export function GraphQLQueryPanel() {
         {operations.length > 1 && (
           <div className="flex items-center gap-1 ml-auto">
             <span className="text-2xs text-[var(--text-3)]">Operation:</span>
-            <select
+            <Select
               value={graphqlRequest.operationName ?? ""}
               onChange={(e) =>
                 setGraphqlRequest({ operationName: e.target.value })
               }
-              className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-1.5 py-0.5 text-2xs font-mono outline-none focus:border-[var(--accent)]"
+              size="2xs"
             >
               <option value="">— pick —</option>
               {operations.map((op, i) => (
@@ -587,7 +588,7 @@ export function GraphQLQueryPanel() {
                   {op.name ?? `(anonymous ${op.kind})`}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
       </div>
