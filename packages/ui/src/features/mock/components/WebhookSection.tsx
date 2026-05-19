@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Select } from "../../../components/shared/Select";
 import { ChevronDown, ChevronRight, Copy, Plus, Trash2 } from "lucide-react";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { useStore } from "../../../store";
@@ -49,17 +50,18 @@ function ValidationConfigForm({
 
       <div className="flex items-center gap-2">
         <label className="text-2xs text-[var(--text-3)] shrink-0">Type</label>
-        <select
+        <Select
           value={config.type}
           onChange={(e) =>
             set({ type: e.target.value as WebhookValidationConfig["type"] })
           }
-          className="input text-xs py-0.5 flex-1"
+          size="xs"
+          wrapperClassName="flex-1"
         >
           <option value="none">None</option>
           <option value="hmac">HMAC Signature</option>
           <option value="header">Header Token</option>
-        </select>
+        </Select>
       </div>
 
       {config.type === "hmac" && (
@@ -68,17 +70,18 @@ function ValidationConfigForm({
             <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">
               Algorithm
             </label>
-            <select
+            <Select
               value={config.algorithm ?? "sha256"}
               onChange={(e) =>
                 set({ algorithm: e.target.value as HmacAlgorithm })
               }
-              className="input text-xs py-0.5 flex-1"
+              size="xs"
+              wrapperClassName="flex-1"
             >
               <option value="sha256">SHA-256</option>
               <option value="sha1">SHA-1</option>
               <option value="sha512">SHA-512</option>
-            </select>
+            </Select>
           </div>
           <div className="flex items-center gap-2">
             <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">

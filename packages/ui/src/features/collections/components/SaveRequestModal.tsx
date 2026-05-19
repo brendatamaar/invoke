@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FolderOpen, X } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
+import { Select } from "../../../components/shared/Select";
 
 const NEW_COLLECTION_SENTINEL = "__new_col__";
 const NEW_FOLDER_SENTINEL = "__new_folder__";
@@ -80,9 +81,9 @@ export function SaveRequestModal() {
         targetFolderId = createdFolder.id;
       }
 
-      const { id: _id, collectionId: _col, folderId: _folder, ...requestBody } = request as Record<string, unknown>;
+      const { id: _id, collectionId: _col, folderId: _folder, ...requestBody } = request as unknown as Record<string, unknown>;
       const saved = await coreStore.saveRequest(
-        requestBody as Parameters<typeof coreStore.saveRequest>[0],
+        requestBody as unknown as Parameters<typeof coreStore.saveRequest>[0],
         name.trim(),
         targetCollectionId,
         { folderId: targetFolderId },
@@ -145,12 +146,12 @@ export function SaveRequestModal() {
             />
           </label>
 
-          <label className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <span className="text-xs text-[var(--text-3)]">Collection</span>
-            <select
+            <Select
               value={collectionId}
               onChange={(e) => setCollectionId(e.target.value)}
-              className="input text-sm"
+              size="sm"
             >
               {collections.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -158,8 +159,8 @@ export function SaveRequestModal() {
                 </option>
               ))}
               <option value={NEW_COLLECTION_SENTINEL}>+ New collection…</option>
-            </select>
-          </label>
+            </Select>
+          </div>
 
           {isNewCollection && (
             <label className="flex flex-col gap-1">
@@ -174,12 +175,12 @@ export function SaveRequestModal() {
             </label>
           )}
 
-          <label className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <span className="text-xs text-[var(--text-3)]">Folder (optional)</span>
-            <select
+            <Select
               value={folderId}
               onChange={(e) => setFolderId(e.target.value)}
-              className="input text-sm"
+              size="sm"
             >
               <option value="">No folder</option>
               {availableFolders.map((f) => (
@@ -188,8 +189,8 @@ export function SaveRequestModal() {
                 </option>
               ))}
               <option value={NEW_FOLDER_SENTINEL}>+ New folder…</option>
-            </select>
-          </label>
+            </Select>
+          </div>
 
           {isNewFolder && (
             <label className="flex flex-col gap-1">

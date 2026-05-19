@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "../../../store";
+import { Select } from "../../../components/shared/Select";
 import { URLBar } from "./URLBar";
 import { KeyValueEditor } from "../../../components/shared/KeyValueEditor";
 import { WebSocketClient } from "../../websocket/components/WebSocketClient";
@@ -103,21 +104,23 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
       {/* Header row: protocol dropdown + URL bar */}
       <div className="flex items-center border-b border-[var(--border)]">
         <div className="flex items-center px-2 py-1.5 border-r border-[var(--border)]">
-          <select
+          <Select
             value={protocol}
             onChange={(e) => {
               const p = e.target.value as RequestProtocol;
               setRequest({ protocol: p });
               set({ requestTab: p === "graphql" ? "graphql" : "params" });
             }}
-            className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-28 outline-none focus:border-[var(--accent)] text-[var(--text-1)] cursor-pointer"
+            size="xs"
+            wrapperClassName="w-28"
+            className="font-semibold"
           >
             {PROTOCOLS.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="flex-1">
           {(protocol === "rest" || protocol === "graphql") && (

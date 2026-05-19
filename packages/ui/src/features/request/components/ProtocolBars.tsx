@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { Select } from "../../../components/shared/Select";
 import {
   Activity,
   AlertTriangle,
@@ -326,18 +327,18 @@ export function WebSocketBar() {
         disabled={state !== "disconnected"}
         className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] transition-colors"
       />
-      <select
+      <Select
         value={websocketRequest.preset ?? "none"}
         onChange={(e) =>
           setWebsocketRequest({ preset: e.target.value as WsPreset })
         }
         disabled={state !== "disconnected"}
-        title="Protocol preset"
-        className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1.5 text-xs text-[var(--text-1)] outline-none cursor-pointer shrink-0"
+        size="xs"
+        wrapperClassName="shrink-0"
       >
         <option value="none">No preset</option>
         <option value="graphql-transport-ws">graphql-transport-ws</option>
-      </select>
+      </Select>
       {state === "connected" && activeSession?.latencyMs !== undefined && (
         <span
           title="Round-trip latency from last ping"

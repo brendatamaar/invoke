@@ -583,16 +583,16 @@ export function WebSocketClient() {
               )}
             </div>
 
-            <select
+            <Select
               value={dirFilter}
               onChange={(e) => setDirFilter(e.target.value as DirectionFilter)}
-              className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-1.5 py-0.5 text-2xs text-[var(--text-1)] outline-none cursor-pointer"
+              size="2xs"
             >
               <option value="all">All</option>
               <option value="sent">Sent</option>
               <option value="received">Received</option>
               <option value="system">System</option>
-            </select>
+            </Select>
 
             <button
               onClick={() => setPrettyJson((v) => !v)}
@@ -1069,18 +1069,18 @@ export function WebSocketClient() {
                   placeholder="Label (optional)"
                   className="input text-xs flex-1"
                 />
-                <select
+                <Select
                   value={msg.type}
                   onChange={(e) =>
                     updateSavedMessage(msg.id, {
                       type: e.target.value as "text" | "binary",
                     })
                   }
-                  className="bg-[var(--surface-2)] border border-[var(--border)] rounded px-1.5 py-1 text-xs text-[var(--text-1)] outline-none cursor-pointer"
+                  size="xs"
                 >
                   <option value="text">Text</option>
                   <option value="binary">Binary</option>
-                </select>
+                </Select>
                 <button
                   onClick={() => sendSaved(msg)}
                   disabled={websocketState !== "connected"}

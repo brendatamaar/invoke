@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { Select } from "../../../components/shared/Select";
 import { Zap, RefreshCw, Layers, X, Repeat, Braces } from "lucide-react";
 import { useStore } from "../../../store";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
@@ -124,17 +125,19 @@ export function URLBar({ onSend, loading }: URLBarProps) {
   return (
     <div className="flex items-center gap-2 px-3 py-2">
       {/* Method selector */}
-      <select
+      <Select
         value={request.method}
         onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
-        className={`bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1 text-xs font-semibold font-mono w-24 outline-none focus:border-[var(--accent)] cursor-pointer ${color}`}
+        size="xs"
+        wrapperClassName="w-24"
+        className={`font-semibold ${color}`}
       >
         {METHODS.map((m) => (
           <option key={m} value={m}>
             {m}
           </option>
         ))}
-      </select>
+      </Select>
 
       {/* URL input with variable autocomplete + paste-cURL detection */}
       <div className="flex-1 min-w-0">
