@@ -4,6 +4,7 @@ import type { RequestConfig, SavedRequest } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
+import { PromptModal } from "../../../components/shared/PromptModal";
 import { CollectionMenuItem } from "./CollectionMenuItem";
 
 const COMPARE_FIELDS: (keyof RequestConfig)[] = [
@@ -27,6 +28,7 @@ export function CollectionRequestNode({
   const { set, setRequest, addToast, request: activeRequest } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [duplicateName, setDuplicateName] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +60,23 @@ export function CollectionRequestNode({
       collectionId: request.collectionId,
       folderId: request.folderId,
     });
+  };
+
+  const duplicate = async (name: string) => {
+    setDuplicateName(null);
+    try {
+      await coreStore.saveRequest(
+        request.request as Parameters<typeof coreStore.saveRequest>[0],
+        name,
+        collectionId,
+        { folderId: request.folderId ?? null },
+      );
+      const reqs = await coreStore.listRequests(collectionId);
+      set({ requests: reqs });
+      addToast("success", "Request duplicated");
+    } catch (e) {
+      addToast("error", String(e));
+    }
   };
 
   const del = async () => {
@@ -124,7 +143,10 @@ export function CollectionRequestNode({
               <CollectionMenuItem
                 icon={<Copy size={12} />}
                 label="Duplicate"
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setDuplicateName(`${request.name || "Untitled"} Copy`);
+                }}
               />
               <CollectionMenuItem
                 icon={<Trash2 size={12} />}
@@ -140,6 +162,15 @@ export function CollectionRequestNode({
         </div>
       </div>
 
+      <PromptModal
+        open={duplicateName !== null}
+        title="Duplicate Request"
+        label="Name"
+        defaultValue={duplicateName ?? ""}
+        confirmLabel="Duplicate"
+        onConfirm={duplicate}
+        onClose={() => setDuplicateName(null)}
+      />
       <ConfirmModal
         open={confirmDelete}
         title="Delete Request"
