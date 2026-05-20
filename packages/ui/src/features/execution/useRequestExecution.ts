@@ -298,7 +298,8 @@ export function useRequestExecution() {
         protocol,
       });
       const hist = await coreStore.listHistory(200);
-      set({
+      const isProxyRequest = resolved.url.includes("/api/proxy/request");
+      set((state: { proxyRecordsTick: number }) => ({
         response,
         assertionResults: results,
         sessionVariables: { ...sessionVariables, ...extracted },
@@ -308,7 +309,8 @@ export function useRequestExecution() {
         history: hist,
         graphqlDeferredParts: parts,
         consoleLogs: { preRequest: preRequestLogs, preRequestError, preRequestRan: true, postResponse: postResponseLogs, postResponseError, postResponseRan: true },
-      });
+        ...(isProxyRequest && { proxyRecordsTick: state.proxyRecordsTick + 1 }),
+      }));
     } catch (e) {
       if ((e as Error).name !== "AbortError") addToast("error", String(e));
       set({ loading: false, loadController: undefined });

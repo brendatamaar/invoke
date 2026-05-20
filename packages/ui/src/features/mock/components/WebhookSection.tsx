@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Settings, X } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Settings, X, RefreshCw } from "lucide-react";
 import { Select } from "../../../components/shared/Select";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { useStore } from "../../../store";
@@ -131,10 +131,14 @@ function HistoryLog({
   entries,
   hasValidation,
   onClear,
+  onRefresh,
+  loadingLogs,
 }: {
   entries: WebhookEntry[];
   hasValidation: boolean;
   onClear: () => void;
+  onRefresh: () => void;
+  loadingLogs: boolean;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -144,14 +148,23 @@ function HistoryLog({
         <span className="text-2xs text-[var(--text-3)]">
           {entries.length} {entries.length === 1 ? "request" : "requests"}
         </span>
-        {entries.length > 0 && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={onClear}
-            className="text-2xs text-[var(--text-3)] hover:text-[var(--danger)]"
+            onClick={onRefresh}
+            className={`text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 transition-colors ${loadingLogs ? "animate-spin" : ""}`}
+            title="Refresh"
           >
-            Clear
+            <RefreshCw size={11} />
           </button>
-        )}
+          {entries.length > 0 && (
+            <button
+              onClick={onClear}
+              className="text-2xs text-[var(--text-3)] hover:text-[var(--danger)]"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {entries.length === 0 ? (
@@ -256,6 +269,7 @@ function WebhookModal({
   const [label, setLabel] = useState(endpoint.label);
   const [validation, setValidation] = useState<WebhookValidationConfig>(endpoint.validation);
   const [saving, setSaving] = useState(false);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const [copied, setCopied] = useState(false);
   const [entries, setEntries] = useState<WebhookEntry[]>([]);
 
@@ -282,10 +296,13 @@ function WebhookModal({
   };
 
   const fetchLogs = useCallback(async () => {
+    setLoadingLogs(true);
     try {
       const data = await loadWebhookLogs(endpoint.id);
       setEntries(data);
-    } catch { }
+    } catch { } finally {
+      setLoadingLogs(false);
+    }
   }, [endpoint.id]);
 
   const clearLogs = async () => {
@@ -300,8 +317,6 @@ function WebhookModal({
   useEffect(() => {
     if (tab !== "history") return;
     fetchLogs();
-    const timer = setInterval(fetchLogs, 3000);
-    return () => clearInterval(timer);
   }, [tab, fetchLogs]);
 
   useEffect(() => {
@@ -442,6 +457,8 @@ function WebhookModal({
               entries={entries}
               hasValidation={validation.type !== "none"}
               onClear={clearLogs}
+              onRefresh={fetchLogs}
+              loadingLogs={loadingLogs}
             />
           )}
         </div>

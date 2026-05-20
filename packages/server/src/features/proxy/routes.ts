@@ -25,8 +25,23 @@ export function registerProxyRoutes(app: Hono) {
       fetchOptions.body = input.body;
     }
 
-    const targetRes = await fetch(input.targetUrl, fetchOptions);
+    let targetRes: Response;
+    try {
+      targetRes = await fetch(input.targetUrl, fetchOptions);
+    } catch (err) {
+      return c.json({ error: `Proxy fetch failed: ${String(err)}` }, 502);
+    }
+
+    const MAX_BODY_BYTES = 10 * 1024 * 1024;
+    const contentLength = Number(targetRes.headers.get("content-length") ?? 0);
+    if (contentLength > MAX_BODY_BYTES) {
+      return c.json({ error: "Response body exceeds 10 MB limit" }, 502);
+    }
+
     const responseBody = await targetRes.text();
+    if (responseBody.length > MAX_BODY_BYTES) {
+      return c.json({ error: "Response body exceeds 10 MB limit" }, 502);
+    }
 
     const responseHeaders: { key: string; value: string }[] = [];
     targetRes.headers.forEach((value, key) => {

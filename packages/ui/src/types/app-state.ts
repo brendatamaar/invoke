@@ -161,6 +161,7 @@ export interface AppState {
   mockLogs: MockLogEntry[];
   mockTotalLogs: number;
   mockStatus: string;
+  proxyRecordsTick: number;
   variableEditor: {
     open: boolean;
     kind?: "collection" | "folder";
