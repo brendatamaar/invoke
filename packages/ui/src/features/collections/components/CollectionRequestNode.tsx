@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
 import type { RequestConfig, SavedRequest } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
-import { MethodBadge } from "../../../components/shared/MethodBadge";
+import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
 import { PromptModal } from "../../../components/shared/PromptModal";
 import { CollectionMenuItem } from "./CollectionMenuItem";
@@ -111,7 +111,7 @@ export function CollectionRequestNode({
           className="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--text-3)] cursor-grab"
         />
         <MethodBadge
-          method={(request.request as { method?: string })?.method ?? "GET"}
+          method={protocolMethod(request.protocol, (request.request as { method?: string })?.method)}
         />
         <span className="flex-1 text-xs text-[var(--text-1)] truncate">
           {request.name ||

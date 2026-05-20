@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useStore, coreStore } from "../../../store";
-import { MethodBadge } from "../../../components/shared/MethodBadge";
+import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
 import { CollectionMenuItem } from "../../collections/components/CollectionMenuItem";
 import type { HistoryEntry } from "@invoke/core";
@@ -42,7 +42,7 @@ function HistoryItem({
       className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-b border-[var(--border)] cursor-pointer"
       onClick={() => restore(entry)}
     >
-      <MethodBadge method={req?.method ?? "GET"} />
+      <MethodBadge method={protocolMethod(entry.protocol, req?.method)} />
       <div className="flex-1 min-w-0">
         <span
           className="block text-xs font-mono text-[var(--text-1)] truncate"

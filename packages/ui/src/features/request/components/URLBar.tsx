@@ -125,19 +125,21 @@ export function URLBar({ onSend, loading }: URLBarProps) {
   return (
     <div className="flex items-center gap-2 px-3 py-2">
       {/* Method selector */}
-      <Select
-        value={request.method}
-        onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
-        size="xs"
-        wrapperClassName="w-24"
-        className={`font-semibold ${color}`}
-      >
-        {METHODS.map((m) => (
-          <option key={m} value={m}>
-            {m}
-          </option>
-        ))}
-      </Select>
+      {request.protocol !== "graphql" && (
+        <Select
+          value={request.method}
+          onChange={(e) => setRequest({ method: e.target.value as HttpMethod })}
+          size="xs"
+          wrapperClassName="w-24"
+          className={`font-semibold ${color}`}
+        >
+          {METHODS.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </Select>
+      )}
 
       {/* URL input with variable autocomplete + paste-cURL detection */}
       <div className="flex-1 min-w-0">

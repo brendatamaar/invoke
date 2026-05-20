@@ -20,7 +20,7 @@ import {
 } from "@invoke/core";
 import { useStore } from "../../../store";
 import { execute } from "../../execute/api";
-import { MethodBadge } from "../../../components/shared/MethodBadge";
+import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
 
 function downloadText(content: string, filename: string, mime: string) {
@@ -110,9 +110,10 @@ export function CollectionRunnerModal() {
               {
                 requestId: runRequests[i].id,
                 name: runRequests[i].name,
-                method:
-                  (runRequests[i].request as { method?: string })?.method ??
-                  "GET",
+                method: protocolMethod(
+                  runRequests[i].protocol,
+                  (runRequests[i].request as { method?: string })?.method,
+                ),
                 url: (runRequests[i].request as { url?: string })?.url ?? "",
                 status: "skipped",
                 durationMs: 0,
@@ -252,7 +253,7 @@ export function CollectionRunnerModal() {
                   className="text-[var(--text-3)] shrink-0"
                 />
                 <MethodBadge
-                  method={(r.request as { method?: string })?.method ?? "GET"}
+                  method={protocolMethod(r.protocol, (r.request as { method?: string })?.method)}
                 />
                 <span className="flex-1 text-xs truncate text-[var(--text-2)]">
                   {r.name || (r.request as { url?: string })?.url}
