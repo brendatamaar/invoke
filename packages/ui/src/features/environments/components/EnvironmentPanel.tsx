@@ -1,6 +1,7 @@
 import {
   Plus,
   X,
+  Trash2,
   Eye,
   EyeOff,
   Lock,
@@ -117,7 +118,7 @@ export function EnvironmentPanel() {
               className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
               title="Delete"
             >
-              <X size={12} />
+              <Trash2 size={12} />
             </button>
           </div>
         ))}

@@ -15,6 +15,7 @@ export function MockRoutesSection({
   onDelete,
   onImport,
   onError,
+  onDeleteAll,
 }: {
   routes: MockRoute[];
   status?: string;
@@ -26,6 +27,7 @@ export function MockRoutesSection({
   onDelete: (id: string) => void;
   onImport: (routes: MockRoute[]) => void;
   onError: (message: string) => void;
+  onDeleteAll: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,6 +79,15 @@ export function MockRoutesSection({
             className="hidden"
             onChange={handleFileChange}
           />
+          {routes.length > 0 && (
+            <button
+              onClick={onDeleteAll}
+              className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
+              title="Delete all routes"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
           <button
             onClick={() => fileInputRef.current?.click()}
             className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"

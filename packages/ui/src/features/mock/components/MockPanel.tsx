@@ -14,6 +14,7 @@ export function MockPanel() {
   const { mockRoutes, mockLogs, mockTotalLogs, mockStatus, set, addToast } = useStore();
   const [editingRoute, setEditingRoute] = useState<MockRoute | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refresh = async () => {
@@ -182,6 +183,7 @@ export function MockPanel() {
           onDelete={setConfirmDeleteId}
           onImport={importRoutes}
           onError={(msg) => addToast("error", `Import failed: ${msg}`)}
+          onDeleteAll={() => setConfirmDeleteAll(true)}
         />
         <WebhookSection />
         <ProxyRecordingSection />
@@ -206,6 +208,18 @@ export function MockPanel() {
           setConfirmDeleteId(null);
         }}
         onClose={() => setConfirmDeleteId(null)}
+      />
+      <ConfirmModal
+        open={confirmDeleteAll}
+        title="Delete All Routes"
+        message="Delete all routes? This cannot be undone."
+        confirmLabel="Delete All"
+        danger
+        onConfirm={() => {
+          persistRoutes([]);
+          setConfirmDeleteAll(false);
+        }}
+        onClose={() => setConfirmDeleteAll(false)}
       />
     </div>
   );

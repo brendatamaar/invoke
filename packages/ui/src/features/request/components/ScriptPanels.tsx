@@ -167,14 +167,14 @@ export function ScriptsPanel() {
           className={`tab-btn text-2xs flex items-center gap-1 ${activeScript === "pre" ? "active" : ""}`}
         >
           Pre-request
-          <ScriptStatusDot ran={consoleLogs.preRequestRan} error={consoleLogs.preRequestError} />
+          <ScriptStatusDot ran={consoleLogs.preRequestRan && !!request.scripts?.preRequest?.trim()} error={consoleLogs.preRequestError} />
         </button>
         <button
           onClick={() => setActiveScript("post")}
           className={`tab-btn text-2xs flex items-center gap-1 ${activeScript === "post" ? "active" : ""}`}
         >
           Post-response
-          <ScriptStatusDot ran={consoleLogs.postResponseRan} error={consoleLogs.postResponseError} />
+          <ScriptStatusDot ran={consoleLogs.postResponseRan && !!request.scripts?.postResponse?.trim()} error={consoleLogs.postResponseError} />
         </button>
       </div>
       <div className="flex-1 overflow-hidden">

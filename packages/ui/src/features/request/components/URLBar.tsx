@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Select } from "../../../components/shared/Select";
-import { Zap, RefreshCw, Layers, X, Repeat, Braces } from "lucide-react";
+import { Zap, RefreshCw, Layers, X, Braces } from "lucide-react";
 import { useStore } from "../../../store";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 import {
@@ -55,10 +55,7 @@ export function URLBar({ onSend, loading }: URLBarProps) {
     requests: savedRequests,
   } = useStore();
   const color = METHOD_COLORS[request.method] ?? "text-[var(--fg-2)]";
-  const [showSendN, setShowSendN] = useState(false);
-  const [sendCount, setSendCount] = useState(5);
   const [showVars, setShowVars] = useState(false);
-  const sendNRef = useRef<HTMLDivElement>(null);
   const varsRef = useRef<HTMLDivElement>(null);
 
   const { unresolved, scopedVars } = useMemo(() => {
@@ -249,45 +246,6 @@ export function URLBar({ onSend, loading }: URLBarProps) {
                 ))}
               </>
             )}
-          </div>
-        )}
-      </div>
-
-      {/* Send N times */}
-      <div className="relative" ref={sendNRef}>
-        <button
-          onClick={() => setShowSendN((v) => !v)}
-          title="Send N times"
-          className="p-1.5 rounded border border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors"
-        >
-          <Repeat size={13} />
-        </button>
-        {showSendN && (
-          <div className="absolute right-0 top-full mt-1 z-50 bg-[var(--surface)] border border-[var(--border)] rounded shadow-[var(--shadow-2)] p-2 flex items-center gap-2 min-w-36">
-            <span className="text-2xs text-[var(--text-2)] whitespace-nowrap">
-              Send
-            </span>
-            <input
-              type="number"
-              min={1}
-              max={500}
-              value={sendCount}
-              onChange={(e) =>
-                setSendCount(Math.max(1, Number(e.target.value)))
-              }
-              className="input text-xs py-0.5 w-14"
-              autoFocus
-            />
-            <span className="text-2xs text-[var(--text-2)]">times</span>
-            <button
-              onClick={() => {
-                setShowSendN(false);
-                set({ showBatchRunner: true });
-              }}
-              className="btn btn-primary text-2xs py-0.5 px-2"
-            >
-              Go
-            </button>
           </div>
         )}
       </div>
