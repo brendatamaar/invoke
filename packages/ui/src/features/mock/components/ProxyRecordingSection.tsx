@@ -41,13 +41,18 @@ function StatusChip({ status }: { status: number }) {
 function ProxyUrlTooltip({ url }: { url: string }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (btnRef.current && !btnRef.current.contains(e.target as Node))
+      const target = e.target as Node;
+      if (
+        !btnRef.current?.contains(target) &&
+        !panelRef.current?.contains(target)
+      )
         setOpen(false);
     };
     document.addEventListener("mousedown", handler);
@@ -57,7 +62,12 @@ function ProxyUrlTooltip({ url }: { url: string }) {
   const toggle = () => {
     if (!open && btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, left: r.left });
+      const spaceBelow = window.innerHeight - r.bottom;
+      if (spaceBelow < 300) {
+        setPos({ bottom: window.innerHeight - r.top + 4, left: r.left });
+      } else {
+        setPos({ top: r.bottom + 4, left: r.left });
+      }
     }
     setOpen((v) => !v);
   };
@@ -67,6 +77,12 @@ function ProxyUrlTooltip({ url }: { url: string }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+
+  const exampleBody = JSON.stringify(
+    { targetUrl: "https://api.example.com/users", method: "GET", headers: [], body: "" },
+    null,
+    2,
+  );
 
   return (
     <>
@@ -81,24 +97,36 @@ function ProxyUrlTooltip({ url }: { url: string }) {
       {open &&
         createPortal(
           <div
-            className="fixed z-50 w-72 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] p-3"
-            style={{ top: pos.top, left: pos.left }}
+            ref={panelRef}
+            className="fixed z-50 w-80 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] p-3 flex flex-col gap-3"
+            style={{ top: pos.top, bottom: pos.bottom, left: pos.left }}
           >
-            <p className="text-2xs text-[var(--text-2)] mb-2">
-              Point your HTTP client at this URL. Invoke will forward the
-              request and record it here so you can import it as a mock.
-            </p>
-            <div className="flex items-center gap-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1">
-              <code className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate">
-                {url}
-              </code>
-              <button
-                onClick={copy}
-                className="p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] shrink-0"
-                title="Copy"
-              >
-                {copied ? <Check size={11} /> : <Copy size={11} />}
-              </button>
+            <div>
+              <p className="text-2xs font-semibold text-[var(--text-1)] mb-1">How proxy recording works</p>
+              <p className="text-2xs text-[var(--text-3)] leading-relaxed">
+                Send a <code className="font-mono">POST</code> to this endpoint with your real API URL in <code className="font-mono">targetUrl</code>. Invoke forwards the request, records the exchange, and returns the real response. You can then import recordings as mock routes.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-2xs font-semibold text-[var(--text-1)] mb-1">Endpoint</p>
+              <div className="flex items-center gap-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1">
+                <code className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate">{url}</code>
+                <button
+                  onClick={copy}
+                  className="p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] shrink-0"
+                  title="Copy URL"
+                >
+                  {copied ? <Check size={11} /> : <Copy size={11} />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-2xs font-semibold text-[var(--text-1)] mb-1">Example body</p>
+              <pre className="text-2xs font-mono text-[var(--text-2)] bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1.5 leading-relaxed">
+                {exampleBody}
+              </pre>
             </div>
           </div>,
           document.body,
@@ -108,12 +136,13 @@ function ProxyUrlTooltip({ url }: { url: string }) {
 }
 
 export function ProxyRecordingSection() {
-  const { addToast, set } = useStore();
+  const { addToast, set, proxyRecordsTick } = useStore();
   const [records, setRecords] = useState<ProxyRecord[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
 
-  const proxyUrl = `${window.location.origin}/api/proxy/request`;
+  const proxyUrl = `${window.location.protocol}//${window.location.hostname}:4000/api/proxy/request`;
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -131,24 +160,48 @@ export function ProxyRecordingSection() {
     refresh();
   }, [refresh]);
 
-  const clearAll = async () => {
-    await clearProxyRecords();
-    setRecords([]);
-    setSelected(new Set());
-  };
+  useEffect(() => {
+    if (proxyRecordsTick > 0) refresh();
+  }, [proxyRecordsTick, refresh]);
 
-  const importSelected = async () => {
+  const clearAll = async () => {
     try {
-      const ids = selected.size > 0 ? [...selected] : undefined;
-      const result = await proxyRecordsToMocks(ids);
-      set({ mockRoutes: result.routes });
-      addToast(
-        "success",
-        `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`,
-      );
+      await clearProxyRecords();
+      setRecords([]);
       setSelected(new Set());
     } catch (e) {
       addToast("error", String(e));
+    }
+  };
+
+  const importSelected = async () => {
+    setImporting(true);
+    try {
+      const ids = selected.size > 0 ? [...selected] : undefined;
+      const count = ids ? ids.length : records.length;
+      const result = await proxyRecordsToMocks(ids);
+      set({ mockRoutes: result.routes });
+
+      const skipped = count - result.added;
+      if (result.added === 0) {
+        addToast("success", "No new routes added — all already exist as mocks");
+      } else if (skipped > 0) {
+        addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""} (${skipped} already existed)`);
+      } else {
+        addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`);
+      }
+
+      const selectedRecords = ids ? records.filter((r) => ids.includes(r.id)) : records;
+      const withQuery = selectedRecords.filter((r) => r.path.includes("?"));
+      if (withQuery.length > 0) {
+        addToast("success", `Note: query params stripped from ${withQuery.length} route path${withQuery.length !== 1 ? "s" : ""}`);
+      }
+
+      setSelected(new Set());
+    } catch (e) {
+      addToast("error", String(e));
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -174,12 +227,7 @@ export function ProxyRecordingSection() {
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)]">
         <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider flex-1">
-          Proxy Recording
-          {records.length > 0 && (
-            <span className="ml-1.5 normal-case font-normal text-[var(--text-2)]">
-              {records.length} recorded
-            </span>
-          )}
+          Proxy Recording {records.length > 0 && `- ${records.length}`}
         </span>
         <ProxyUrlTooltip url={proxyUrl} />
         <button
@@ -193,19 +241,16 @@ export function ProxyRecordingSection() {
           <>
             <button
               onClick={importSelected}
-              className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
-              title={
-                selected.size > 0
-                  ? "Import selected as mocks"
-                  : "Import all as mocks"
-              }
+              disabled={importing}
+              className={`p-0.5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${importing ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
+              title={importing ? "Importing..." : selected.size > 0 ? `Import ${selected.size} selected` : "Import all as mocks"}
             >
               <Download size={11} />
-              {selected.size > 0 ? `Import (${selected.size})` : "Import all"}
             </button>
             <button
               onClick={clearAll}
-              className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)]"
+              disabled={importing}
+              className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] disabled:opacity-40 disabled:cursor-not-allowed"
               title="Clear all records"
             >
               <Trash2 size={11} />
@@ -224,8 +269,8 @@ export function ProxyRecordingSection() {
       {/* Record list */}
       {records.length > 0 && (
         <>
-          {/* List header with select-all */}
-          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] bg-[var(--surface-2)]">
+          {/* Select-all strip */}
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)]">
             <button
               onClick={toggleAll}
               className="text-[var(--text-3)] hover:text-[var(--accent)] shrink-0"
@@ -238,15 +283,10 @@ export function ProxyRecordingSection() {
                 <Square size={11} />
               )}
             </button>
-            <span className="text-2xs text-[var(--text-3)] w-14 shrink-0">
-              Method
-            </span>
-            <span className="flex-1 text-2xs text-[var(--text-3)]">Path</span>
-            <span className="text-2xs text-[var(--text-3)] w-10 shrink-0 text-right">
-              Status
-            </span>
-            <span className="text-2xs text-[var(--text-3)] w-16 shrink-0 text-right">
-              Time
+            <span className="text-2xs text-[var(--text-3)]">
+              {someSelected || allSelected
+                ? `${selected.size} selected`
+                : "Select all"}
             </span>
           </div>
 
@@ -254,17 +294,13 @@ export function ProxyRecordingSection() {
             <div
               key={r.id}
               onClick={() => toggleSelect(r.id)}
-              className={`flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors ${
-                selected.has(r.id)
-                  ? "bg-[var(--accent-subtle)]"
-                  : "hover:bg-[var(--surface-2)]"
-              }`}
+              className={`flex items-center gap-2.5 px-3 py-2 border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors ${selected.has(r.id)
+                ? "bg-[var(--accent-subtle)]"
+                : "hover:bg-[var(--surface-2)]"
+                }`}
             >
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleSelect(r.id);
-                }}
+                onClick={(e) => { e.stopPropagation(); toggleSelect(r.id); }}
                 className="shrink-0 text-[var(--text-3)]"
               >
                 {selected.has(r.id) ? (
@@ -273,19 +309,15 @@ export function ProxyRecordingSection() {
                   <Square size={11} />
                 )}
               </button>
-              <span className="w-14 shrink-0">
-                <MethodBadge method={r.method} />
-              </span>
+              <MethodBadge method={r.method} />
               <span
                 className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate"
                 title={r.path}
               >
                 {r.path}
               </span>
-              <span className="w-10 shrink-0 flex justify-end">
-                <StatusChip status={r.status} />
-              </span>
-              <span className="text-2xs text-[var(--text-3)] w-16 shrink-0 text-right tabular-nums">
+              <StatusChip status={r.status} />
+              <span className="text-2xs text-[var(--text-3)] tabular-nums shrink-0">
                 {formatTime(r.createdAt)}
               </span>
             </div>

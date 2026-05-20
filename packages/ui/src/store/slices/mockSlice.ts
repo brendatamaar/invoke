@@ -2,7 +2,7 @@ import type { AppState } from "../../types";
 
 export type MockSlice = Pick<
   AppState,
-  "mockRoutes" | "mockLogs" | "mockTotalLogs" | "mockStatus"
+  "mockRoutes" | "mockLogs" | "mockTotalLogs" | "mockStatus" | "proxyRecordsTick"
 >;
 
 export function createMockSlice(): MockSlice {
@@ -11,5 +11,6 @@ export function createMockSlice(): MockSlice {
     mockLogs: [],
     mockTotalLogs: 0,
     mockStatus: "",
+    proxyRecordsTick: 0,
   };
 }

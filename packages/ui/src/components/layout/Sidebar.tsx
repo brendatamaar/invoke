@@ -16,7 +16,7 @@ const NAV: { id: SidebarSection; icon: React.ReactNode; label: string }[] = [
 ];
 
 const RAIL_WIDTH = 36;
-const PANEL_WIDTH = 240;
+const PANEL_WIDTH = 270;
 
 export function Sidebar() {
   const { sidebarSection, sidebarCollapsed, set } = useStore();
