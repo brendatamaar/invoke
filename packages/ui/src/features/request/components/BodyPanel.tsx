@@ -1,15 +1,15 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Upload, X } from "lucide-react";
 import type { BodyMode, KeyValue } from "@invoke/core";
 import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { KeyValueEditor } from "../../../components/shared/KeyValueEditor";
+import { FormDataEditor } from "./FormDataEditor";
 import { useStore } from "../../../store";
 
 export function BodyPanel() {
   const { request, setRequest } = useStore();
   const mode = (request.bodyMode ?? "none") as BodyMode;
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [fileName, setFileName] = useState("");
 
   return (
     <div className="flex flex-col h-full">
@@ -26,7 +26,61 @@ export function BodyPanel() {
         ).map((bodyMode) => (
           <button
             key={bodyMode}
-            onClick={() => setRequest({ bodyMode })}
+            onClick={() => {
+                if (mode === "file" || bodyMode === "file") {
+                  setRequest({ bodyMode, body: "", bodyFileName: "" });
+                  return;
+                }
+                const isTargetKV = bodyMode === "form-data" || bodyMode === "urlencoded";
+                const isSourceKV = mode === "form-data" || mode === "urlencoded";
+                const isTargetJSON = bodyMode === "json" || bodyMode === "raw";
+                const isSourceJSON = mode === "json" || mode === "raw";
+                if (isTargetKV && isSourceJSON) {
+                  try {
+                    const parsed = JSON.parse(request.body || "{}");
+                    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                      const rows: KeyValue[] = Object.entries(parsed).map(
+                        ([key, value]) => ({ key, value: String(value), enabled: true, type: "text" }),
+                      );
+                      setRequest({ bodyMode, body: JSON.stringify(rows) });
+                      return;
+                    }
+                  } catch {
+                    /* not JSON, fall through */
+                  }
+                }
+                if (isTargetJSON && isSourceKV) {
+                  try {
+                    const rows = JSON.parse(request.body || "[]") as KeyValue[];
+                    if (Array.isArray(rows)) {
+                      const obj = Object.fromEntries(
+                        rows
+                          .filter((r) => r.enabled !== false && r.type !== "file")
+                          .map((r) => [r.key, r.value]),
+                      );
+                      setRequest({ bodyMode, body: JSON.stringify(obj, null, 2) });
+                      return;
+                    }
+                  } catch {
+                    /* fall through */
+                  }
+                }
+                if (bodyMode === "urlencoded" && mode === "form-data") {
+                  try {
+                    const rows = JSON.parse(request.body || "[]") as KeyValue[];
+                    if (Array.isArray(rows)) {
+                      const textOnly = rows.map((r) =>
+                        r.type === "file" ? { ...r, type: "text" as const, value: "", fileName: undefined } : r,
+                      );
+                      setRequest({ bodyMode, body: JSON.stringify(textOnly) });
+                      return;
+                    }
+                  } catch {
+                    /* fall through */
+                  }
+                }
+                setRequest({ bodyMode });
+              }}
             className={`tab-btn text-2xs ${mode === bodyMode ? "active" : ""}`}
           >
             {bodyMode}
@@ -86,11 +140,25 @@ export function BodyPanel() {
             </div>
           </div>
         )}
-        {(mode === "form-data" || mode === "urlencoded") && (
+        {mode === "form-data" && (
+          <FormDataEditor
+            rows={(() => {
+              try {
+                const parsed = JSON.parse(request.body || "[]");
+                return Array.isArray(parsed) ? (parsed as KeyValue[]) : [];
+              } catch {
+                return [];
+              }
+            })()}
+            onChange={(rows) => setRequest({ body: JSON.stringify(rows) })}
+          />
+        )}
+        {mode === "urlencoded" && (
           <KeyValueEditor
             rows={(() => {
               try {
-                return JSON.parse(request.body || "[]") as KeyValue[];
+                const parsed = JSON.parse(request.body || "[]");
+                return Array.isArray(parsed) ? (parsed as KeyValue[]) : [];
               } catch {
                 return [];
               }
@@ -111,8 +179,12 @@ export function BodyPanel() {
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = () => {
-                  setRequest({ body: reader.result as string });
-                  setFileName(file.name);
+                  if (reader.result) {
+                    setRequest({ body: reader.result as string, bodyFileName: file.name });
+                  }
+                };
+                reader.onerror = () => {
+                  setRequest({ body: "", bodyFileName: "" });
                 };
                 reader.readAsDataURL(file);
                 e.target.value = "";
@@ -122,12 +194,11 @@ export function BodyPanel() {
               <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-2)] border border-[var(--border)] rounded text-xs">
                 <Upload size={12} className="text-[var(--accent)]" />
                 <span className="font-mono text-[var(--text-1)]">
-                  {fileName || "file selected"}
+                  {request.bodyFileName || "file selected"}
                 </span>
                 <button
                   onClick={() => {
-                    setRequest({ body: "" });
-                    setFileName("");
+                    setRequest({ body: "", bodyFileName: "" });
                   }}
                   className="ml-1 text-[var(--text-3)] hover:text-[var(--danger)]"
                 >

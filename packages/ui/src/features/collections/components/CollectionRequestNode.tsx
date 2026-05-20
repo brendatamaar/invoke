@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
 import type { RequestConfig, SavedRequest } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
-import { MethodBadge } from "../../../components/shared/MethodBadge";
+import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
+import { PromptModal } from "../../../components/shared/PromptModal";
 import { CollectionMenuItem } from "./CollectionMenuItem";
 
 const COMPARE_FIELDS: (keyof RequestConfig)[] = [
@@ -27,6 +28,7 @@ export function CollectionRequestNode({
   const { set, setRequest, addToast, request: activeRequest } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [duplicateName, setDuplicateName] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +62,23 @@ export function CollectionRequestNode({
     });
   };
 
+  const duplicate = async (name: string) => {
+    setDuplicateName(null);
+    try {
+      await coreStore.saveRequest(
+        request.request as Parameters<typeof coreStore.saveRequest>[0],
+        name,
+        collectionId,
+        { folderId: request.folderId ?? null },
+      );
+      const reqs = await coreStore.listRequests(collectionId);
+      set({ requests: reqs });
+      addToast("success", "Request duplicated");
+    } catch (e) {
+      addToast("error", String(e));
+    }
+  };
+
   const del = async () => {
     setConfirmDelete(false);
     try {
@@ -80,6 +99,7 @@ export function CollectionRequestNode({
           e.dataTransfer.setData("requestId", request.id);
           e.dataTransfer.setData("collectionId", request.collectionId);
           e.dataTransfer.setData(`collection/${request.collectionId}`, "");
+          e.dataTransfer.setData(`folder/${request.folderId ?? "none"}`, "");
           e.dataTransfer.effectAllowed = "move";
           setDragging(true);
         }}
@@ -92,7 +112,7 @@ export function CollectionRequestNode({
           className="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--text-3)] cursor-grab"
         />
         <MethodBadge
-          method={(request.request as { method?: string })?.method ?? "GET"}
+          method={protocolMethod(request.protocol, (request.request as { method?: string })?.method)}
         />
         <span className="flex-1 text-xs text-[var(--text-1)] truncate">
           {request.name ||
@@ -124,7 +144,10 @@ export function CollectionRequestNode({
               <CollectionMenuItem
                 icon={<Copy size={12} />}
                 label="Duplicate"
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setDuplicateName(`${request.name || "Untitled"} Copy`);
+                }}
               />
               <CollectionMenuItem
                 icon={<Trash2 size={12} />}
@@ -140,6 +163,15 @@ export function CollectionRequestNode({
         </div>
       </div>
 
+      <PromptModal
+        open={duplicateName !== null}
+        title="Duplicate Request"
+        label="Name"
+        defaultValue={duplicateName ?? ""}
+        confirmLabel="Duplicate"
+        onConfirm={duplicate}
+        onClose={() => setDuplicateName(null)}
+      />
       <ConfirmModal
         open={confirmDelete}
         title="Delete Request"

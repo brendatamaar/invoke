@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -30,6 +30,7 @@ export function CollectionFolderNode({
   const [descModal, setDescModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,6 +44,10 @@ export function CollectionFolderNode({
   }, [menuOpen]);
   const expanded = expandedFolderIds.includes(folder.id);
   const folderRequests = requests.filter((r) => r.folderId === folder.id);
+  const sortedRequests = useMemo(
+    () => [...folderRequests].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [folderRequests],
+  );
 
   const openVariableEditor = () => {
     setMenuOpen(false);
@@ -108,6 +113,61 @@ export function CollectionFolderNode({
       set({ folders: folds });
     } catch (e) {
       addToast("error", String(e));
+    }
+  };
+
+  const handleItemDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    if (!e.dataTransfer.types.includes(`collection/${collectionId}`)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragOverIndex(e.clientY < rect.top + rect.height / 2 ? index : index + 1);
+  };
+
+  const handleListDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverIndex(null);
+  };
+
+  const handleListDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const dropIndex = dragOverIndex;
+    setDragOverIndex(null);
+    setIsDragOver(false);
+
+    const requestId = e.dataTransfer.getData("requestId");
+    const sourceCollectionId = e.dataTransfer.getData("collectionId");
+    if (!requestId || sourceCollectionId !== collectionId) return;
+
+    const req = requests.find((r) => r.id === requestId);
+
+    if (req?.folderId === folder.id) {
+      if (dropIndex === null) return;
+      const currentIndex = sortedRequests.findIndex((r) => r.id === requestId);
+      if (currentIndex === -1) return;
+      const targetIndex = dropIndex > currentIndex ? dropIndex - 1 : dropIndex;
+      if (targetIndex === currentIndex) return;
+
+      const newOrder = [...sortedRequests];
+      const [moved] = newOrder.splice(currentIndex, 1);
+      newOrder.splice(targetIndex, 0, moved);
+
+      try {
+        await coreStore.reorderRequests(newOrder.map((r) => r.id));
+        const reqs = await coreStore.listRequests(collectionId);
+        set({ requests: reqs });
+      } catch (err) {
+        addToast("error", String(err));
+      }
+    } else {
+      try {
+        await coreStore.moveRequest(requestId, folder.id);
+        const reqs = await coreStore.listRequests();
+        set({ requests: reqs });
+      } catch (err) {
+        addToast("error", String(err));
+      }
     }
   };
 
@@ -189,14 +249,22 @@ export function CollectionFolderNode({
           </div>
         </div>
         {expanded && (
-          <div className="ml-3">
-            {folderRequests.map((r) => (
-              <CollectionRequestNode
-                key={r.id}
-                request={r}
-                collectionId={collectionId}
-              />
+          <div
+            className="ml-3"
+            onDragLeave={handleListDragLeave}
+            onDrop={handleListDrop}
+          >
+            {sortedRequests.map((r, i) => (
+              <div key={r.id} onDragOver={(e) => handleItemDragOver(e, i)}>
+                {dragOverIndex === i && (
+                  <div className="mx-2 h-0.5 rounded bg-[var(--accent,#3b82f6)]" />
+                )}
+                <CollectionRequestNode request={r} collectionId={collectionId} />
+              </div>
             ))}
+            {dragOverIndex === sortedRequests.length && (
+              <div className="mx-2 h-0.5 rounded bg-[var(--accent,#3b82f6)]" />
+            )}
           </div>
         )}
       </div>

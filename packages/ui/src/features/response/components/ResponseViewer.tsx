@@ -9,6 +9,8 @@ import type {
 } from "../../../types";
 import {
   AlertCircle,
+  AlertTriangle,
+  Braces,
   Clock,
   HardDrive,
   Shield,
@@ -18,14 +20,18 @@ import {
   GitCompare,
   List,
   PlusCircle,
+  Wand2,
   BookmarkPlus,
   Cpu,
   KeyRound,
   RefreshCw,
+  Indent,
+  Terminal,
 } from "lucide-react";
+import { evaluateJsonPath } from "@invoke/core";
+import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { AssertionsTab } from "./AssertionsTab";
 import { AuthDebugTab } from "./AuthDebugTab";
-import { BodyTab } from "./BodyTab";
 import { CodeTab } from "./CodeTab";
 import { HeadersTab } from "./HeadersTab";
 import { VisualizeTab } from "./VisualizeTab";
@@ -43,6 +49,7 @@ import {
   parseGraphQLCost,
 } from "./GraphQLErrorsTab";
 import { DeferredTab } from "./DeferredTab";
+import { ConsoleTab } from "./ConsoleTab";
 
 const STATIC_TABS: { id: ResponseTab; label: string; icon?: ReactNode }[] = [
   { id: "body", label: "Body" },
@@ -59,6 +66,7 @@ export function ResponseViewer() {
   const {
     response,
     responseTab,
+    responsePretty,
     set,
     streaming,
     streamBytes,
@@ -72,8 +80,16 @@ export function ResponseViewer() {
     addToast,
     retryAttempts,
     graphqlDeferredParts,
+    consoleLogs,
   } = useStore();
 
+  const hasConsoleLogs =
+    consoleLogs.preRequest.length > 0 ||
+    consoleLogs.postResponse.length > 0 ||
+    !!consoleLogs.preRequestError ||
+    !!consoleLogs.postResponseError;
+  const hasConsoleError =
+    !!consoleLogs.preRequestError || !!consoleLogs.postResponseError;
   const isGraphQL = request.protocol === "graphql";
   const graphqlErrors = response ? parseGraphQLErrors(response.body) : [];
   const hasGraphQLErrors = graphqlErrors.length > 0;
@@ -91,6 +107,8 @@ export function ResponseViewer() {
     | null
   >(null);
   const [exampleName, setExampleName] = useState("");
+  const [jsonPathInput, setJsonPathInput] = useState("");
+  const [jsonPathResult, setJsonPathResult] = useState<string | null>(null);
 
   if (!response && !streaming) {
     return (
@@ -132,6 +150,39 @@ export function ResponseViewer() {
 
   const passedCount = assertionResults.filter((r) => r.passed).length;
   const totalCount = assertionResults.length;
+
+  const ct = response
+    ? ((Array.isArray(response.headers)
+        ? response.headers.find((h) => h.key.toLowerCase() === "content-type")
+            ?.value
+        : "") ?? "")
+    : "";
+  const isJson = response
+    ? ct.includes("json") ||
+      (() => {
+        try {
+          JSON.parse(response.body);
+          return true;
+        } catch {
+          return false;
+        }
+      })()
+    : false;
+  const lang = isJson
+    ? "json"
+    : ct.includes("xml") || ct.includes("html")
+      ? "xml"
+      : "text";
+  const displayBody =
+    response && isJson && responsePretty
+      ? (() => {
+          try {
+            return JSON.stringify(JSON.parse(response.body), null, 2);
+          } catch {
+            return response.body;
+          }
+        })()
+      : (response?.body ?? "");
 
   const addAssertion = (draft: AssertionDraft) => {
     set((s) => ({
@@ -221,23 +272,6 @@ export function ResponseViewer() {
       {response && (
         <div className="flex items-center gap-3 px-3 py-2 border-b border-[var(--border)] bg-[var(--surface-2)]">
           <StatusBadge status={response.status} showLabel />
-          <button
-            onClick={() =>
-              setOverlay({
-                kind: "assertion",
-                draft: {
-                  type: "status",
-                  expression: "",
-                  matcher: "equals",
-                  expected: String(response.status),
-                },
-              })
-            }
-            className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
-            title="Create assertion from status"
-          >
-            <PlusCircle size={11} />
-          </button>
           <span className="ml-auto text-2xs text-[var(--text-3)] flex items-center gap-1">
             <Clock size={11} /> {fmt(response.timing?.totalMs ?? 0)}
           </span>
@@ -283,6 +317,74 @@ export function ResponseViewer() {
             >
               <CheckCircle size={11} /> {passedCount}/{totalCount}
             </span>
+          )}
+          {responseTab === "body" && isJson && (
+            <div className="flex items-center gap-1 border-l border-[var(--border)] pl-2 ml-1">
+              <button
+                onClick={() => set({ responsePretty: !responsePretty })}
+                className={`p-0.5 ${responsePretty ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
+                title="Pretty print"
+              >
+                <Indent size={11} />
+              </button>
+              <input
+                value={jsonPathInput}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setJsonPathInput(val);
+                  if (val.trim()) {
+                    const r = evaluateJsonPath(response.body, val);
+                    setJsonPathResult(
+                      r.error
+                        ? `Error: ${r.error}`
+                        : JSON.stringify(r.value, null, 2),
+                    );
+                  } else {
+                    setJsonPathResult(null);
+                  }
+                }}
+                placeholder="$.path"
+                className="input text-2xs py-0 px-1 w-28 font-mono"
+                title="JSONPath playground — evaluate live"
+              />
+              <button
+                onClick={() =>
+                  setOverlay({
+                    kind: "assertion",
+                    draft: {
+                      type: "bodyJsonPath",
+                      expression: jsonPathInput,
+                      matcher: "equals",
+                      expected: "",
+                    },
+                  })
+                }
+                className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5 mr-2"
+                title="Create assertion from JSONPath"
+              >
+                <PlusCircle size={11} />
+              </button>
+              <button
+                onClick={() => {
+                  const varName = jsonPathInput
+                    .replace(/^\$\.?/, "")
+                    .replace(/[^a-zA-Z0-9_]/g, "_")
+                    .replace(/^_+|_+$/g, "");
+                  setOverlay({
+                    kind: "extraction",
+                    draft: {
+                      variableName: varName || "extracted",
+                      source: "body",
+                      expression: jsonPathInput,
+                    },
+                  });
+                }}
+                className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+                title="Create extraction from JSONPath"
+              >
+                <Wand2 size={11} />
+              </button>
+            </div>
           )}
           <button
             onClick={() => {
@@ -348,6 +450,24 @@ export function ResponseViewer() {
             )}
           </button>
         ))}
+        {hasConsoleLogs && (
+          <button
+            onClick={() => set({ responseTab: "console" })}
+            className={`tab-btn flex items-center gap-1 ${responseTab === "console" ? "active" : ""}`}
+          >
+            <Terminal size={11} className={hasConsoleError ? "text-[var(--danger)]" : undefined} />
+            Console
+            {hasConsoleError ? (
+              <span className="ml-0.5 text-2xs px-1 rounded bg-[var(--danger-bg)] text-[var(--danger)]">
+                error
+              </span>
+            ) : (
+              <span className="ml-0.5 text-2xs px-1 rounded bg-[var(--accent-subtle)] text-[var(--accent)]">
+                {consoleLogs.preRequest.length + consoleLogs.postResponse.length}
+              </span>
+            )}
+          </button>
+        )}
         {hasGraphQLTab && (
           <button
             onClick={() => set({ responseTab: "graphql-errors" })}
@@ -379,12 +499,24 @@ export function ResponseViewer() {
 
       <div className="flex-1 overflow-auto">
         {responseTab === "body" && (
-          <BodyTab
-            onQuickAssert={(draft) => setOverlay({ kind: "assertion", draft })}
-            onQuickExtract={(draft) =>
-              setOverlay({ kind: "extraction", draft })
-            }
-          />
+          <div className="flex flex-col h-full">
+            {jsonPathResult !== null && (
+              <div
+                className={`px-3 py-1.5 border-b border-[var(--border)] text-2xs font-mono ${jsonPathResult.startsWith("Error:") ? "text-[var(--danger)] bg-[var(--danger-bg)]" : "text-[var(--text-1)] bg-[var(--surface-2)]"}`}
+              >
+                {jsonPathResult}
+              </div>
+            )}
+            {response?.error?.startsWith("BODY_TRUNCATED:") && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--warn-bg)] border-b border-[var(--warn)] text-[var(--warn)] text-2xs">
+                <AlertTriangle size={12} className="shrink-0" />
+                <span>Response body truncated at 50 MB</span>
+              </div>
+            )}
+            <div className="flex-1 overflow-auto">
+              <CodeEditor value={displayBody} lang={lang} readOnly />
+            </div>
+          </div>
         )}
         {responseTab === "headers" && (
           <HeadersTab
@@ -405,6 +537,7 @@ export function ResponseViewer() {
         {responseTab === "auth" && <AuthDebugTab />}
         {responseTab === "code" && <CodeTab />}
         {responseTab === "visualize" && <VisualizeTab />}
+        {responseTab === "console" && <ConsoleTab />}
         {responseTab === "graphql-errors" && <GraphQLErrorsTab />}
         {responseTab === "graphql-deferred" && <DeferredTab />}
       </div>

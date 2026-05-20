@@ -535,9 +535,18 @@ export function GRPCBar() {
         resolved.scripts?.preRequest ?? "",
       );
       resolved = scriptResult.request;
-      if (scriptResult.logs.length) set({ scriptLogs: scriptResult.logs });
-    } catch {
-      /* script errors are non-fatal */
+      set((s) => ({
+        consoleLogs: {
+          ...s.consoleLogs,
+          preRequest: scriptResult.logs,
+          preRequestError: undefined,
+          preRequestRan: true,
+        },
+      }));
+    } catch (e) {
+      set((s) => ({
+        consoleLogs: { ...s.consoleLogs, preRequestError: String(e), preRequestRan: true },
+      }));
     }
 
     if (isServerStreaming) {
@@ -692,8 +701,18 @@ export function GRPCBar() {
           sessionVariables,
           resolved.scripts?.postResponse ?? "",
         );
-        if (postResult.logs.length) set({ scriptLogs: postResult.logs });
-      } catch {
+        set((s) => ({
+          consoleLogs: {
+            ...s.consoleLogs,
+            postResponse: postResult.logs,
+            postResponseError: undefined,
+            postResponseRan: true,
+          },
+        }));
+      } catch (e) {
+        set((s) => ({
+          consoleLogs: { ...s.consoleLogs, postResponseError: String(e), postResponseRan: true },
+        }));
         /* script errors are non-fatal */
       }
 

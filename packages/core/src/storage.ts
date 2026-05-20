@@ -217,6 +217,10 @@ export class InvokeStore {
     return collectionStorage.moveRequest(this.db, requestId, folderId);
   }
 
+  async reorderRequests(ids: string[]) {
+    return collectionStorage.reorderRequests(this.db, ids);
+  }
+
   async saveRequest(
     request: ProtocolRequestConfig | RequestDraft,
     name: string,

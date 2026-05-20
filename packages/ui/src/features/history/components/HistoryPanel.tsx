@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useStore, coreStore } from "../../../store";
-import { MethodBadge } from "../../../components/shared/MethodBadge";
+import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
 import { CollectionMenuItem } from "../../collections/components/CollectionMenuItem";
 import type { HistoryEntry } from "@invoke/core";
@@ -42,7 +42,7 @@ function HistoryItem({
       className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-b border-[var(--border)] cursor-pointer"
       onClick={() => restore(entry)}
     >
-      <MethodBadge method={req?.method ?? "GET"} />
+      <MethodBadge method={protocolMethod(entry.protocol, req?.method)} />
       <div className="flex-1 min-w-0">
         <span
           className="block text-xs font-mono text-[var(--text-1)] truncate"
@@ -211,19 +211,11 @@ export function HistoryPanel() {
   const unpinned = filtered.filter((h) => !h.pinned);
 
   const restore = (entry: HistoryEntry) => {
-    const req = entry.request as
-      | { method?: string; url?: string; headers?: unknown[]; body?: string }
-      | undefined;
+    const req = entry.request as Parameters<typeof setRequest>[0] | undefined;
     setRequest({
-      method: (req?.method ?? "GET") as Parameters<
-        typeof setRequest
-      >[0]["method"],
-      url: req?.url ?? "",
-      headers: (req?.headers ?? []) as Parameters<
-        typeof setRequest
-      >[0]["headers"],
-      body: req?.body ?? "",
-    });
+      ...(req ?? {}),
+      protocol: entry.protocol ?? "rest",
+    } as Parameters<typeof setRequest>[0]);
     addToast("info", "Request restored");
   };
 

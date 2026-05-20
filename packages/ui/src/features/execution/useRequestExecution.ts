@@ -154,17 +154,21 @@ export function useRequestExecution() {
 
     let resolved: RequestConfig;
     let unresolved: string[] = [];
+    let preRequestLogs: string[] = [];
+    let preRequestError: string | undefined;
     try {
       const scriptCtx = await runPreRequestScript(
         activeRequest as RequestConfig,
         vars,
         activeRequest.scripts?.preRequest ?? "",
       );
+      preRequestLogs = scriptCtx.logs;
       const effectiveReq = (scriptCtx.request ?? activeRequest) as RequestConfig;
       const result = resolveRequest(effectiveReq, buildScopes(effectiveReq));
       resolved = result.request;
       unresolved = result.unresolved;
-    } catch {
+    } catch (e) {
+      preRequestError = String(e);
       const result = resolveRequest(
         activeRequest as RequestConfig,
         buildScopes(activeRequest as RequestConfig),
@@ -232,6 +236,7 @@ export function useRequestExecution() {
         streamBytes: 0,
         streamController: controller,
         retryAttempts: undefined,
+        consoleLogs: { preRequest: preRequestLogs, preRequestError, preRequestRan: true, postResponse: [], postResponseRan: false },
       });
       try {
         await executeStream(resolved, {
@@ -271,15 +276,18 @@ export function useRequestExecution() {
       const { response, parts } = processMultipartResponse(rawResponse);
       await persistCookies(response, resolved.url);
 
+      let postResponseLogs: string[] = [];
+      let postResponseError: string | undefined;
       try {
-        await runPostResponseScript(
+        const postResult = await runPostResponseScript(
           resolved,
           response,
           vars,
           activeRequest.scripts?.postResponse ?? "",
         );
-      } catch {
-        /* ignore script errors */
+        postResponseLogs = postResult.logs;
+      } catch (e) {
+        postResponseError = String(e);
       }
 
       const results = runAssertions(response, assertionRules);
@@ -299,6 +307,7 @@ export function useRequestExecution() {
         retryAttempts: rawResponse.retryAttempts,
         history: hist,
         graphqlDeferredParts: parts,
+        consoleLogs: { preRequest: preRequestLogs, preRequestError, preRequestRan: true, postResponse: postResponseLogs, postResponseError, postResponseRan: true },
       });
     } catch (e) {
       if ((e as Error).name !== "AbortError") addToast("error", String(e));

@@ -16,7 +16,7 @@ export type RequestSlice = Pick<
   | "requestTab"
   | "assertionRules"
   | "extractRules"
-  | "scriptLogs"
+  | "consoleLogs"
   | "setRequest"
   | "setGraphqlRequest"
   | "setWebsocketRequest"
@@ -39,7 +39,7 @@ export function createRequestSlice(
     requestTab: "params",
     assertionRules: [],
     extractRules: [],
-    scriptLogs: [],
+    consoleLogs: { preRequest: [], preRequestRan: false, postResponse: [], postResponseRan: false },
 
     setRequest: (partial) =>
       set((state) => ({ request: { ...state.request, ...partial } })),
@@ -62,7 +62,7 @@ export function createRequestSlice(
         request: emptyRequest(),
         response: undefined,
         assertionResults: [],
-        scriptLogs: [],
+        consoleLogs: { preRequest: [], preRequestRan: false, postResponse: [], postResponseRan: false },
         requestTab: "params",
         responseTab: "body",
       }),
