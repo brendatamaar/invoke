@@ -73,7 +73,11 @@ export const mockRoutesSchema = z
 
 export function registerMockRoutes(app: Hono) {
   app.get("/api/mock/routes", (c) =>
-    c.json({ routes: mockRoutes, logs: mockLogs.slice(-200).reverse() }),
+    c.json({
+      routes: mockRoutes,
+      logs: mockLogs.slice(-200).reverse(),
+      totalLogs: mockLogs.length,
+    }),
   );
 
   app.put("/api/mock/routes", zValidator("json", mockRoutesSchema), (c) => {
@@ -96,6 +100,10 @@ export function registerMockRoutes(app: Hono) {
     const url = new URL(c.req.url);
     const path = url.pathname.replace(/^\/mock/, "") || "/";
     const method = c.req.method.toUpperCase();
+    const contentLength = Number(c.req.header("content-length") ?? 0);
+    if (contentLength > MAX_MOCK_REQUEST_BODY_BYTES) {
+      return c.text("Mock request body too large", 413);
+    }
     const body = await c.req.text();
     if (Buffer.byteLength(body) > MAX_MOCK_REQUEST_BODY_BYTES) {
       return c.text("Mock request body too large", 413);
@@ -194,7 +202,9 @@ export function proxyRecordsToMockRoutes(
     (route) =>
       !newRoutes.some(
         (nr) =>
-          nr.method === route.method && nr.pathPattern === route.pathPattern,
+          nr.method === route.method &&
+          nr.pathPattern === route.pathPattern &&
+          (!route.conditions || route.conditions.length === 0),
       ),
   );
   mockRoutes = [...existing, ...newRoutes];
@@ -268,11 +278,12 @@ function compareMockValues(
   matcher: NonNullable<MockRoute["conditions"]>[number]["matcher"],
 ) {
   if (matcher === "exists") return actual !== undefined && actual !== null;
+  if (actual === undefined || actual === null) return false;
   if (matcher === "notEquals") return String(actual) !== expected;
-  if (matcher === "contains") return String(actual ?? "").includes(expected);
+  if (matcher === "contains") return String(actual).includes(expected);
   if (matcher === "matches") {
     try {
-      return new RegExp(expected).test(String(actual ?? ""));
+      return new RegExp(`^(?:${expected})$`).test(String(actual));
     } catch {
       return false;
     }
@@ -315,7 +326,7 @@ function matchPath(pattern: string, path: string): MockPathMatch {
       params[expected.slice(1)] = safeDecodeURIComponent(actual);
       continue;
     }
-    if (expected !== actual) return { matched: false, params: {} };
+    if (expected.toLowerCase() !== actual.toLowerCase()) return { matched: false, params: {} };
   }
   return { matched: true, params };
 }

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { RefreshCw } from "lucide-react";
 import { validateMockRoutes, type MockRoute } from "@invoke/core";
-import { useStore } from "../../../store";
+import { useStore, coreStore } from "../../../store";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
 import { clearMockLogs, loadMockRoutes, syncMockRoutes } from "../api";
 import { MockRequestLog } from "./MockRequestLog";
@@ -11,18 +11,51 @@ import { RouteModal } from "./RouteModal";
 import { WebhookSection } from "./WebhookSection";
 
 export function MockPanel() {
-  const { mockRoutes, mockLogs, mockStatus, set, addToast } = useStore();
+  const { mockRoutes, mockLogs, mockTotalLogs, mockStatus, set, addToast } = useStore();
   const [editingRoute, setEditingRoute] = useState<MockRoute | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refresh = async () => {
     try {
       const data = await loadMockRoutes();
-      set({ mockRoutes: data.routes, mockLogs: data.logs });
+      set({ mockRoutes: data.routes, mockLogs: data.logs, mockTotalLogs: data.totalLogs });
     } catch (e) {
       addToast("error", String(e));
     }
   };
+
+  useEffect(() => {
+    const restore = async () => {
+      try {
+        const saved = await coreStore.getMeta<MockRoute[]>("mockRoutes");
+        if (saved?.length) {
+          set({ mockRoutes: saved });
+          await syncMockRoutes(saved);
+          set({ mockStatus: "Active" });
+        }
+        const data = await loadMockRoutes();
+        set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs });
+        if (!saved?.length) set({ mockRoutes: data.routes });
+      } catch {
+        loadMockRoutes()
+          .then((data) =>
+            set({ mockRoutes: data.routes, mockLogs: data.logs, mockTotalLogs: data.totalLogs }),
+          )
+          .catch(() => {});
+      }
+    };
+    restore();
+
+    pollingRef.current = setInterval(() => {
+      loadMockRoutes()
+        .then((data) => set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs }))
+        .catch(() => {});
+    }, 3000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
 
   const sync = async () => {
     const validation = validateMockRoutes(mockRoutes);
@@ -46,6 +79,7 @@ export function MockPanel() {
     try {
       set({ mockStatus: "Syncing..." });
       await syncMockRoutes(mockRoutes);
+      await coreStore.setMeta("mockRoutes", mockRoutes);
       set({ mockStatus: "Active" });
       addToast("success", "Routes synced");
     } catch (e) {
@@ -58,6 +92,7 @@ export function MockPanel() {
     try {
       set({ mockStatus: "Stopping..." });
       await syncMockRoutes([]);
+      await coreStore.setMeta("mockRoutes", []);
       set({ mockStatus: "Inactive" });
       addToast("success", "Mock server stopped");
     } catch (e) {
@@ -69,23 +104,37 @@ export function MockPanel() {
   const clearLogs = async () => {
     try {
       await clearMockLogs();
-      set({ mockLogs: [] });
+      set({ mockLogs: [], mockTotalLogs: 0 });
     } catch (e) {
       addToast("error", String(e));
     }
   };
 
+  const persistRoutes = (routes: MockRoute[]) => {
+    set({ mockRoutes: routes });
+    coreStore.setMeta("mockRoutes", routes).catch(() => {});
+  };
+
   const saveRoute = (route: MockRoute) => {
     const exists = mockRoutes.some((r) => r.id === route.id);
-    set({
-      mockRoutes: exists
+    persistRoutes(
+      exists
         ? mockRoutes.map((r) => (r.id === route.id ? route : r))
         : [...mockRoutes, route],
-    });
+    );
   };
 
   const deleteRoute = (id: string) =>
-    set({ mockRoutes: mockRoutes.filter((r) => r.id !== id) });
+    persistRoutes(mockRoutes.filter((r) => r.id !== id));
+
+  const importRoutes = (imported: MockRoute[]) => {
+    const merged = [
+      ...mockRoutes.filter((r) => !imported.some((ir) => ir.id === r.id)),
+      ...imported,
+    ];
+    persistRoutes(merged);
+    addToast("success", `Imported ${imported.length} route(s) — click Sync to apply`);
+  };
 
   const toggleEnabled = (id: string) =>
     set({
@@ -131,10 +180,12 @@ export function MockPanel() {
           onStop={stop}
           onToggleEnabled={toggleEnabled}
           onDelete={setConfirmDeleteId}
+          onImport={importRoutes}
+          onError={(msg) => addToast("error", `Import failed: ${msg}`)}
         />
         <WebhookSection />
         <ProxyRecordingSection />
-        <MockRequestLog logs={mockLogs} onClear={clearLogs} />
+        <MockRequestLog logs={mockLogs} totalLogs={mockTotalLogs} onClear={clearLogs} />
       </div>
 
       {editingRoute && (

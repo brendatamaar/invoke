@@ -1,22 +1,76 @@
-import { Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import type { MockLogEntry } from "@invoke/core";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { formatTime } from "./mockRouteUtils";
 
+function statusColor(status: number) {
+  if (status >= 400) return "text-[var(--danger)]";
+  if (status >= 300) return "text-[var(--warn)]";
+  return "text-[var(--ok)]";
+}
+
+function LogDetail({ log }: { log: MockLogEntry }) {
+  const enabledHeaders = log.headers.filter((h) => h.enabled !== false);
+  return (
+    <div className="px-3 pb-2 pt-1 bg-[var(--surface-2)] border-b border-[var(--border)] text-2xs space-y-2">
+      {enabledHeaders.length > 0 && (
+        <div>
+          <p className="text-[var(--text-3)] font-semibold uppercase tracking-wider mb-1">
+            Request Headers
+          </p>
+          <div className="space-y-0.5">
+            {enabledHeaders.map((h, i) => (
+              <div key={i} className="flex gap-2">
+                <span className="text-[var(--text-3)] shrink-0">{h.key}:</span>
+                <span className="text-[var(--text-1)] break-all">{h.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {log.body ? (
+        <div>
+          <p className="text-[var(--text-3)] font-semibold uppercase tracking-wider mb-1">
+            Request Body
+          </p>
+          <pre className="text-[var(--text-1)] whitespace-pre-wrap break-all font-mono">
+            {log.body}
+          </pre>
+        </div>
+      ) : (
+        <p className="text-[var(--text-3)] italic">No body</p>
+      )}
+    </div>
+  );
+}
+
 export function MockRequestLog({
   logs,
+  totalLogs,
   onClear,
 }: {
   logs: MockLogEntry[];
+  totalLogs: number;
   onClear: () => void;
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const toggle = (id: string) =>
+    setExpandedId((prev) => (prev === id ? null : id));
+
+  const countLabel =
+    totalLogs > logs.length
+      ? `${logs.length} of ${totalLogs}`
+      : String(totalLogs);
+
   return (
     <>
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
         <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
-          Request Log {logs.length > 0 && `- ${logs.length}`}
+          Request Log {totalLogs > 0 && `- ${countLabel}`}
         </span>
-        {logs.length > 0 && (
+        {totalLogs > 0 && (
           <button
             onClick={onClear}
             className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
@@ -27,27 +81,30 @@ export function MockRequestLog({
       </div>
       <div className="text-2xs">
         {logs.map((log) => (
-          <div
-            key={log.id}
-            className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
-          >
-            <span className="text-[var(--text-3)] shrink-0">
-              {formatTime(log.createdAt)}
-            </span>
-            <MethodBadge method={log.method} />
-            <span className="flex-1 text-[var(--text-1)] truncate">
-              {log.path}
-            </span>
-            <span
-              className={`shrink-0 font-semibold ${log.status >= 400 ? "text-[var(--danger)]" : "text-[var(--ok)]"}`}
+          <div key={log.id}>
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)] cursor-pointer"
+              onClick={() => toggle(log.id)}
             >
-              {log.status}
-            </span>
-            {!log.matched && (
-              <span className="text-2xs text-[var(--warn)] shrink-0">
-                unmatched
+              <span className="text-[var(--text-3)] shrink-0">
+                {expandedId === log.id ? (
+                  <ChevronDown size={10} />
+                ) : (
+                  <ChevronRight size={10} />
+                )}
               </span>
-            )}
+              <span className="text-[var(--text-3)] shrink-0">
+                {formatTime(log.createdAt)}
+              </span>
+              <MethodBadge method={log.method} />
+              <span className="flex-1 text-[var(--text-1)] truncate">
+                {log.path}
+              </span>
+              <span className={`shrink-0 font-semibold ${statusColor(log.status)}`}>
+                {log.status}
+              </span>
+            </div>
+            {expandedId === log.id && <LogDetail log={log} />}
           </div>
         ))}
         {!logs.length && (

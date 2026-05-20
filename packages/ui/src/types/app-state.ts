@@ -159,6 +159,7 @@ export interface AppState {
   responseExamples: ResponseExample[];
   mockRoutes: MockRoute[];
   mockLogs: MockLogEntry[];
+  mockTotalLogs: number;
   mockStatus: string;
   variableEditor: {
     open: boolean;
