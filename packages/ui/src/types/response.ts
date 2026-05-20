@@ -14,6 +14,7 @@ export type ResponseTab =
   | "code"
   | "auth"
   | "visualize"
+  | "console"
   | "graphql-errors"
   | "graphql-deferred";
 

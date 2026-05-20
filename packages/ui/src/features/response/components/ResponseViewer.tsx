@@ -26,6 +26,7 @@ import {
   KeyRound,
   RefreshCw,
   Indent,
+  Terminal,
 } from "lucide-react";
 import { evaluateJsonPath } from "@invoke/core";
 import { CodeEditor } from "../../../components/editors/CodeEditor";
@@ -48,6 +49,7 @@ import {
   parseGraphQLCost,
 } from "./GraphQLErrorsTab";
 import { DeferredTab } from "./DeferredTab";
+import { ConsoleTab } from "./ConsoleTab";
 
 const STATIC_TABS: { id: ResponseTab; label: string; icon?: ReactNode }[] = [
   { id: "body", label: "Body" },
@@ -78,8 +80,16 @@ export function ResponseViewer() {
     addToast,
     retryAttempts,
     graphqlDeferredParts,
+    consoleLogs,
   } = useStore();
 
+  const hasConsoleLogs =
+    consoleLogs.preRequest.length > 0 ||
+    consoleLogs.postResponse.length > 0 ||
+    !!consoleLogs.preRequestError ||
+    !!consoleLogs.postResponseError;
+  const hasConsoleError =
+    !!consoleLogs.preRequestError || !!consoleLogs.postResponseError;
   const isGraphQL = request.protocol === "graphql";
   const graphqlErrors = response ? parseGraphQLErrors(response.body) : [];
   const hasGraphQLErrors = graphqlErrors.length > 0;
@@ -440,6 +450,24 @@ export function ResponseViewer() {
             )}
           </button>
         ))}
+        {hasConsoleLogs && (
+          <button
+            onClick={() => set({ responseTab: "console" })}
+            className={`tab-btn flex items-center gap-1 ${responseTab === "console" ? "active" : ""}`}
+          >
+            <Terminal size={11} className={hasConsoleError ? "text-[var(--danger)]" : undefined} />
+            Console
+            {hasConsoleError ? (
+              <span className="ml-0.5 text-2xs px-1 rounded bg-[var(--danger-bg)] text-[var(--danger)]">
+                error
+              </span>
+            ) : (
+              <span className="ml-0.5 text-2xs px-1 rounded bg-[var(--accent-subtle)] text-[var(--accent)]">
+                {consoleLogs.preRequest.length + consoleLogs.postResponse.length}
+              </span>
+            )}
+          </button>
+        )}
         {hasGraphQLTab && (
           <button
             onClick={() => set({ responseTab: "graphql-errors" })}
@@ -509,6 +537,7 @@ export function ResponseViewer() {
         {responseTab === "auth" && <AuthDebugTab />}
         {responseTab === "code" && <CodeTab />}
         {responseTab === "visualize" && <VisualizeTab />}
+        {responseTab === "console" && <ConsoleTab />}
         {responseTab === "graphql-errors" && <GraphQLErrorsTab />}
         {responseTab === "graphql-deferred" && <DeferredTab />}
       </div>

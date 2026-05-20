@@ -146,8 +146,17 @@ export function GraphQLVariablesPanel() {
   );
 }
 
+function ScriptStatusDot({ ran, error }: { ran: boolean; error?: string }) {
+  if (!ran) return null;
+  return (
+    <span
+      className={`w-1.5 h-1.5 rounded-full shrink-0 ${error ? "bg-[var(--danger)]" : "bg-[var(--ok)]"}`}
+    />
+  );
+}
+
 export function ScriptsPanel() {
-  const { request, setRequest, scriptLogs } = useStore();
+  const { request, setRequest, consoleLogs } = useStore();
   const [activeScript, setActiveScript] = useState<"pre" | "post">("pre");
 
   return (
@@ -155,15 +164,17 @@ export function ScriptsPanel() {
       <div className="flex items-center gap-1 px-3 py-1.5 border-b border-[var(--border)]">
         <button
           onClick={() => setActiveScript("pre")}
-          className={`tab-btn text-2xs ${activeScript === "pre" ? "active" : ""}`}
+          className={`tab-btn text-2xs flex items-center gap-1 ${activeScript === "pre" ? "active" : ""}`}
         >
           Pre-request
+          <ScriptStatusDot ran={consoleLogs.preRequestRan} error={consoleLogs.preRequestError} />
         </button>
         <button
           onClick={() => setActiveScript("post")}
-          className={`tab-btn text-2xs ${activeScript === "post" ? "active" : ""}`}
+          className={`tab-btn text-2xs flex items-center gap-1 ${activeScript === "post" ? "active" : ""}`}
         >
           Post-response
+          <ScriptStatusDot ran={consoleLogs.postResponseRan} error={consoleLogs.postResponseError} />
         </button>
       </div>
       <div className="flex-1 overflow-hidden">
@@ -187,18 +198,6 @@ export function ScriptsPanel() {
           minHeight="200px"
         />
       </div>
-      {scriptLogs.length > 0 && (
-        <div className="border-t border-[var(--border)] p-2 max-h-28 overflow-auto">
-          {scriptLogs.map((log, index) => (
-            <div
-              key={index}
-              className="text-2xs font-mono text-[var(--text-2)]"
-            >
-              {log}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

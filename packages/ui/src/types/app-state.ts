@@ -85,7 +85,14 @@ export interface AppState {
   requestTab: RequestTab;
   assertionRules: Assertion[];
   extractRules: ExtractionRule[];
-  scriptLogs: string[];
+  consoleLogs: {
+    preRequest: string[];
+    preRequestError?: string;
+    preRequestRan: boolean;
+    postResponse: string[];
+    postResponseError?: string;
+    postResponseRan: boolean;
+  };
   response: ExecuteResponse | undefined;
   responseTab: ResponseTab;
   assertionResults: AssertionResult[];

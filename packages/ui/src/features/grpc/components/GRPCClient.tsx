@@ -315,22 +315,28 @@ function GrpcAuthPanel() {
 }
 
 function GrpcScriptsPanel() {
-  const { grpcRequest, setGrpcRequest, scriptLogs } = useStore();
+  const { grpcRequest, setGrpcRequest, consoleLogs } = useStore();
   const [active, setActive] = useState<"pre" | "post">("pre");
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-1 px-3 py-1.5 border-b border-[var(--border)]">
         <button
           onClick={() => setActive("pre")}
-          className={`tab-btn text-2xs ${active === "pre" ? "active" : ""}`}
+          className={`tab-btn text-2xs flex items-center gap-1 ${active === "pre" ? "active" : ""}`}
         >
           Pre-request
+          {consoleLogs.preRequestRan && (
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${consoleLogs.preRequestError ? "bg-[var(--danger)]" : "bg-[var(--ok)]"}`} />
+          )}
         </button>
         <button
           onClick={() => setActive("post")}
-          className={`tab-btn text-2xs ${active === "post" ? "active" : ""}`}
+          className={`tab-btn text-2xs flex items-center gap-1 ${active === "post" ? "active" : ""}`}
         >
           Post-response
+          {consoleLogs.postResponseRan && (
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${consoleLogs.postResponseError ? "bg-[var(--danger)]" : "bg-[var(--ok)]"}`} />
+          )}
         </button>
       </div>
       <div className="flex-1 overflow-hidden">
@@ -352,15 +358,6 @@ function GrpcScriptsPanel() {
           minHeight="200px"
         />
       </div>
-      {scriptLogs.length > 0 && (
-        <div className="border-t border-[var(--border)] p-2 max-h-28 overflow-auto">
-          {scriptLogs.map((log, i) => (
-            <div key={i} className="text-2xs font-mono text-[var(--text-2)]">
-              {log}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
