@@ -99,6 +99,7 @@ export function CollectionRequestNode({
           e.dataTransfer.setData("requestId", request.id);
           e.dataTransfer.setData("collectionId", request.collectionId);
           e.dataTransfer.setData(`collection/${request.collectionId}`, "");
+          e.dataTransfer.setData(`folder/${request.folderId ?? "none"}`, "");
           e.dataTransfer.effectAllowed = "move";
           setDragging(true);
         }}

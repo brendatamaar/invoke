@@ -59,8 +59,17 @@ export async function deleteCollection(db: InvokeDB, collectionId: string) {
 
 export function listRequests(db: InvokeDB, collectionId?: string) {
   if (collectionId)
-    return db.requests.where("collectionId").equals(collectionId).toArray();
+    return db.requests.where("collectionId").equals(collectionId).sortBy("sortOrder");
   return db.requests.orderBy("updatedAt").reverse().toArray();
+}
+
+export async function reorderRequests(db: InvokeDB, ids: string[]) {
+  const now = Date.now();
+  await db.transaction("rw", db.requests, async () => {
+    for (let i = 0; i < ids.length; i++) {
+      await db.requests.where("id").equals(ids[i]).modify({ sortOrder: i, updatedAt: now });
+    }
+  });
 }
 
 export function listFolders(db: InvokeDB, collectionId?: string) {
