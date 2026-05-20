@@ -532,7 +532,8 @@ export function WebhookSection() {
           </button>
           <button
             onClick={() => removeEndpoint(ep.id)}
-            className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] p-0.5 shrink-0"
+            title="Delete Webhook"
+            className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5 shrink-0"
           >
             <Trash2 size={11} />
           </button>
