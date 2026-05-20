@@ -1,4 +1,5 @@
-import { Plus, Trash2 } from "lucide-react";
+import { useRef } from "react";
+import { Plus, Trash2, Upload, Play, Square } from "lucide-react";
 import type { MockRoute } from "@invoke/core";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
 import { makeRoute } from "./mockRouteUtils";
@@ -12,6 +13,8 @@ export function MockRoutesSection({
   onStop,
   onToggleEnabled,
   onDelete,
+  onImport,
+  onError,
 }: {
   routes: MockRoute[];
   status?: string;
@@ -21,7 +24,29 @@ export function MockRoutesSection({
   onStop: () => void;
   onToggleEnabled: (id: string) => void;
   onDelete: (id: string) => void;
+  onImport: (routes: MockRoute[]) => void;
+  onError: (message: string) => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const json = JSON.parse(ev.target?.result as string);
+        const parsed: unknown = Array.isArray(json) ? json : json?.routes;
+        if (!Array.isArray(parsed)) throw new Error('Expected a "routes" array');
+        onImport(parsed as MockRoute[]);
+      } catch (err) {
+        onError(String(err));
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="border-b border-[var(--border)]">
       <div className="flex items-center justify-between px-3 py-2">
@@ -29,20 +54,40 @@ export function MockRoutesSection({
           Routes {routes.length > 0 && `- ${routes.length}`}
         </span>
         <div className="flex items-center gap-1.5">
-          <button onClick={onSync} className="btn text-2xs py-0.5 px-2">
-            Sync
+          <button
+            onClick={onSync}
+            className="text-[var(--text-3)] hover:text-[var(--ok)] p-0.5"
+            title="Sync routes"
+          >
+            <Play size={13} />
           </button>
           {status === "Active" && (
             <button
               onClick={onStop}
-              className="btn btn-danger text-2xs py-0.5 px-2"
+              className="text-[var(--danger)] hover:text-[var(--danger)] p-0.5"
+              title="Stop mock server"
             >
-              Stop
+              <Square size={13} />
             </button>
           )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
+            title="Import routes from JSON"
+          >
+            <Upload size={13} />
+          </button>
           <button
             onClick={() => onAdd(makeRoute())}
             className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
+            title="Add new route"
           >
             <Plus size={13} />
           </button>

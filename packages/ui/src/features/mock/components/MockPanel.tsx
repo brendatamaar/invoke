@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { RefreshCw } from "lucide-react";
 import { validateMockRoutes, type MockRoute } from "@invoke/core";
 import { useStore } from "../../../store";
@@ -11,18 +11,30 @@ import { RouteModal } from "./RouteModal";
 import { WebhookSection } from "./WebhookSection";
 
 export function MockPanel() {
-  const { mockRoutes, mockLogs, mockStatus, set, addToast } = useStore();
+  const { mockRoutes, mockLogs, mockTotalLogs, mockStatus, set, addToast } = useStore();
   const [editingRoute, setEditingRoute] = useState<MockRoute | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refresh = async () => {
     try {
       const data = await loadMockRoutes();
-      set({ mockRoutes: data.routes, mockLogs: data.logs });
+      set({ mockRoutes: data.routes, mockLogs: data.logs, mockTotalLogs: data.totalLogs });
     } catch (e) {
       addToast("error", String(e));
     }
   };
+
+  useEffect(() => {
+    pollingRef.current = setInterval(() => {
+      loadMockRoutes()
+        .then((data) => set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs }))
+        .catch(() => {});
+    }, 3000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
 
   const sync = async () => {
     const validation = validateMockRoutes(mockRoutes);
@@ -69,7 +81,7 @@ export function MockPanel() {
   const clearLogs = async () => {
     try {
       await clearMockLogs();
-      set({ mockLogs: [] });
+      set({ mockLogs: [], mockTotalLogs: 0 });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -86,6 +98,15 @@ export function MockPanel() {
 
   const deleteRoute = (id: string) =>
     set({ mockRoutes: mockRoutes.filter((r) => r.id !== id) });
+
+  const importRoutes = (imported: MockRoute[]) => {
+    const merged = [
+      ...mockRoutes.filter((r) => !imported.some((ir) => ir.id === r.id)),
+      ...imported,
+    ];
+    set({ mockRoutes: merged });
+    addToast("success", `Imported ${imported.length} route(s) — click Sync to apply`);
+  };
 
   const toggleEnabled = (id: string) =>
     set({
@@ -131,10 +152,12 @@ export function MockPanel() {
           onStop={stop}
           onToggleEnabled={toggleEnabled}
           onDelete={setConfirmDeleteId}
+          onImport={importRoutes}
+          onError={(msg) => addToast("error", `Import failed: ${msg}`)}
         />
         <WebhookSection />
         <ProxyRecordingSection />
-        <MockRequestLog logs={mockLogs} onClear={clearLogs} />
+        <MockRequestLog logs={mockLogs} totalLogs={mockTotalLogs} onClear={clearLogs} />
       </div>
 
       {editingRoute && (

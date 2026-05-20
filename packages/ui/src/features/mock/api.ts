@@ -4,9 +4,10 @@ import { ensureOk, readJson } from "../../lib/http";
 export async function loadMockRoutes(): Promise<{
   routes: MockRoute[];
   logs: MockLogEntry[];
+  totalLogs: number;
 }> {
   const response = await fetch("/api/mock/routes");
-  return readJson<{ routes: MockRoute[]; logs: MockLogEntry[] }>(response);
+  return readJson<{ routes: MockRoute[]; logs: MockLogEntry[]; totalLogs: number }>(response);
 }
 
 export async function syncMockRoutes(
