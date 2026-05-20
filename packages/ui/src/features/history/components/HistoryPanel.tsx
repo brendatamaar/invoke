@@ -211,19 +211,11 @@ export function HistoryPanel() {
   const unpinned = filtered.filter((h) => !h.pinned);
 
   const restore = (entry: HistoryEntry) => {
-    const req = entry.request as
-      | { method?: string; url?: string; headers?: unknown[]; body?: string }
-      | undefined;
+    const req = entry.request as Parameters<typeof setRequest>[0] | undefined;
     setRequest({
-      method: (req?.method ?? "GET") as Parameters<
-        typeof setRequest
-      >[0]["method"],
-      url: req?.url ?? "",
-      headers: (req?.headers ?? []) as Parameters<
-        typeof setRequest
-      >[0]["headers"],
-      body: req?.body ?? "",
-    });
+      ...(req ?? {}),
+      protocol: entry.protocol ?? "rest",
+    } as Parameters<typeof setRequest>[0]);
     addToast("info", "Request restored");
   };
 
