@@ -902,12 +902,11 @@ export function SettingsPanel() {
               min={0}
               step={100}
               value={retentionDraft.maxEntries}
-              onChange={(e) =>
-                setRetentionDraft((draft) => ({
-                  ...draft,
-                  maxEntries: numericInputValue(e.currentTarget.value, 0, 0),
-                }))
-              }
+              onFocus={(e) => e.currentTarget.select()}
+              onChange={(e) => {
+                const value = numericInputValue(e.currentTarget.value, 0, 0);
+                setRetentionDraft((draft) => ({ ...draft, maxEntries: value }));
+              }}
               className="input w-24 text-xs"
             />
           </FieldRow>
@@ -917,12 +916,11 @@ export function SettingsPanel() {
               min={0}
               step={1}
               value={retentionDraft.retentionDays}
-              onChange={(e) =>
-                setRetentionDraft((draft) => ({
-                  ...draft,
-                  retentionDays: numericInputValue(e.currentTarget.value, 0, 0),
-                }))
-              }
+              onFocus={(e) => e.currentTarget.select()}
+              onChange={(e) => {
+                const value = numericInputValue(e.currentTarget.value, 0, 0);
+                setRetentionDraft((draft) => ({ ...draft, retentionDays: value }));
+              }}
               className="input w-24 text-xs"
             />
           </FieldRow>
