@@ -9,16 +9,26 @@ import type {
   Folder,
   GrpcRequestConfig,
   HttpMethod,
+  KeyValue,
   RequestConfig,
   SavedRequest,
 } from "../types";
+
+function postmanVars(vars: any[]): KeyValue[] {
+  return (vars ?? []).map((v: any) => ({
+    key: v.key ?? "",
+    value: v.value ?? "",
+    enabled: v.enabled !== false,
+    sensitive: v.type === "secret",
+  }));
+}
 
 export function importPostmanCollection(doc: any) {
   const now = Date.now();
   const collection: Collection = {
     id: id(),
     name: doc?.info?.name ?? "Postman import",
-    variables: [],
+    variables: postmanVars(doc?.variable),
     sortOrder: now,
     createdAt: now,
     updatedAt: now,
@@ -34,7 +44,7 @@ export function importPostmanCollection(doc: any) {
           collectionId: collection.id,
           parentFolderId,
           name: item.name ?? "Imported folder",
-          variables: [],
+          variables: postmanVars(item.variable),
           sortOrder: now + folders.length,
           createdAt: now,
           updatedAt: now,
