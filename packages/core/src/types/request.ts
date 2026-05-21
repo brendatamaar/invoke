@@ -20,6 +20,7 @@ export interface RequestConfig {
   auth: AuthConfig;
   timeoutMs: number;
   variables?: KeyValue[];
+  pathVariables?: KeyValue[];
   assertions?: Assertion[];
   extractionRules?: ExtractionRule[];
   options?: RequestOptions;

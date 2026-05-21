@@ -12,6 +12,7 @@ import { GRPCBar, WebSocketBar } from "./ProtocolBars";
 import { GraphQLVariablesPanel, ScriptsPanel } from "./ScriptPanels";
 import { AssertionsPanel, ExtractPanel } from "./RulePanels";
 import { OptionsPanel } from "./OptionsPanel";
+import { extractPathVariableNames } from "@invoke/core";
 import type { KeyValue, RequestProtocol } from "@invoke/core";
 import type { RequestBuilderProps, RequestTab } from "../../../types";
 
@@ -92,6 +93,83 @@ const GQL_TABS: { id: RequestTab; label: string }[] = [
   { id: "assertions", label: "Assertions" },
 ];
 
+const SECTION_HEADER =
+  "px-3 py-1.5 text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wide border-b border-[var(--border)] bg-[var(--surface-2)]";
+
+function ParamsPanel({
+  url,
+  params,
+  pathVariables,
+  onParamsChange,
+  onPathVariablesChange,
+}: {
+  url: string;
+  params: KeyValue[];
+  pathVariables: KeyValue[];
+  onParamsChange: (rows: KeyValue[]) => void;
+  onPathVariablesChange: (rows: KeyValue[]) => void;
+}) {
+  const pathVarNames = extractPathVariableNames(url);
+  const valueMap = new Map(pathVariables.map((v) => [v.key, v.value]));
+
+  return (
+    <div className="flex flex-col">
+      <div>
+        {pathVarNames.length > 0 && (
+          <div className={SECTION_HEADER}>Query Parameters</div>
+        )}
+        <KeyValueEditor
+          rows={params}
+          onChange={(rows) => onParamsChange(rows as KeyValue[])}
+          keyPlaceholder="param"
+          valuePlaceholder="value"
+        />
+      </div>
+      {pathVarNames.length > 0 && (
+        <div className="border-t border-[var(--border)]">
+          <div className={SECTION_HEADER}>Path Variables</div>
+          <div className="grid grid-cols-[1fr_1px_1fr] items-center text-2xs text-[var(--text-3)] py-1 border-b border-[var(--border)] px-3">
+            <span>Key</span>
+            <span />
+            <span className="pl-2">Value</span>
+          </div>
+          {pathVarNames.map((name) => {
+            const val = valueMap.get(name) ?? "";
+            const filled = val.trim() !== "";
+            return (
+              <div
+                key={name}
+                className="grid grid-cols-[1fr_1px_1fr] items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+              >
+                <span className="px-3 py-1.5 text-xs font-mono text-[var(--text-2)]">
+                  :{name}
+                </span>
+                <span className="h-4 bg-[var(--border)]" />
+                <input
+                  type="text"
+                  value={val}
+                  onChange={(e) => {
+                    const next = pathVarNames.map((n) => ({
+                      key: n,
+                      value: n === name ? e.target.value : (valueMap.get(n) ?? ""),
+                      enabled: true,
+                    }));
+                    onPathVariablesChange(next);
+                  }}
+                  placeholder="value"
+                  className={`w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono placeholder-[var(--text-3)] min-w-0 ${
+                    filled ? "text-[var(--success,#22c55e)]" : "text-[var(--warn)]"
+                  }`}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RequestBuilder({ onSend }: RequestBuilderProps) {
   const { request, setRequest, requestTab, set, loading } = useStore();
   const protocol = (request.protocol ?? "rest") as RequestProtocol;
@@ -158,9 +236,11 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
       ) : (
         <div className="flex-1 overflow-auto">
           {requestTab === "params" && (
-            <KeyValueEditor
-              rows={request.params ?? []}
-              onChange={(rows) => {
+            <ParamsPanel
+              url={request.url}
+              params={request.params ?? []}
+              pathVariables={request.pathVariables ?? []}
+              onParamsChange={(rows) => {
                 const kv = rows as KeyValue[];
                 const base = request.url.split("?")[0];
                 const enabled = kv.filter((r) => r.enabled !== false && r.key);
@@ -172,8 +252,9 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
                   .join("&");
                 setRequest({ params: kv, url: qs ? `${base}?${qs}` : base });
               }}
-              keyPlaceholder="param"
-              valuePlaceholder="value"
+              onPathVariablesChange={(pathVariables) =>
+                setRequest({ pathVariables })
+              }
             />
           )}
           {requestTab === "headers" && (

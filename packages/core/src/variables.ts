@@ -76,7 +76,7 @@ export function resolveRequest(
   };
   const resolvedBase: RequestConfig = {
     ...request,
-    url: resolve(request.url),
+    url: resolvePathVariables(resolve(request.url), request.pathVariables ?? []),
     params: request.params.map((param) => ({
       ...param,
       key: resolve(param.key),
@@ -492,6 +492,29 @@ function variablesFromKeyValues(variables: KeyValue[]) {
     variables
       .filter((item) => item.enabled !== false && item.key.trim())
       .map((item) => [item.key.trim(), item.value]),
+  );
+}
+
+export function extractPathVariableNames(url: string): string[] {
+  const pathPart = url.split("?")[0].split("#")[0];
+  return pathPart
+    .split("/")
+    .filter((s) => s.startsWith(":"))
+    .map((s) => s.slice(1))
+    .filter((s) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s));
+}
+
+function resolvePathVariables(url: string, pathVars: KeyValue[]): string {
+  if (!pathVars.length) return url;
+  const map = new Map(
+    pathVars
+      .filter((v) => v.enabled !== false && v.key && v.value)
+      .map((v) => [v.key, encodeURIComponent(v.value)]),
+  );
+  if (!map.size) return url;
+  return url.replace(
+    /:([a-zA-Z_][a-zA-Z0-9_]*)(?=[/?#]|$)/g,
+    (match, name: string) => map.get(name) ?? match,
   );
 }
 
