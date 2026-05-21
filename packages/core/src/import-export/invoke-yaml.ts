@@ -1,6 +1,6 @@
 import yaml from "js-yaml";
 import JSZip from "jszip";
-import { slug } from "../format";
+import { slug } from "../lib/format";
 import {
   emptyGrpcRequest,
   emptyRequest,

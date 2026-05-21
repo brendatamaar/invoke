@@ -1,10 +1,10 @@
 import { useId } from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import type { KeyValue } from "@invoke/core";
 import { VariableAutocompleteInput } from "./VariableAutocompleteInput";
 import type { KeyValueEditorProps } from "../../types";
 
-const COL_TEMPLATE = "grid-cols-[16px_14px_8px_1fr_1px_1fr_28px]";
+const COL_TEMPLATE = "grid-cols-[8px_14px_8px_1fr_1px_1fr_28px]";
 
 export function KeyValueEditor({
   rows,
@@ -57,9 +57,7 @@ export function KeyValueEditor({
           key={i}
           className={`group grid ${COL_TEMPLATE} items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]`}
         >
-          <span className="flex items-center justify-center text-[var(--text-3)] opacity-0 group-hover:opacity-100 cursor-grab">
-            <GripVertical size={12} />
-          </span>
+          <span />
           <input
             type="checkbox"
             checked={row.enabled !== false}

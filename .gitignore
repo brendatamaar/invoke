@@ -11,7 +11,7 @@ executor/bin/
 tmp/
 .design-temp
 packages/ui-backup
-docs/
+docs/docs-invoke
 invoke-design-system/
 plan/
 test-results/

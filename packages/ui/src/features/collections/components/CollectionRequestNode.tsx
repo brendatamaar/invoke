@@ -53,8 +53,22 @@ export function CollectionRequestNode({
 
   const open = () => {
     const draft = request.request as Parameters<typeof setRequest>[0];
+    const draftParams = (draft as RequestConfig).params ?? [];
+    let params = draftParams;
+    if (draftParams.length === 0) {
+      const url = (draft as RequestConfig).url ?? "";
+      const qIdx = url.indexOf("?");
+      if (qIdx !== -1) {
+        const parsed: typeof params = [];
+        new URLSearchParams(url.slice(qIdx + 1)).forEach((value, key) => {
+          if (key) parsed.push({ key, value, enabled: true });
+        });
+        if (parsed.length > 0) params = parsed;
+      }
+    }
     setRequest({
       ...draft,
+      params,
       id: request.id,
       name: request.name,
       collectionId: request.collectionId,

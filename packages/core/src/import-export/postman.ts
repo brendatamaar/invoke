@@ -9,16 +9,64 @@ import type {
   Folder,
   GrpcRequestConfig,
   HttpMethod,
+  KeyValue,
   RequestConfig,
   SavedRequest,
 } from "../types";
+
+function postmanVars(vars: any[]): KeyValue[] {
+  return (vars ?? []).map((v: any) => ({
+    key: v.key ?? "",
+    value: v.value ?? "",
+    enabled: v.enabled !== false,
+    sensitive: v.type === "secret",
+  }));
+}
+
+function postmanBody(rawBody: any): { bodyMode: RequestConfig["bodyMode"]; body: string } {
+  if (!rawBody) return { bodyMode: "none", body: "" };
+  const mode = rawBody.mode;
+  if (mode === "raw") {
+    const text = rawBody.raw ?? "";
+    const lang = rawBody.options?.raw?.language;
+    return { bodyMode: lang === "json" ? "json" : "raw", body: text };
+  }
+  if (mode === "formdata") {
+    const rows: KeyValue[] = (rawBody.formdata ?? []).map((f: any) => ({
+      key: f.key ?? "",
+      value: f.type === "file" ? "" : (f.value ?? ""),
+      enabled: f.disabled !== true,
+      type: f.type === "file" ? "file" : "text",
+      fileName: f.type === "file" ? (f.src ?? "") : undefined,
+    }));
+    return { bodyMode: "form-data", body: JSON.stringify(rows) };
+  }
+  if (mode === "urlencoded") {
+    const rows: KeyValue[] = (rawBody.urlencoded ?? []).map((f: any) => ({
+      key: f.key ?? "",
+      value: f.value ?? "",
+      enabled: f.disabled !== true,
+      type: "text" as const,
+    }));
+    return { bodyMode: "urlencoded", body: JSON.stringify(rows) };
+  }
+  if (mode === "graphql") {
+    const query = rawBody.graphql?.query ?? "";
+    const variables = rawBody.graphql?.variables ?? "";
+    const combined = variables
+      ? JSON.stringify({ query, variables: typeof variables === "string" ? JSON.parse(variables) : variables }, null, 2)
+      : JSON.stringify({ query }, null, 2);
+    return { bodyMode: "json", body: combined };
+  }
+  return { bodyMode: "none", body: "" };
+}
 
 export function importPostmanCollection(doc: any) {
   const now = Date.now();
   const collection: Collection = {
     id: id(),
     name: doc?.info?.name ?? "Postman import",
-    variables: [],
+    variables: postmanVars(doc?.variable),
     sortOrder: now,
     createdAt: now,
     updatedAt: now,
@@ -34,7 +82,7 @@ export function importPostmanCollection(doc: any) {
           collectionId: collection.id,
           parentFolderId,
           name: item.name ?? "Imported folder",
-          variables: [],
+          variables: postmanVars(item.variable),
           sortOrder: now + folders.length,
           createdAt: now,
           updatedAt: now,
@@ -53,19 +101,25 @@ export function importPostmanCollection(doc: any) {
         continue;
       }
       const url = typeof raw.url === "string" ? raw.url : (raw.url?.raw ?? "");
-      const body = raw.body?.raw ?? "";
+      const { bodyMode, body } = postmanBody(raw.body);
+      const params: KeyValue[] = (raw.url?.query ?? []).map((q: any) => ({
+        key: q.key ?? "",
+        value: q.value ?? "",
+        enabled: true,
+      }));
       const requestNow = Date.now();
       const request = toRequestConfig({
         ...emptyRequest(),
         method: (raw.method ?? "GET").toUpperCase() as HttpMethod,
         url,
+        params,
         headers: (raw.header ?? []).map((h: any) => ({
           key: h.key,
           value: h.value,
           enabled: !h.disabled,
         })),
         auth: postmanAuth(raw.auth),
-        bodyMode: body ? "raw" : "none",
+        bodyMode,
         body,
       });
       requests.push({

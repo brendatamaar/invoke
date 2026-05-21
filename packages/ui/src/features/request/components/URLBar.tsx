@@ -7,6 +7,7 @@ import {
   resolveTemplate,
   variablesFromScopes,
   parseCurl,
+  extractPathVariableNames,
   type HttpMethod,
   type KeyValue,
   type VariableScope,
@@ -151,6 +152,15 @@ export function URLBar({ onSend, loading }: URLBarProps) {
             }
           }}
           onChange={(url) => {
+            const names = extractPathVariableNames(url);
+            const existingMap = new Map(
+              (request.pathVariables ?? []).map((v) => [v.key, v]),
+            );
+            const pathVariables: KeyValue[] = names.map(
+              (name) =>
+                existingMap.get(name) ?? { key: name, value: "", enabled: true },
+            );
+
             const qIdx = url.indexOf("?");
             if (qIdx !== -1) {
               const qs = url.slice(qIdx + 1);
@@ -161,9 +171,9 @@ export function URLBar({ onSend, loading }: URLBarProps) {
               const disabled = request.params.filter(
                 (p) => p.enabled === false,
               );
-              setRequest({ url, params: [...urlParams, ...disabled] });
+              setRequest({ url, params: [...urlParams, ...disabled], pathVariables });
             } else {
-              setRequest({ url });
+              setRequest({ url, pathVariables });
             }
           }}
           onKeyDown={(e) => {

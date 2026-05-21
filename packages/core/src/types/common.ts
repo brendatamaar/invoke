@@ -6,7 +6,7 @@ export type HttpMethod =
   | "DELETE"
   | "HEAD"
   | "OPTIONS"
-  | (string & {});
+  | (string & Record<never, never>);
 export type BodyMode =
   | "none"
   | "json"
