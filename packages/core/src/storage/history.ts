@@ -1,7 +1,7 @@
 import type { HistoryEntry, RequestDraft } from "../types";
 import { searchHistory as filterHistory } from "../history";
 import { clonePlain, id } from "../request";
-import { redactHistoryEntry } from "../redact";
+import { redactHistoryEntry } from "../lib/redact";
 import type { InvokeDB } from "./db";
 import { HISTORY_LIMIT } from "./helpers";
 import { getRetentionSettings } from "./meta";
