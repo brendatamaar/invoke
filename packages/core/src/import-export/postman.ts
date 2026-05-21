@@ -105,7 +105,7 @@ export function importPostmanCollection(doc: any) {
       const params: KeyValue[] = (raw.url?.query ?? []).map((q: any) => ({
         key: q.key ?? "",
         value: q.value ?? "",
-        enabled: q.disabled !== true,
+        enabled: true,
       }));
       const requestNow = Date.now();
       const request = toRequestConfig({
