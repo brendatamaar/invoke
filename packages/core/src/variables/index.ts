@@ -104,6 +104,9 @@ export function resolveRequest(
       awsSessionToken: resolve(request.auth.awsSessionToken ?? ""),
       awsRegion: resolve(request.auth.awsRegion ?? ""),
       awsService: resolve(request.auth.awsService ?? ""),
+      ntlmUsername: resolve(request.auth.ntlmUsername ?? ""),
+      ntlmPassword: resolve(request.auth.ntlmPassword ?? ""),
+      ntlmDomain: resolve(request.auth.ntlmDomain ?? ""),
     },
     options: resolveOptions(request.options, resolve),
   };
@@ -164,6 +167,9 @@ export function resolveGraphQLRequest(
       awsSessionToken: resolve(request.auth.awsSessionToken ?? ""),
       awsRegion: resolve(request.auth.awsRegion ?? ""),
       awsService: resolve(request.auth.awsService ?? ""),
+      ntlmUsername: resolve(request.auth.ntlmUsername ?? ""),
+      ntlmPassword: resolve(request.auth.ntlmPassword ?? ""),
+      ntlmDomain: resolve(request.auth.ntlmDomain ?? ""),
     },
     options: resolveOptions(request.options, resolve),
   };
@@ -219,6 +225,9 @@ export function resolveWebSocketRequest(
       awsSessionToken: resolve(request.auth.awsSessionToken ?? ""),
       awsRegion: resolve(request.auth.awsRegion ?? ""),
       awsService: resolve(request.auth.awsService ?? ""),
+      ntlmUsername: resolve(request.auth.ntlmUsername ?? ""),
+      ntlmPassword: resolve(request.auth.ntlmPassword ?? ""),
+      ntlmDomain: resolve(request.auth.ntlmDomain ?? ""),
     },
     options: resolveOptions(request.options, resolve),
   };

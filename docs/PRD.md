@@ -409,7 +409,7 @@ The core engine (`@invoke/core`) is a standalone TypeScript library with zero fr
 | `executor-client` | gRPC client to communicate with the Go HTTP executor |
 | `storage` | Storage adapter interface with IndexedDB and PostgreSQL implementations |
 | `schema` | JSON Schema validation for request/response bodies |
-| `auth` | Auth helper logic (Bearer, Basic, OAuth2, API Key, Digest, AWS Sig V4) |
+| `auth` | Auth helper logic (Bearer, Basic, OAuth2, API Key, Digest, AWS Sig V4, NTLM) |
 
 ### 6.2 Collection Manager
 

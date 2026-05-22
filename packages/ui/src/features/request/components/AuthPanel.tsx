@@ -28,6 +28,7 @@ export function AuthPanel() {
             "oauth2",
             "digest",
             "aws-sigv4",
+            "ntlm",
           ].map((type) => (
             <option key={type} value={type}>
               {type}
@@ -330,6 +331,37 @@ export function AuthPanel() {
               onChange={(value) =>
                 setRequest({ auth: { ...auth, password: value } })
               }
+            />
+          </Field>
+        </>
+      )}
+
+      {auth.type === "ntlm" && (
+        <>
+          <Field label="Username">
+            <AuthTextInput
+              value={auth.ntlmUsername ?? ""}
+              onChange={(value) =>
+                setRequest({ auth: { ...auth, ntlmUsername: value } })
+              }
+            />
+          </Field>
+          <Field label="Password">
+            <AuthTextInput
+              type="password"
+              value={auth.ntlmPassword ?? ""}
+              onChange={(value) =>
+                setRequest({ auth: { ...auth, ntlmPassword: value } })
+              }
+            />
+          </Field>
+          <Field label="Domain">
+            <AuthTextInput
+              value={auth.ntlmDomain ?? ""}
+              onChange={(value) =>
+                setRequest({ auth: { ...auth, ntlmDomain: value } })
+              }
+              placeholder="optional"
             />
           </Field>
         </>
