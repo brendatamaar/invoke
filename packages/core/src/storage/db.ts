@@ -148,3 +148,5 @@ export class InvokeDB extends Dexie {
       .upgrade(migrateNetworkOptionsToDefaults);
   }
 }
+
+export const db = new InvokeDB();

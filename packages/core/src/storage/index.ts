@@ -20,7 +20,7 @@ import type {
 import { encryptJson, decryptJson } from "../lib/crypto";
 import * as collectionStorage from "./collections";
 import * as cookieStorage from "./cookies";
-import { InvokeDB } from "./db";
+import { db } from "./db";
 import * as environmentStorage from "./environments";
 import * as flowStorage from "./flows";
 import * as historyStorage from "./history";
@@ -63,7 +63,7 @@ function redactMetadata(metadata: KeyValue[]): KeyValue[] {
 }
 
 export class InvokeStore {
-  private db = new InvokeDB();
+  private db = db;
   private cryptoKey: CryptoKey | null = null;
 
   setCryptoKey(key: CryptoKey) {
