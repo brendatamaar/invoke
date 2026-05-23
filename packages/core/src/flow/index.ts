@@ -1,36 +1,77 @@
+import { Cause, Duration, Effect, Exit, Fiber } from "effect";
 import { JSONPath } from "jsonpath-plus";
 import { runAssertions } from "../assertions";
+import { StepExecutionError, StepTimeoutError } from "../errors";
 import { extractVariables, resolveRequest } from "../variables";
 import type {
   AssertionMatcher,
   ExecuteResponse,
   Flow,
   FlowCondition,
+  FlowRequestStep,
   FlowResult,
+  FlowRunnerOptions,
   FlowStatus,
   FlowStep,
   FlowStepResult,
-  FlowRunnerOptions,
 } from "../types";
 
 export class FlowRunner {
-  private cancelled = false;
+  private fiber: Fiber.RuntimeFiber<FlowResult, never> | null = null;
 
-  cancel() {
-    this.cancelled = true;
+  cancel(): void {
+    if (this.fiber) Effect.runFork(Fiber.interrupt(this.fiber));
   }
 
   async run(flow: Flow, options: FlowRunnerOptions): Promise<FlowResult> {
-    this.cancelled = false;
     const startedAt = Date.now();
+    // Plain objects mutated inside the Effect — safe because JS is single-threaded
+    // and these refs survive Fiber interruption so we can build a partial result.
     const variables: Record<string, string> = {};
     const results: FlowStepResult[] = [];
-    await this.runSteps(flow.steps, flow, variables, results, options);
-    const status: FlowStatus = this.cancelled
-      ? "cancelled"
-      : results.some((result) => result.status === "failed")
-        ? "failed"
-        : "passed";
+
+    this.fiber = Effect.runFork(
+      flowEffect(flow, options, startedAt, variables, results),
+    );
+
+    const exit = await Effect.runPromise(Fiber.await(this.fiber));
+    this.fiber = null;
+
+    if (Exit.isSuccess(exit)) return exit.value;
+
+    if (Cause.isInterruptedOnly(exit.cause)) {
+      return {
+        flowId: flow.id,
+        status: "cancelled",
+        startedAt,
+        completedAt: Date.now(),
+        variables,
+        steps: results,
+      };
+    }
+
+    throw new Error(Cause.pretty(exit.cause));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Internal Effect pipeline
+// ---------------------------------------------------------------------------
+
+function flowEffect(
+  flow: Flow,
+  options: FlowRunnerOptions,
+  startedAt: number,
+  variables: Record<string, string>,
+  results: FlowStepResult[],
+): Effect.Effect<FlowResult, never> {
+  return Effect.gen(function* () {
+    yield* stepsEffect(flow.steps, variables, results, options);
+
+    const status: FlowStatus = results.some((r) => r.status === "failed")
+      ? "failed"
+      : "passed";
+
     const result: FlowResult = {
       flowId: flow.id,
       status,
@@ -39,20 +80,24 @@ export class FlowRunner {
       variables,
       steps: results,
     };
-    await options.hooks?.onFlowComplete?.(result);
-    return result;
-  }
 
-  private async runSteps(
-    steps: FlowStep[],
-    flow: Flow,
-    variables: Record<string, string>,
-    results: FlowStepResult[],
-    options: FlowRunnerOptions,
-  ) {
+    if (options.hooks?.onFlowComplete) {
+      yield* Effect.promise(() => Promise.resolve(options.hooks!.onFlowComplete!(result)));
+    }
+
+    return result;
+  });
+}
+
+function stepsEffect(
+  steps: FlowStep[],
+  variables: Record<string, string>,
+  results: FlowStepResult[],
+  options: FlowRunnerOptions,
+): Effect.Effect<void, never> {
+  return Effect.gen(function* () {
     for (const step of steps) {
-      if (this.cancelled) return;
-      await this.runStep(step, flow, variables, results, options);
+      yield* stepEffect(step, variables, results, options);
       const last = results[results.length - 1];
       if (
         last?.status === "failed" &&
@@ -61,108 +106,191 @@ export class FlowRunner {
       )
         return;
     }
-  }
+  });
+}
 
-  private async runStep(
-    step: FlowStep,
-    flow: Flow,
-    variables: Record<string, string>,
-    results: FlowStepResult[],
-    options: FlowRunnerOptions,
-  ) {
-    await options.hooks?.onStepStart?.(step);
-    if (step.type === "delay") {
-      const startedAt = Date.now();
-      await sleep(step.delayMs);
-      const result = stepResult(step, "passed", startedAt);
-      results.push(result);
-      await options.hooks?.onStepComplete?.(result);
-      return;
-    }
-    if (step.type === "condition") {
-      const branch = evaluateCondition(
-        step.condition,
-        variables,
-        results[results.length - 1]?.response,
-      )
-        ? step.thenSteps
-        : (step.elseSteps ?? []);
-      const result = stepResult(step, "passed", Date.now());
-      results.push(result);
-      await options.hooks?.onStepComplete?.(result);
-      await this.runSteps(branch, flow, variables, results, options);
-      return;
-    }
-    if (step.type === "loop") {
-      const startedAt = Date.now();
-      const maxIterations = loopMaxIterations(step.count, step.maxIterations);
-      for (
-        let index = 0;
-        index < maxIterations && !this.cancelled;
-        index += 1
-      ) {
-        if (
-          !shouldRunLoopIteration(
-            step.condition,
-            step.conditionMode,
-            variables,
-            results[results.length - 1]?.response,
-          )
-        )
-          break;
-        variables["$loop.iteration"] = String(index);
-        await this.runSteps(step.steps, flow, variables, results, options);
-      }
-      const result = stepResult(
-        step,
-        this.cancelled ? "cancelled" : "passed",
-        startedAt,
-      );
-      results.push(result);
-      await options.hooks?.onStepComplete?.(result);
-      return;
-    }
+function stepEffect(
+  step: FlowStep,
+  variables: Record<string, string>,
+  results: FlowStepResult[],
+  options: FlowRunnerOptions,
+): Effect.Effect<void, never> {
+  if (step.type === "delay") return delayEffect(step, results, options);
+  if (step.type === "condition")
+    return conditionEffect(step, variables, results, options);
+  if (step.type === "loop") return loopEffect(step, variables, results, options);
+  return requestEffect(step, variables, results, options);
+}
 
+function delayEffect(
+  step: Extract<FlowStep, { type: "delay" }>,
+  results: FlowStepResult[],
+  options: FlowRunnerOptions,
+): Effect.Effect<void, never> {
+  return Effect.gen(function* () {
+    if (options.hooks?.onStepStart) {
+      yield* Effect.promise(() => Promise.resolve(options.hooks!.onStepStart!(step)));
+    }
     const startedAt = Date.now();
-    try {
-      const resolved = resolveRequest(step.request, [
+    yield* Effect.sleep(Duration.millis(Math.max(0, step.delayMs)));
+    const result = makeStepResult(step, "passed", startedAt);
+    results.push(result);
+    if (options.hooks?.onStepComplete) {
+      yield* Effect.promise(() => Promise.resolve(options.hooks!.onStepComplete!(result)));
+    }
+  });
+}
+
+function conditionEffect(
+  step: Extract<FlowStep, { type: "condition" }>,
+  variables: Record<string, string>,
+  results: FlowStepResult[],
+  options: FlowRunnerOptions,
+): Effect.Effect<void, never> {
+  return Effect.gen(function* () {
+    if (options.hooks?.onStepStart) {
+      yield* Effect.promise(() => Promise.resolve(options.hooks!.onStepStart!(step)));
+    }
+    const branch = evaluateCondition(
+      step.condition,
+      variables,
+      results[results.length - 1]?.response,
+    )
+      ? step.thenSteps
+      : (step.elseSteps ?? []);
+    const result = makeStepResult(step, "passed", Date.now());
+    results.push(result);
+    if (options.hooks?.onStepComplete) {
+      yield* Effect.promise(() => Promise.resolve(options.hooks!.onStepComplete!(result)));
+    }
+    yield* stepsEffect(branch, variables, results, options);
+  });
+}
+
+function loopEffect(
+  step: Extract<FlowStep, { type: "loop" }>,
+  variables: Record<string, string>,
+  results: FlowStepResult[],
+  options: FlowRunnerOptions,
+): Effect.Effect<void, never> {
+  return Effect.gen(function* () {
+    if (options.hooks?.onStepStart) {
+      yield* Effect.promise(() => Promise.resolve(options.hooks!.onStepStart!(step)));
+    }
+    const startedAt = Date.now();
+    const maxIterations = loopMaxIterations(step.count, step.maxIterations);
+    for (let index = 0; index < maxIterations; index += 1) {
+      if (
+        !shouldRunLoopIteration(
+          step.condition,
+          step.conditionMode,
+          variables,
+          results[results.length - 1]?.response,
+        )
+      )
+        break;
+      variables["$loop.iteration"] = String(index);
+      yield* stepsEffect(step.steps, variables, results, options);
+    }
+    const result = makeStepResult(step, "passed", startedAt);
+    results.push(result);
+    if (options.hooks?.onStepComplete) {
+      yield* Effect.promise(() => Promise.resolve(options.hooks!.onStepComplete!(result)));
+    }
+  });
+}
+
+function requestEffect(
+  step: FlowRequestStep,
+  variables: Record<string, string>,
+  results: FlowStepResult[],
+  options: FlowRunnerOptions,
+): Effect.Effect<void, never> {
+  const startedAt = Date.now();
+  const timeoutMs = step.request.timeoutMs ?? 30_000;
+
+  const executeWithTimeout = Effect.tryPromise({
+    try: () => {
+      const { request: resolved } = resolveRequest(step.request, [
         ...(options.scopes ?? []),
         { name: "flow", variables },
       ]);
-      const response = await options.execute(resolved.request);
+      return options.execute(resolved);
+    },
+    catch: (e) => new StepExecutionError({ stepId: step.id, cause: e }),
+  }).pipe(
+    Effect.timeout(Duration.millis(timeoutMs)),
+    Effect.mapError(
+      (e): StepTimeoutError | StepExecutionError =>
+        e._tag === "TimeoutException"
+          ? new StepTimeoutError({ stepId: step.id, timeoutMs })
+          : (e as StepExecutionError),
+    ),
+  );
+
+  return Effect.gen(function* () {
+    if (options.hooks?.onStepStart) {
+      yield* Effect.promise(() => Promise.resolve(options.hooks!.onStepStart!(step)));
+    }
+
+    const outcome = yield* Effect.either(executeWithTimeout);
+
+    let result: FlowStepResult;
+
+    if (outcome._tag === "Right") {
+      const response = outcome.right;
       const assertions = runAssertions(response, step.request.assertions ?? []);
       const extracted = extractVariables(
         response,
         step.request.extractionRules ?? [],
       );
+
       for (const [name, value] of Object.entries(extracted)) {
         variables[name] = value;
-        await options.hooks?.onVariableExtracted?.(name, value, step);
+        if (options.hooks?.onVariableExtracted) {
+          yield* Effect.promise(() =>
+            Promise.resolve(options.hooks!.onVariableExtracted!(name, value, step)),
+          );
+        }
       }
+
       const status: FlowStatus =
-        response.error || assertions.some((assertion) => !assertion.passed)
-          ? "failed"
-          : "passed";
-      const result = stepResult(step, status, startedAt, {
+        response.error || assertions.some((a) => !a.passed) ? "failed" : "passed";
+
+      result = makeStepResult(step, status, startedAt, {
         response,
         assertions,
         error: response.error,
       });
-      results.push(result);
-      await options.hooks?.onStepComplete?.(result);
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      await options.hooks?.onError?.(err, step);
-      const result = stepResult(step, "failed", startedAt, {
-        error: err.message,
-      });
-      results.push(result);
-      await options.hooks?.onStepComplete?.(result);
+    } else {
+      const error = outcome.left;
+      const message =
+        error._tag === "StepTimeoutError"
+          ? `Step timed out after ${(error as StepTimeoutError).timeoutMs}ms`
+          : String((error as StepExecutionError).cause);
+
+      if (options.hooks?.onError) {
+        yield* Effect.promise(() =>
+          Promise.resolve(options.hooks!.onError!(new Error(message), step)),
+        );
+      }
+
+      result = makeStepResult(step, "failed", startedAt, { error: message });
     }
-  }
+
+    results.push(result);
+
+    if (options.hooks?.onStepComplete) {
+      yield* Effect.promise(() => Promise.resolve(options.hooks!.onStepComplete!(result)));
+    }
+  });
 }
 
-function stepResult(
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeStepResult(
   step: FlowStep,
   status: FlowStatus,
   startedAt: number,
@@ -244,8 +372,4 @@ function shouldRunLoopIteration(
   if (!condition) return true;
   const matched = evaluateCondition(condition, variables, response);
   return mode === "until" ? !matched : matched;
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 }
