@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useStore } from "../../../store";
 import { Select } from "../../../components/shared/Select";
 import { URLBar } from "./URLBar";

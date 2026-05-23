@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Plus, Upload } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
+import { useCollections } from "../../../hooks/useDb";
 import { PromptModal } from "../../../components/shared/PromptModal";
 import { CollectionNode } from "./CollectionNode";
 import {
@@ -9,7 +10,8 @@ import {
 } from "../useCollectionImport";
 
 export function CollectionTree() {
-  const { collections, addToast, set } = useStore();
+  const { addToast } = useStore();
+  const collections = useCollections();
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newColModal, setNewColModal] = useState(false);
@@ -26,8 +28,6 @@ export function CollectionTree() {
     setNewColModal(false);
     try {
       await coreStore.createCollection(name);
-      const cols = await coreStore.listCollections();
-      set({ collections: cols });
     } catch (e) {
       addToast("error", String(e));
     }

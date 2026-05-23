@@ -96,7 +96,7 @@ export default function App() {
 
         <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden">
           <div
-            className="overflow-hidden flex-shrink-0"
+            className="overflow-hidden shrink-0"
             style={{ height: requestHeight, minHeight: 200 }}
           >
             <RequestBuilder onSend={handleSend} />

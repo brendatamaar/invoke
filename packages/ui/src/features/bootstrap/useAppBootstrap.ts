@@ -8,45 +8,12 @@ export function useAppBootstrap() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [
-          cols,
-          envs,
-          hist,
-          fls,
-          activeEnvId,
-          retention,
-          examples,
-          diffRules,
-          cookieList,
-          protocolDefaults,
-        ] = await Promise.all([
-          coreStore.listCollections(),
+        const [reqs, envs, activeEnvId] = await Promise.all([
+          coreStore.listRequests(),
           coreStore.listEnvironments(),
-          coreStore.listHistory(200),
-          coreStore.listFlows(),
           coreStore.getActiveEnvironmentId(),
-          coreStore.getRetentionSettings(),
-          coreStore.listResponseExamples(),
-          coreStore.listDiffIgnoreRules(),
-          coreStore.listCookies(),
-          coreStore.getDefaultProtocolOptions(),
         ]);
-        const reqs = await coreStore.listRequests();
-        const folds = await coreStore.listFolders();
-        set({
-          collections: cols,
-          environments: envs,
-          history: hist,
-          flows: fls,
-          requests: reqs,
-          folders: folds,
-          activeEnvironmentId: activeEnvId,
-          retentionSettings: retention,
-          responseExamples: examples,
-          diffIgnoreRules: diffRules,
-          cookies: cookieList,
-          protocolDefaults,
-        });
+        set({ requests: reqs, environments: envs, activeEnvironmentId: activeEnvId });
       } catch (e) {
         addToast("error", `Failed to load data: ${e}`);
       }

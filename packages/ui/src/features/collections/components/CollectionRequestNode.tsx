@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
-import type { RequestConfig, SavedRequest } from "@invoke/core";
+import type { GraphQLRequestConfig, GrpcRequestConfig, RequestConfig, SavedRequest, WebSocketRequestConfig } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
 import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
@@ -25,7 +25,7 @@ export function CollectionRequestNode({
   request: SavedRequest;
   collectionId: string;
 }) {
-  const { set, setRequest, addToast, request: activeRequest } = useStore();
+  const { set, setRequest, setGraphqlRequest, setWebsocketRequest, setGrpcRequest, addToast, request: activeRequest } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [duplicateName, setDuplicateName] = useState<string | null>(null);
@@ -52,11 +52,38 @@ export function CollectionRequestNode({
   }, [isActive, activeRequest, request.request]);
 
   const open = () => {
-    const draft = request.request as Parameters<typeof setRequest>[0];
-    const draftParams = (draft as RequestConfig).params ?? [];
+    const meta = {
+      id: request.id,
+      name: request.name,
+      collectionId: request.collectionId,
+      folderId: request.folderId,
+      protocol: request.protocol,
+    };
+
+    if (request.protocol === "graphql") {
+      setGraphqlRequest(request.request as GraphQLRequestConfig);
+      setRequest(meta);
+      set({ requestTab: "graphql" });
+      return;
+    }
+
+    if (request.protocol === "websocket") {
+      setWebsocketRequest(request.request as WebSocketRequestConfig);
+      setRequest(meta);
+      return;
+    }
+
+    if (request.protocol === "grpc") {
+      setGrpcRequest(request.request as GrpcRequestConfig);
+      setRequest(meta);
+      return;
+    }
+
+    const draft = request.request as RequestConfig;
+    const draftParams = draft.params ?? [];
     let params = draftParams;
     if (draftParams.length === 0) {
-      const url = (draft as RequestConfig).url ?? "";
+      const url = draft.url ?? "";
       const qIdx = url.indexOf("?");
       if (qIdx !== -1) {
         const parsed: typeof params = [];
@@ -66,14 +93,7 @@ export function CollectionRequestNode({
         if (parsed.length > 0) params = parsed;
       }
     }
-    setRequest({
-      ...draft,
-      params,
-      id: request.id,
-      name: request.name,
-      collectionId: request.collectionId,
-      folderId: request.folderId,
-    });
+    setRequest({ ...draft, params, ...meta });
   };
 
   const duplicate = async (name: string) => {

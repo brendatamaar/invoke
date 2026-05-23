@@ -20,7 +20,6 @@ import {
 import type { WsSavedMessage } from "@invoke/core";
 import { useStore } from "../../../store";
 import { webSocketSend } from "../api";
-import { KeyValueEditor } from "../../../components/shared/KeyValueEditor";
 import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 

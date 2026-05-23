@@ -1,10 +1,11 @@
 import { Settings, HelpCircle, Cookie } from "lucide-react";
 import { useStore } from "../../store";
+import { useCookies } from "../../hooks/useDb";
 import { Select } from "../shared/Select";
 
 export function TopBar() {
-  const { environments, activeEnvironmentId, cookies, set, showSettings } =
-    useStore();
+  const { environments, activeEnvironmentId, set, showSettings } = useStore();
+  const cookies = useCookies();
 
   return (
     <header

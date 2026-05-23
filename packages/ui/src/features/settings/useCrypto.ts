@@ -1,5 +1,5 @@
 import { deriveKeyFromPassphrase, generateSalt } from "@invoke/core";
-import { coreStore, useStore } from "../../store";
+import { coreStore } from "../../store";
 
 function promptPassphrase(
   mode: "setup" | "unlock",

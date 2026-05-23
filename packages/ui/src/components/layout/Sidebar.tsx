@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import { Layers, History, Globe, GitBranch, Server } from "lucide-react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useStore } from "../../store";
 import { CollectionTree } from "../../features/collections/components/CollectionTree";
 import { HistoryPanel } from "../../features/history/components/HistoryPanel";
@@ -15,11 +17,40 @@ const NAV: { id: SidebarSection; icon: React.ReactNode; label: string }[] = [
   { id: "mocks", icon: <Server size={15} />, label: "Mock" },
 ];
 
+const SECTION_PATHS: Record<SidebarSection, string> = {
+  collections: "/collections",
+  history: "/history",
+  environments: "/environments",
+  flows: "/flows",
+  mocks: "/mocks",
+};
+
+const PATH_TO_SECTION: Record<string, SidebarSection> = {
+  "/collections": "collections",
+  "/history": "history",
+  "/environments": "environments",
+  "/flows": "flows",
+  "/mocks": "mocks",
+};
+
 const RAIL_WIDTH = 36;
 const PANEL_WIDTH = 270;
 
 export function Sidebar() {
-  const { sidebarSection, sidebarCollapsed, set } = useStore();
+  const { sidebarCollapsed, set } = useStore();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const sidebarSection: SidebarSection | null = PATH_TO_SECTION[pathname] ?? null;
+
+  // Auto-expand when navigating to a new section (back/forward or programmatic).
+  const prevSectionRef = useRef(sidebarSection);
+  useEffect(() => {
+    if (sidebarSection !== null && sidebarSection !== prevSectionRef.current) {
+      prevSectionRef.current = sidebarSection;
+      set({ sidebarCollapsed: false });
+    }
+  }, [sidebarSection, set]);
 
   return (
     <aside
@@ -47,13 +78,14 @@ export function Sidebar() {
             <button
               key={id}
               title={label}
-              onClick={() =>
-                set({
-                  sidebarSection: id,
-                  sidebarCollapsed:
-                    sidebarSection === id ? !sidebarCollapsed : false,
-                })
-              }
+              onClick={() => {
+                if (sidebarSection === id) {
+                  set({ sidebarCollapsed: !sidebarCollapsed });
+                } else {
+                  set({ sidebarCollapsed: false });
+                  navigate({ to: SECTION_PATHS[id] });
+                }
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -96,7 +128,7 @@ export function Sidebar() {
       </div>
 
       {/* Panel content */}
-      {!sidebarCollapsed && (
+      {!sidebarCollapsed && sidebarSection && (
         <div
           className="flex flex-col flex-1 overflow-hidden"
           style={{ width: PANEL_WIDTH, background: "var(--bg-1)" }}

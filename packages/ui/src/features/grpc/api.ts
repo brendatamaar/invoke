@@ -32,6 +32,7 @@ export async function grpcServerStream(
   const decoder = new TextDecoder();
   let buffer = "";
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -163,6 +164,7 @@ export function grpcStreamEvents(
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;

@@ -69,7 +69,7 @@ const graphqlStreamLanguage = StreamLanguage.define({
       if (/^[A-Z]/.test(w)) return "type";
       return "def";
     }
-    if (stream.match(/^[{}\[\]()!:=|&,]/)) return "punctuation";
+    if (stream.match(/^[{}[\]()!:=|&,]/)) return "punctuation";
     stream.next();
     return null;
   },

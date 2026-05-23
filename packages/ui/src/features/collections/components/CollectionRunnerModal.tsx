@@ -12,9 +12,6 @@ import {
   CollectionRunner,
   exportRunResultJson,
   exportRunResultCsv,
-  resolveRequest,
-  runAssertions,
-  variablesFromScopes,
   type RequestRunResult,
   type VariableScope,
 } from "@invoke/core";
@@ -40,14 +37,12 @@ export function CollectionRunnerModal() {
     collectionRunResult,
     collectionRunning,
     requests,
-    folders,
     environments,
     activeEnvironmentId,
     sessionVariables,
     set,
     addToast,
   } = useStore();
-
   const [stopOnFailure, setStopOnFailure] = useState(false);
   const [liveResults, setLiveResults] = useState<RequestRunResult[]>([]);
   const runnerRef = useRef<CollectionRunner | null>(null);

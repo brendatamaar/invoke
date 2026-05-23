@@ -106,8 +106,6 @@ export function FlowModal({
     if (!showValidation(validateFlow(draft))) return;
     try {
       await coreStore.saveFlow(draft);
-      const fs = await coreStore.listFlows();
-      set({ flows: fs });
       addToast("success", "Flow saved");
     } catch (e) {
       addToast("error", String(e));

@@ -4,8 +4,6 @@ import type { AppState } from "../../types";
 
 export type WorkspaceSlice = Pick<
   AppState,
-  | "collections"
-  | "folders"
   | "requests"
   | "protocolDefaults"
   | "expandedFolderIds"
@@ -16,15 +14,12 @@ export type WorkspaceSlice = Pick<
   | "envDraft"
   | "variableEditor"
   | "toggleFolder"
-  | "setProtocolDefaults"
 >;
 
 type StoreSet = Parameters<StateCreator<AppState>>[0];
 
 export function createWorkspaceSlice(set: StoreSet): WorkspaceSlice {
   return {
-    collections: [],
-    folders: [],
     requests: [],
     protocolDefaults: INITIAL_PROTOCOL_DEFAULTS,
     expandedFolderIds: [],
@@ -34,8 +29,6 @@ export function createWorkspaceSlice(set: StoreSet): WorkspaceSlice {
     showEnvPanel: false,
     envDraft: undefined,
     variableEditor: { open: false, name: "", variables: [] },
-
-    setProtocolDefaults: (defaults) => set({ protocolDefaults: defaults }),
 
     toggleFolder: (id) =>
       set((state) => ({

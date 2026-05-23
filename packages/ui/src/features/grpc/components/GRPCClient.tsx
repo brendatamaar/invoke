@@ -833,12 +833,7 @@ function percentile(sorted: number[], p: number) {
 
 /** Stress mode: send N msgs/sec for X seconds, report stats */
 function GrpcStressPanel({ streamId }: { streamId: string }) {
-  const {
-    grpcRequest,
-    set,
-    grpcStreamSentMessages,
-    grpcStreamReceivedMessages,
-  } = useStore();
+  const { grpcRequest } = useStore();
   const [rate, setRate] = useState(5);
   const [duration, setDuration] = useState(10);
   const [stats, setStats] = useState<StressStats | null>(null);

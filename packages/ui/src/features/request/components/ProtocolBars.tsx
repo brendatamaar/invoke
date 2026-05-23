@@ -72,7 +72,6 @@ export function WebSocketBar() {
     activeEnvironmentId,
     sessionVariables,
     setWsSession,
-    set,
     addToast,
   } = useStore();
 
@@ -603,8 +602,6 @@ export function GRPCBar() {
               response: syntheticResponse,
               protocol: "grpc",
             });
-            const hist = await coreStore.listHistory(200);
-            set({ history: hist });
           },
           signal: controller.signal,
         });
@@ -742,8 +739,6 @@ export function GRPCBar() {
         response: execResponse,
         protocol: "grpc",
       });
-      const hist = await coreStore.listHistory(200);
-      set({ history: hist });
     } catch (e) {
       if ((e as Error).name !== "AbortError") addToast("error", String(e));
       set({

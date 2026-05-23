@@ -11,7 +11,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import type { ProxyRecord } from "../../../types";
-import { useStore } from "../../../store";
+import { useStore, coreStore } from "../../../store";
 import {
   clearProxyRecords,
   loadProxyRecords,
@@ -136,7 +136,7 @@ function ProxyUrlTooltip({ url }: { url: string }) {
 }
 
 export function ProxyRecordingSection() {
-  const { addToast, set, proxyRecordsTick } = useStore();
+  const { addToast, proxyRecordsTick } = useStore();
   const [records, setRecords] = useState<ProxyRecord[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -180,7 +180,7 @@ export function ProxyRecordingSection() {
       const ids = selected.size > 0 ? [...selected] : undefined;
       const count = ids ? ids.length : records.length;
       const result = await proxyRecordsToMocks(ids);
-      set({ mockRoutes: result.routes });
+      coreStore.setMeta("mockRoutes", result.routes).catch(() => {});
 
       const skipped = count - result.added;
       if (result.added === 0) {

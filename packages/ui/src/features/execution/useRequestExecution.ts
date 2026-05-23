@@ -19,6 +19,7 @@ import {
 } from "../execute/api";
 import { processMultipartResponse } from "../execute/multipart";
 import { coreStore, useStore } from "../../store";
+import { useCollections, useCookies, useFolders } from "../../hooks/useDb";
 import { injectCookies, persistResponseCookies } from "./cookies";
 import { applyOAuth2Token } from "./oauth2";
 import { extractRequiredVarNames } from "../request/components/GraphQLPanels";
@@ -33,11 +34,11 @@ export function useRequestExecution() {
   const assertionRules = useStore((state) => state.assertionRules);
   const extractRules = useStore((state) => state.extractRules);
   const streamMode = useStore((state) => state.streamMode);
-  const cookies = useStore((state) => state.cookies);
   const enableCookies = useStore((state) => state.enableCookies);
-  const collections = useStore((state) => state.collections);
-  const folders = useStore((state) => state.folders);
   const requests = useStore((state) => state.requests);
+  const cookies = useCookies();
+  const collections = useCollections();
+  const folders = useFolders();
   const loading = useStore((state) => state.loading);
   const streaming = useStore((state) => state.streaming);
   const set = useStore((state) => state.set);
@@ -201,8 +202,7 @@ export function useRequestExecution() {
       url: string,
     ) => {
       if (!enableCookies) return;
-      const updated = await persistResponseCookies(response, url);
-      if (updated) set({ cookies: updated });
+      await persistResponseCookies(response, url);
     };
 
     const finishStreamExecution = async (rawResponse: ExecuteResponse) => {
@@ -215,12 +215,10 @@ export function useRequestExecution() {
         response,
         protocol,
       });
-      const hist = await coreStore.listHistory(200);
       set({
         response,
         assertionResults: results,
         sessionVariables: { ...sessionVariables, ...extracted },
-        history: hist,
         streaming: false,
         retryAttempts: undefined,
         graphqlDeferredParts: parts,
@@ -297,7 +295,6 @@ export function useRequestExecution() {
         response,
         protocol,
       });
-      const hist = await coreStore.listHistory(200);
       const isProxyRequest = resolved.url.includes("/api/proxy/request");
       set((state: { proxyRecordsTick: number }) => ({
         response,
@@ -306,7 +303,6 @@ export function useRequestExecution() {
         loading: false,
         loadController: undefined,
         retryAttempts: rawResponse.retryAttempts,
-        history: hist,
         graphqlDeferredParts: parts,
         consoleLogs: { preRequest: preRequestLogs, preRequestError, preRequestRan: true, postResponse: postResponseLogs, postResponseError, postResponseRan: true },
         ...(isProxyRequest && { proxyRecordsTick: state.proxyRecordsTick + 1 }),

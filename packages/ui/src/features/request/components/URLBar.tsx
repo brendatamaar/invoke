@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { Select } from "../../../components/shared/Select";
 import { Zap, RefreshCw, Layers, X, Braces } from "lucide-react";
 import { useStore } from "../../../store";
+import { useCollections, useFolders } from "../../../hooks/useDb";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 import {
   resolveTemplate,
@@ -51,10 +52,10 @@ export function URLBar({ onSend, loading }: URLBarProps) {
     activeEnvironmentId,
     sessionVariables,
     loadController,
-    collections,
-    folders,
     requests: savedRequests,
   } = useStore();
+  const collections = useCollections();
+  const folders = useFolders();
   const color = METHOD_COLORS[request.method] ?? "text-[var(--fg-2)]";
   const [showVars, setShowVars] = useState(false);
   const varsRef = useRef<HTMLDivElement>(null);
