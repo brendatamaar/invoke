@@ -51,6 +51,7 @@ import {
 } from "./GraphQLErrorsTab";
 import { DeferredTab } from "./DeferredTab";
 import { ConsoleTab } from "./ConsoleTab";
+import { WebSocketLogPanel } from "../../websocket/components/WebSocketLogPanel";
 
 const STATIC_TABS: { id: ResponseTab; label: string; icon?: ReactNode }[] = [
   { id: "body", label: "Body" },
@@ -110,6 +111,10 @@ export function ResponseViewer() {
   const [exampleName, setExampleName] = useState("");
   const [jsonPathInput, setJsonPathInput] = useState("");
   const [jsonPathResult, setJsonPathResult] = useState<string | null>(null);
+
+  if (request.protocol === "websocket") {
+    return <WebSocketLogPanel />;
+  }
 
   if (!response && !streaming) {
     return (

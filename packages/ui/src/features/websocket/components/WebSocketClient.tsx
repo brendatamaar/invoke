@@ -1,19 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
-  ArrowLeftRight,
   Binary,
   ChevronDown,
-  ChevronRight,
-  Copy,
   Eye,
   EyeOff,
   FileText,
-  Info,
+  Pencil,
   Plus,
-  Search,
   Trash2,
   X,
 } from "lucide-react";
@@ -23,34 +17,7 @@ import { webSocketSend } from "../api";
 import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 
-type WsDirection = "sent" | "received" | "system";
-type DirectionFilter = "all" | WsDirection;
-type InnerTab = "log" | "headers" | "auth" | "messages" | "options";
-
-function tryPrettyJson(body: string): string | null {
-  try {
-    return JSON.stringify(JSON.parse(body), null, 2);
-  } catch {
-    return null;
-  }
-}
-
-function byteSize(str: string): number {
-  return new TextEncoder().encode(str).length;
-}
-
-function resolveDynamicVars(text: string): string {
-  return text
-    .replace(/\{\{\$timestamp\}\}/g, String(Date.now()))
-    .replace(/\{\{\$isoTimestamp\}\}/g, new Date().toISOString())
-    .replace(/\{\{\$randomUUID\}\}/g, crypto.randomUUID())
-    .replace(
-      /\{\{\$randomInt\}\}/g,
-      String(Math.floor(Math.random() * 1_000_000)),
-    );
-}
-
-// ─── Protocol templates ──────────────────────────────────────────────────────
+type InnerTab = "messages" | "headers" | "auth" | "options";
 
 interface MsgTemplate {
   label: string;
@@ -133,8 +100,6 @@ const PROTOCOL_TEMPLATES: Record<string, MsgTemplate[]> = {
     { label: "Ping", body: "2", type: "text" },
   ],
 };
-
-// ─── Sensitive key-value editor ──────────────────────────────────────────────
 
 const SENSITIVE_KEYS = new Set([
   "authorization",
@@ -235,7 +200,16 @@ function SensitiveKeyValueEditor({
   );
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+function resolveDynamicVars(text: string): string {
+  return text
+    .replace(/\{\{\$timestamp\}\}/g, String(Date.now()))
+    .replace(/\{\{\$isoTimestamp\}\}/g, new Date().toISOString())
+    .replace(/\{\{\$randomUUID\}\}/g, crypto.randomUUID())
+    .replace(
+      /\{\{\$randomInt\}\}/g,
+      String(Math.floor(Math.random() * 1_000_000)),
+    );
+}
 
 export function WebSocketClient() {
   const {
@@ -253,66 +227,29 @@ export function WebSocketClient() {
   const activeSession =
     wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
 
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [innerTab, setInnerTab] = useState<InnerTab>("messages");
+  const [expandedSaved, setExpandedSaved] = useState<string | null>(null);
+  const [showSavedModal, setShowSavedModal] = useState(false);
+  const [selectedSaved, setSelectedSaved] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{
+    label: string;
+    body: string;
+    type: "text" | "binary";
+    autoSend: boolean;
+  } | null>(null);
+
   // Composer state
   const [message, setMessage] = useState("");
   const [binaryMode, setBinaryMode] = useState(false);
-
-  // GraphQL preset composer state
   const subIdRef = useRef(0);
   const [gqlSubscribed, setGqlSubscribed] = useState(false);
   const [currentSubId, setCurrentSubId] = useState("sub_1");
 
-  // Log toolbar state
-  const [search, setSearch] = useState("");
-  const [dirFilter, setDirFilter] = useState<DirectionFilter>("all");
-  const [prettyJson, setPrettyJson] = useState(false);
-
-  // Frame inspector: expanded entry ids
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-
-  // Frame diff: up to 2 selected entries
-  const [diffSelected, setDiffSelected] = useState<string[]>([]);
-  const [showDiff, setShowDiff] = useState(false);
-
-  // Inner tab
-  const [innerTab, setInnerTab] = useState<InnerTab>("log");
-
-  // Template picker
-  const [showTemplates, setShowTemplates] = useState(false);
-
-  const filteredLog = useMemo(() => {
-    let entries = activeSession?.log ?? [];
-    if (dirFilter !== "all")
-      entries = entries.filter((e) => e.direction === dirFilter);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      entries = entries.filter((e) => e.body.toLowerCase().includes(q));
-    }
-    return entries;
-  }, [activeSession?.log, dirFilter, search]);
-
-  // Keyboard shortcuts: Ctrl+L clear log, Escape clear search
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "l") {
-        e.preventDefault();
-        if (activeSession) setWsSession(activeSession.id, { log: [] });
-      }
-      if (e.key === "Escape" && search) {
-        setSearch("");
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [activeSession, search]);
-
-  const toggleDiffSelect = (id: string) => {
-    setDiffSelected((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= 2) return [prev[1], id];
-      return [...prev, id];
-    });
-  };
+  const websocketState = activeSession?.state ?? "disconnected";
+  const auth = websocketRequest.auth ?? { type: "none" };
+  const savedMessages = websocketRequest.savedMessages ?? [];
+  const preset = websocketRequest.preset ?? "none";
 
   const send = async () => {
     if (!message.trim()) return;
@@ -396,52 +333,27 @@ export function WebSocketClient() {
     }
   };
 
-  const sendSaved = async (msg: WsSavedMessage) => {
-    const body = resolveDynamicVars(msg.body);
-    const connectionId = activeSession?.connectionId ?? "";
-    try {
-      await webSocketSend(connectionId, body, msg.type === "binary");
-      setWsSession(activeSession.id, {
-        log: [
-          ...(activeSession?.log ?? []),
-          {
-            id: crypto.randomUUID(),
-            direction: "sent" as const,
-            type: msg.type,
-            body,
-            createdAt: Date.now(),
-          },
-        ],
-      });
-    } catch (e) {
-      addToast("error", String(e));
-    }
-  };
-
-  const clearLog = () => setWsSession(activeSession.id, { log: [] });
-
-  const copyAll = () => {
-    const text = (activeSession?.log ?? [])
-      .map(
-        (e) =>
-          `[${new Date(e.createdAt).toISOString()}] [${e.direction}] ${e.body}`,
-      )
-      .join("\n");
-    navigator.clipboard.writeText(text).catch(() => {});
-  };
-
-  const toggleExpanded = (id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const websocketState = activeSession?.state ?? "disconnected";
-  const auth = websocketRequest.auth ?? { type: "none" };
-  const savedMessages = websocketRequest.savedMessages ?? [];
-  const preset = websocketRequest.preset ?? "none";
+  // const sendSaved = async (msg: WsSavedMessage) => {
+  //   const body = resolveDynamicVars(msg.body);
+  //   const connectionId = activeSession?.connectionId ?? "";
+  //   try {
+  //     await webSocketSend(connectionId, body, msg.type === "binary");
+  //     setWsSession(activeSession.id, {
+  //       log: [
+  //         ...(activeSession?.log ?? []),
+  //         {
+  //           id: crypto.randomUUID(),
+  //           direction: "sent" as const,
+  //           type: msg.type,
+  //           body,
+  //           createdAt: Date.now(),
+  //         },
+  //       ],
+  //     });
+  //   } catch (e) {
+  //     addToast("error", String(e));
+  //   }
+  // };
 
   const addSavedMessage = () => {
     setWebsocketRequest({
@@ -489,10 +401,9 @@ export function WebSocketClient() {
   };
 
   const INNER_TABS: { id: InnerTab; label: string }[] = [
-    { id: "log", label: "Log" },
+    { id: "messages", label: "Messages" },
     { id: "headers", label: "Headers" },
     { id: "auth", label: "Auth" },
-    { id: "messages", label: "Messages" },
     { id: "options", label: "Options" },
   ];
 
@@ -513,7 +424,7 @@ export function WebSocketClient() {
             <span
               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                 sess.state === "connected"
-                  ? "bg-[var(--ok-bg)]0"
+                  ? "bg-[var(--ok)]"
                   : sess.state === "connecting"
                     ? "bg-yellow-400 animate-pulse"
                     : "bg-[var(--text-4,#888)]"
@@ -559,281 +470,13 @@ export function WebSocketClient() {
         ))}
       </div>
 
-      {/* Log tab */}
-      {innerTab === "log" && (
-        <>
-          {/* Log toolbar */}
-          <div className="flex items-center gap-1.5 px-2 py-1 border-b border-[var(--border)] shrink-0">
-            <div className="flex items-center gap-1 flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-0.5">
-              <Search size={10} className="text-[var(--text-3)] shrink-0" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search messages…"
-                className="bg-transparent text-2xs text-[var(--text-1)] placeholder-[var(--text-3)] outline-none w-full"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="text-[var(--text-3)] hover:text-[var(--text-1)]"
-                >
-                  <X size={10} />
-                </button>
-              )}
-            </div>
-
-            <Select
-              value={dirFilter}
-              onChange={(e) => setDirFilter(e.target.value as DirectionFilter)}
-              size="2xs"
-            >
-              <option value="all">All</option>
-              <option value="sent">Sent</option>
-              <option value="received">Received</option>
-              <option value="system">System</option>
-            </Select>
-
-            <button
-              onClick={() => setPrettyJson((v) => !v)}
-              title="Toggle JSON pretty-print"
-              className={`p-1 rounded ${prettyJson ? "text-[var(--accent)] bg-[var(--accent-muted,#dbeafe)]" : "text-[var(--text-3)] hover:text-[var(--text-1)]"}`}
-            >
-              <FileText size={13} />
-            </button>
-
-            <button
-              onClick={copyAll}
-              title="Copy all"
-              className="p-1 text-[var(--text-3)] hover:text-[var(--text-1)] rounded"
-            >
-              <Copy size={13} />
-            </button>
-
-            <button
-              onClick={clearLog}
-              title="Clear log"
-              className="p-1 text-[var(--text-3)] hover:text-[var(--text-1)] rounded"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
-
-          {/* Message log */}
-          <div className="flex-1 overflow-y-auto font-mono text-2xs p-2 flex flex-col gap-1">
-            {filteredLog.map((entry) => {
-              const displayBody = prettyJson
-                ? (tryPrettyJson(entry.body) ?? entry.body)
-                : entry.body;
-              const expanded = expandedIds.has(entry.id);
-              return (
-                <div
-                  key={entry.id}
-                  className={`rounded ${
-                    entry.direction === "sent"
-                      ? "bg-[var(--info-bg)]"
-                      : entry.direction === "system"
-                        ? "bg-[var(--warn-bg)]"
-                        : "bg-[var(--surface-2)]"
-                  }`}
-                >
-                  {/* Main row */}
-                  <div className="flex items-start gap-2 p-1.5">
-                    <button
-                      onClick={() => toggleExpanded(entry.id)}
-                      className="mt-0.5 shrink-0 text-[var(--text-3)] hover:text-[var(--text-1)]"
-                    >
-                      {expanded ? (
-                        <ChevronDown size={10} />
-                      ) : (
-                        <ChevronRight size={10} />
-                      )}
-                    </button>
-                    {entry.direction === "sent" ? (
-                      <ArrowUp
-                        size={11}
-                        className="text-[var(--info)] mt-0.5 shrink-0"
-                      />
-                    ) : entry.direction === "system" ? (
-                      <Info
-                        size={11}
-                        className="text-[var(--warn)] mt-0.5 shrink-0"
-                      />
-                    ) : (
-                      <ArrowDown
-                        size={11}
-                        className="text-[var(--ok)] mt-0.5 shrink-0"
-                      />
-                    )}
-                    <pre className="flex-1 break-all whitespace-pre-wrap text-[var(--text-1)] font-mono">
-                      {displayBody}
-                    </pre>
-                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                      {entry.type === "binary" && (
-                        <span className="text-[8px] uppercase text-[var(--text-3)] bg-[var(--surface-3,#e5e7eb)] rounded px-1">
-                          bin
-                        </span>
-                      )}
-                      <span className="text-[var(--text-3)]">
-                        {new Date(entry.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                  {/* Frame inspector */}
-                  {expanded && (
-                    <div className="px-7 pb-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-[var(--text-3)] border-t border-[var(--border)]">
-                      <span>
-                        type:{" "}
-                        <span className="text-[var(--text-2)]">
-                          {entry.type}
-                        </span>
-                      </span>
-                      <span>
-                        direction:{" "}
-                        <span className="text-[var(--text-2)]">
-                          {entry.direction}
-                        </span>
-                      </span>
-                      <span>
-                        size:{" "}
-                        <span className="text-[var(--text-2)]">
-                          {byteSize(entry.body)} B
-                        </span>
-                      </span>
-                      <span>
-                        timestamp:{" "}
-                        <span className="text-[var(--text-2)]">
-                          {new Date(entry.createdAt).toISOString()}
-                        </span>
-                      </span>
-                      <button
-                        onClick={() =>
-                          navigator.clipboard
-                            .writeText(entry.body)
-                            .catch(() => {})
-                        }
-                        className="flex items-center gap-0.5 hover:text-[var(--text-1)] transition-colors"
-                      >
-                        <Copy size={9} /> copy
-                      </button>
-                      <button
-                        onClick={() => toggleDiffSelect(entry.id)}
-                        className={`flex items-center gap-0.5 transition-colors ${
-                          diffSelected.includes(entry.id)
-                            ? "text-[var(--accent)]"
-                            : "hover:text-[var(--text-1)]"
-                        }`}
-                      >
-                        <ArrowLeftRight size={9} />
-                        {diffSelected.includes(entry.id) ? "deselect" : "diff"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {!filteredLog.length && (
-              <p className="text-[var(--text-3)] text-center mt-8 text-2xs">
-                {search || dirFilter !== "all"
-                  ? "No matching messages"
-                  : "No messages"}
-              </p>
-            )}
-          </div>
-
-          {/* Diff selection bar */}
-          {diffSelected.length > 0 && (
-            <div className="border-t border-[var(--border)] px-3 py-1.5 flex items-center gap-2 shrink-0 bg-[var(--surface-2)]">
-              <ArrowLeftRight
-                size={11}
-                className="text-[var(--accent)] shrink-0"
-              />
-              <span className="text-2xs text-[var(--text-2)] flex-1">
-                {diffSelected.length === 1
-                  ? "Select one more frame to diff"
-                  : "2 frames selected"}
-              </span>
-              {diffSelected.length === 2 && (
-                <button
-                  onClick={() => setShowDiff(true)}
-                  className="btn btn-primary text-2xs px-2"
-                >
-                  Open diff
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  setDiffSelected([]);
-                  setShowDiff(false);
-                }}
-                className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
-              >
-                <X size={11} />
-              </button>
-            </div>
-          )}
-
-          {/* Inline diff panel */}
-          {showDiff &&
-            diffSelected.length === 2 &&
-            (() => {
-              const allLog = activeSession?.log ?? [];
-              const left = allLog.find((e) => e.id === diffSelected[0]);
-              const right = allLog.find((e) => e.id === diffSelected[1]);
-              const leftBody = left
-                ? (tryPrettyJson(left.body) ?? left.body)
-                : "";
-              const rightBody = right
-                ? (tryPrettyJson(right.body) ?? right.body)
-                : "";
-              return (
-                <div
-                  className="border-t border-[var(--border)] shrink-0 flex flex-col"
-                  style={{ maxHeight: "45%" }}
-                >
-                  <div className="flex items-center justify-between px-3 py-1 bg-[var(--surface-2)] border-b border-[var(--border)] shrink-0">
-                    <span className="text-2xs font-medium text-[var(--text-2)]">
-                      Frame diff
-                    </span>
-                    <button
-                      onClick={() => setShowDiff(false)}
-                      className="text-[var(--text-3)] hover:text-[var(--text-1)]"
-                    >
-                      <X size={11} />
-                    </button>
-                  </div>
-                  <div className="flex overflow-hidden flex-1 min-h-0">
-                    <div className="flex-1 overflow-auto p-2 border-r border-[var(--border)]">
-                      <div className="text-[10px] text-[var(--text-3)] mb-1">
-                        Frame A · {left?.direction} ·{" "}
-                        {new Date(left?.createdAt ?? 0).toLocaleTimeString()}
-                      </div>
-                      <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all">
-                        {leftBody}
-                      </pre>
-                    </div>
-                    <div className="flex-1 overflow-auto p-2">
-                      <div className="text-[10px] text-[var(--text-3)] mb-1">
-                        Frame B · {right?.direction} ·{" "}
-                        {new Date(right?.createdAt ?? 0).toLocaleTimeString()}
-                      </div>
-                      <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all">
-                        {rightBody}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
+      {/* Messages tab — composer + saved messages */}
+      {innerTab === "messages" && (
+        <div className="flex-1 overflow-y-auto flex flex-col">
           {/* Composer */}
-          <div className="border-t border-[var(--border)] p-2 flex flex-col gap-1.5 shrink-0">
+          <div className="p-2 flex flex-col gap-2 border-b border-[var(--border)]">
             {preset === "graphql-transport-ws" ? (
-              /* GraphQL subscribe composer */
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1 text-2xs text-[var(--text-3)] font-medium uppercase tracking-wide">
                   graphql-transport-ws
                 </div>
@@ -873,7 +516,6 @@ export function WebSocketClient() {
                 </div>
               </div>
             ) : (
-              /* Standard composer */
               <>
                 <div className="flex items-center gap-2">
                   <button
@@ -897,7 +539,7 @@ export function WebSocketClient() {
                       binaryMode ? "Base64-encoded bytes…" : "Message…"
                     }
                     disabled={websocketState !== "connected"}
-                    rows={2}
+                    rows={3}
                     className="input text-xs font-mono flex-1 resize-none py-1.5"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
@@ -906,18 +548,277 @@ export function WebSocketClient() {
                       }
                     }}
                   />
+                </div>
+                <div className="flex gap-2">
                   <button
                     onClick={send}
                     disabled={websocketState !== "connected"}
-                    className="btn btn-primary text-xs self-end px-3"
+                    className="btn btn-primary text-xs px-4"
                   >
                     Send
+                  </button>
+                  <button
+                    onClick={() => setShowSavedModal(true)}
+                    className="btn text-xs gap-1"
+                  >
+                    <Plus size={11} /> Saved Messages
                   </button>
                 </div>
               </>
             )}
           </div>
-        </>
+        </div>
+      )}
+
+      {/* Saved messages modal */}
+      {showSavedModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowSavedModal(false);
+              setShowTemplates(false);
+            }
+          }}
+        >
+          <div
+            className="flex flex-col max-h-[70vh] w-[480px]"
+            style={{
+              background: "var(--bg-2)",
+              border: "1px solid var(--line-2)",
+              borderRadius: "var(--r-3)",
+              boxShadow: "var(--shadow-pop)",
+            }}
+          >
+            {/* Header */}
+            <div
+              className="flex items-center justify-between shrink-0"
+              style={{ padding: "10px 14px", borderBottom: "1px solid var(--line-1)" }}
+            >
+              <span style={{ fontSize: "var(--t-base)", fontWeight: 600, color: "var(--fg-0)" }}>
+                Saved Messages
+              </span>
+              <div className="flex items-center gap-1">
+                <button onClick={addSavedMessage} className="btn text-2xs px-2 gap-1">
+                  <Plus size={11} /> Add
+                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowTemplates((v) => !v)}
+                    className="btn text-2xs px-2 gap-1"
+                  >
+                    From template <ChevronDown size={10} />
+                  </button>
+                  {showTemplates && (
+                    <div
+                      className="absolute right-0 top-full mt-1 z-50 min-w-48 overflow-y-auto"
+                      style={{
+                        background: "var(--bg-2)",
+                        border: "1px solid var(--line-2)",
+                        borderRadius: "var(--r-2)",
+                        boxShadow: "var(--shadow-pop)",
+                        maxHeight: "min(280px, 50vh)",
+                      }}
+                    >
+                      {Object.entries(PROTOCOL_TEMPLATES).map(([group, templates]) => (
+                        <div key={group}>
+                          <div className="px-3 py-1 text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wide border-b border-[var(--border)]">
+                            {group}
+                          </div>
+                          {templates.map((tpl) => (
+                            <button
+                              key={tpl.label}
+                              onClick={() => addFromTemplate(tpl)}
+                              className="w-full text-left px-3 py-1.5 text-xs text-[var(--text-1)] hover:bg-[var(--surface-2)] transition-colors"
+                            >
+                              {tpl.label}
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => { setShowSavedModal(false); setShowTemplates(false); }}
+                  className="p-1 rounded ml-1"
+                  style={{ color: "var(--fg-3)" }}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-3)")}
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto flex flex-col gap-2" style={{ padding: "12px 14px" }}>
+              {savedMessages.map((msg) => {
+                const isSelected = selectedSaved === msg.id;
+                const isExpanded = expandedSaved === msg.id;
+                const preview = msg.label || msg.body.slice(0, 52) + (msg.body.length > 52 ? "…" : "");
+                return (
+                  <div
+                    key={msg.id}
+                    style={{
+                      border: `1px solid ${isSelected ? "var(--accent)" : "var(--line-2)"}`,
+                      borderRadius: "var(--r-2)",
+                    }}
+                  >
+                    <div
+                      className="flex items-center gap-2 px-3 py-2 group cursor-pointer hover:bg-[var(--surface-2)]"
+                      onClick={() => setSelectedSaved(isSelected ? null : msg.id)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => setSelectedSaved(isSelected ? null : msg.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-3.5 h-3.5 shrink-0 cursor-pointer"
+                      />
+                      <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
+                        {preview || <span className="text-[var(--text-3)]">Untitled</span>}
+                      </span>
+                      {msg.type === "binary" && (
+                        <span className="text-[10px] text-[var(--text-3)] shrink-0">bin</span>
+                      )}
+                      {msg.autoSend && (
+                        <span className="text-[10px] text-[var(--accent)] shrink-0">auto-send</span>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isExpanded) {
+                            setExpandedSaved(null);
+                            setEditDraft(null);
+                          } else {
+                            setExpandedSaved(msg.id);
+                            setEditDraft({
+                              label: msg.label,
+                              body: msg.body,
+                              type: msg.type,
+                              autoSend: msg.autoSend,
+                            });
+                          }
+                        }}
+                        className={`p-0.5 rounded shrink-0 ${isExpanded ? "text-[var(--accent)]" : "text-[var(--text-3)] opacity-0 group-hover:opacity-100 hover:text-[var(--text-1)]"}`}
+                      >
+                        <Pencil size={11} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (selectedSaved === msg.id) setSelectedSaved(null);
+                          removeSavedMessage(msg.id);
+                        }}
+                        className="p-0.5 rounded shrink-0 text-[var(--text-3)] opacity-0 group-hover:opacity-100 hover:text-[var(--danger)]"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+
+                    {isExpanded && editDraft && (
+                      <div
+                        className="flex flex-col gap-1.5 p-3"
+                        style={{ borderTop: "1px solid var(--line-1)", background: "var(--bg-1)" }}
+                      >
+                        <input
+                          value={editDraft.label}
+                          onChange={(e) => setEditDraft({ ...editDraft, label: e.target.value })}
+                          placeholder="Label (optional)"
+                          className="input text-xs"
+                        />
+                        <textarea
+                          value={editDraft.body}
+                          onChange={(e) => setEditDraft({ ...editDraft, body: e.target.value })}
+                          placeholder="Message body…"
+                          rows={3}
+                          className="input text-xs font-mono resize-none py-1.5"
+                        />
+                        <div className="flex items-center justify-between">
+                          <label className="flex items-center gap-1.5 text-xs text-[var(--text-2)] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editDraft.autoSend}
+                              onChange={(e) => setEditDraft({ ...editDraft, autoSend: e.target.checked })}
+                            />
+                            Auto-send on connect
+                          </label>
+                          <Select
+                            value={editDraft.type}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, type: e.target.value as "text" | "binary" })
+                            }
+                            size="xs"
+                          >
+                            <option value="text">Text</option>
+                            <option value="binary">Binary</option>
+                          </Select>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            className="btn text-xs px-3"
+                            onClick={() => {
+                              setExpandedSaved(null);
+                              setEditDraft(null);
+                            }}
+                          >
+                            Discard
+                          </button>
+                          <button
+                            className="btn btn-primary text-xs px-3"
+                            onClick={() => {
+                              updateSavedMessage(msg.id, editDraft);
+                              setExpandedSaved(null);
+                              setEditDraft(null);
+                            }}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {savedMessages.length === 0 && (
+                <p className="text-2xs text-[var(--text-3)] text-center mt-6">
+                  No saved messages yet
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div
+              className="flex items-center justify-end gap-2 shrink-0"
+              style={{ padding: "10px 14px", borderTop: "1px solid var(--line-1)", background: "var(--bg-1)" }}
+            >
+              <button
+                className="btn"
+                onClick={() => { setShowSavedModal(false); setShowTemplates(false); }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                disabled={!selectedSaved}
+                onClick={() => {
+                  const msg = savedMessages.find((m) => m.id === selectedSaved);
+                  if (msg) {
+                    setMessage(msg.body);
+                    setBinaryMode(msg.type === "binary");
+                  }
+                  setShowSavedModal(false);
+                  setSelectedSaved(null);
+                }}
+              >
+                Load
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Headers tab */}
@@ -1048,110 +949,6 @@ export function WebSocketClient() {
               Applied as handshake headers on connect.
             </p>
           )}
-        </div>
-      )}
-
-      {/* Messages tab */}
-      {innerTab === "messages" && (
-        <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
-          {savedMessages.map((msg) => (
-            <div
-              key={msg.id}
-              className="border border-[var(--border)] rounded p-2 flex flex-col gap-1.5"
-            >
-              <div className="flex items-center gap-2">
-                <input
-                  value={msg.label}
-                  onChange={(e) =>
-                    updateSavedMessage(msg.id, { label: e.target.value })
-                  }
-                  placeholder="Label (optional)"
-                  className="input text-xs flex-1"
-                />
-                <Select
-                  value={msg.type}
-                  onChange={(e) =>
-                    updateSavedMessage(msg.id, {
-                      type: e.target.value as "text" | "binary",
-                    })
-                  }
-                  size="xs"
-                >
-                  <option value="text">Text</option>
-                  <option value="binary">Binary</option>
-                </Select>
-                <button
-                  onClick={() => sendSaved(msg)}
-                  disabled={websocketState !== "connected"}
-                  className="btn btn-primary text-xs px-2"
-                >
-                  Send
-                </button>
-                <button
-                  onClick={() => removeSavedMessage(msg.id)}
-                  className="p-1 text-[var(--text-3)] hover:text-[var(--danger)] rounded"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-              <textarea
-                value={msg.body}
-                onChange={(e) =>
-                  updateSavedMessage(msg.id, { body: e.target.value })
-                }
-                placeholder="Message body…"
-                rows={2}
-                className="input text-xs font-mono resize-none py-1.5"
-              />
-              <label className="flex items-center gap-1.5 text-xs text-[var(--text-2)] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={msg.autoSend}
-                  onChange={(e) =>
-                    updateSavedMessage(msg.id, { autoSend: e.target.checked })
-                  }
-                />
-                Auto-send on connect
-              </label>
-            </div>
-          ))}
-
-          {/* Add buttons */}
-          <div className="flex items-center gap-2">
-            <button onClick={addSavedMessage} className="btn text-xs gap-1">
-              <Plus size={12} /> Add Message
-            </button>
-            <div className="relative">
-              <button
-                onClick={() => setShowTemplates((v) => !v)}
-                className="btn text-xs gap-1"
-              >
-                From template <ChevronDown size={11} />
-              </button>
-              {showTemplates && (
-                <div className="absolute left-0 top-full mt-1 z-50 bg-[var(--surface-1)] border border-[var(--border)] rounded shadow-[var(--shadow-2)] min-w-48">
-                  {Object.entries(PROTOCOL_TEMPLATES).map(
-                    ([group, templates]) => (
-                      <div key={group}>
-                        <div className="px-3 py-1 text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wide border-b border-[var(--border)]">
-                          {group}
-                        </div>
-                        {templates.map((tpl) => (
-                          <button
-                            key={tpl.label}
-                            onClick={() => addFromTemplate(tpl)}
-                            className="w-full text-left px-3 py-1.5 text-xs text-[var(--text-1)] hover:bg-[var(--surface-2)] transition-colors"
-                          >
-                            {tpl.label}
-                          </button>
-                        ))}
-                      </div>
-                    ),
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       )}
 
