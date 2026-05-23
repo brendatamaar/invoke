@@ -1,8 +1,8 @@
 import nodeCrypto from "node:crypto";
-import { zValidator } from "@hono/zod-validator";
+import { Schema } from "effect";
 import type { KeyValue } from "@invoke/core";
 import type { Hono } from "hono";
-import { z } from "zod";
+import { parseJsonBody } from "../../lib/validate.js";
 import type {
   WebhookEntry,
   WebhookValidationConfig,
@@ -13,14 +13,14 @@ const webhookLogs = new Map<string, WebhookEntry[]>();
 const webhookConfigs = new Map<string, WebhookValidationConfig>();
 const MAX_WEBHOOK_ENTRIES = 200;
 
-const webhookValidationSchema = z.object({
-  type: z.enum(["none", "hmac", "header"]),
-  secret: z.string().optional(),
-  algorithm: z.enum(["sha256", "sha1", "sha512"]).optional(),
-  signatureHeader: z.string().optional(),
-  signaturePrefix: z.string().optional(),
-  headerName: z.string().optional(),
-  headerValue: z.string().optional(),
+const webhookValidationSchema = Schema.Struct({
+  type: Schema.Literal("none", "hmac", "header"),
+  secret: Schema.optional(Schema.String),
+  algorithm: Schema.optional(Schema.Literal("sha256", "sha1", "sha512")),
+  signatureHeader: Schema.optional(Schema.String),
+  signaturePrefix: Schema.optional(Schema.String),
+  headerName: Schema.optional(Schema.String),
+  headerValue: Schema.optional(Schema.String),
 });
 
 export function registerWebhookRoutes(app: Hono) {
@@ -35,16 +35,14 @@ export function registerWebhookRoutes(app: Hono) {
     return c.json({ ok: true });
   });
 
-  app.put(
-    "/api/webhook/:id/config",
-    zValidator("json", webhookValidationSchema),
-    (c) => {
-      const { id: webhookId } = c.req.param();
-      const config = c.req.valid("json") as WebhookValidationConfig;
-      webhookConfigs.set(webhookId, config);
-      return c.json({ ok: true });
-    },
-  );
+  app.put("/api/webhook/:id/config", async (c) => {
+    const parsed = await parseJsonBody(c, webhookValidationSchema);
+    if (!parsed.ok) return parsed.response;
+    const { id: webhookId } = c.req.param();
+    const config = parsed.data as WebhookValidationConfig;
+    webhookConfigs.set(webhookId, config);
+    return c.json({ ok: true });
+  });
 
   app.delete("/api/webhook/:id", (c) => {
     const { id: webhookId } = c.req.param();

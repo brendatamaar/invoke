@@ -1,47 +1,42 @@
-import { z } from "zod";
-import { headerSchema, tlsClientConfigSchema } from "../shared/schema.js";
+import { Schema } from "effect"
+import { headerSchema, tlsClientConfigSchema } from "../shared/schema.js"
 
-export const executeSchema = z.object({
-  method: z.string().default("GET"),
-  url: z.string().min(1),
-  headers: z.array(headerSchema).default([]),
-  body: z.string().default(""),
-  bodyMode: z
-    .enum([
-      "none",
-      "json",
-      "form-data",
-      "urlencoded",
-      "raw",
-      "file",
-      "graphql-multipart",
-    ])
-    .optional(),
-  auth: z
-    .object({
-      type: z.string().default("none"),
-      username: z.string().optional(),
-      password: z.string().optional(),
-      token: z.string().optional(),
-      apiKeyName: z.string().optional(),
-      apiKeyValue: z.string().optional(),
-      apiKeyIn: z.enum(["header", "query"]).optional(),
-    })
-    .optional(),
-  timeoutMs: z.number().int().positive().default(30000),
-  connectTimeoutMs: z.number().int().positive().optional(),
-  readTimeoutMs: z.number().int().positive().optional(),
-  followRedirects: z.boolean().default(true),
-  maxRedirects: z.number().int().default(10),
-  verifySsl: z.boolean().default(true),
-  allowPrivateAddresses: z.boolean().default(true),
-  proxy: z
-    .object({
-      type: z.enum(["http", "socks5"]).default("http"),
-      url: z.string().default(""),
-      username: z.string().default(""),
-      password: z.string().default(""),
-    })
-    .optional(),
+export const executeSchema = Schema.Struct({
+  method: Schema.optionalWith(Schema.String, { default: () => "GET" }),
+  url: Schema.String.pipe(Schema.minLength(1)),
+  headers: Schema.optionalWith(Schema.Array(headerSchema), { default: () => [] }),
+  body: Schema.optionalWith(Schema.String, { default: () => "" }),
+  bodyMode: Schema.optional(
+    Schema.Literal("none", "json", "form-data", "urlencoded", "raw", "file", "graphql-multipart"),
+  ),
+  auth: Schema.optional(
+    Schema.Struct({
+      type: Schema.optionalWith(Schema.String, { default: () => "none" }),
+      username: Schema.optional(Schema.String),
+      password: Schema.optional(Schema.String),
+      token: Schema.optional(Schema.String),
+      apiKeyName: Schema.optional(Schema.String),
+      apiKeyValue: Schema.optional(Schema.String),
+      apiKeyIn: Schema.optional(Schema.Literal("header", "query")),
+      ntlmUsername: Schema.optional(Schema.String),
+      ntlmPassword: Schema.optional(Schema.String),
+      ntlmDomain: Schema.optional(Schema.String),
+    }),
+  ),
+  timeoutMs: Schema.optionalWith(Schema.Number, { default: () => 30000 }),
+  connectTimeoutMs: Schema.optional(Schema.Number),
+  readTimeoutMs: Schema.optional(Schema.Number),
+  followRedirects: Schema.optionalWith(Schema.Boolean, { default: () => true }),
+  maxRedirects: Schema.optionalWith(Schema.Number, { default: () => 10 }),
+  verifySsl: Schema.optionalWith(Schema.Boolean, { default: () => true }),
+  allowPrivateAddresses: Schema.optionalWith(Schema.Boolean, { default: () => true }),
+  proxy: Schema.optional(
+    Schema.Struct({
+      type: Schema.optionalWith(Schema.Literal("http", "socks5"), { default: () => "http" as const }),
+      url: Schema.optionalWith(Schema.String, { default: () => "" }),
+      username: Schema.optionalWith(Schema.String, { default: () => "" }),
+      password: Schema.optionalWith(Schema.String, { default: () => "" }),
+    }),
+  ),
   tlsClientConfig: tlsClientConfigSchema,
-});
+})

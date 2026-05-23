@@ -98,6 +98,9 @@ export interface ExecuteInput {
     apiKeyName?: string;
     apiKeyValue?: string;
     apiKeyIn?: "header" | "query";
+    ntlmUsername?: string;
+    ntlmPassword?: string;
+    ntlmDomain?: string;
   };
   timeoutMs: number;
   connectTimeoutMs?: number;

@@ -1,7 +1,7 @@
 import nodeCrypto from "node:crypto";
-import { zValidator } from "@hono/zod-validator";
 import type { Hono } from "hono";
 import type { ProxyRecordEntry, ProxyRequestInput } from "../../types/index.js";
+import { parseJsonBody } from "../../lib/validate.js";
 import { proxyRecordsToMockRoutes } from "../mock/routes.js";
 import { proxyRecordsToMocksSchema, proxySchema } from "./schema.js";
 
@@ -9,8 +9,10 @@ const proxyRecords: ProxyRecordEntry[] = [];
 const MAX_PROXY_RECORDS = 500;
 
 export function registerProxyRoutes(app: Hono) {
-  app.post("/api/proxy/request", zValidator("json", proxySchema), async (c) => {
-    const input = c.req.valid("json") as ProxyRequestInput;
+  app.post("/api/proxy/request", async (c) => {
+    const parsed = await parseJsonBody(c, proxySchema);
+    if (!parsed.ok) return parsed.response;
+    const input = parsed.data as unknown as ProxyRequestInput;
 
     const headers: Record<string, string> = {};
     for (const h of input.headers) {
@@ -88,16 +90,14 @@ export function registerProxyRoutes(app: Hono) {
     return c.json({ ok: true });
   });
 
-  app.post(
-    "/api/proxy/records/to-mocks",
-    zValidator("json", proxyRecordsToMocksSchema),
-    (c) => {
-      const { ids } = c.req.valid("json");
-      const selected = ids
-        ? proxyRecords.filter((r) => ids.includes(r.id))
-        : proxyRecords;
+  app.post("/api/proxy/records/to-mocks", async (c) => {
+    const parsed = await parseJsonBody(c, proxyRecordsToMocksSchema);
+    if (!parsed.ok) return parsed.response;
+    const { ids } = parsed.data;
+    const selected = ids
+      ? proxyRecords.filter((r) => ids.includes(r.id))
+      : proxyRecords;
 
-      return c.json(proxyRecordsToMockRoutes(selected));
-    },
-  );
+    return c.json(proxyRecordsToMockRoutes(selected));
+  });
 }

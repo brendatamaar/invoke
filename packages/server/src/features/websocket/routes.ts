@@ -1,6 +1,6 @@
-import { zValidator } from "@hono/zod-validator";
 import type { Hono } from "hono";
 import type { WebSocketConnectInput } from "../../types/index.js";
+import { parseJsonBody } from "../../lib/validate.js";
 import { grpcCall } from "../../grpc/executor-client.js";
 import { checkSsrf } from "../../middleware/ssrfGuard.js";
 import { websocketConnectPayload } from "./payload.js";
@@ -15,50 +15,39 @@ const SSE_POLL_INTERVAL_MS = 100;
 const SSE_MAX_MESSAGES = 50;
 
 export function registerWebSocketRoutes(app: Hono) {
-  app.post(
-    "/api/websocket/connect",
-    zValidator("json", webSocketConnectSchema),
-    async (c) => {
-      const input = c.req.valid("json") as WebSocketConnectInput;
-      const ssrfError = checkSsrf(input.url);
-      if (ssrfError) return c.json({ error: ssrfError }, 403);
-      const response = await grpcCall<any>(
-        "WebSocketConnect",
-        websocketConnectPayload(input),
-      );
-      return c.json(response);
-    },
-  );
+  app.post("/api/websocket/connect", async (c) => {
+    const parsed = await parseJsonBody(c, webSocketConnectSchema);
+    if (!parsed.ok) return parsed.response;
+    const input = parsed.data as unknown as WebSocketConnectInput;
+    const ssrfError = checkSsrf(input.url);
+    if (ssrfError) return c.json({ error: ssrfError }, 403);
+    const response = await grpcCall<any>(
+      "WebSocketConnect",
+      websocketConnectPayload(input),
+    );
+    return c.json(response);
+  });
 
-  app.post(
-    "/api/websocket/send",
-    zValidator("json", webSocketSendSchema),
-    async (c) => {
-      const input = c.req.valid("json");
-      const response = await grpcCall<any>("WebSocketSend", input);
-      return c.json(response);
-    },
-  );
+  app.post("/api/websocket/send", async (c) => {
+    const parsed = await parseJsonBody(c, webSocketSendSchema);
+    if (!parsed.ok) return parsed.response;
+    const response = await grpcCall<any>("WebSocketSend", parsed.data);
+    return c.json(response);
+  });
 
-  app.post(
-    "/api/websocket/poll",
-    zValidator("json", webSocketPollSchema),
-    async (c) => {
-      const input = c.req.valid("json");
-      const response = await grpcCall<any>("WebSocketPoll", input);
-      return c.json(response);
-    },
-  );
+  app.post("/api/websocket/poll", async (c) => {
+    const parsed = await parseJsonBody(c, webSocketPollSchema);
+    if (!parsed.ok) return parsed.response;
+    const response = await grpcCall<any>("WebSocketPoll", parsed.data);
+    return c.json(response);
+  });
 
-  app.post(
-    "/api/websocket/close",
-    zValidator("json", webSocketCloseSchema),
-    async (c) => {
-      const input = c.req.valid("json");
-      const response = await grpcCall<any>("WebSocketClose", input);
-      return c.json(response);
-    },
-  );
+  app.post("/api/websocket/close", async (c) => {
+    const parsed = await parseJsonBody(c, webSocketCloseSchema);
+    if (!parsed.ok) return parsed.response;
+    const response = await grpcCall<any>("WebSocketClose", parsed.data);
+    return c.json(response);
+  });
 
   // SSE stream: browser subscribes and receives messages in near-real-time.
   // The server polls the executor at SSE_POLL_INTERVAL_MS and forwards new frames.
