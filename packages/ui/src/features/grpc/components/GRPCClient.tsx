@@ -27,9 +27,9 @@ type GrpcTab =
   | "metadata"
   | "auth"
   | "scripts"
-  | "options"
   | "saved"
-  | "stress";
+  | "stress"
+  | "options";
 
 function formatGrpcTimeout(ms: number): string {
   if (ms <= 0) return "0m";
@@ -46,9 +46,9 @@ const TABS: { id: GrpcTab; label: string }[] = [
   { id: "metadata", label: "Metadata" },
   { id: "auth", label: "Auth" },
   { id: "scripts", label: "Scripts" },
-  { id: "options", label: "Options" },
   { id: "saved", label: "Saved" },
   { id: "stress", label: "Stress" },
+  { id: "options", label: "Options" },
 ];
 
 function streamBadge(method: {
@@ -1291,13 +1291,13 @@ export function GRPCClient() {
             )}
             {activeTab === "auth" && <GrpcAuthPanel />}
             {activeTab === "scripts" && <GrpcScriptsPanel />}
-            {activeTab === "options" && <GrpcOptionsPanel />}
             {activeTab === "saved" && <GrpcSavedMessagesPanel />}
             {activeTab === "stress" && (
               <div className="p-3 text-2xs text-[var(--text-3)]">
                 Open a client/bidi stream first to use stress mode.
               </div>
             )}
+            {activeTab === "options" && <GrpcOptionsPanel />}
           </div>
         </>
       )}

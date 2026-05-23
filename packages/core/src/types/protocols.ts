@@ -18,6 +18,8 @@ export interface GraphQLRequestConfig {
   scripts?: RequestScripts;
   apq?: boolean;
   batchMode?: boolean;
+  httpMethod?: "POST" | "GET";
+  contentType?: "application/json" | "application/graphql+json";
 }
 
 export type WsPreset = "none" | "graphql-transport-ws";
