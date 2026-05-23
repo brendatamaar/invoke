@@ -255,6 +255,7 @@ export function WebSocketClient() {
     if (!message.trim()) return;
     const body = resolveDynamicVars(message);
     const connectionId = activeSession?.connectionId ?? "";
+    setMessage("");
     try {
       await webSocketSend(connectionId, body, binaryMode);
       setWsSession(activeSession.id, {
@@ -269,8 +270,8 @@ export function WebSocketClient() {
           },
         ],
       });
-      setMessage("");
     } catch (e) {
+      setMessage(body);
       addToast("error", String(e));
     }
   };
@@ -290,9 +291,9 @@ export function WebSocketClient() {
       id,
       payload: { query: websocketRequest.presetQuery ?? "", variables: vars },
     });
+    setGqlSubscribed(true);
     try {
       await webSocketSend(connectionId, frame);
-      setGqlSubscribed(true);
       setWsSession(activeSession.id, {
         log: [
           ...(activeSession?.log ?? []),
@@ -306,6 +307,7 @@ export function WebSocketClient() {
         ],
       });
     } catch (e) {
+      setGqlSubscribed(false);
       addToast("error", String(e));
     }
   };
@@ -313,9 +315,9 @@ export function WebSocketClient() {
   const sendGqlUnsubscribe = async () => {
     const connectionId = activeSession?.connectionId ?? "";
     const frame = JSON.stringify({ type: "complete", id: currentSubId });
+    setGqlSubscribed(false);
     try {
       await webSocketSend(connectionId, frame);
-      setGqlSubscribed(false);
       setWsSession(activeSession.id, {
         log: [
           ...(activeSession?.log ?? []),
@@ -329,6 +331,7 @@ export function WebSocketClient() {
         ],
       });
     } catch (e) {
+      setGqlSubscribed(true);
       addToast("error", String(e));
     }
   };
