@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm --parallel --filter @invoke/server --filter @invoke/ui dev",
     "dev:all": "concurrently -n executor,server,ui -c blue,green,magenta \"pnpm executor:dev\" \"pnpm dev:server\" \"pnpm dev:ui\"",
-    "dev:server": "pnpm --filter @invoke/server dev",
+    "dev:server": "bun --hot packages/server/src/index.ts",
     "dev:ui": "pnpm --filter @invoke/ui dev",
     "build": "turbo run build",
     "test": "turbo run test",
@@ -35,5 +35,10 @@
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@9.15.9"
+  "packageManager": "pnpm@9.15.9",
+  "workspaces": [
+    "packages/core",
+    "packages/server",
+    "packages/ui"
+  ]
 }

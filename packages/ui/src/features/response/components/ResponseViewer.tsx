@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { useStore, coreStore } from "../../../store";
 import { useHistory, useMockRoutes, useResponseExamples } from "../../../hooks/useDb";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
@@ -80,7 +79,6 @@ export function ResponseViewer() {
     graphqlDeferredParts,
     consoleLogs,
   } = useStore();
-  const navigate = useNavigate();
   const responseExamples = useResponseExamples();
   const history = useHistory(2);
   const mockRoutes = useMockRoutes();
@@ -266,8 +264,7 @@ export function ResponseViewer() {
       latencyMs: 0,
     };
     coreStore.setMeta("mockRoutes", [...mockRoutes, newRoute]).catch(() => {});
-    set({ sidebarCollapsed: false });
-    navigate({ to: "/mocks" });
+    set({ sidebarCollapsed: false, sidebarSection: "mocks" });
     addToast("success", "Mock route created");
   };
 

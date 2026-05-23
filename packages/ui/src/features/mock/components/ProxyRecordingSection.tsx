@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import {
   CheckSquare,
@@ -10,15 +10,15 @@ import {
   Check,
   HelpCircle,
 } from "lucide-react";
-import type { ProxyRecord } from "../../../types";
-import { useStore, coreStore } from "../../../store";
-import {
-  clearProxyRecords,
-  loadProxyRecords,
-  proxyRecordsToMocks,
-} from "../../proxy/api";
+import { useRef, useEffect } from "react";
+import { useStore } from "../../../store";
 import { formatTime } from "./mockRouteUtils";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
+import {
+  useClearProxyRecords,
+  useImportProxyToMocks,
+  useProxyRecords,
+} from "../../proxy/useProxyRecords";
 
 function StatusChip({ status }: { status: number }) {
   const color =
@@ -136,73 +136,47 @@ function ProxyUrlTooltip({ url }: { url: string }) {
 }
 
 export function ProxyRecordingSection() {
-  const { addToast, proxyRecordsTick } = useStore();
-  const [records, setRecords] = useState<ProxyRecord[]>([]);
+  const { addToast } = useStore();
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
 
   const proxyUrl = `${window.location.protocol}//${window.location.hostname}:4000/api/proxy/request`;
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const recs = await loadProxyRecords();
-      setRecords(recs);
-    } catch (e) {
-      addToast("error", String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast]);
+  const { data: records = [], isFetching, refetch } = useProxyRecords();
+  const clearMutation = useClearProxyRecords();
+  const importMutation = useImportProxyToMocks();
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  useEffect(() => {
-    if (proxyRecordsTick > 0) refresh();
-  }, [proxyRecordsTick, refresh]);
-
-  const clearAll = async () => {
-    try {
-      await clearProxyRecords();
-      setRecords([]);
-      setSelected(new Set());
-    } catch (e) {
-      addToast("error", String(e));
-    }
+  const clearAll = () => {
+    clearMutation.mutate(undefined, {
+      onError: (e) => addToast("error", String(e)),
+    });
+    setSelected(new Set());
   };
 
   const importSelected = async () => {
     setImporting(true);
-    try {
-      const ids = selected.size > 0 ? [...selected] : undefined;
-      const count = ids ? ids.length : records.length;
-      const result = await proxyRecordsToMocks(ids);
-      coreStore.setMeta("mockRoutes", result.routes).catch(() => {});
-
-      const skipped = count - result.added;
-      if (result.added === 0) {
-        addToast("success", "No new routes added — all already exist as mocks");
-      } else if (skipped > 0) {
-        addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""} (${skipped} already existed)`);
-      } else {
-        addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`);
-      }
-
-      const selectedRecords = ids ? records.filter((r) => ids.includes(r.id)) : records;
-      const withQuery = selectedRecords.filter((r) => r.path.includes("?"));
-      if (withQuery.length > 0) {
-        addToast("success", `Note: query params stripped from ${withQuery.length} route path${withQuery.length !== 1 ? "s" : ""}`);
-      }
-
-      setSelected(new Set());
-    } catch (e) {
-      addToast("error", String(e));
-    } finally {
-      setImporting(false);
-    }
+    const ids = selected.size > 0 ? [...selected] : undefined;
+    const count = ids ? ids.length : records.length;
+    importMutation.mutate(ids, {
+      onSuccess: (result) => {
+        const skipped = count - result.added;
+        if (result.added === 0) {
+          addToast("success", "No new routes added — all already exist as mocks");
+        } else if (skipped > 0) {
+          addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""} (${skipped} already existed)`);
+        } else {
+          addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`);
+        }
+        const selectedRecords = ids ? records.filter((r) => ids.includes(r.id)) : records;
+        const withQuery = selectedRecords.filter((r) => r.path.includes("?"));
+        if (withQuery.length > 0) {
+          addToast("success", `Note: query params stripped from ${withQuery.length} route path${withQuery.length !== 1 ? "s" : ""}`);
+        }
+        setSelected(new Set());
+      },
+      onError: (e) => addToast("error", String(e)),
+      onSettled: () => setImporting(false),
+    });
   };
 
   const toggleSelect = (id: string) => {
@@ -231,8 +205,8 @@ export function ProxyRecordingSection() {
         </span>
         <ProxyUrlTooltip url={proxyUrl} />
         <button
-          onClick={refresh}
-          className={`p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors ${loading ? "animate-spin" : ""}`}
+          onClick={() => refetch()}
+          className={`p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors ${isFetching ? "animate-spin" : ""}`}
           title="Refresh"
         >
           <RefreshCw size={11} />

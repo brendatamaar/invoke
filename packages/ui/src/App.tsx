@@ -17,7 +17,6 @@ import { SaveRequestModal } from "./features/collections/components/SaveRequestM
 import { SaveActionModal } from "./features/collections/components/SaveActionModal";
 import { CookieManagerModal } from "./features/cookies/components/CookieManagerModal";
 import { useAppBootstrap } from "./features/bootstrap/useAppBootstrap";
-import { useCodeSnippetGeneration } from "./features/codegen/useCodeSnippetGeneration";
 import { useActiveEnvironmentPersistence } from "./features/environments/useActiveEnvironmentPersistence";
 import { useRequestExecution } from "./features/execution/useRequestExecution";
 import { useResizablePane } from "./hooks/useResizablePane";
@@ -44,7 +43,6 @@ export default function App() {
 
   useAppBootstrap();
   useActiveEnvironmentPersistence();
-  useCodeSnippetGeneration();
 
   useEffect(() => {
     checkAndUnlockOnStartup(set).catch(() => {});

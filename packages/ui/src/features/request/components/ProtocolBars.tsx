@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useMemo } from "react";
 import { Select } from "../../../components/shared/Select";
 import {
   Activity,
@@ -28,12 +28,12 @@ import {
 } from "../../websocket/api";
 import {
   grpcExecute,
-  grpcReflect,
   grpcServerStream,
   grpcStreamClose,
   grpcStreamEvents,
   grpcStreamOpen,
 } from "../../grpc/api";
+import { useGrpcReflect } from "../../grpc/useGrpcReflect";
 
 function grpcResponseToExecuteResponse(res: GrpcExecuteResponse) {
   return {
@@ -384,41 +384,6 @@ export function WebSocketBar() {
   );
 }
 
-const REFLECT_CACHE_PREFIX = "grpc_reflect_cache:";
-const REFLECT_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min
-
-interface ReflectCache {
-  methods: import("@invoke/core").GrpcMethodInfo[];
-  cachedAt: number;
-}
-
-function saveReflectCache(
-  address: string,
-  methods: import("@invoke/core").GrpcMethodInfo[],
-) {
-  try {
-    localStorage.setItem(
-      REFLECT_CACHE_PREFIX + address,
-      JSON.stringify({ methods, cachedAt: Date.now() }),
-    );
-  } catch {
-    /* quota exceeded — ignore */
-  }
-}
-
-function loadReflectCache(
-  address: string,
-): import("@invoke/core").GrpcMethodInfo[] | null {
-  try {
-    const raw = localStorage.getItem(REFLECT_CACHE_PREFIX + address);
-    if (!raw) return null;
-    const cache = JSON.parse(raw) as ReflectCache;
-    if (Date.now() - cache.cachedAt > REFLECT_CACHE_TTL_MS) return null;
-    return cache.methods;
-  } catch {
-    return null;
-  }
-}
 
 export function GRPCBar() {
   const {
@@ -452,38 +417,21 @@ export function GRPCBar() {
     grpcRequest.tls &&
     /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(grpcRequest.address ?? "");
 
-  const reflect = async (forceRefresh = false) => {
-    const { request: resolved } = resolveGrpcRequest(
-      grpcRequest,
-      activeEnv,
-      sessionVariables,
-    );
+  const resolvedForReflect = useMemo(() => {
+    if (!grpcRequest.address) return null;
+    const { request } = resolveGrpcRequest(grpcRequest, activeEnv, sessionVariables);
+    return request;
+  }, [grpcRequest, activeEnv, sessionVariables]);
 
-    if (!forceRefresh && !resolved.protosetBase64) {
-      const cached = loadReflectCache(resolved.address);
-      if (cached) {
-        set({
-          grpcMethods: cached,
-          grpcStatus: `${cached.length} methods (cached)`,
-        });
-        return;
-      }
-    }
+  const { refetch: reflectRefetch } = useGrpcReflect(
+    resolvedForReflect,
+    grpcRequest.address ?? "",
+  );
 
-    set({ grpcStatus: "Reflecting..." });
-    try {
-      const { methods, error } = await grpcReflect(resolved);
-      if (error) throw new Error(error);
-      if (!resolved.protosetBase64) saveReflectCache(resolved.address, methods);
-      set({
-        grpcMethods: methods,
-        grpcStatus: `${methods.length} methods found`,
-      });
-    } catch (e) {
-      set({ grpcStatus: "Error" });
-      addToast("error", String(e));
-    }
-  };
+  const reflect = useCallback(async () => {
+    const result = await reflectRefetch();
+    if (result.error) addToast("error", String(result.error));
+  }, [reflectRefetch, addToast]);
 
   const healthCheck = async () => {
     const { request: resolved } = resolveGrpcRequest(
@@ -816,7 +764,7 @@ export function GRPCBar() {
         if (!grpcStreaming && !grpcExecuteController && !grpcStreamId) execute();
       } else if (e.key === "r") {
         e.preventDefault();
-        reflect(false);
+        reflect();
       } else if (e.key === "l") {
         e.preventDefault();
         set({
@@ -855,7 +803,7 @@ export function GRPCBar() {
           TLS
         </label>
         <button
-          onClick={() => reflect(false)}
+          onClick={() => reflect()}
           className="btn text-xs gap-1"
           title="Reflect (Ctrl+R)"
         >

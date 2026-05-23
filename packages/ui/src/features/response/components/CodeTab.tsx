@@ -11,14 +11,16 @@ import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { Select } from "../../../components/shared/Select";
 import { applyProtocolDefaults } from "../../../lib/protocolDefaults";
 import { useStore } from "../../../store";
+import { useCodeSnippetGeneration } from "../../codegen/useCodeSnippetGeneration";
 
 export function CodeTab() {
-  const { codeTarget, codeSnippet, codeLoading, request, grpcRequest, set } =
-    useStore();
+  const { codeTarget, request, grpcRequest, set } = useStore();
   const [copied, setCopied] = useState(false);
   const [grpcTarget, setGrpcTarget] =
     useState<GrpcCodeExportTarget>("grpc-grpcurl");
   const [grpcSnippet, setGrpcSnippet] = useState("");
+
+  const { data: codeSnippet = "", isFetching: codeLoading } = useCodeSnippetGeneration();
 
   const isGraphQL = request.protocol === "graphql";
   const isGrpc = request.protocol === "grpc";

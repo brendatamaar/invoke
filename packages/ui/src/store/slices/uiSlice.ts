@@ -4,6 +4,7 @@ import type { AppState } from "../../types";
 export type UiSlice = Pick<
   AppState,
   | "sidebarCollapsed"
+  | "sidebarSection"
   | "sidebarWidth"
   | "contextMenu"
   | "saveDialog"
@@ -30,6 +31,7 @@ type StoreGet = Parameters<StateCreator<AppState>>[1];
 export function createUiSlice(set: StoreSet, get: StoreGet): UiSlice {
   return {
     sidebarCollapsed: false,
+    sidebarSection: "collections",
     sidebarWidth: 260,
     contextMenu: { open: false, x: 0, y: 0 },
     saveDialog: { open: false, name: "", collectionId: "", folderId: "" },

@@ -11,7 +11,6 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { useStore, coreStore } from "../../../store";
 import { useHistory, useMockRoutes } from "../../../hooks/useDb";
 import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
@@ -199,7 +198,6 @@ function HistoryGroup({
 
 export function HistoryPanel() {
   const { historyQuery, set, setRequest, addToast } = useStore();
-  const navigate = useNavigate();
   const history = useHistory();
   const mockRoutes = useMockRoutes();
 
@@ -280,8 +278,7 @@ export function HistoryPanel() {
       latencyMs: 0,
     };
     coreStore.setMeta("mockRoutes", [...mockRoutes, newRoute]).catch(() => {});
-    set({ sidebarCollapsed: false });
-    navigate({ to: "/mocks" });
+    set({ sidebarCollapsed: false, sidebarSection: "mocks" });
     addToast("success", "Mock route created");
   };
 
