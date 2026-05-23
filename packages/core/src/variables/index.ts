@@ -1,5 +1,7 @@
+import { Effect, Option } from "effect";
 import { JSONPath } from "jsonpath-plus";
 import { applyAuth, buildUrl } from "../request/auth";
+import { UndefinedVariableError } from "../errors";
 import type {
   Environment,
   ExecuteResponse,
@@ -525,6 +527,29 @@ function resolvePathVariables(url: string, pathVars: KeyValue[]): string {
     /:([a-zA-Z_][a-zA-Z0-9_]*)(?=[/?#]|$)/g,
     (match, name: string) => map.get(name) ?? match,
   );
+}
+
+export function resolveTemplateEffect(
+  template: string,
+  variables: Record<string, string>,
+): Effect.Effect<string, UndefinedVariableError> {
+  const { value, unresolved } = resolveTemplate(template, variables);
+  if (unresolved.length > 0) {
+    return Effect.fail(
+      new UndefinedVariableError({ name: unresolved[0], template }),
+    );
+  }
+  return Effect.succeed(value);
+}
+
+export function extractByJsonPath(
+  body: unknown,
+  path: string,
+): Option.Option<string> {
+  if (body == null || !path.trim()) return Option.none();
+  const result = JSONPath({ path, json: body, wrap: false }) as unknown;
+  if (result == null) return Option.none();
+  return Option.some(typeof result === "string" ? result : JSON.stringify(result));
 }
 
 function stripQueryString(url: string) {

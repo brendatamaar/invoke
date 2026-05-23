@@ -1,5 +1,8 @@
 export * from "./assertions";
+export * from "./schema";
 export * from "./cookies";
+export * from "./errors";
+export * from "./storage/services";
 export * from "./lib/crypto";
 export * from "./runner";
 export * from "./request/auth";
@@ -16,6 +19,7 @@ export * from "./lib/redact";
 export * from "./request";
 export * from "./scripting";
 export * from "./storage";
+export { db } from "./storage/db";
 export * from "./types";
 export * from "./variables";
 export * from "./workspace";
