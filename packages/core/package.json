@@ -8,6 +8,7 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
@@ -21,8 +22,10 @@
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",
+    "@effect/schema": "^0.75.5",
     "ajv": "8.20.0",
     "dexie": "^4.2.1",
+    "effect": "^3.21.2",
     "js-yaml": "^4.1.0",
     "jsonpath-plus": "^10.3.0",
     "jszip": "^3.10.1",

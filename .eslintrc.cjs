@@ -20,29 +20,34 @@ module.exports = {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "no-console": "off",
+        "@typescript-eslint/no-unused-vars": ["error", {
+          "varsIgnorePattern": "^_",
+          "argsIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
+        }],
       },
     },
     {
-      files: ["*.vue", "**/*.vue"],
-      parser: "vue-eslint-parser",
+      files: ["*.tsx", "**/*.tsx"],
+      parser: "@typescript-eslint/parser",
       parserOptions: {
-        parser: "@typescript-eslint/parser",
         ecmaVersion: "latest",
         sourceType: "module",
+        ecmaFeatures: { jsx: true },
       },
-      plugins: ["vue", "@typescript-eslint"],
-      extends: [
-        "plugin:vue/vue3-recommended",
-        "plugin:@typescript-eslint/recommended",
-      ],
+      plugins: ["@typescript-eslint", "react-hooks"],
+      extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
       rules: {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
-        "vue/multi-word-component-names": "off",
-        "vue/no-mutating-props": "off",
-        "vue/max-attributes-per-line": "off",
-        "vue/singleline-html-element-content-newline": "off",
-        "vue/html-self-closing": "off",
+        "no-console": "off",
+        "react-hooks/rules-of-hooks": "error",
+        "react-hooks/exhaustive-deps": "warn",
+        "@typescript-eslint/no-unused-vars": ["error", {
+          "varsIgnorePattern": "^_",
+          "argsIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
+        }],
       },
     },
   ],
