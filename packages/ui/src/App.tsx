@@ -80,6 +80,8 @@ export default function App() {
         handleSave();
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        const protocol = useStore.getState().request.protocol ?? "rest";
+        if (protocol === "websocket" || protocol === "grpc") return;
         e.preventDefault();
         handleSend();
       }
