@@ -12,6 +12,7 @@ import {
   ShieldOff,
 } from "lucide-react";
 import { useStore } from "../../../store";
+import { useCookies } from "../../../hooks/useDb";
 
 function Section({
   title,
@@ -102,7 +103,8 @@ function Row({
 }
 
 export function AuthDebugTab() {
-  const { response, resolvedRequest, cookies } = useStore();
+  const { response, resolvedRequest } = useStore();
+  const cookies = useCookies();
   const auth = resolvedRequest?.auth;
   const [showToken, setShowToken] = useState(false);
 

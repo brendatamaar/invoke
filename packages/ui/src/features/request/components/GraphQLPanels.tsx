@@ -3,11 +3,8 @@ import { Select } from "../../../components/shared/Select";
 import {
   AlertTriangle,
   ArrowDown,
-  Bookmark,
   BookmarkPlus,
   Check,
-  ChevronRight,
-  Code,
   Copy,
   FileUp,
   Layers,

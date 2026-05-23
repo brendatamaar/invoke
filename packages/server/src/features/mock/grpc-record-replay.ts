@@ -1,6 +1,6 @@
+import { Schema } from "effect";
 import type { Hono } from "hono";
-import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { parseJsonBody } from "../../lib/validate.js";
 
 /**
  * gRPC connection record/replay.
@@ -31,17 +31,17 @@ let recording = false;
 let activeFixture: GrpcFixture | null = null;
 const fixtures: GrpcFixture[] = [];
 
-const startRecordingSchema = z.object({
-  name: z.string().min(1),
-  address: z.string().min(1),
+const startRecordingSchema = Schema.Struct({
+  name: Schema.String.pipe(Schema.minLength(1)),
+  address: Schema.String.pipe(Schema.minLength(1)),
 });
 
 export function registerGrpcRecordReplayRoutes(app: Hono) {
-  app.post(
-    "/api/mock-grpc/record/start",
-    zValidator("json", startRecordingSchema),
-    (c) => {
-      const { name, address } = c.req.valid("json");
+  app.post("/api/mock-grpc/record/start", async (c) => {
+    const parsed = await parseJsonBody(c, startRecordingSchema);
+    if (!parsed.ok) return parsed.response;
+    {
+      const { name, address } = parsed.data;
       activeFixture = {
         id: crypto.randomUUID(),
         name,
@@ -51,8 +51,8 @@ export function registerGrpcRecordReplayRoutes(app: Hono) {
       };
       recording = true;
       return c.json({ recording: true, fixtureId: activeFixture.id });
-    },
-  );
+    }
+  });
 
   app.post("/api/mock-grpc/record/stop", (c) => {
     if (activeFixture && activeFixture.entries.length > 0) {

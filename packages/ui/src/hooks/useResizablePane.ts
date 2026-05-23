@@ -4,7 +4,7 @@ import type { MouseEvent, RefObject } from "react";
 export function useResizablePane(
   initial: number,
   direction: "vertical" | "horizontal" = "vertical",
-  containerRef?: RefObject<HTMLDivElement>,
+  containerRef?: RefObject<HTMLDivElement | null>,
   otherPanelMin = 320,
 ) {
   const [size, setSize] = useState(initial);

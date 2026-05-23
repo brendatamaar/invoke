@@ -1,25 +1,23 @@
-FROM node:20-alpine AS build
+FROM oven/bun:1-alpine AS build
 WORKDIR /app
-RUN corepack enable
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/core/package.json packages/core/package.json
 COPY packages/server/package.json packages/server/package.json
-RUN pnpm install --frozen-lockfile
+RUN bun install
 COPY proto/ proto/
 COPY packages/core packages/core
 COPY packages/server packages/server
-RUN pnpm --filter @invoke/core build && pnpm --filter @invoke/server build
+RUN bun --filter @invoke/core run build && bun --filter @invoke/server run build
 
-FROM node:20-alpine
+FROM oven/bun:1-alpine
 WORKDIR /app
 ENV NODE_ENV=production
-RUN corepack enable
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/core/package.json packages/core/package.json
 COPY packages/server/package.json packages/server/package.json
-RUN pnpm install --prod --frozen-lockfile
+RUN bun install --production
 COPY proto/ proto/
 COPY --from=build /app/packages/core/dist packages/core/dist
 COPY --from=build /app/packages/server/dist packages/server/dist
 EXPOSE 4000
-CMD ["node", "packages/server/dist/index.js"]
+CMD ["bun", "packages/server/dist/index.js"]

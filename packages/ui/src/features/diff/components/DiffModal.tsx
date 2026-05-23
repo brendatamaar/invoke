@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, ArrowLeftRight, MinusCircle, Plus } from "lucide-react";
 import { compareResponses } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
+import { useHistory, useDiffIgnoreRules } from "../../../hooks/useDb";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
 import { CodeEditor } from "../../../components/editors/CodeEditor";
 import { Select } from "../../../components/shared/Select";
@@ -9,13 +10,13 @@ import { Select } from "../../../components/shared/Select";
 export function DiffModal() {
   const {
     showDiffModal,
-    history,
-    diffIgnoreRules,
     diffLeftId,
     diffRightId,
     set,
     addToast,
   } = useStore();
+  const history = useHistory();
+  const diffIgnoreRules = useDiffIgnoreRules();
   const [leftId, setLeftId] = useState(diffLeftId ?? "");
   const [rightId, setRightId] = useState(diffRightId ?? "");
   const [newPath, setNewPath] = useState("");
@@ -48,7 +49,6 @@ export function DiffModal() {
     ];
     try {
       await coreStore.saveDiffIgnoreRules(updated);
-      set({ diffIgnoreRules: updated });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -59,7 +59,6 @@ export function DiffModal() {
     const updated = diffIgnoreRules.filter((r) => r.id !== id);
     try {
       await coreStore.saveDiffIgnoreRules(updated);
-      set({ diffIgnoreRules: updated });
     } catch (e) {
       addToast("error", String(e));
     }

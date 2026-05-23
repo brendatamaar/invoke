@@ -25,6 +25,9 @@ export interface AuthConfig {
   accessToken?: string;
   refreshToken?: string;
   tokenExpiresAt?: number; // unix ms
+  ntlmUsername?: string;
+  ntlmPassword?: string;
+  ntlmDomain?: string;
 }
 
 export interface AwsSigV4SignOptions {

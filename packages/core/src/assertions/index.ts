@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import Ajv, { type ErrorObject } from "ajv";
 import { JSONPath } from "jsonpath-plus";
 import type {
@@ -18,6 +19,13 @@ export function runAssertions(
   return assertions
     .filter((assertion) => assertion.enabled !== false)
     .map((assertion) => runAssertion(response, assertion));
+}
+
+export function runAssertionsEffect(
+  response: ExecuteResponse,
+  assertions: Assertion[] = [],
+): Effect.Effect<AssertionResult[], never> {
+  return Effect.succeed(runAssertions(response, assertions));
 }
 
 function runAssertion(

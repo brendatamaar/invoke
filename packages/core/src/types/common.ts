@@ -22,7 +22,8 @@ export type AuthType =
   | "api-key"
   | "oauth2"
   | "digest"
-  | "aws-sigv4";
+  | "aws-sigv4"
+  | "ntlm";
 export type RequestProtocol = "rest" | "graphql" | "websocket" | "grpc";
 export type AssertionType =
   | "status"

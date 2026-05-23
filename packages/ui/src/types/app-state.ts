@@ -3,35 +3,27 @@ import type {
   AssertionResult,
   BatchRunStats,
   CodeExportTarget,
-  Collection,
   CollectionRunResult,
   DefaultProtocolOptions,
-  DiffIgnoreRule,
   Environment,
   ExecuteResponse,
   ExtractionRule,
   Flow,
   FlowResult,
-  Folder,
   GrpcExecuteResponse,
   GrpcMethodInfo,
   GrpcRequestConfig,
   GrpcStreamMessage,
   GraphQLIntrospectionSchema,
   GraphQLRequestConfig,
-  HistoryEntry,
   KeyValue,
   MockLogEntry,
-  MockRoute,
   RequestConfig,
   RequestDraft,
-  ResponseExample,
-  RetentionSettings,
   SavedRequest,
-  StoredCookie,
   WebSocketRequestConfig,
 } from "@invoke/core";
-import type { ContextTarget, SidebarSection } from "./navigation";
+import type { ContextTarget } from "./navigation";
 import type { RequestTab } from "./request";
 import type { ResponseTab } from "./response";
 import type { SettingsTab } from "./settings";
@@ -108,13 +100,10 @@ export interface AppState {
   streamMode: boolean;
   streamBytes: number;
   streamController: AbortController | undefined;
-  collections: Collection[];
-  folders: Folder[];
   requests: SavedRequest[];
   protocolDefaults: DefaultProtocolOptions;
   expandedFolderIds: string[];
   sidebarCollapsed: boolean;
-  sidebarSection: SidebarSection;
   sidebarWidth: number;
   contextMenu: { open: boolean; x: number; y: number; target?: ContextTarget };
   environments: Environment[];
@@ -144,10 +133,7 @@ export interface AppState {
   grpcStreamReceivedMessages: GrpcStreamMessage[];
   grpcLatencyMs: number | undefined;
   grpcDeadlineEnd: number | undefined;
-  history: HistoryEntry[];
   historyQuery: string;
-  retentionSettings: RetentionSettings | undefined;
-  flows: Flow[];
   flowDraft: Flow;
   flowResult: FlowResult | undefined;
   flowRunning: boolean;
@@ -155,9 +141,6 @@ export interface AppState {
   diffLeftId: string;
   diffRightId: string;
   showDiffModal: boolean;
-  diffIgnoreRules: DiffIgnoreRule[];
-  responseExamples: ResponseExample[];
-  mockRoutes: MockRoute[];
   mockLogs: MockLogEntry[];
   mockTotalLogs: number;
   mockStatus: string;
@@ -180,7 +163,6 @@ export interface AppState {
   showBatchRunner: boolean;
   batchRunResult: BatchRunStats | null;
   batchRunning: boolean;
-  cookies: StoredCookie[];
   enableCookies: boolean;
   showCookieManager: boolean;
   resolvedRequest: RequestConfig | undefined;
@@ -217,5 +199,4 @@ export interface AppState {
   removeToast: (id: string) => void;
   toggleFolder: (id: string) => void;
   resetRequest: () => void;
-  setProtocolDefaults: (defaults: DefaultProtocolOptions) => void;
 }

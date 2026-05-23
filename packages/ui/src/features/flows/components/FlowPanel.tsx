@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import type { Flow } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
+import { useFlows } from "../../../hooks/useDb";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
 import { FlowModal } from "./FlowModal";
 
 export function FlowPanel() {
-  const { flows, set, addToast } = useStore();
+  const { addToast } = useStore();
+  const flows = useFlows();
   const [editingFlow, setEditingFlow] = useState<Flow | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -22,8 +24,6 @@ export function FlowPanel() {
   const deleteFlow = async (id: string) => {
     try {
       await coreStore.deleteFlow(id);
-      const fs = await coreStore.listFlows();
-      set({ flows: fs });
     } catch (e) {
       addToast("error", String(e));
     }

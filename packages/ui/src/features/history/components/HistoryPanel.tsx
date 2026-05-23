@@ -11,7 +11,9 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useStore, coreStore } from "../../../store";
+import { useHistory, useMockRoutes } from "../../../hooks/useDb";
 import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
 import { CollectionMenuItem } from "../../collections/components/CollectionMenuItem";
@@ -196,7 +198,10 @@ function HistoryGroup({
 }
 
 export function HistoryPanel() {
-  const { history, historyQuery, set, setRequest, addToast } = useStore();
+  const { historyQuery, set, setRequest, addToast } = useStore();
+  const navigate = useNavigate();
+  const history = useHistory();
+  const mockRoutes = useMockRoutes();
 
   const filtered = historyQuery.trim()
     ? history.filter((h) => {
@@ -222,7 +227,6 @@ export function HistoryPanel() {
   const deleteEntry = async (entry: HistoryEntry) => {
     try {
       await coreStore.deleteHistoryEntry(entry.id);
-      set({ history: history.filter((h) => h.id !== entry.id) });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -230,10 +234,7 @@ export function HistoryPanel() {
 
   const deleteGroup = async (entries: HistoryEntry[]) => {
     try {
-      const ids = entries.map((e) => e.id);
-      await coreStore.deleteHistoryEntries(ids);
-      const idSet = new Set(ids);
-      set({ history: history.filter((h) => !idSet.has(h.id)) });
+      await coreStore.deleteHistoryEntries(entries.map((e) => e.id));
     } catch (e) {
       addToast("error", String(e));
     }
@@ -242,9 +243,6 @@ export function HistoryPanel() {
   const handlePin = async (entry: HistoryEntry, pinned: boolean) => {
     try {
       await coreStore.pinHistoryEntry(entry.id, pinned);
-      set({
-        history: history.map((h) => (h.id === entry.id ? { ...h, pinned } : h)),
-      });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -253,11 +251,6 @@ export function HistoryPanel() {
   const handleLabel = async (entry: HistoryEntry, label: string) => {
     try {
       await coreStore.setHistoryEntryLabel(entry.id, label);
-      set({
-        history: history.map((h) =>
-          h.id === entry.id ? { ...h, label: label || undefined } : h,
-        ),
-      });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -286,10 +279,9 @@ export function HistoryPanel() {
       body: entry.response?.body ?? "",
       latencyMs: 0,
     };
-    set((s) => ({
-      mockRoutes: [...s.mockRoutes, newRoute],
-      sidebarSection: "mocks",
-    }));
+    coreStore.setMeta("mockRoutes", [...mockRoutes, newRoute]).catch(() => {});
+    set({ sidebarCollapsed: false });
+    navigate({ to: "/mocks" });
     addToast("success", "Mock route created");
   };
 

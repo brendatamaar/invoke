@@ -300,7 +300,7 @@ function WebhookModal({
     try {
       const data = await loadWebhookLogs(endpoint.id);
       setEntries(data);
-    } catch { } finally {
+    } catch (_e) { /* ignore */ } finally {
       setLoadingLogs(false);
     }
   }, [endpoint.id]);
@@ -471,7 +471,6 @@ export function WebhookSection() {
   const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<WebhookEndpoint | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const { addToast } = useStore();
 
   const serverBase = `${window.location.protocol}//${window.location.hostname}:4000`;
 
@@ -487,7 +486,7 @@ export function WebhookSection() {
   const removeEndpoint = async (id: string) => {
     try {
       await deleteWebhookEndpoint(id);
-    } catch { }
+    } catch (_e) { /* ignore */ }
     setEndpoints((prev) => prev.filter((e) => e.id !== id));
     if (activeEndpoint?.id === id) setActiveEndpoint(null);
   };

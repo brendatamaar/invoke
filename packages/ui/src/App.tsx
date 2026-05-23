@@ -80,6 +80,8 @@ export default function App() {
         handleSave();
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        const protocol = useStore.getState().request.protocol ?? "rest";
+        if (protocol === "websocket" || protocol === "grpc") return;
         e.preventDefault();
         handleSend();
       }
@@ -96,8 +98,8 @@ export default function App() {
 
         <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden">
           <div
-            className="overflow-hidden flex-shrink-0"
-            style={{ height: requestHeight, minHeight: 200 }}
+            className="overflow-hidden shrink-0"
+            style={{ height: requestHeight, minHeight: 300 }}
           >
             <RequestBuilder onSend={handleSend} />
           </div>

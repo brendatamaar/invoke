@@ -38,19 +38,10 @@ export const COLLECTION_IMPORT_OPTIONS: {
   { type: "curl", label: "cURL command", accept: "" },
 ];
 
-export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement>) {
-  const { addToast, set, setRequest } = useStore();
+export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | null>) {
+  const { addToast, setRequest } = useStore();
   const [importType, setImportType] = useState<CollectionImportType>("zip");
   const [curlModal, setCurlModal] = useState(false);
-
-  const refreshCollections = async () => {
-    const [cols, reqs, folds] = await Promise.all([
-      coreStore.listCollections(),
-      coreStore.listRequests(),
-      coreStore.listFolders(),
-    ]);
-    set({ collections: cols, requests: reqs, folders: folds });
-  };
 
   const triggerImport = (type: CollectionImportType) => {
     setImportType(type);
@@ -144,7 +135,6 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement>) {
       }
       if (imported) {
         const count = await persistImported(imported);
-        await refreshCollections();
         addToast("success", `Imported ${count} requests`);
       }
     } catch (err) {

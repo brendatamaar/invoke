@@ -3,7 +3,6 @@ import { X, Zap, StopCircle } from "lucide-react";
 import {
   BatchRunner,
   resolveRequest,
-  variablesFromScopes,
   type VariableScope,
 } from "@invoke/core";
 import { useStore } from "../../../store";

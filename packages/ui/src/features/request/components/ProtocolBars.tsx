@@ -72,7 +72,6 @@ export function WebSocketBar() {
     activeEnvironmentId,
     sessionVariables,
     setWsSession,
-    set,
     addToast,
   } = useStore();
 
@@ -281,11 +280,10 @@ export function WebSocketBar() {
     });
   }, []);
 
-  // Keyboard shortcut: Ctrl+R → connect/disconnect
+  // Keyboard shortcut: Ctrl+Enter → connect/disconnect
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.key !== "r") return;
-      // Only intercept when focus is not in an input/textarea/select
+      if (!(e.ctrlKey || e.metaKey) || e.key !== "Enter") return;
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       e.preventDefault();
@@ -377,7 +375,7 @@ export function WebSocketBar() {
         <button
           onClick={() => connect(activeSession.id)}
           className="btn btn-primary text-xs gap-1 shrink-0"
-          title="Connect (Ctrl+R)"
+          title="Connect (Ctrl+Enter)"
         >
           <Plug size={12} /> Connect
         </button>
@@ -603,8 +601,6 @@ export function GRPCBar() {
               response: syntheticResponse,
               protocol: "grpc",
             });
-            const hist = await coreStore.listHistory(200);
-            set({ history: hist });
           },
           signal: controller.signal,
         });
@@ -742,8 +738,6 @@ export function GRPCBar() {
         response: execResponse,
         protocol: "grpc",
       });
-      const hist = await coreStore.listHistory(200);
-      set({ history: hist });
     } catch (e) {
       if ((e as Error).name !== "AbortError") addToast("error", String(e));
       set({
@@ -811,13 +805,16 @@ export function GRPCBar() {
 
   const isExecuting = !!grpcExecuteController;
 
-  // Keyboard shortcuts: Ctrl+R → reflect, Ctrl+L → clear stream log
+  // Keyboard shortcuts: Ctrl+Enter → invoke, Ctrl+R → reflect, Ctrl+L → clear stream log
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if (e.key === "r") {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!grpcStreaming && !grpcExecuteController && !grpcStreamId) execute();
+      } else if (e.key === "r") {
         e.preventDefault();
         reflect(false);
       } else if (e.key === "l") {
@@ -831,7 +828,7 @@ export function GRPCBar() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [grpcRequest, activeEnv, sessionVariables]);
+  }, [grpcRequest, activeEnv, sessionVariables, grpcStreaming, grpcExecuteController, grpcStreamId]);
 
   return (
     <div className="flex flex-col gap-0">
@@ -905,6 +902,7 @@ export function GRPCBar() {
           <button
             onClick={execute}
             className="btn btn-primary text-xs flex items-center gap-1"
+            title={isClientStream ? "Open Stream (Ctrl+Enter)" : "Invoke (Ctrl+Enter)"}
           >
             {(isServerStreaming || isClientStream) && <Zap size={12} />}
             {isClientStream ? "Open Stream" : "Invoke"}

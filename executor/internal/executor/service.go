@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	ntlmssp "github.com/Azure/go-ntlmssp"
 	"github.com/brendatama/invoke/executor/internal/executorpb"
 	"golang.org/x/net/proxy"
 )
@@ -81,14 +82,19 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
 	}
-	connectTimeoutMs, readTimeoutMs, allowPrivate := extractInvokeHeaders(req.GetHeaders(), httpReq)
+	connectTimeoutMs, readTimeoutMs, allowPrivate, ntlm := extractInvokeHeaders(req.GetHeaders(), httpReq)
 
 	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
 	}
+	var innerTransport http.RoundTripper = transport
+	if ntlm != nil && ntlm.username != "" {
+		innerTransport = ntlmssp.Negotiator{RoundTripper: transport}
+		httpReq.SetBasicAuth(ntlm.username, ntlm.password)
+	}
 	attempts := make([]*attemptRecord, 0)
-	client := &http.Client{Transport: &recordingTransport{base: transport, attempts: &attempts}}
+	client := &http.Client{Transport: &recordingTransport{base: innerTransport, attempts: &attempts}}
 	if !req.GetFollowRedirects() {
 		client.CheckRedirect = func(next *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -173,14 +179,19 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 	if err != nil {
 		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
 	}
-	connectTimeoutMs, readTimeoutMs, allowPrivate := extractInvokeHeaders(req.GetHeaders(), httpReq)
+	connectTimeoutMs, readTimeoutMs, allowPrivate, ntlm := extractInvokeHeaders(req.GetHeaders(), httpReq)
 
 	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
 	if err != nil {
 		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
 	}
+	var innerTransport http.RoundTripper = transport
+	if ntlm != nil && ntlm.username != "" {
+		innerTransport = ntlmssp.Negotiator{RoundTripper: transport}
+		httpReq.SetBasicAuth(ntlm.username, ntlm.password)
+	}
 	attempts := make([]*attemptRecord, 0)
-	client := &http.Client{Transport: &recordingTransport{base: transport, attempts: &attempts}}
+	client := &http.Client{Transport: &recordingTransport{base: innerTransport, attempts: &attempts}}
 	if !req.GetFollowRedirects() {
 		client.CheckRedirect = func(next *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -276,9 +287,15 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 
 const maxBodyBytes = 50 * 1024 * 1024 // 50 MB
 
+type ntlmCreds struct {
+	username string
+	password string
+}
+
 // extractInvokeHeaders copies non-internal headers onto httpReq and returns
-// connect/read timeout values and allowPrivate flag parsed from X-Invoke-* headers.
-func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, readMs int64, allowPrivate bool) {
+// connect/read timeout values, allowPrivate flag, and optional NTLM credentials
+// parsed from X-Invoke-* headers.
+func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, readMs int64, allowPrivate bool, ntlm *ntlmCreds) {
 	for _, h := range headers {
 		key := strings.TrimSpace(h.GetKey())
 		if key == "" {
@@ -295,6 +312,16 @@ func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, 
 			}
 		case "x-invoke-allow-private":
 			allowPrivate = strings.EqualFold(h.GetValue(), "true")
+		case "x-invoke-ntlm-username":
+			if ntlm == nil {
+				ntlm = &ntlmCreds{}
+			}
+			ntlm.username = h.GetValue()
+		case "x-invoke-ntlm-password":
+			if ntlm == nil {
+				ntlm = &ntlmCreds{}
+			}
+			ntlm.password = h.GetValue()
 		default:
 			httpReq.Header.Add(key, h.GetValue())
 		}

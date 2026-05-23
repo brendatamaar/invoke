@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useStore, coreStore } from "../../../store";
+import { useHistory, useMockRoutes, useResponseExamples } from "../../../hooks/useDb";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
 import type {
   AssertionDraft,
@@ -10,7 +12,6 @@ import type {
 import {
   AlertCircle,
   AlertTriangle,
-  Braces,
   Clock,
   HardDrive,
   Shield,
@@ -50,6 +51,7 @@ import {
 } from "./GraphQLErrorsTab";
 import { DeferredTab } from "./DeferredTab";
 import { ConsoleTab } from "./ConsoleTab";
+import { WebSocketLogPanel } from "../../websocket/components/WebSocketLogPanel";
 
 const STATIC_TABS: { id: ResponseTab; label: string; icon?: ReactNode }[] = [
   { id: "body", label: "Body" },
@@ -72,16 +74,16 @@ export function ResponseViewer() {
     streamBytes,
     assertionResults,
     assertionRules,
-    extractRules,
     request,
-    responseExamples,
-    history,
-    mockRoutes,
     addToast,
     retryAttempts,
     graphqlDeferredParts,
     consoleLogs,
   } = useStore();
+  const navigate = useNavigate();
+  const responseExamples = useResponseExamples();
+  const history = useHistory(2);
+  const mockRoutes = useMockRoutes();
 
   const hasConsoleLogs =
     consoleLogs.preRequest.length > 0 ||
@@ -109,6 +111,10 @@ export function ResponseViewer() {
   const [exampleName, setExampleName] = useState("");
   const [jsonPathInput, setJsonPathInput] = useState("");
   const [jsonPathResult, setJsonPathResult] = useState<string | null>(null);
+
+  if (request.protocol === "websocket") {
+    return <WebSocketLogPanel />;
+  }
 
   if (!response && !streaming) {
     return (
@@ -227,7 +233,6 @@ export function ResponseViewer() {
     };
     try {
       await coreStore.saveResponseExample(example);
-      set((s) => ({ responseExamples: [...s.responseExamples, example] }));
       addToast("success", `Saved as "${name}"`);
     } catch (e) {
       addToast("error", String(e));
@@ -260,10 +265,9 @@ export function ResponseViewer() {
       body: response.body,
       latencyMs: 0,
     };
-    set((s) => ({
-      mockRoutes: [...s.mockRoutes, newRoute],
-      sidebarSection: "mocks",
-    }));
+    coreStore.setMeta("mockRoutes", [...mockRoutes, newRoute]).catch(() => {});
+    set({ sidebarCollapsed: false });
+    navigate({ to: "/mocks" });
     addToast("success", "Mock route created");
   };
 

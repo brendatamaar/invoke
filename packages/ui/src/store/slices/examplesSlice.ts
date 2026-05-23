@@ -1,9 +1,6 @@
-import type { AppState } from "../../types";
-
-export type ExamplesSlice = Pick<AppState, "responseExamples">;
+// responseExamples migrated to useLiveQuery (useResponseExamples hook)
+export type ExamplesSlice = Record<never, never>;
 
 export function createExamplesSlice(): ExamplesSlice {
-  return {
-    responseExamples: [],
-  };
+  return {};
 }

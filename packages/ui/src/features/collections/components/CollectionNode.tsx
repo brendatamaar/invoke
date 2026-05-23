@@ -18,6 +18,7 @@ import {
   type Collection,
 } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
+import { useFolders } from "../../../hooks/useDb";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
 import { PromptModal } from "../../../components/shared/PromptModal";
 import { CollectionFolderNode } from "./CollectionFolderNode";
@@ -25,8 +26,8 @@ import { CollectionMenuItem } from "./CollectionMenuItem";
 import { CollectionRequestNode } from "./CollectionRequestNode";
 
 export function CollectionNode({ collection }: { collection: Collection }) {
-  const { expandedFolderIds, toggleFolder, folders, requests, set, addToast } =
-    useStore();
+  const { expandedFolderIds, toggleFolder, requests, set, addToast } = useStore();
+  const folders = useFolders();
   const [menuOpen, setMenuOpen] = useState(false);
   const [addReqModal, setAddReqModal] = useState(false);
   const [addFolderModal, setAddFolderModal] = useState(false);
@@ -60,12 +61,7 @@ export function CollectionNode({ collection }: { collection: Collection }) {
     setDeleteModal(false);
     try {
       await coreStore.deleteCollection(collection.id);
-      const cols = await coreStore.listCollections();
-      set({
-        collections: cols,
-        requests: requests.filter((r) => r.collectionId !== collection.id),
-        folders: folders.filter((f) => f.collectionId !== collection.id),
-      });
+      set({ requests: requests.filter((r) => r.collectionId !== collection.id) });
       addToast("success", "Collection deleted");
     } catch (e) {
       addToast("error", String(e));
@@ -93,8 +89,6 @@ export function CollectionNode({ collection }: { collection: Collection }) {
     if (!req?.folderId) return;
     try {
       await coreStore.moveRequest(requestId, null);
-      const reqs = await coreStore.listRequests();
-      set({ requests: reqs });
     } catch (err) {
       addToast("error", String(err));
     }
@@ -104,8 +98,6 @@ export function CollectionNode({ collection }: { collection: Collection }) {
     setAddFolderModal(false);
     try {
       await coreStore.createFolder(collection.id, name);
-      const folds = await coreStore.listFolders();
-      set({ folders: folds });
       if (!expandedFolderIds.includes(collection.id)) toggleFolder(collection.id);
     } catch (e) {
       addToast("error", String(e));
@@ -129,8 +121,6 @@ export function CollectionNode({ collection }: { collection: Collection }) {
         name,
         collection.id,
       );
-      const reqs = await coreStore.listRequests();
-      set({ requests: reqs });
       if (!expandedFolderIds.includes(collection.id))
         toggleFolder(collection.id);
     } catch (e) {
@@ -143,8 +133,6 @@ export function CollectionNode({ collection }: { collection: Collection }) {
     if (name === collection.name) return;
     try {
       await coreStore.updateCollection({ ...collection, name });
-      const cols = await coreStore.listCollections();
-      set({ collections: cols });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -154,8 +142,6 @@ export function CollectionNode({ collection }: { collection: Collection }) {
     setDescModal(false);
     try {
       await coreStore.updateCollection({ ...collection, description });
-      const cols = await coreStore.listCollections();
-      set({ collections: cols });
     } catch (e) {
       addToast("error", String(e));
     }

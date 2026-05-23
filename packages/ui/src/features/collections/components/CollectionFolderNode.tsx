@@ -24,8 +24,7 @@ export function CollectionFolderNode({
   folder: FolderType;
   collectionId: string;
 }) {
-  const { expandedFolderIds, toggleFolder, requests, set, addToast } =
-    useStore();
+  const { expandedFolderIds, toggleFolder, requests, set, addToast } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [descModal, setDescModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
@@ -66,11 +65,6 @@ export function CollectionFolderNode({
     setDeleteModal(false);
     try {
       await coreStore.deleteFolder(folder.id);
-      const [folds, reqs] = await Promise.all([
-        coreStore.listFolders(),
-        coreStore.listRequests(),
-      ]);
-      set({ folders: folds, requests: reqs });
       addToast("success", "Folder deleted");
     } catch (e) {
       addToast("error", String(e));
@@ -98,8 +92,6 @@ export function CollectionFolderNode({
     if (req?.folderId === folder.id) return;
     try {
       await coreStore.moveRequest(requestId, folder.id);
-      const reqs = await coreStore.listRequests();
-      set({ requests: reqs });
     } catch (err) {
       addToast("error", String(err));
     }
@@ -109,8 +101,6 @@ export function CollectionFolderNode({
     setDescModal(false);
     try {
       await coreStore.updateFolder({ ...folder, description });
-      const folds = await coreStore.listFolders();
-      set({ folders: folds });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -155,16 +145,12 @@ export function CollectionFolderNode({
 
       try {
         await coreStore.reorderRequests(newOrder.map((r) => r.id));
-        const reqs = await coreStore.listRequests(collectionId);
-        set({ requests: reqs });
       } catch (err) {
         addToast("error", String(err));
       }
     } else {
       try {
         await coreStore.moveRequest(requestId, folder.id);
-        const reqs = await coreStore.listRequests();
-        set({ requests: reqs });
       } catch (err) {
         addToast("error", String(err));
       }

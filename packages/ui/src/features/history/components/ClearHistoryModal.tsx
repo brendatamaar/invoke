@@ -9,7 +9,7 @@ export function ClearHistoryModal() {
 
   const confirm = async () => {
     await coreStore.clearHistory();
-    set({ history: [], showClearHistoryModal: false });
+    set({ showClearHistoryModal: false });
     addToast("info", "History cleared");
   };
 

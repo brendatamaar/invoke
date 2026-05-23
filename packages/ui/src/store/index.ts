@@ -65,8 +65,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   addWsSession: () => {
     const s = get();
-    const label = `Session ${s.wsSessions.length + 1}`;
-    const newSession = makeWsSession(label);
+    const usedNumbers = new Set(
+      s.wsSessions.map((sess) => parseInt(sess.label.match(/^Session (\d+)$/)?.[1] ?? "0"))
+    );
+    let n = 1;
+    while (usedNumbers.has(n)) n++;
+    const newSession = makeWsSession(`Session ${n}`);
     set((prev) => ({
       wsSessions: [...prev.wsSessions, newSession],
       activeWsSessionId: newSession.id,

@@ -1,8 +1,8 @@
-import { zValidator } from "@hono/zod-validator";
+import { Schema } from "effect";
 import { validateMockRoutes } from "@invoke/core";
 import type { KeyValue, MockLogEntry, MockRoute } from "@invoke/core";
 import type { Hono } from "hono";
-import { z } from "zod";
+import { parseJsonBody } from "../../lib/validate.js";
 import type { MockConditionRequest, MockPathMatch } from "../../types/index.js";
 
 let mockRoutes: MockRoute[] = [];
@@ -10,66 +10,52 @@ const mockLogs: MockLogEntry[] = [];
 const mockSequenceIndex = new Map<string, number>();
 const MAX_MOCK_REQUEST_BODY_BYTES = 1024 * 1024;
 
-const mockHeaderSchema = z.object({
-  key: z.string(),
-  value: z.string(),
-  enabled: z.boolean().optional(),
+const mockHeaderSchema = Schema.Struct({
+  key: Schema.String,
+  value: Schema.String,
+  enabled: Schema.optional(Schema.Boolean),
 });
 
-const matcherSchema = z.enum([
-  "equals",
-  "notEquals",
-  "exists",
-  "gt",
-  "lt",
-  "contains",
-  "matches",
-]);
+const matcherSchema = Schema.Literal(
+  "equals", "notEquals", "exists", "gt", "lt", "contains", "matches",
+);
 
-const mockConditionSchema = z.object({
-  source: z.enum(["header", "query", "bodyJsonPath"]),
-  expression: z.string(),
-  matcher: matcherSchema.default("equals"),
-  expected: z.string().default(""),
+const mockConditionSchema = Schema.Struct({
+  source: Schema.Literal("header", "query", "bodyJsonPath"),
+  expression: Schema.String,
+  matcher: Schema.optionalWith(matcherSchema, { default: () => "equals" as const }),
+  expected: Schema.optionalWith(Schema.String, { default: () => "" }),
 });
 
-const mockSequenceItemSchema = z.object({
-  status: z.number().int().min(100).max(599),
-  headers: z.array(mockHeaderSchema).default([]),
-  body: z.string().default(""),
-  latencyMs: z.number().int().min(0).max(30000).optional(),
+const mockSequenceItemSchema = Schema.Struct({
+  status: Schema.Number,
+  headers: Schema.optionalWith(Schema.Array(mockHeaderSchema), { default: () => [] }),
+  body: Schema.optionalWith(Schema.String, { default: () => "" }),
+  latencyMs: Schema.optional(Schema.Number),
 });
 
-const mockRouteSchema = z.object({
-  id: z.string(),
-  enabled: z.boolean().optional(),
-  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]),
-  pathPattern: z.string().min(1),
-  status: z.number().int().min(100).max(599),
-  headers: z.array(mockHeaderSchema).default([]),
-  body: z.string().default(""),
-  latencyMs: z.number().int().min(0).max(30000).optional(),
-  conditions: z.array(mockConditionSchema).optional(),
-  sequences: z.array(mockSequenceItemSchema).optional(),
+const mockRouteSchema = Schema.Struct({
+  id: Schema.String,
+  enabled: Schema.optional(Schema.Boolean),
+  method: Schema.Literal("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"),
+  pathPattern: Schema.String.pipe(Schema.minLength(1)),
+  status: Schema.Number,
+  headers: Schema.optionalWith(Schema.Array(mockHeaderSchema), { default: () => [] }),
+  body: Schema.optionalWith(Schema.String, { default: () => "" }),
+  latencyMs: Schema.optional(Schema.Number),
+  conditions: Schema.optional(Schema.Array(mockConditionSchema)),
+  sequences: Schema.optional(Schema.Array(mockSequenceItemSchema)),
 });
 
-export const mockRoutesSchema = z
-  .object({
-    routes: z.array(mockRouteSchema),
-  })
-  .superRefine((input, ctx) => {
-    const validation = validateMockRoutes(input.routes);
-    validation.errors.forEach((issue) => {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: issue.message,
-        path:
-          issue.routeIndex === undefined
-            ? ["routes"]
-            : ["routes", issue.routeIndex],
-      });
-    });
-  });
+export const mockRoutesSchema = Schema.Struct({
+  routes: Schema.Array(mockRouteSchema),
+}).pipe(
+  Schema.filter((input) => {
+    const validation = validateMockRoutes(input.routes as unknown as MockRoute[]);
+    if (validation.errors.length > 0) return validation.errors[0].message;
+    return true;
+  }),
+);
 
 export function registerMockRoutes(app: Hono) {
   app.get("/api/mock/routes", (c) =>
@@ -80,13 +66,15 @@ export function registerMockRoutes(app: Hono) {
     }),
   );
 
-  app.put("/api/mock/routes", zValidator("json", mockRoutesSchema), (c) => {
-    const input = c.req.valid("json");
+  app.put("/api/mock/routes", async (c) => {
+    const parsed = await parseJsonBody(c, mockRoutesSchema);
+    if (!parsed.ok) return parsed.response;
+    const input = parsed.data;
     mockRoutes = input.routes.map((route) => ({
       ...route,
-      headers: route.headers ?? [],
+      headers: [...(route.headers ?? [])],
       enabled: route.enabled ?? true,
-    }));
+    })) as unknown as MockRoute[];
     mockSequenceIndex.clear();
     return c.json({ routes: mockRoutes, count: mockRoutes.length });
   });

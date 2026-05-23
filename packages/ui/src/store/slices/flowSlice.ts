@@ -2,12 +2,11 @@ import type { AppState } from "../../types";
 
 export type FlowSlice = Pick<
   AppState,
-  "flows" | "flowDraft" | "flowResult" | "flowRunning" | "flowLog"
+  "flowDraft" | "flowResult" | "flowRunning" | "flowLog"
 >;
 
 export function createFlowSlice(): FlowSlice {
   return {
-    flows: [],
     flowDraft: {
       id: "",
       name: "New Flow",

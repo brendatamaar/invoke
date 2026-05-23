@@ -1,20 +1,18 @@
-import { z } from "zod";
+import { Schema } from "effect"
 
-export const proxySchema = z.object({
-  targetUrl: z.string().url(),
-  method: z.string().default("GET"),
-  headers: z
-    .array(
-      z.object({
-        key: z.string(),
-        value: z.string(),
-        enabled: z.boolean().optional(),
-      }),
-    )
-    .default([]),
-  body: z.string().default(""),
-});
+const proxyHeaderSchema = Schema.Struct({
+  key: Schema.String,
+  value: Schema.String,
+  enabled: Schema.optional(Schema.Boolean),
+})
 
-export const proxyRecordsToMocksSchema = z.object({
-  ids: z.array(z.string()).optional(),
-});
+export const proxySchema = Schema.Struct({
+  targetUrl: Schema.String.pipe(Schema.minLength(1)),
+  method: Schema.optionalWith(Schema.String, { default: () => "GET" }),
+  headers: Schema.optionalWith(Schema.Array(proxyHeaderSchema), { default: () => [] }),
+  body: Schema.optionalWith(Schema.String, { default: () => "" }),
+})
+
+export const proxyRecordsToMocksSchema = Schema.Struct({
+  ids: Schema.optional(Schema.Array(Schema.String)),
+})

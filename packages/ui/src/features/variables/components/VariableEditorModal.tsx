@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { X, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
+import { useCollections, useFolders } from "../../../hooks/useDb";
 import type { KeyValue } from "@invoke/core";
 
 export function VariableEditorModal() {
-  const { variableEditor, collections, folders, set, addToast } = useStore();
+  const { variableEditor, set, addToast } = useStore();
+  const collections = useCollections();
+  const folders = useFolders();
   const [rows, setRows] = useState<KeyValue[]>([]);
 
   useEffect(() => {
@@ -22,15 +25,11 @@ export function VariableEditorModal() {
         const col = collections.find((c) => c.id === variableEditor.id);
         if (col) {
           await coreStore.updateCollection({ ...col, variables: rows });
-          const cols = await coreStore.listCollections();
-          set({ collections: cols });
         }
       } else if (variableEditor.kind === "folder" && variableEditor.id) {
         const folder = folders.find((f) => f.id === variableEditor.id);
         if (folder) {
           await coreStore.updateFolder({ ...folder, variables: rows });
-          const folds = await coreStore.listFolders();
-          set({ folders: folds });
         }
       }
       addToast("success", "Variables saved");

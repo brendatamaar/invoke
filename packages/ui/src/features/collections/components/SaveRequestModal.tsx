@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { FolderOpen, X } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
+import { useCollections, useFolders } from "../../../hooks/useDb";
 import { Select } from "../../../components/shared/Select";
 
 const NEW_COLLECTION_SENTINEL = "__new_col__";
 const NEW_FOLDER_SENTINEL = "__new_folder__";
 
 export function SaveRequestModal() {
-  const { saveDialog, set, request, collections, folders, addToast, setRequest } =
-    useStore();
+  const { saveDialog, set, request, addToast, setRequest } = useStore();
+  const collections = useCollections();
+  const folders = useFolders();
   const inputRef = useRef<HTMLInputElement>(null);
   const newColInputRef = useRef<HTMLInputElement>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
@@ -64,8 +66,6 @@ export function SaveRequestModal() {
 
       if (isNewCollection) {
         const created = await coreStore.createCollection(newCollectionName.trim());
-        const updatedCols = await coreStore.listCollections();
-        set({ collections: updatedCols });
         targetCollectionId = created.id;
       }
 
@@ -76,8 +76,6 @@ export function SaveRequestModal() {
           targetCollectionId,
           newFolderName.trim(),
         );
-        const updatedFolders = await coreStore.listFolders();
-        set({ folders: updatedFolders });
         targetFolderId = createdFolder.id;
       }
 

@@ -30,6 +30,7 @@ import type {
   TlsClientConfig,
 } from "@invoke/core";
 import { coreStore, useStore } from "../../../store";
+import { useCollections, useCookies, useFolders, useFlows, useHistory, useRetentionSettings } from "../../../hooks/useDb";
 import { Select } from "../../../components/shared/Select";
 import type { GeneralDraft, SettingsTab, ThemeMode } from "../../../types";
 
@@ -216,19 +217,19 @@ export function SettingsPanel() {
     set,
     request,
     protocolDefaults,
-    collections,
     requests,
-    history,
     environments,
-    flows,
-    folders,
-    cookies,
-    retentionSettings,
     uiFontSize,
     editorWordWrap,
     settingsTab,
     addToast,
   } = useStore();
+  const collections = useCollections();
+  const folders = useFolders();
+  const flows = useFlows();
+  const history = useHistory();
+  const cookies = useCookies();
+  const retentionSettings = useRetentionSettings();
 
   const activeProtocol = (request.protocol ?? "rest") as RequestProtocol;
   const [tab, setTab] = useState<SettingsTab>("general");
@@ -411,20 +412,14 @@ export function SettingsPanel() {
       const text = await file.text();
       const backup = parseWorkspaceBackup(text);
       await coreStore.importWorkspace(backup);
-      const [envs, colls, folds, fls, defaults] = await Promise.all([
+      const [envs, defaults] = await Promise.all([
         coreStore.listEnvironments(),
-        coreStore.listCollections(),
-        coreStore.listFolders(),
-        coreStore.listFlows(),
         coreStore.getDefaultProtocolOptions(),
       ]);
       const reqs = await coreStore.listRequests();
       set({
         environments: envs,
-        collections: colls,
-        folders: folds,
         requests: reqs,
-        flows: fls,
         protocolDefaults: defaults,
       });
       addToast(
@@ -446,7 +441,6 @@ export function SettingsPanel() {
 
     try {
       await coreStore.clearCookies();
-      set({ cookies: [] });
       setConfirmClearCookies(false);
       addToast("info", "Cookies cleared");
     } catch (e) {
@@ -470,7 +464,6 @@ export function SettingsPanel() {
         editorWordWrap: general.editorWordWrap,
         uiFontSize: general.uiFontSize,
         protocolDefaults: cloneProtocolDefaults(drafts),
-        retentionSettings: retentionDraft,
         showSettings: false,
         settingsTab: undefined,
       });

@@ -409,7 +409,7 @@ The core engine (`@invoke/core`) is a standalone TypeScript library with zero fr
 | `executor-client` | gRPC client to communicate with the Go HTTP executor |
 | `storage` | Storage adapter interface with IndexedDB and PostgreSQL implementations |
 | `schema` | JSON Schema validation for request/response bodies |
-| `auth` | Auth helper logic (Bearer, Basic, OAuth2, API Key, Digest, AWS Sig V4) |
+| `auth` | Auth helper logic (Bearer, Basic, OAuth2, API Key, Digest, AWS Sig V4, NTLM) |
 
 ### 6.2 Collection Manager
 
@@ -2035,10 +2035,12 @@ The core engine runs in the browser. It produces two entry points:
 | IndexedDB | Dexie.js | latest | Browser only |
 | E2E testing | @playwright/test | latest | Dev only |
 
-### 23.2 Node.js Backend
+### 23.2 Bun Backend
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
+| Runtime | Bun | 1.3.14+ |
+| HTTP server | Bun.serve (built-in) | — |
 | Framework | Hono | latest |
 | WebSocket | ws | latest |
 | Testing | Vitest + Supertest | latest |
@@ -2049,19 +2051,21 @@ The core engine runs in the browser. It produces two entry points:
 | Validation | Zod | latest |
 | Logging | Pino | latest |
 | Migration | Drizzle Kit | latest |
+| Docker image | oven/bun:1-alpine | — |
 
 ### 23.3 React Web UI
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
-| Framework | React | 18.3.x |
+| Framework | React | 19.x |
 | Language | TypeScript | 5.x |
 | Build tool | Vite | latest |
-| State management | Zustand | latest |
-| CSS framework | Tailwind CSS | 3.x |
+| State management | Zustand | 5.x |
+| CSS framework | Tailwind CSS | 4.x |
+| Routing | TanStack Router | 1.x |
 | Code editor | CodeMirror 6 | latest |
 | Icons | Lucide React | latest |
-| Search | Fuse.js (fuzzy search) | latest |
+| Search | MiniSearch | latest |
 | HTTP client (UI → server) | Native Fetch API | — |
 | WebSocket client | Native WebSocket API / SSE | — |
 | IndexedDB | Dexie 4.x | latest |

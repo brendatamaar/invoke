@@ -9,6 +9,7 @@ import {
   ToggleRight,
 } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
+import { useCookies } from "../../../hooks/useDb";
 import type { StoredCookie } from "@invoke/core";
 
 function formatExpiry(expires?: number) {
@@ -28,8 +29,8 @@ function groupByDomain(cookies: StoredCookie[]): Map<string, StoredCookie[]> {
 }
 
 export function CookieManagerModal() {
-  const { showCookieManager, cookies, enableCookies, set, addToast } =
-    useStore();
+  const { showCookieManager, enableCookies, set, addToast } = useStore();
+  const cookies = useCookies();
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [confirmClear, setConfirmClear] = useState<string | null>(null); // domain or "all"
 
@@ -49,8 +50,6 @@ export function CookieManagerModal() {
   const deleteCookie = async (id: string) => {
     try {
       await coreStore.deleteCookie(id);
-      const updated = await coreStore.listCookies();
-      set({ cookies: updated });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -60,8 +59,6 @@ export function CookieManagerModal() {
     setConfirmClear(null);
     try {
       await coreStore.clearCookies(domain);
-      const updated = await coreStore.listCookies();
-      set({ cookies: updated });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -71,7 +68,6 @@ export function CookieManagerModal() {
     setConfirmClear(null);
     try {
       await coreStore.clearCookies();
-      set({ cookies: [] });
     } catch (e) {
       addToast("error", String(e));
     }

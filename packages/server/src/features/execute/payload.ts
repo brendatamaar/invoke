@@ -160,6 +160,18 @@ function applyAuthIfNeeded(
     return { headers, url };
   }
 
+  if (auth.type === "ntlm") {
+    const newHeaders = [...headers];
+    if (auth.ntlmUsername) {
+      const user = auth.ntlmDomain
+        ? `${auth.ntlmDomain}\\${auth.ntlmUsername}`
+        : auth.ntlmUsername;
+      newHeaders.push({ key: "X-Invoke-Ntlm-Username", value: user });
+      newHeaders.push({ key: "X-Invoke-Ntlm-Password", value: auth.ntlmPassword ?? "" });
+    }
+    return { headers: newHeaders, url };
+  }
+
   const headerKeySet = new Set(headers.map((h) => h.key.toLowerCase()));
   const newHeaders = [...headers];
 

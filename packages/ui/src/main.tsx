@@ -1,7 +1,8 @@
 import { StrictMode } from "react";
+import { RouterProvider } from "@tanstack/react-router";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
-import App from "./App";
+import { router } from "./router";
 
 function resolveTheme(mode: string | null): "light" | "dark" {
   if (mode === "system") {
@@ -28,6 +29,6 @@ mediaQuery.addEventListener("change", () => {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </StrictMode>,
 );

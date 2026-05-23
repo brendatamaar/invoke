@@ -1,6 +1,6 @@
+import { Schema } from "effect";
 import type { Hono } from "hono";
-import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { parseJsonBody } from "../../lib/validate.js";
 
 /**
  * In-memory mock gRPC server.
@@ -37,31 +37,30 @@ let grpcMockRoutes: MockGrpcRoute[] = [];
 const grpcMockLogs: MockGrpcLog[] = [];
 const sequenceIndex = new Map<string, number>();
 
-const mockGrpcRouteSchema = z.object({
-  fullMethod: z.string().min(1),
-  responses: z
-    .array(
-      z.object({
-        bodyJson: z.string().default("{}"),
-        statusCode: z.number().int().min(0).max(16).default(0),
-        statusMessage: z.string().default(""),
-        trailers: z
-          .array(z.object({ key: z.string(), value: z.string() }))
-          .default([]),
-      }),
-    )
-    .min(1),
-  latencyMs: z.number().int().min(0).max(30000).optional(),
-  enabled: z.boolean().default(true),
+const mockGrpcRouteSchema = Schema.Struct({
+  fullMethod: Schema.String.pipe(Schema.minLength(1)),
+  responses: Schema.Array(
+    Schema.Struct({
+      bodyJson: Schema.optionalWith(Schema.String, { default: () => "{}" }),
+      statusCode: Schema.optionalWith(Schema.Number, { default: () => 0 }),
+      statusMessage: Schema.optionalWith(Schema.String, { default: () => "" }),
+      trailers: Schema.optionalWith(
+        Schema.Array(Schema.Struct({ key: Schema.String, value: Schema.String })),
+        { default: () => [] },
+      ),
+    }),
+  ).pipe(Schema.minItems(1)),
+  latencyMs: Schema.optional(Schema.Number),
+  enabled: Schema.optionalWith(Schema.Boolean, { default: () => true }),
 });
 
-const mockGrpcRoutesSchema = z.object({
-  routes: z.array(mockGrpcRouteSchema),
+const mockGrpcRoutesSchema = Schema.Struct({
+  routes: Schema.Array(mockGrpcRouteSchema),
 });
 
-const mockGrpcInvokeSchema = z.object({
-  fullMethod: z.string().min(1),
-  bodyJson: z.string().default("{}"),
+const mockGrpcInvokeSchema = Schema.Struct({
+  fullMethod: Schema.String.pipe(Schema.minLength(1)),
+  bodyJson: Schema.optionalWith(Schema.String, { default: () => "{}" }),
 });
 
 export function registerMockGrpcRoutes(app: Hono) {
@@ -72,27 +71,24 @@ export function registerMockGrpcRoutes(app: Hono) {
     }),
   );
 
-  app.put(
-    "/api/mock-grpc/routes",
-    zValidator("json", mockGrpcRoutesSchema),
-    (c) => {
-      const input = c.req.valid("json");
-      grpcMockRoutes = input.routes;
-      sequenceIndex.clear();
-      return c.json({ routes: grpcMockRoutes, count: grpcMockRoutes.length });
-    },
-  );
+  app.put("/api/mock-grpc/routes", async (c) => {
+    const parsed = await parseJsonBody(c, mockGrpcRoutesSchema);
+    if (!parsed.ok) return parsed.response;
+    grpcMockRoutes = parsed.data.routes as unknown as MockGrpcRoute[];
+    sequenceIndex.clear();
+    return c.json({ routes: grpcMockRoutes, count: grpcMockRoutes.length });
+  });
 
   app.delete("/api/mock-grpc/logs", (c) => {
     grpcMockLogs.splice(0, grpcMockLogs.length);
     return c.json({ ok: true });
   });
 
-  app.post(
-    "/api/mock-grpc/invoke",
-    zValidator("json", mockGrpcInvokeSchema),
-    async (c) => {
-      const { fullMethod, bodyJson } = c.req.valid("json");
+  app.post("/api/mock-grpc/invoke", async (c) => {
+    const parsed = await parseJsonBody(c, mockGrpcInvokeSchema);
+    if (!parsed.ok) return parsed.response;
+    {
+      const { fullMethod, bodyJson } = parsed.data;
       const route = grpcMockRoutes.find(
         (r) => r.enabled !== false && r.fullMethod === fullMethod,
       );
@@ -148,8 +144,8 @@ export function registerMockGrpcRoutes(app: Hono) {
         trailers: response.trailers ?? [],
         durationMs: route.latencyMs ?? 0,
       });
-    },
-  );
+    }
+  });
 }
 
 function trimLogs() {

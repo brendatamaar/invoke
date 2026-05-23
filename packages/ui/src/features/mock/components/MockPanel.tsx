@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { RefreshCw } from "lucide-react";
 import { validateMockRoutes, type MockRoute } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
+import { useMockRoutes } from "../../../hooks/useDb";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
 import { clearMockLogs, loadMockRoutes, syncMockRoutes } from "../api";
 import { MockRequestLog } from "./MockRequestLog";
@@ -11,7 +12,8 @@ import { RouteModal } from "./RouteModal";
 import { WebhookSection } from "./WebhookSection";
 
 export function MockPanel() {
-  const { mockRoutes, mockLogs, mockTotalLogs, mockStatus, set, addToast } = useStore();
+  const { mockLogs, mockTotalLogs, mockStatus, set, addToast } = useStore();
+  const mockRoutes = useMockRoutes();
   const [editingRoute, setEditingRoute] = useState<MockRoute | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
@@ -20,7 +22,7 @@ export function MockPanel() {
   const refresh = async () => {
     try {
       const data = await loadMockRoutes();
-      set({ mockRoutes: data.routes, mockLogs: data.logs, mockTotalLogs: data.totalLogs });
+      set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs });
     } catch (e) {
       addToast("error", String(e));
     }
@@ -31,18 +33,14 @@ export function MockPanel() {
       try {
         const saved = await coreStore.getMeta<MockRoute[]>("mockRoutes");
         if (saved?.length) {
-          set({ mockRoutes: saved });
           await syncMockRoutes(saved);
           set({ mockStatus: "Active" });
         }
         const data = await loadMockRoutes();
         set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs });
-        if (!saved?.length) set({ mockRoutes: data.routes });
       } catch {
         loadMockRoutes()
-          .then((data) =>
-            set({ mockRoutes: data.routes, mockLogs: data.logs, mockTotalLogs: data.totalLogs }),
-          )
+          .then((data) => set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs }))
           .catch(() => {});
       }
     };
@@ -112,7 +110,6 @@ export function MockPanel() {
   };
 
   const persistRoutes = (routes: MockRoute[]) => {
-    set({ mockRoutes: routes });
     coreStore.setMeta("mockRoutes", routes).catch(() => {});
   };
 
@@ -138,11 +135,11 @@ export function MockPanel() {
   };
 
   const toggleEnabled = (id: string) =>
-    set({
-      mockRoutes: mockRoutes.map((r) =>
+    persistRoutes(
+      mockRoutes.map((r) =>
         r.id === id ? { ...r, enabled: !(r.enabled !== false) } : r,
       ),
-    });
+    );
 
   return (
     <div className="flex flex-col h-full">
