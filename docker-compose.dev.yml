@@ -11,9 +11,9 @@ services:
       - "50051:50051"
 
   server:
-    image: node:20
+    image: oven/bun:1
     working_dir: /workspace
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile=false && pnpm --filter @invoke/server dev"
+    command: sh -c "bun install && bun --filter @invoke/server dev"
     environment:
       EXECUTOR_GRPC_ADDR: executor:50051
       PORT: 4000
