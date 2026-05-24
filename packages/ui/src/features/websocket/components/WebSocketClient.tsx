@@ -551,7 +551,7 @@ export function WebSocketClient() {
                       binaryMode ? "Base64-encoded bytes…" : "Message…"
                     }
                     disabled={websocketState !== "connected"}
-                    rows={3}
+                    rows={6}
                     className="input text-xs font-mono flex-1 resize-none py-1.5"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
