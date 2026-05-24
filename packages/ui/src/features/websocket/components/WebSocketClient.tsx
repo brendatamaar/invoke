@@ -201,6 +201,14 @@ function SensitiveKeyValueEditor({
   );
 }
 
+function normalizeJsonBody(body: string): string {
+  try {
+    return JSON.stringify(JSON.parse(body));
+  } catch {
+    return body;
+  }
+}
+
 function resolveDynamicVars(text: string): string {
   return text
     .replace(/\{\{\$timestamp\}\}/g, String(Date.now()))
@@ -271,7 +279,7 @@ export function WebSocketClient() {
             id: crypto.randomUUID(),
             direction: "sent" as const,
             type: binaryMode ? "binary" : "text",
-            body,
+            body: binaryMode ? body : normalizeJsonBody(body),
             createdAt: Date.now(),
           },
         ],
