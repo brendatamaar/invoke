@@ -43,6 +43,7 @@ export interface WsSession {
   label: string;
   latencyMs?: number;
   lastActivityAt?: number;
+  activeGqlSubscriptionId?: string;
 }
 
 export interface Toast {

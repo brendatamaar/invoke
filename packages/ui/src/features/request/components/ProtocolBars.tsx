@@ -176,6 +176,7 @@ export function WebSocketBar() {
       setWsSession(sessionId, {
         state: "disconnected",
         connectionId: "",
+        activeGqlSubscriptionId: undefined,
         log: [
           ...(prev?.log ?? []),
           {
@@ -268,9 +269,17 @@ export function WebSocketBar() {
     eventSourcesRef.current.get(sessionId)?.close();
     eventSourcesRef.current.delete(sessionId);
     const sess = findWsSession(sessionId);
-    if (sess?.connectionId)
+    if (sess?.connectionId) {
+      const { websocketRequest: wsReq } = useStore.getState();
+      if (wsReq.preset === "graphql-transport-ws" && sess.activeGqlSubscriptionId) {
+        await webSocketSend(
+          sess.connectionId,
+          JSON.stringify({ type: "complete", id: sess.activeGqlSubscriptionId }),
+        ).catch(() => {});
+      }
       await webSocketClose(sess.connectionId).catch(() => {});
-    setWsSession(sessionId, { state: "disconnected", connectionId: "" });
+    }
+    setWsSession(sessionId, { state: "disconnected", connectionId: "", activeGqlSubscriptionId: undefined });
   };
 
   const sendPing = useCallback(async (sessionId: string) => {

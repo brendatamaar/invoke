@@ -257,8 +257,9 @@ export function WebSocketClient() {
   const [message, setMessage] = useState("");
   const [binaryMode, setBinaryMode] = useState(false);
   const subIdRef = useRef(0);
-  const [gqlSubscribed, setGqlSubscribed] = useState(false);
-  const [currentSubId, setCurrentSubId] = useState("sub_1");
+
+  const gqlSubscribed = !!activeSession?.activeGqlSubscriptionId;
+  const currentSubId = activeSession?.activeGqlSubscriptionId ?? "";
 
   const websocketState = activeSession?.state ?? "disconnected";
   const auth = websocketRequest.auth ?? { type: "none" };
@@ -293,7 +294,6 @@ export function WebSocketClient() {
   const sendGqlSubscribe = async () => {
     const connectionId = activeSession?.connectionId ?? "";
     const id = `sub_${++subIdRef.current}`;
-    setCurrentSubId(id);
     let vars: unknown = {};
     try {
       vars = JSON.parse(websocketRequest.presetVariables ?? "{}");
@@ -305,7 +305,7 @@ export function WebSocketClient() {
       id,
       payload: { query: websocketRequest.presetQuery ?? "", variables: vars },
     });
-    setGqlSubscribed(true);
+    setWsSession(activeSession.id, { activeGqlSubscriptionId: id });
     try {
       await webSocketSend(connectionId, frame);
       setWsSession(activeSession.id, {
@@ -321,7 +321,7 @@ export function WebSocketClient() {
         ],
       });
     } catch (e) {
-      setGqlSubscribed(false);
+      setWsSession(activeSession.id, { activeGqlSubscriptionId: undefined });
       addToast("error", String(e));
     }
   };
@@ -329,7 +329,7 @@ export function WebSocketClient() {
   const sendGqlUnsubscribe = async () => {
     const connectionId = activeSession?.connectionId ?? "";
     const frame = JSON.stringify({ type: "complete", id: currentSubId });
-    setGqlSubscribed(false);
+    setWsSession(activeSession.id, { activeGqlSubscriptionId: undefined });
     try {
       await webSocketSend(connectionId, frame);
       setWsSession(activeSession.id, {
@@ -345,7 +345,7 @@ export function WebSocketClient() {
         ],
       });
     } catch (e) {
-      setGqlSubscribed(true);
+      setWsSession(activeSession.id, { activeGqlSubscriptionId: currentSubId });
       addToast("error", String(e));
     }
   };
