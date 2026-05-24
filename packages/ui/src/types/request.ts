@@ -7,6 +7,7 @@ export type RequestTab =
   | "body"
   | "graphql"
   | "graphqlVariables"
+  | "graphqlOptions"
   | "websocket"
   | "grpc"
   | "assertions"

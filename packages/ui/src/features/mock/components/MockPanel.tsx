@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { validateMockRoutes, type MockRoute } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
 import { useMockRoutes } from "../../../hooks/useDb";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
-import { clearMockLogs, loadMockRoutes, syncMockRoutes } from "../api";
+import { syncMockRoutes } from "../api";
+import { useClearMockLogs, useMockData, useSyncMockRoutes } from "../useMockData";
 import { MockRequestLog } from "./MockRequestLog";
 import { MockRoutesSection } from "./MockRoutesSection";
 import { ProxyRecordingSection } from "./ProxyRecordingSection";
@@ -12,49 +13,19 @@ import { RouteModal } from "./RouteModal";
 import { WebhookSection } from "./WebhookSection";
 
 export function MockPanel() {
-  const { mockLogs, mockTotalLogs, mockStatus, set, addToast } = useStore();
+  const { set, addToast } = useStore();
   const mockRoutes = useMockRoutes();
   const [editingRoute, setEditingRoute] = useState<MockRoute | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [mockStatus, setMockStatus] = useState("");
 
-  const refresh = async () => {
-    try {
-      const data = await loadMockRoutes();
-      set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs });
-    } catch (e) {
-      addToast("error", String(e));
-    }
-  };
+  const { data: mockData, refetch } = useMockData();
+  const syncMutation = useSyncMockRoutes();
+  const clearLogsMutation = useClearMockLogs();
 
-  useEffect(() => {
-    const restore = async () => {
-      try {
-        const saved = await coreStore.getMeta<MockRoute[]>("mockRoutes");
-        if (saved?.length) {
-          await syncMockRoutes(saved);
-          set({ mockStatus: "Active" });
-        }
-        const data = await loadMockRoutes();
-        set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs });
-      } catch {
-        loadMockRoutes()
-          .then((data) => set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs }))
-          .catch(() => {});
-      }
-    };
-    restore();
-
-    pollingRef.current = setInterval(() => {
-      loadMockRoutes()
-        .then((data) => set({ mockLogs: data.logs, mockTotalLogs: data.totalLogs }))
-        .catch(() => {});
-    }, 3000);
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
+  const mockLogs = mockData?.logs ?? [];
+  const mockTotalLogs = mockData?.totalLogs ?? 0;
 
   const sync = async () => {
     const validation = validateMockRoutes(mockRoutes);
@@ -75,38 +46,37 @@ export function MockPanel() {
         `${firstWarning.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`,
       );
     }
-    try {
-      set({ mockStatus: "Syncing..." });
-      await syncMockRoutes(mockRoutes);
-      await coreStore.setMeta("mockRoutes", mockRoutes);
-      set({ mockStatus: "Active" });
-      addToast("success", "Routes synced");
-    } catch (e) {
-      set({ mockStatus: "Error" });
-      addToast("error", String(e));
-    }
+    setMockStatus("Syncing...");
+    syncMutation.mutate(mockRoutes, {
+      onSuccess: async () => {
+        await coreStore.setMeta("mockRoutes", mockRoutes);
+        setMockStatus("Active");
+        addToast("success", "Routes synced");
+      },
+      onError: (e) => {
+        setMockStatus("Error");
+        addToast("error", String(e));
+      },
+    });
   };
 
   const stop = async () => {
+    setMockStatus("Stopping...");
     try {
-      set({ mockStatus: "Stopping..." });
       await syncMockRoutes([]);
       await coreStore.setMeta("mockRoutes", []);
-      set({ mockStatus: "Inactive" });
+      setMockStatus("Inactive");
       addToast("success", "Mock server stopped");
     } catch (e) {
-      set({ mockStatus: "Error" });
+      setMockStatus("Error");
       addToast("error", String(e));
     }
   };
 
-  const clearLogs = async () => {
-    try {
-      await clearMockLogs();
-      set({ mockLogs: [], mockTotalLogs: 0 });
-    } catch (e) {
-      addToast("error", String(e));
-    }
+  const clearLogs = () => {
+    clearLogsMutation.mutate(undefined, {
+      onError: (e) => addToast("error", String(e)),
+    });
   };
 
   const persistRoutes = (routes: MockRoute[]) => {
@@ -158,7 +128,7 @@ export function MockPanel() {
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={refresh}
+            onClick={() => refetch()}
             className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
             title="Refresh"
             aria-label="Refresh"

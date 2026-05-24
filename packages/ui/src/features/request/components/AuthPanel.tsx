@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle2, ExternalLink, RefreshCw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 import { useStore } from "../../../store";
@@ -10,6 +11,42 @@ export function AuthPanel() {
   const { request, setRequest, addToast } = useStore();
   const auth = request.auth ?? { type: "none" };
   const [authorizing, setAuthorizing] = useState(false);
+  const [oauthState, setOauthState] = useState<string | null>(null);
+
+  const { data: oauthResult } = useQuery({
+    queryKey: ["oauth2Result", oauthState],
+    queryFn: () => oauth2AuthCodeResult(oauthState!),
+    enabled: !!oauthState,
+    refetchInterval: (query) => {
+      const status = (query.state.data as { status?: string } | undefined)?.status;
+      return !status || status === "pending" ? 1500 : false;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (!oauthResult || oauthResult.status === "pending") return;
+    setAuthorizing(false);
+    setOauthState(null);
+    if (oauthResult.status === "done" && oauthResult.accessToken) {
+      const expiresAt = oauthResult.expiresIn
+        ? Date.now() + oauthResult.expiresIn * 1000
+        : undefined;
+      setRequest({
+        auth: {
+          ...auth,
+          accessToken: oauthResult.accessToken,
+          refreshToken: oauthResult.refreshToken,
+          tokenExpiresAt: expiresAt,
+        },
+      });
+      addToast("success", "OAuth2 token obtained");
+    } else {
+      addToast("error", `OAuth2 failed: ${oauthResult.error ?? "unknown"}`);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [oauthResult]);
 
   return (
     <div className="p-3 flex flex-col gap-3">
@@ -247,49 +284,20 @@ export function AuthPanel() {
                           .replace(/\//g, "_")
                           .replace(/=/g, "");
                       }
-                      const { authUrl: url, state } = await oauth2AuthCodeStart(
-                        {
-                          authUrl: auth.authUrl,
-                          tokenUrl: auth.tokenUrl,
-                          clientId: auth.clientId,
-                          clientSecret: auth.clientSecret ?? "",
-                          scope: auth.scope ?? "",
-                          redirectUri,
-                          pkce: usePkce,
-                          codeChallenge,
-                          codeChallengeMethod: usePkce ? "S256" : "",
-                          codeVerifier,
-                        },
-                      );
+                      const { authUrl: url, state } = await oauth2AuthCodeStart({
+                        authUrl: auth.authUrl,
+                        tokenUrl: auth.tokenUrl,
+                        clientId: auth.clientId,
+                        clientSecret: auth.clientSecret ?? "",
+                        scope: auth.scope ?? "",
+                        redirectUri,
+                        pkce: usePkce,
+                        codeChallenge,
+                        codeChallengeMethod: usePkce ? "S256" : "",
+                        codeVerifier,
+                      });
                       window.open(url, "_blank");
-                      const poll = async () => {
-                        const result = await oauth2AuthCodeResult(state);
-                        if (result.status === "pending") {
-                          setTimeout(poll, 1500);
-                          return;
-                        }
-                        setAuthorizing(false);
-                        if (result.status === "done" && result.accessToken) {
-                          const expiresAt = result.expiresIn
-                            ? Date.now() + result.expiresIn * 1000
-                            : undefined;
-                          setRequest({
-                            auth: {
-                              ...auth,
-                              accessToken: result.accessToken,
-                              refreshToken: result.refreshToken,
-                              tokenExpiresAt: expiresAt,
-                            },
-                          });
-                          addToast("success", "OAuth2 token obtained");
-                        } else {
-                          addToast(
-                            "error",
-                            `OAuth2 failed: ${result.error ?? "unknown"}`,
-                          );
-                        }
-                      };
-                      setTimeout(poll, 1500);
+                      setOauthState(state);
                     } catch (e) {
                       setAuthorizing(false);
                       addToast("error", String(e));

@@ -9,8 +9,6 @@ export type ResponseSlice = Pick<
   | "responsePretty"
   | "responseSearch"
   | "codeTarget"
-  | "codeSnippet"
-  | "codeLoading"
   | "loading"
   | "loadController"
   | "retryAttempts"
@@ -31,8 +29,6 @@ export function createResponseSlice(_set: StoreSet): ResponseSlice {
     responsePretty: true,
     responseSearch: "",
     codeTarget: "curl",
-    codeSnippet: "",
-    codeLoading: false,
     loading: false,
     loadController: undefined,
     retryAttempts: undefined,

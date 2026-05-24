@@ -17,7 +17,6 @@ import type {
   GraphQLIntrospectionSchema,
   GraphQLRequestConfig,
   KeyValue,
-  MockLogEntry,
   RequestConfig,
   RequestDraft,
   SavedRequest,
@@ -44,6 +43,9 @@ export interface WsSession {
   label: string;
   latencyMs?: number;
   lastActivityAt?: number;
+  activeGqlSubscriptionId?: string;
+  websocketRequest: import("@invoke/core").WebSocketRequestConfig;
+  requestId?: string;
 }
 
 export interface Toast {
@@ -91,8 +93,6 @@ export interface AppState {
   responsePretty: boolean;
   responseSearch: string;
   codeTarget: CodeExportTarget;
-  codeSnippet: string;
-  codeLoading: boolean;
   loading: boolean;
   loadController: AbortController | undefined;
   retryAttempts: number | undefined;
@@ -104,6 +104,7 @@ export interface AppState {
   protocolDefaults: DefaultProtocolOptions;
   expandedFolderIds: string[];
   sidebarCollapsed: boolean;
+  sidebarSection: import("./navigation").SidebarSection | null;
   sidebarWidth: number;
   contextMenu: { open: boolean; x: number; y: number; target?: ContextTarget };
   environments: Environment[];
@@ -141,10 +142,6 @@ export interface AppState {
   diffLeftId: string;
   diffRightId: string;
   showDiffModal: boolean;
-  mockLogs: MockLogEntry[];
-  mockTotalLogs: number;
-  mockStatus: string;
-  proxyRecordsTick: number;
   variableEditor: {
     open: boolean;
     kind?: "collection" | "folder";
@@ -195,6 +192,7 @@ export interface AppState {
   setWsSession: (id: string, partial: Partial<Omit<WsSession, "id">>) => void;
   addWsSession: () => string;
   closeWsSession: (id: string) => void;
+  setActiveWsSession: (id: string) => void;
   addToast: (kind: Toast["kind"], message: string) => void;
   removeToast: (id: string) => void;
   toggleFolder: (id: string) => void;

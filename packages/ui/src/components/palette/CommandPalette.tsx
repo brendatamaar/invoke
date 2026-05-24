@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, ArrowRight } from "lucide-react";
 import MiniSearch from "minisearch";
-import { useNavigate } from "@tanstack/react-router";
 import { useStore } from "../../store";
 import { useCollections, useFlows, useHistory, useMockRoutes } from "../../hooks/useDb";
 import { MethodBadge } from "../shared/MethodBadge";
@@ -27,7 +26,6 @@ export function CommandPalette() {
   const flows = useFlows();
   const history = useHistory(50);
   const mockRoutes = useMockRoutes();
-  const navigate = useNavigate();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -102,7 +100,7 @@ export function CommandPalette() {
       title: f.name,
       subtitle: `${f.steps?.length ?? 0} steps`,
       keywords: `flow ${f.name}`,
-      run: () => { set({ sidebarCollapsed: false, flowDraft: f }); navigate({ to: "/flows" }); },
+      run: () => { set({ sidebarCollapsed: false, sidebarSection: "flows", flowDraft: f }); },
     })),
     // Collections
     ...collections.map((c) => ({
@@ -111,7 +109,7 @@ export function CommandPalette() {
       title: c.name,
       subtitle: "Collection",
       keywords: `collection ${c.name}`,
-      run: () => { set({ sidebarCollapsed: false }); navigate({ to: "/collections" }); },
+      run: () => { set({ sidebarCollapsed: false, sidebarSection: "collections" }); },
     })),
     // History entries (most recent 50 only)
     ...history.slice(0, 50).map((h) => {
@@ -135,7 +133,7 @@ export function CommandPalette() {
               >[0]["headers"]) ?? [],
             body: (req as { body?: string })?.body ?? "",
           });
-          set({ sidebarCollapsed: false }); navigate({ to: "/history" });
+          set({ sidebarCollapsed: false, sidebarSection: "history" });
         },
       };
     }),
@@ -147,7 +145,7 @@ export function CommandPalette() {
       subtitle: `Mock · ${m.status}`,
       keywords: `mock ${m.method} ${m.pathPattern}`,
       method: m.method,
-      run: () => { set({ sidebarCollapsed: false }); navigate({ to: "/mocks" }); },
+      run: () => { set({ sidebarCollapsed: false, sidebarSection: "mocks" }); },
     })),
     // New request commands
     {
@@ -204,7 +202,7 @@ export function CommandPalette() {
       title: "Go to Collections",
       subtitle: "Open Collections sidebar",
       keywords: "go navigate collections sidebar",
-      run: () => { set({ sidebarCollapsed: false }); navigate({ to: "/collections" }); },
+      run: () => { set({ sidebarCollapsed: false, sidebarSection: "collections" }); },
     },
     {
       id: "nav-history",
@@ -212,7 +210,7 @@ export function CommandPalette() {
       title: "Go to History",
       subtitle: "Open History sidebar",
       keywords: "go navigate history sidebar",
-      run: () => { set({ sidebarCollapsed: false }); navigate({ to: "/history" }); },
+      run: () => { set({ sidebarCollapsed: false, sidebarSection: "history" }); },
     },
     {
       id: "nav-environments",
@@ -220,7 +218,7 @@ export function CommandPalette() {
       title: "Go to Environments",
       subtitle: "Open Environments sidebar",
       keywords: "go navigate environments sidebar",
-      run: () => { set({ sidebarCollapsed: false }); navigate({ to: "/environments" }); },
+      run: () => { set({ sidebarCollapsed: false, sidebarSection: "environments" }); },
     },
     {
       id: "nav-flows",
@@ -228,7 +226,7 @@ export function CommandPalette() {
       title: "Go to Flows",
       subtitle: "Open Flows sidebar",
       keywords: "go navigate flows sidebar",
-      run: () => { set({ sidebarCollapsed: false }); navigate({ to: "/flows" }); },
+      run: () => { set({ sidebarCollapsed: false, sidebarSection: "flows" }); },
     },
     {
       id: "nav-mocks",
@@ -236,7 +234,7 @@ export function CommandPalette() {
       title: "Go to Mocks",
       subtitle: "Open Mock server sidebar",
       keywords: "go navigate mocks mock server sidebar",
-      run: () => { set({ sidebarCollapsed: false }); navigate({ to: "/mocks" }); },
+      run: () => { set({ sidebarCollapsed: false, sidebarSection: "mocks" }); },
     },
     // UI toggles
     {

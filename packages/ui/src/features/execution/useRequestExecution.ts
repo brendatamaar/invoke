@@ -1,4 +1,6 @@
 import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { PROXY_RECORDS_KEY } from "../proxy/useProxyRecords";
 import {
   extractVariables,
   graphQLToRequestConfig,
@@ -25,6 +27,7 @@ import { applyOAuth2Token } from "./oauth2";
 import { extractRequiredVarNames } from "../request/components/GraphQLPanels";
 
 export function useRequestExecution() {
+  const queryClient = useQueryClient();
   const request = useStore((state) => state.request);
   const graphqlRequest = useStore((state) => state.graphqlRequest);
   const graphqlFileUploads = useStore((state) => state.graphqlFileUploads);
@@ -296,7 +299,7 @@ export function useRequestExecution() {
         protocol,
       });
       const isProxyRequest = resolved.url.includes("/api/proxy/request");
-      set((state: { proxyRecordsTick: number }) => ({
+      set({
         response,
         assertionResults: results,
         sessionVariables: { ...sessionVariables, ...extracted },
@@ -305,8 +308,10 @@ export function useRequestExecution() {
         retryAttempts: rawResponse.retryAttempts,
         graphqlDeferredParts: parts,
         consoleLogs: { preRequest: preRequestLogs, preRequestError, preRequestRan: true, postResponse: postResponseLogs, postResponseError, postResponseRan: true },
-        ...(isProxyRequest && { proxyRecordsTick: state.proxyRecordsTick + 1 }),
-      }));
+      });
+      if (isProxyRequest) {
+        queryClient.invalidateQueries({ queryKey: PROXY_RECORDS_KEY });
+      }
     } catch (e) {
       if ((e as Error).name !== "AbortError") addToast("error", String(e));
       set({ loading: false, loadController: undefined });

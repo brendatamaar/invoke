@@ -1,3 +1,5 @@
+import { emptyWebSocketRequest } from "@invoke/core";
+import type { WebSocketRequestConfig } from "@invoke/core";
 import type { AppState, WsSession } from "../../types";
 
 export type ProtocolSlice = Pick<
@@ -26,13 +28,19 @@ export type ProtocolSlice = Pick<
   | "grpcDeadlineEnd"
 >;
 
-export function makeWsSession(label: string): WsSession {
+export function makeWsSession(
+  label: string,
+  websocketRequest?: WebSocketRequestConfig,
+  requestId?: string,
+): WsSession {
   return {
     id: crypto.randomUUID(),
     connectionId: "",
     state: "disconnected",
     log: [],
     label,
+    websocketRequest: websocketRequest ?? emptyWebSocketRequest(),
+    requestId,
   };
 }
 

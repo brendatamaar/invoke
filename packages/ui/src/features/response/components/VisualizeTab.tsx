@@ -28,9 +28,8 @@ export function VisualizeTab() {
   }
 
   if (isHtml || isSvg) {
-    const blob = new Blob([response.body], {
-      type: ct.split(";")[0] || "text/html",
-    });
+    const blobType = isSvg ? "image/svg+xml" : ct.split(";")[0] || "text/html";
+    const blob = new Blob([response.body], { type: blobType });
     const url = URL.createObjectURL(blob);
     return (
       <iframe

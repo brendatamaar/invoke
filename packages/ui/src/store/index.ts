@@ -66,29 +66,35 @@ export const useStore = create<AppState>((set, get) => ({
   addWsSession: () => {
     const s = get();
     const usedNumbers = new Set(
-      s.wsSessions.map((sess) => parseInt(sess.label.match(/^Session (\d+)$/)?.[1] ?? "0"))
+      s.wsSessions.map((sess) =>
+        parseInt(sess.label.match(/^Session (\d+)$/)?.[1] ?? "0"),
+      ),
     );
     let n = 1;
     while (usedNumbers.has(n)) n++;
-    const newSession = makeWsSession(`Session ${n}`);
-    set((prev) => ({
-      wsSessions: [...prev.wsSessions, newSession],
-      activeWsSessionId: newSession.id,
-    }));
+    const newSession = makeWsSession(`Session ${n}`, s.websocketRequest);
+    set({ wsSessions: [...s.wsSessions, newSession], activeWsSessionId: newSession.id });
     return newSession.id;
   },
 
   closeWsSession: (id) =>
     set((s) => {
       const remaining = s.wsSessions.filter((sess) => sess.id !== id);
-      const nextSession =
-        remaining.length > 0
-          ? remaining[remaining.length - 1]
-          : makeWsSession("Session 1");
-      return {
-        wsSessions: remaining.length > 0 ? remaining : [nextSession],
-        activeWsSessionId:
-          s.activeWsSessionId === id ? nextSession.id : s.activeWsSessionId,
-      };
+      if (remaining.length === 0) {
+        const newSession = makeWsSession("Session 1", s.websocketRequest);
+        return { wsSessions: [newSession], activeWsSessionId: newSession.id };
+      }
+      const newActive =
+        s.activeWsSessionId === id
+          ? remaining[remaining.length - 1].id
+          : s.activeWsSessionId;
+      return { wsSessions: remaining, activeWsSessionId: newActive };
+    }),
+
+  setActiveWsSession: (id) =>
+    set((s) => {
+      const sess = s.wsSessions.find((ss) => ss.id === id);
+      if (!sess) return {};
+      return { activeWsSessionId: id, websocketRequest: sess.websocketRequest };
     }),
 }));

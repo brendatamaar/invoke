@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useMemo } from "react";
 import { Select } from "../../../components/shared/Select";
 import {
   Activity,
@@ -28,12 +28,12 @@ import {
 } from "../../websocket/api";
 import {
   grpcExecute,
-  grpcReflect,
   grpcServerStream,
   grpcStreamClose,
   grpcStreamEvents,
   grpcStreamOpen,
 } from "../../grpc/api";
+import { useGrpcReflect } from "../../grpc/useGrpcReflect";
 
 function grpcResponseToExecuteResponse(res: GrpcExecuteResponse) {
   return {
@@ -68,15 +68,19 @@ export function WebSocketBar() {
     setWebsocketRequest,
     wsSessions,
     activeWsSessionId,
+    request,
     environments,
     activeEnvironmentId,
     sessionVariables,
     setWsSession,
+    set,
     addToast,
   } = useStore();
 
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+
+  const findWsSession = (sessionId: string) =>
+    useStore.getState().wsSessions.find((s) => s.id === sessionId);
 
   // Per-session EventSources and AbortControllers stored in refs (not serialisable to store)
   const eventSourcesRef = useRef(new Map<string, EventSource>());
@@ -97,9 +101,8 @@ export function WebSocketBar() {
           body: string;
           createdAt: number;
         };
-        const { websocketRequest: wsReq, wsSessions } = useStore.getState();
-        const currentLog =
-          wsSessions.find((s) => s.id === sessionId)?.log ?? [];
+        const { websocketRequest: wsReq } = useStore.getState();
+        const currentLog = findWsSession(sessionId)?.log ?? [];
         const isInbound = msg.direction !== "out";
 
         // graphql-transport-ws: auto-reply to ping frames
@@ -107,9 +110,7 @@ export function WebSocketBar() {
           try {
             const frame = JSON.parse(msg.body) as { type?: string };
             if (frame.type === "ping") {
-              const connId = useStore
-                .getState()
-                .wsSessions.find((s) => s.id === sessionId)?.connectionId;
+              const connId = findWsSession(sessionId)?.connectionId;
               if (connId)
                 webSocketSend(connId, JSON.stringify({ type: "pong" })).catch(
                   () => {},
@@ -165,12 +166,11 @@ export function WebSocketBar() {
       } catch {
         /* ignore */
       }
-      const prev = useStore
-        .getState()
-        .wsSessions.find((s) => s.id === sessionId);
+      const prev = findWsSession(sessionId);
       setWsSession(sessionId, {
         state: "disconnected",
         connectionId: "",
+        activeGqlSubscriptionId: undefined,
         log: [
           ...(prev?.log ?? []),
           {
@@ -221,9 +221,7 @@ export function WebSocketBar() {
           connectionId,
           JSON.stringify({ type: "connection_init" }),
         ).catch(() => {});
-        const logNow =
-          useStore.getState().wsSessions.find((s) => s.id === sessionId)?.log ??
-          [];
+        const logNow = findWsSession(sessionId)?.log ?? [];
         setWsSession(sessionId, {
           log: [
             ...logNow,
@@ -264,14 +262,22 @@ export function WebSocketBar() {
   const disconnect = async (sessionId: string) => {
     eventSourcesRef.current.get(sessionId)?.close();
     eventSourcesRef.current.delete(sessionId);
-    const sess = useStore.getState().wsSessions.find((s) => s.id === sessionId);
-    if (sess?.connectionId)
+    const sess = findWsSession(sessionId);
+    if (sess?.connectionId) {
+      const { websocketRequest: wsReq } = useStore.getState();
+      if (wsReq.preset === "graphql-transport-ws" && sess.activeGqlSubscriptionId) {
+        await webSocketSend(
+          sess.connectionId,
+          JSON.stringify({ type: "complete", id: sess.activeGqlSubscriptionId }),
+        ).catch(() => {});
+      }
       await webSocketClose(sess.connectionId).catch(() => {});
-    setWsSession(sessionId, { state: "disconnected", connectionId: "" });
+    }
+    setWsSession(sessionId, { state: "disconnected", connectionId: "", activeGqlSubscriptionId: undefined });
   };
 
   const sendPing = useCallback(async (sessionId: string) => {
-    const sess = useStore.getState().wsSessions.find((s) => s.id === sessionId);
+    const sess = findWsSession(sessionId);
     if (!sess?.connectionId) return;
     pingTimestampRef.current.set(sessionId, Date.now());
     const body = JSON.stringify({ type: "__invoke_ping", ts: Date.now() });
@@ -287,12 +293,10 @@ export function WebSocketBar() {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       e.preventDefault();
+      const state = useStore.getState();
       const sess =
-        useStore
-          .getState()
-          .wsSessions.find(
-            (s) => s.id === useStore.getState().activeWsSessionId,
-          ) ?? useStore.getState().wsSessions[0];
+        state.wsSessions.find((s) => s.id === state.activeWsSessionId) ??
+        state.wsSessions[0];
       if (!sess) return;
       if (sess.state === "disconnected") connect(sess.id);
       else if (sess.state === "connected") disconnect(sess.id);
@@ -384,41 +388,6 @@ export function WebSocketBar() {
   );
 }
 
-const REFLECT_CACHE_PREFIX = "grpc_reflect_cache:";
-const REFLECT_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min
-
-interface ReflectCache {
-  methods: import("@invoke/core").GrpcMethodInfo[];
-  cachedAt: number;
-}
-
-function saveReflectCache(
-  address: string,
-  methods: import("@invoke/core").GrpcMethodInfo[],
-) {
-  try {
-    localStorage.setItem(
-      REFLECT_CACHE_PREFIX + address,
-      JSON.stringify({ methods, cachedAt: Date.now() }),
-    );
-  } catch {
-    /* quota exceeded — ignore */
-  }
-}
-
-function loadReflectCache(
-  address: string,
-): import("@invoke/core").GrpcMethodInfo[] | null {
-  try {
-    const raw = localStorage.getItem(REFLECT_CACHE_PREFIX + address);
-    if (!raw) return null;
-    const cache = JSON.parse(raw) as ReflectCache;
-    if (Date.now() - cache.cachedAt > REFLECT_CACHE_TTL_MS) return null;
-    return cache.methods;
-  } catch {
-    return null;
-  }
-}
 
 export function GRPCBar() {
   const {
@@ -452,38 +421,21 @@ export function GRPCBar() {
     grpcRequest.tls &&
     /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(grpcRequest.address ?? "");
 
-  const reflect = async (forceRefresh = false) => {
-    const { request: resolved } = resolveGrpcRequest(
-      grpcRequest,
-      activeEnv,
-      sessionVariables,
-    );
+  const resolvedForReflect = useMemo(() => {
+    if (!grpcRequest.address) return null;
+    const { request } = resolveGrpcRequest(grpcRequest, activeEnv, sessionVariables);
+    return request;
+  }, [grpcRequest, activeEnv, sessionVariables]);
 
-    if (!forceRefresh && !resolved.protosetBase64) {
-      const cached = loadReflectCache(resolved.address);
-      if (cached) {
-        set({
-          grpcMethods: cached,
-          grpcStatus: `${cached.length} methods (cached)`,
-        });
-        return;
-      }
-    }
+  const { refetch: reflectRefetch } = useGrpcReflect(
+    resolvedForReflect,
+    grpcRequest.address ?? "",
+  );
 
-    set({ grpcStatus: "Reflecting..." });
-    try {
-      const { methods, error } = await grpcReflect(resolved);
-      if (error) throw new Error(error);
-      if (!resolved.protosetBase64) saveReflectCache(resolved.address, methods);
-      set({
-        grpcMethods: methods,
-        grpcStatus: `${methods.length} methods found`,
-      });
-    } catch (e) {
-      set({ grpcStatus: "Error" });
-      addToast("error", String(e));
-    }
-  };
+  const reflect = useCallback(async () => {
+    const result = await reflectRefetch();
+    if (result.error) addToast("error", String(result.error));
+  }, [reflectRefetch, addToast]);
 
   const healthCheck = async () => {
     const { request: resolved } = resolveGrpcRequest(
@@ -816,7 +768,7 @@ export function GRPCBar() {
         if (!grpcStreaming && !grpcExecuteController && !grpcStreamId) execute();
       } else if (e.key === "r") {
         e.preventDefault();
-        reflect(false);
+        reflect();
       } else if (e.key === "l") {
         e.preventDefault();
         set({
@@ -855,7 +807,7 @@ export function GRPCBar() {
           TLS
         </label>
         <button
-          onClick={() => reflect(false)}
+          onClick={() => reflect()}
           className="btn text-xs gap-1"
           title="Reflect (Ctrl+R)"
         >

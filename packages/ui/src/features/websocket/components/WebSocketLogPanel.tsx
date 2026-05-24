@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../../../store";
 import { Select } from "../../../components/shared/Select";
+import { WsLogDiffModal } from "./WsLogDiffModal";
 
 type WsDirection = "sent" | "received" | "system";
 type DirectionFilter = "all" | WsDirection;
@@ -33,8 +34,7 @@ function byteSize(str: string): number {
 export function WebSocketLogPanel() {
   const { wsSessions, activeWsSessionId, setWsSession } = useStore();
 
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
 
   const [search, setSearch] = useState("");
   const [dirFilter, setDirFilter] = useState<DirectionFilter>("all");
@@ -177,6 +177,14 @@ export function WebSocketLogPanel() {
               }`}
             >
               <div className="flex items-start gap-2 p-1.5">
+                <input
+                  type="checkbox"
+                  checked={diffSelected.includes(entry.id)}
+                  onChange={() => toggleDiffSelect(entry.id)}
+                  title="Select for diff"
+                  className="mt-0.5 shrink-0 accent-[var(--accent)] cursor-pointer"
+                  style={{ width: 11, height: 11 }}
+                />
                 <button
                   onClick={() => toggleExpanded(entry.id)}
                   className="mt-0.5 shrink-0 text-[var(--text-3)] hover:text-[var(--text-1)]"
@@ -253,17 +261,6 @@ export function WebSocketLogPanel() {
                   >
                     <Copy size={9} /> copy
                   </button>
-                  <button
-                    onClick={() => toggleDiffSelect(entry.id)}
-                    className={`flex items-center gap-0.5 transition-colors ${
-                      diffSelected.includes(entry.id)
-                        ? "text-[var(--accent)]"
-                        : "hover:text-[var(--text-1)]"
-                    }`}
-                  >
-                    <ArrowLeftRight size={9} />
-                    {diffSelected.includes(entry.id) ? "deselect" : "diff"}
-                  </button>
                 </div>
               )}
             </div>
@@ -289,8 +286,8 @@ export function WebSocketLogPanel() {
           />
           <span className="text-2xs text-[var(--text-2)] flex-1">
             {diffSelected.length === 1
-              ? "Select one more frame to diff"
-              : "2 frames selected"}
+              ? "Select one more log to diff"
+              : "2 logs selected"}
           </span>
           {diffSelected.length === 2 && (
             <button
@@ -312,58 +309,17 @@ export function WebSocketLogPanel() {
         </div>
       )}
 
-      {/* Inline diff panel */}
-      {showDiff &&
-        diffSelected.length === 2 &&
-        (() => {
-          const allLog = activeSession?.log ?? [];
-          const left = allLog.find((e) => e.id === diffSelected[0]);
-          const right = allLog.find((e) => e.id === diffSelected[1]);
-          const leftBody = left
-            ? (tryPrettyJson(left.body) ?? left.body)
-            : "";
-          const rightBody = right
-            ? (tryPrettyJson(right.body) ?? right.body)
-            : "";
-          return (
-            <div
-              className="border-t border-[var(--border)] shrink-0 flex flex-col"
-              style={{ maxHeight: "45%" }}
-            >
-              <div className="flex items-center justify-between px-3 py-1 bg-[var(--surface-2)] border-b border-[var(--border)] shrink-0">
-                <span className="text-2xs font-medium text-[var(--text-2)]">
-                  Frame diff
-                </span>
-                <button
-                  onClick={() => setShowDiff(false)}
-                  className="text-[var(--text-3)] hover:text-[var(--text-1)]"
-                >
-                  <X size={11} />
-                </button>
-              </div>
-              <div className="flex overflow-hidden flex-1 min-h-0">
-                <div className="flex-1 overflow-auto p-2 border-r border-[var(--border)]">
-                  <div className="text-[10px] text-[var(--text-3)] mb-1">
-                    Frame A · {left?.direction} ·{" "}
-                    {new Date(left?.createdAt ?? 0).toLocaleTimeString()}
-                  </div>
-                  <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all">
-                    {leftBody}
-                  </pre>
-                </div>
-                <div className="flex-1 overflow-auto p-2">
-                  <div className="text-[10px] text-[var(--text-3)] mb-1">
-                    Frame B · {right?.direction} ·{" "}
-                    {new Date(right?.createdAt ?? 0).toLocaleTimeString()}
-                  </div>
-                  <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all">
-                    {rightBody}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+      {/* Diff modal */}
+      {showDiff && diffSelected.length === 2 && (() => {
+        const allLog = activeSession?.log ?? [];
+        return (
+          <WsLogDiffModal
+            left={allLog.find((e) => e.id === diffSelected[0])}
+            right={allLog.find((e) => e.id === diffSelected[1])}
+            onClose={() => setShowDiff(false)}
+          />
+        );
+      })()}
     </div>
   );
 }

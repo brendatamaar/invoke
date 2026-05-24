@@ -136,6 +136,34 @@ export function toRequestConfig(
 export function graphQLToRequestConfig(
   request: GraphQLRequestConfig,
 ): RequestConfig {
+  const useGet = request.httpMethod === "GET";
+  const contentType = request.contentType ?? "application/json";
+
+  if (useGet) {
+    const parsedVars = parseGraphQLVariables(request.variables);
+    const params: { key: string; value: string; enabled: true }[] = [
+      { key: "query", value: request.query ?? "", enabled: true },
+    ];
+    if (parsedVars && Object.keys(parsedVars).length > 0)
+      params.push({ key: "variables", value: JSON.stringify(parsedVars), enabled: true });
+    if (request.operationName?.trim())
+      params.push({ key: "operationName", value: request.operationName.trim(), enabled: true });
+
+    return toRequestConfig({
+      ...emptyRequest(),
+      method: "GET",
+      url: request.url,
+      params,
+      headers: [...(request.headers ?? [])],
+      bodyMode: "none",
+      body: "",
+      auth: request.auth,
+      timeoutMs: request.timeoutMs,
+      options: request.options,
+      scripts: request.scripts,
+    });
+  }
+
   const headers = [...(request.headers ?? [])];
   if (
     !headers.some(
@@ -143,11 +171,7 @@ export function graphQLToRequestConfig(
         header.enabled !== false && header.key.toLowerCase() === "content-type",
     )
   ) {
-    headers.push({
-      key: "Content-Type",
-      value: "application/json",
-      enabled: true,
-    });
+    headers.push({ key: "Content-Type", value: contentType, enabled: true });
   }
 
   return toRequestConfig({

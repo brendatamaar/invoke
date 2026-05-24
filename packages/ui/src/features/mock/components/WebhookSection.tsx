@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Settings, X, RefreshCw } from "lucide-react";
 import { Select } from "../../../components/shared/Select";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
@@ -10,11 +10,10 @@ import type {
   WebhookValidationConfig,
 } from "../../../types";
 import {
-  clearWebhookLogs,
   deleteWebhookEndpoint,
-  loadWebhookLogs,
   setWebhookConfig,
 } from "../../webhook/api";
+import { useClearWebhookLogs, useWebhookLogs } from "../../webhook/useWebhookLogs";
 import { formatTime } from "./mockRouteUtils";
 
 const DEFAULT_VALIDATION: WebhookValidationConfig = { type: "none" };
@@ -269,9 +268,13 @@ function WebhookModal({
   const [label, setLabel] = useState(endpoint.label);
   const [validation, setValidation] = useState<WebhookValidationConfig>(endpoint.validation);
   const [saving, setSaving] = useState(false);
-  const [loadingLogs, setLoadingLogs] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [entries, setEntries] = useState<WebhookEntry[]>([]);
+
+  const { data: entries = [], isFetching: loadingLogs, refetch: refetchLogs } = useWebhookLogs(
+    endpoint.id,
+    tab === "history",
+  );
+  const clearLogsMutation = useClearWebhookLogs(endpoint.id);
 
   const serverBase = `${window.location.protocol}//${window.location.hostname}:4000`;
   const url = `${serverBase}/webhook/${endpoint.id}`;
@@ -295,29 +298,11 @@ function WebhookModal({
     }
   };
 
-  const fetchLogs = useCallback(async () => {
-    setLoadingLogs(true);
-    try {
-      const data = await loadWebhookLogs(endpoint.id);
-      setEntries(data);
-    } catch (_e) { /* ignore */ } finally {
-      setLoadingLogs(false);
-    }
-  }, [endpoint.id]);
-
-  const clearLogs = async () => {
-    try {
-      await clearWebhookLogs(endpoint.id);
-      setEntries([]);
-    } catch (e) {
-      addToast("error", String(e));
-    }
+  const clearLogs = () => {
+    clearLogsMutation.mutate(undefined, {
+      onError: (e) => addToast("error", String(e)),
+    });
   };
-
-  useEffect(() => {
-    if (tab !== "history") return;
-    fetchLogs();
-  }, [tab, fetchLogs]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -457,7 +442,7 @@ function WebhookModal({
               entries={entries}
               hasValidation={validation.type !== "none"}
               onClear={clearLogs}
-              onRefresh={fetchLogs}
+              onRefresh={() => refetchLogs()}
               loadingLogs={loadingLogs}
             />
           )}

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { WsSavedMessage } from "@invoke/core";
 import { useStore } from "../../../store";
-import { webSocketSend } from "../api";
+import { webSocketClose, webSocketSend } from "../api";
 import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 
@@ -200,6 +200,14 @@ function SensitiveKeyValueEditor({
   );
 }
 
+function normalizeJsonBody(body: string): string {
+  try {
+    return JSON.stringify(JSON.parse(body));
+  } catch {
+    return body;
+  }
+}
+
 function resolveDynamicVars(text: string): string {
   return text
     .replace(/\{\{\$timestamp\}\}/g, String(Date.now()))
@@ -218,14 +226,14 @@ export function WebSocketClient() {
     setWsSession,
     addWsSession,
     closeWsSession,
+    setActiveWsSession,
     set,
     addToast,
     websocketRequest,
     setWebsocketRequest,
   } = useStore();
 
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
 
   const [showTemplates, setShowTemplates] = useState(false);
   const [innerTab, setInnerTab] = useState<InnerTab>("messages");
@@ -243,8 +251,9 @@ export function WebSocketClient() {
   const [message, setMessage] = useState("");
   const [binaryMode, setBinaryMode] = useState(false);
   const subIdRef = useRef(0);
-  const [gqlSubscribed, setGqlSubscribed] = useState(false);
-  const [currentSubId, setCurrentSubId] = useState("sub_1");
+
+  const gqlSubscribed = !!activeSession?.activeGqlSubscriptionId;
+  const currentSubId = activeSession?.activeGqlSubscriptionId ?? "";
 
   const websocketState = activeSession?.state ?? "disconnected";
   const auth = websocketRequest.auth ?? { type: "none" };
@@ -265,7 +274,7 @@ export function WebSocketClient() {
             id: crypto.randomUUID(),
             direction: "sent" as const,
             type: binaryMode ? "binary" : "text",
-            body,
+            body: binaryMode ? body : normalizeJsonBody(body),
             createdAt: Date.now(),
           },
         ],
@@ -279,7 +288,6 @@ export function WebSocketClient() {
   const sendGqlSubscribe = async () => {
     const connectionId = activeSession?.connectionId ?? "";
     const id = `sub_${++subIdRef.current}`;
-    setCurrentSubId(id);
     let vars: unknown = {};
     try {
       vars = JSON.parse(websocketRequest.presetVariables ?? "{}");
@@ -291,7 +299,7 @@ export function WebSocketClient() {
       id,
       payload: { query: websocketRequest.presetQuery ?? "", variables: vars },
     });
-    setGqlSubscribed(true);
+    setWsSession(activeSession.id, { activeGqlSubscriptionId: id });
     try {
       await webSocketSend(connectionId, frame);
       setWsSession(activeSession.id, {
@@ -307,7 +315,7 @@ export function WebSocketClient() {
         ],
       });
     } catch (e) {
-      setGqlSubscribed(false);
+      setWsSession(activeSession.id, { activeGqlSubscriptionId: undefined });
       addToast("error", String(e));
     }
   };
@@ -315,7 +323,7 @@ export function WebSocketClient() {
   const sendGqlUnsubscribe = async () => {
     const connectionId = activeSession?.connectionId ?? "";
     const frame = JSON.stringify({ type: "complete", id: currentSubId });
-    setGqlSubscribed(false);
+    setWsSession(activeSession.id, { activeGqlSubscriptionId: undefined });
     try {
       await webSocketSend(connectionId, frame);
       setWsSession(activeSession.id, {
@@ -331,7 +339,7 @@ export function WebSocketClient() {
         ],
       });
     } catch (e) {
-      setGqlSubscribed(true);
+      setWsSession(activeSession.id, { activeGqlSubscriptionId: currentSubId });
       addToast("error", String(e));
     }
   };
@@ -417,7 +425,7 @@ export function WebSocketClient() {
         {wsSessions.map((sess) => (
           <div
             key={sess.id}
-            onClick={() => set({ activeWsSessionId: sess.id })}
+            onClick={() => setActiveWsSession(sess.id)}
             className={`flex items-center gap-1 px-2 py-1 rounded-t text-2xs cursor-pointer select-none whitespace-nowrap ${
               sess.id === activeWsSessionId
                 ? "bg-[var(--surface-2)] text-[var(--text-1)] border border-b-0 border-[var(--border)]"
@@ -438,6 +446,7 @@ export function WebSocketClient() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (sess.connectionId) webSocketClose(sess.connectionId).catch(() => {});
                   closeWsSession(sess.id);
                 }}
                 className="ml-0.5 opacity-50 hover:opacity-100 rounded"
@@ -542,7 +551,7 @@ export function WebSocketClient() {
                       binaryMode ? "Base64-encoded bytes…" : "Message…"
                     }
                     disabled={websocketState !== "connected"}
-                    rows={3}
+                    rows={6}
                     className="input text-xs font-mono flex-1 resize-none py-1.5"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {

@@ -6,7 +6,7 @@ import { WebSocketClient } from "../../websocket/components/WebSocketClient";
 import { GRPCClient } from "../../grpc/components/GRPCClient";
 import { BodyPanel } from "./BodyPanel";
 import { AuthPanel } from "./AuthPanel";
-import { GraphQLQueryPanel } from "./GraphQLPanels";
+import { GraphQLQueryPanel, GraphQLOptionsPanel } from "./GraphQLPanels";
 import { GRPCBar, WebSocketBar } from "./ProtocolBars";
 import { GraphQLVariablesPanel, ScriptsPanel } from "./ScriptPanels";
 import { AssertionsPanel, ExtractPanel } from "./RulePanels";
@@ -90,6 +90,7 @@ const GQL_TABS: { id: RequestTab; label: string }[] = [
   { id: "headers", label: "Headers" },
   { id: "auth", label: "Auth" },
   { id: "assertions", label: "Assertions" },
+  { id: "graphqlOptions", label: "Options" },
 ];
 
 const SECTION_HEADER =
@@ -269,6 +270,7 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
           {requestTab === "body" && <BodyPanel />}
           {requestTab === "graphql" && <GraphQLQueryPanel />}
           {requestTab === "graphqlVariables" && <GraphQLVariablesPanel />}
+          {requestTab === "graphqlOptions" && <GraphQLOptionsPanel />}
           {requestTab === "scripts" && <ScriptsPanel />}
           {requestTab === "assertions" && <AssertionsPanel />}
           {requestTab === "extract" && <ExtractPanel />}
