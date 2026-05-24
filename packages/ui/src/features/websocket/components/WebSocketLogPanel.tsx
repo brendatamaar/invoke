@@ -13,7 +13,6 @@ import {
   X,
 } from "lucide-react";
 import { useStore } from "../../../store";
-import { wsRequestKey } from "../../../store/slices/protocolSlice";
 import { Select } from "../../../components/shared/Select";
 
 type WsDirection = "sent" | "received" | "system";
@@ -32,14 +31,9 @@ function byteSize(str: string): number {
 }
 
 export function WebSocketLogPanel() {
-  const { wsSessionsByRequestId, activeWsSessionIdByRequestId, request, setWsSession } = useStore();
+  const { wsSessions, activeWsSessionId, setWsSession } = useStore();
 
-  const wsKey = wsRequestKey(request.id);
-  const wsSessions = wsSessionsByRequestId[wsKey] ?? [];
-  const activeWsSessionId = activeWsSessionIdByRequestId[wsKey] ?? wsSessions[0]?.id ?? "";
-
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
 
   const [search, setSearch] = useState("");
   const [dirFilter, setDirFilter] = useState<DirectionFilter>("all");

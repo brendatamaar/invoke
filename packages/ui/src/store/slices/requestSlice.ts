@@ -50,9 +50,17 @@ export function createRequestSlice(
       })),
 
     setWebsocketRequest: (partial) =>
-      set((state) => ({
-        websocketRequest: { ...state.websocketRequest, ...partial },
-      })),
+      set((state) => {
+        const newWsReq = { ...state.websocketRequest, ...partial };
+        return {
+          websocketRequest: newWsReq,
+          wsSessions: state.wsSessions.map((sess) =>
+            sess.id === state.activeWsSessionId
+              ? { ...sess, websocketRequest: newWsReq }
+              : sess,
+          ),
+        };
+      }),
 
     setGrpcRequest: (partial) =>
       set((state) => ({ grpcRequest: { ...state.grpcRequest, ...partial } })),

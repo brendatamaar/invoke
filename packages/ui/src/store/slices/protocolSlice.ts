@@ -1,9 +1,6 @@
+import { emptyWebSocketRequest } from "@invoke/core";
+import type { WebSocketRequestConfig } from "@invoke/core";
 import type { AppState, WsSession } from "../../types";
-
-export const WS_NEW_KEY = "__new__";
-export function wsRequestKey(id?: string): string {
-  return id ?? WS_NEW_KEY;
-}
 
 export type ProtocolSlice = Pick<
   AppState,
@@ -14,8 +11,8 @@ export type ProtocolSlice = Pick<
   | "graphqlSchemaEndpoint"
   | "graphqlSchemaLastFetched"
   | "expandedGraphQLTypeNames"
-  | "wsSessionsByRequestId"
-  | "activeWsSessionIdByRequestId"
+  | "wsSessions"
+  | "activeWsSessionId"
   | "grpcMethods"
   | "grpcStatus"
   | "grpcStreaming"
@@ -31,13 +28,19 @@ export type ProtocolSlice = Pick<
   | "grpcDeadlineEnd"
 >;
 
-export function makeWsSession(label: string): WsSession {
+export function makeWsSession(
+  label: string,
+  websocketRequest?: WebSocketRequestConfig,
+  requestId?: string,
+): WsSession {
   return {
     id: crypto.randomUUID(),
     connectionId: "",
     state: "disconnected",
     log: [],
     label,
+    websocketRequest: websocketRequest ?? emptyWebSocketRequest(),
+    requestId,
   };
 }
 
@@ -51,8 +54,8 @@ export function createProtocolSlice(): ProtocolSlice {
     graphqlSchemaEndpoint: "",
     graphqlSchemaLastFetched: 0,
     expandedGraphQLTypeNames: [],
-    wsSessionsByRequestId: { [WS_NEW_KEY]: [initial] },
-    activeWsSessionIdByRequestId: { [WS_NEW_KEY]: initial.id },
+    wsSessions: [initial],
+    activeWsSessionId: initial.id,
     grpcMethods: [],
     grpcStatus: "",
     grpcStreaming: false,

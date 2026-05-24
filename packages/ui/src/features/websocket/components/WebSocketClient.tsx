@@ -13,8 +13,7 @@ import {
 } from "lucide-react";
 import type { WsSavedMessage } from "@invoke/core";
 import { useStore } from "../../../store";
-import { wsRequestKey } from "../../../store/slices/protocolSlice";
-import { webSocketSend } from "../api";
+import { webSocketClose, webSocketSend } from "../api";
 import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
 
@@ -222,24 +221,19 @@ function resolveDynamicVars(text: string): string {
 
 export function WebSocketClient() {
   const {
-    wsSessionsByRequestId,
-    activeWsSessionIdByRequestId,
-    request,
+    wsSessions,
+    activeWsSessionId,
     setWsSession,
     addWsSession,
     closeWsSession,
+    setActiveWsSession,
     set,
     addToast,
     websocketRequest,
     setWebsocketRequest,
   } = useStore();
 
-  const wsKey = wsRequestKey(request.id);
-  const wsSessions = wsSessionsByRequestId[wsKey] ?? [];
-  const activeWsSessionId = activeWsSessionIdByRequestId[wsKey] ?? wsSessions[0]?.id ?? "";
-
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
 
   const [showTemplates, setShowTemplates] = useState(false);
   const [innerTab, setInnerTab] = useState<InnerTab>("messages");
@@ -431,7 +425,7 @@ export function WebSocketClient() {
         {wsSessions.map((sess) => (
           <div
             key={sess.id}
-            onClick={() => set((s) => ({ activeWsSessionIdByRequestId: { ...s.activeWsSessionIdByRequestId, [wsKey]: sess.id } }))}
+            onClick={() => setActiveWsSession(sess.id)}
             className={`flex items-center gap-1 px-2 py-1 rounded-t text-2xs cursor-pointer select-none whitespace-nowrap ${
               sess.id === activeWsSessionId
                 ? "bg-[var(--surface-2)] text-[var(--text-1)] border border-b-0 border-[var(--border)]"
@@ -452,6 +446,7 @@ export function WebSocketClient() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (sess.connectionId) webSocketClose(sess.connectionId).catch(() => {});
                   closeWsSession(sess.id);
                 }}
                 className="ml-0.5 opacity-50 hover:opacity-100 rounded"

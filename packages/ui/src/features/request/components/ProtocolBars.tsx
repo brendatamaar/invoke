@@ -21,7 +21,6 @@ import {
 } from "@invoke/core";
 import type { GrpcExecuteResponse, WsPreset } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
-import { WS_NEW_KEY, wsRequestKey } from "../../../store/slices/protocolSlice";
 import {
   webSocketClose,
   webSocketConnect,
@@ -67,8 +66,8 @@ export function WebSocketBar() {
   const {
     websocketRequest,
     setWebsocketRequest,
-    wsSessionsByRequestId,
-    activeWsSessionIdByRequestId,
+    wsSessions,
+    activeWsSessionId,
     request,
     environments,
     activeEnvironmentId,
@@ -78,15 +77,10 @@ export function WebSocketBar() {
     addToast,
   } = useStore();
 
-  const wsKey = wsRequestKey(request.id);
-  const wsSessions = wsSessionsByRequestId[wsKey] ?? [];
-  const activeWsSessionId = activeWsSessionIdByRequestId[wsKey] ?? wsSessions[0]?.id ?? "";
-
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
 
   const findWsSession = (sessionId: string) =>
-    Object.values(useStore.getState().wsSessionsByRequestId).flat().find((s) => s.id === sessionId);
+    useStore.getState().wsSessions.find((s) => s.id === sessionId);
 
   // Per-session EventSources and AbortControllers stored in refs (not serialisable to store)
   const eventSourcesRef = useRef(new Map<string, EventSource>());
@@ -300,10 +294,9 @@ export function WebSocketBar() {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       e.preventDefault();
       const state = useStore.getState();
-      const key = wsRequestKey(state.request.id);
-      const sessions = state.wsSessionsByRequestId[key] ?? [];
-      const activeId = state.activeWsSessionIdByRequestId[key];
-      const sess = sessions.find((s) => s.id === activeId) ?? sessions[0];
+      const sess =
+        state.wsSessions.find((s) => s.id === state.activeWsSessionId) ??
+        state.wsSessions[0];
       if (!sess) return;
       if (sess.state === "disconnected") connect(sess.id);
       else if (sess.state === "connected") disconnect(sess.id);

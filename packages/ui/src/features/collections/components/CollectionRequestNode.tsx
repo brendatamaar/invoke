@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
 import type { GraphQLRequestConfig, GrpcRequestConfig, RequestConfig, SavedRequest, WebSocketRequestConfig } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
-import { makeWsSession, wsRequestKey } from "../../../store/slices/protocolSlice";
 import { webSocketClose } from "../../websocket/api";
 import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
@@ -27,7 +26,7 @@ export function CollectionRequestNode({
   request: SavedRequest;
   collectionId: string;
 }) {
-  const { set, setRequest, setGraphqlRequest, setWebsocketRequest, setGrpcRequest, setWsSession, addToast, request: activeRequest, wsSessionsByRequestId } = useStore();
+  const { set, setRequest, setGraphqlRequest, setGrpcRequest, setWsSession, addToast, request: activeRequest, wsSessions, activeWsSessionId } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -72,15 +71,16 @@ export function CollectionRequestNode({
     }
 
     if (request.protocol === "websocket") {
-      setWebsocketRequest(request.request as WebSocketRequestConfig);
+      const wsReq = request.request as WebSocketRequestConfig;
       setRequest(meta);
-      if (!wsSessionsByRequestId[request.id]) {
-        const initial = makeWsSession("Session 1");
-        set((s) => ({
-          wsSessionsByRequestId: { ...s.wsSessionsByRequestId, [request.id]: [initial] },
-          activeWsSessionIdByRequestId: { ...s.activeWsSessionIdByRequestId, [request.id]: initial.id },
-        }));
-      }
+      set((s) => ({
+        wsSessions: s.wsSessions.map((sess) =>
+          sess.id === s.activeWsSessionId
+            ? { ...sess, websocketRequest: wsReq, requestId: request.id, log: [] }
+            : sess,
+        ),
+        websocketRequest: wsReq,
+      }));
       return;
     }
 
@@ -108,13 +108,11 @@ export function CollectionRequestNode({
   };
 
   const open = () => {
-    const currentKey = wsRequestKey(activeRequest.id);
-    const currentSessions = wsSessionsByRequestId[currentKey] ?? [];
-    const hasActiveConnection =
-      activeRequest.protocol === "websocket" &&
-      currentSessions.some((s) => s.state === "connected" || s.state === "connecting");
+    const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+    const activeIsConnected = activeSession?.state === "connected" || activeSession?.state === "connecting";
+    const nonWsHasConnections = request.protocol !== "websocket" && wsSessions.some((s) => s.state === "connected" || s.state === "connecting");
 
-    if (hasActiveConnection) {
+    if ((request.protocol === "websocket" && activeIsConnected) || nonWsHasConnections) {
       pendingOpenRef.current = doOpen;
       setConfirmDisconnect(true);
       return;
@@ -125,9 +123,9 @@ export function CollectionRequestNode({
 
   const handleConfirmDisconnect = () => {
     setConfirmDisconnect(false);
-    const currentKey = wsRequestKey(activeRequest.id);
-    const currentSessions = wsSessionsByRequestId[currentKey] ?? [];
-    for (const sess of currentSessions) {
+    const activeSession = wsSessions.find((s) => s.id === activeWsSessionId);
+    const toDisconnect = request.protocol === "websocket" && activeSession ? [activeSession] : wsSessions;
+    for (const sess of toDisconnect) {
       if (sess.connectionId) webSocketClose(sess.connectionId).catch(() => {});
       if (sess.state !== "disconnected") setWsSession(sess.id, { state: "disconnected", connectionId: "" });
     }
