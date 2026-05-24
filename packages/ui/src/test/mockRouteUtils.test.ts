@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { HTTP_METHODS, makeRoute, makeSequenceItem } from "./mockRouteUtils";
+import {
+  HTTP_METHODS,
+  makeRoute,
+  makeSequenceItem,
+} from "../features/mock/components/mockRouteUtils";
 
 describe("mock route utils", () => {
   it("defines supported HTTP methods", () => {

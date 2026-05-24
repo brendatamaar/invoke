@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RequestConfig, StoredCookie } from "@invoke/core";
-import { injectCookies } from "./cookies";
+import { injectCookies } from "../features/execution/cookies";
 
-vi.mock("../../store", () => ({
+vi.mock("../store", () => ({
   coreStore: {
     listCookies: vi.fn(),
     upsertCookies: vi.fn(),

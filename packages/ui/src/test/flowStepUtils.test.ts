@@ -4,7 +4,7 @@ import {
   STEP_COLORS,
   STEP_LABEL_COLORS,
   makeStep,
-} from "./flowStepUtils";
+} from "../features/flows/components/flowStepUtils";
 
 describe("flow step utils", () => {
   it("defines style mappings for every supported step type", () => {
