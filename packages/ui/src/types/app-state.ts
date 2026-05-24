@@ -116,8 +116,8 @@ export interface AppState {
   graphqlSchemaEndpoint: string;
   graphqlSchemaLastFetched: number;
   expandedGraphQLTypeNames: string[];
-  wsSessions: WsSession[];
-  activeWsSessionId: string;
+  wsSessionsByRequestId: Record<string, WsSession[]>;
+  activeWsSessionIdByRequestId: Record<string, string>;
   grpcMethods: GrpcMethodInfo[];
   grpcStatus: string;
   grpcStreaming: boolean;

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { WsSavedMessage } from "@invoke/core";
 import { useStore } from "../../../store";
+import { wsRequestKey } from "../../../store/slices/protocolSlice";
 import { webSocketSend } from "../api";
 import { Select } from "../../../components/shared/Select";
 import { VariableAutocompleteInput } from "../../../components/shared/VariableAutocompleteInput";
@@ -213,8 +214,9 @@ function resolveDynamicVars(text: string): string {
 
 export function WebSocketClient() {
   const {
-    wsSessions,
-    activeWsSessionId,
+    wsSessionsByRequestId,
+    activeWsSessionIdByRequestId,
+    request,
     setWsSession,
     addWsSession,
     closeWsSession,
@@ -223,6 +225,10 @@ export function WebSocketClient() {
     websocketRequest,
     setWebsocketRequest,
   } = useStore();
+
+  const wsKey = wsRequestKey(request.id);
+  const wsSessions = wsSessionsByRequestId[wsKey] ?? [];
+  const activeWsSessionId = activeWsSessionIdByRequestId[wsKey] ?? wsSessions[0]?.id ?? "";
 
   const activeSession =
     wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
@@ -417,7 +423,7 @@ export function WebSocketClient() {
         {wsSessions.map((sess) => (
           <div
             key={sess.id}
-            onClick={() => set({ activeWsSessionId: sess.id })}
+            onClick={() => set((s) => ({ activeWsSessionIdByRequestId: { ...s.activeWsSessionIdByRequestId, [wsKey]: sess.id } }))}
             className={`flex items-center gap-1 px-2 py-1 rounded-t text-2xs cursor-pointer select-none whitespace-nowrap ${
               sess.id === activeWsSessionId
                 ? "bg-[var(--surface-2)] text-[var(--text-1)] border border-b-0 border-[var(--border)]"

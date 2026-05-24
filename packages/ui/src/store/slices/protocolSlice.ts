@@ -1,5 +1,10 @@
 import type { AppState, WsSession } from "../../types";
 
+export const WS_NEW_KEY = "__new__";
+export function wsRequestKey(id?: string): string {
+  return id ?? WS_NEW_KEY;
+}
+
 export type ProtocolSlice = Pick<
   AppState,
   | "graphqlFileUploads"
@@ -9,8 +14,8 @@ export type ProtocolSlice = Pick<
   | "graphqlSchemaEndpoint"
   | "graphqlSchemaLastFetched"
   | "expandedGraphQLTypeNames"
-  | "wsSessions"
-  | "activeWsSessionId"
+  | "wsSessionsByRequestId"
+  | "activeWsSessionIdByRequestId"
   | "grpcMethods"
   | "grpcStatus"
   | "grpcStreaming"
@@ -46,8 +51,8 @@ export function createProtocolSlice(): ProtocolSlice {
     graphqlSchemaEndpoint: "",
     graphqlSchemaLastFetched: 0,
     expandedGraphQLTypeNames: [],
-    wsSessions: [initial],
-    activeWsSessionId: initial.id,
+    wsSessionsByRequestId: { [WS_NEW_KEY]: [initial] },
+    activeWsSessionIdByRequestId: { [WS_NEW_KEY]: initial.id },
     grpcMethods: [],
     grpcStatus: "",
     grpcStreaming: false,

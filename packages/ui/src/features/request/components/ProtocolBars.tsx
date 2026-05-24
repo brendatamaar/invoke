@@ -21,6 +21,7 @@ import {
 } from "@invoke/core";
 import type { GrpcExecuteResponse, WsPreset } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
+import { WS_NEW_KEY, wsRequestKey } from "../../../store/slices/protocolSlice";
 import {
   webSocketClose,
   webSocketConnect,
@@ -66,17 +67,26 @@ export function WebSocketBar() {
   const {
     websocketRequest,
     setWebsocketRequest,
-    wsSessions,
-    activeWsSessionId,
+    wsSessionsByRequestId,
+    activeWsSessionIdByRequestId,
+    request,
     environments,
     activeEnvironmentId,
     sessionVariables,
     setWsSession,
+    set,
     addToast,
   } = useStore();
 
+  const wsKey = wsRequestKey(request.id);
+  const wsSessions = wsSessionsByRequestId[wsKey] ?? [];
+  const activeWsSessionId = activeWsSessionIdByRequestId[wsKey] ?? wsSessions[0]?.id ?? "";
+
   const activeSession =
     wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+
+  const findWsSession = (sessionId: string) =>
+    Object.values(useStore.getState().wsSessionsByRequestId).flat().find((s) => s.id === sessionId);
 
   // Per-session EventSources and AbortControllers stored in refs (not serialisable to store)
   const eventSourcesRef = useRef(new Map<string, EventSource>());
@@ -97,9 +107,8 @@ export function WebSocketBar() {
           body: string;
           createdAt: number;
         };
-        const { websocketRequest: wsReq, wsSessions } = useStore.getState();
-        const currentLog =
-          wsSessions.find((s) => s.id === sessionId)?.log ?? [];
+        const { websocketRequest: wsReq } = useStore.getState();
+        const currentLog = findWsSession(sessionId)?.log ?? [];
         const isInbound = msg.direction !== "out";
 
         // graphql-transport-ws: auto-reply to ping frames
@@ -107,9 +116,7 @@ export function WebSocketBar() {
           try {
             const frame = JSON.parse(msg.body) as { type?: string };
             if (frame.type === "ping") {
-              const connId = useStore
-                .getState()
-                .wsSessions.find((s) => s.id === sessionId)?.connectionId;
+              const connId = findWsSession(sessionId)?.connectionId;
               if (connId)
                 webSocketSend(connId, JSON.stringify({ type: "pong" })).catch(
                   () => {},
@@ -165,9 +172,7 @@ export function WebSocketBar() {
       } catch {
         /* ignore */
       }
-      const prev = useStore
-        .getState()
-        .wsSessions.find((s) => s.id === sessionId);
+      const prev = findWsSession(sessionId);
       setWsSession(sessionId, {
         state: "disconnected",
         connectionId: "",
@@ -221,9 +226,7 @@ export function WebSocketBar() {
           connectionId,
           JSON.stringify({ type: "connection_init" }),
         ).catch(() => {});
-        const logNow =
-          useStore.getState().wsSessions.find((s) => s.id === sessionId)?.log ??
-          [];
+        const logNow = findWsSession(sessionId)?.log ?? [];
         setWsSession(sessionId, {
           log: [
             ...logNow,
@@ -264,14 +267,14 @@ export function WebSocketBar() {
   const disconnect = async (sessionId: string) => {
     eventSourcesRef.current.get(sessionId)?.close();
     eventSourcesRef.current.delete(sessionId);
-    const sess = useStore.getState().wsSessions.find((s) => s.id === sessionId);
+    const sess = findWsSession(sessionId);
     if (sess?.connectionId)
       await webSocketClose(sess.connectionId).catch(() => {});
     setWsSession(sessionId, { state: "disconnected", connectionId: "" });
   };
 
   const sendPing = useCallback(async (sessionId: string) => {
-    const sess = useStore.getState().wsSessions.find((s) => s.id === sessionId);
+    const sess = findWsSession(sessionId);
     if (!sess?.connectionId) return;
     pingTimestampRef.current.set(sessionId, Date.now());
     const body = JSON.stringify({ type: "__invoke_ping", ts: Date.now() });
@@ -287,12 +290,11 @@ export function WebSocketBar() {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       e.preventDefault();
-      const sess =
-        useStore
-          .getState()
-          .wsSessions.find(
-            (s) => s.id === useStore.getState().activeWsSessionId,
-          ) ?? useStore.getState().wsSessions[0];
+      const state = useStore.getState();
+      const key = wsRequestKey(state.request.id);
+      const sessions = state.wsSessionsByRequestId[key] ?? [];
+      const activeId = state.activeWsSessionIdByRequestId[key];
+      const sess = sessions.find((s) => s.id === activeId) ?? sessions[0];
       if (!sess) return;
       if (sess.state === "disconnected") connect(sess.id);
       else if (sess.state === "connected") disconnect(sess.id);

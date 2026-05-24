@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
 import type { GraphQLRequestConfig, GrpcRequestConfig, RequestConfig, SavedRequest, WebSocketRequestConfig } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
+import { makeWsSession, wsRequestKey } from "../../../store/slices/protocolSlice";
+import { webSocketClose } from "../../websocket/api";
 import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { ConfirmModal } from "../../../components/shared/ConfirmModal";
 import { PromptModal } from "../../../components/shared/PromptModal";
@@ -25,12 +27,14 @@ export function CollectionRequestNode({
   request: SavedRequest;
   collectionId: string;
 }) {
-  const { set, setRequest, setGraphqlRequest, setWebsocketRequest, setGrpcRequest, addToast, request: activeRequest } = useStore();
+  const { set, setRequest, setGraphqlRequest, setWebsocketRequest, setGrpcRequest, setWsSession, addToast, request: activeRequest, wsSessionsByRequestId } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [duplicateName, setDuplicateName] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const pendingOpenRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -51,7 +55,7 @@ export function CollectionRequestNode({
     );
   }, [isActive, activeRequest, request.request]);
 
-  const open = () => {
+  const doOpen = () => {
     const meta = {
       id: request.id,
       name: request.name,
@@ -70,6 +74,13 @@ export function CollectionRequestNode({
     if (request.protocol === "websocket") {
       setWebsocketRequest(request.request as WebSocketRequestConfig);
       setRequest(meta);
+      if (!wsSessionsByRequestId[request.id]) {
+        const initial = makeWsSession("Session 1");
+        set((s) => ({
+          wsSessionsByRequestId: { ...s.wsSessionsByRequestId, [request.id]: [initial] },
+          activeWsSessionIdByRequestId: { ...s.activeWsSessionIdByRequestId, [request.id]: initial.id },
+        }));
+      }
       return;
     }
 
@@ -94,6 +105,34 @@ export function CollectionRequestNode({
       }
     }
     setRequest({ ...draft, params, ...meta });
+  };
+
+  const open = () => {
+    const currentKey = wsRequestKey(activeRequest.id);
+    const currentSessions = wsSessionsByRequestId[currentKey] ?? [];
+    const hasActiveConnection =
+      activeRequest.protocol === "websocket" &&
+      currentSessions.some((s) => s.state === "connected" || s.state === "connecting");
+
+    if (hasActiveConnection) {
+      pendingOpenRef.current = doOpen;
+      setConfirmDisconnect(true);
+      return;
+    }
+
+    doOpen();
+  };
+
+  const handleConfirmDisconnect = () => {
+    setConfirmDisconnect(false);
+    const currentKey = wsRequestKey(activeRequest.id);
+    const currentSessions = wsSessionsByRequestId[currentKey] ?? [];
+    for (const sess of currentSessions) {
+      if (sess.connectionId) webSocketClose(sess.connectionId).catch(() => {});
+      if (sess.state !== "disconnected") setWsSession(sess.id, { state: "disconnected", connectionId: "" });
+    }
+    pendingOpenRef.current?.();
+    pendingOpenRef.current = null;
   };
 
   const duplicate = async (name: string) => {
@@ -205,6 +244,15 @@ export function CollectionRequestNode({
         confirmLabel="Duplicate"
         onConfirm={duplicate}
         onClose={() => setDuplicateName(null)}
+      />
+      <ConfirmModal
+        open={confirmDisconnect}
+        title="Active WebSocket Connection"
+        message="Switching requests will disconnect the active session. Continue?"
+        confirmLabel="Disconnect & Load"
+        danger
+        onConfirm={handleConfirmDisconnect}
+        onClose={() => { setConfirmDisconnect(false); pendingOpenRef.current = null; }}
       />
       <ConfirmModal
         open={confirmDelete}
