@@ -7,6 +7,7 @@ import {
   Info,
 } from "lucide-react";
 import type { WebSocketLogItem } from "../../../types";
+import { useStore } from "../../../store";
 import { byteSize, tryPrettyJson } from "../utils/log";
 
 export function WebSocketLogEntry({
@@ -109,7 +110,16 @@ function WebSocketLogMetadata({ entry }: { entry: WebSocketLogItem }) {
         </span>
       </span>
       <button
-        onClick={() => navigator.clipboard.writeText(entry.body).catch(() => {})}
+        onClick={() =>
+          navigator.clipboard.writeText(entry.body).catch((error: unknown) =>
+            useStore
+              .getState()
+              .addToast(
+                "error",
+                `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
+              ),
+          )
+        }
         className="flex items-center gap-0.5 hover:text-[var(--text-1)] transition-colors"
       >
         <Copy size={9} /> copy

@@ -61,7 +61,14 @@ export function WebSocketLogPanel() {
           `[${new Date(e.createdAt).toISOString()}] [${e.direction}] ${e.body}`,
       )
       .join("\n");
-    navigator.clipboard.writeText(text).catch(() => {});
+    navigator.clipboard.writeText(text).catch((error: unknown) =>
+      useStore
+        .getState()
+        .addToast(
+          "error",
+          `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+    );
   };
 
   const toggleExpanded = (id: string) => {
