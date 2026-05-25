@@ -130,9 +130,18 @@ export function useResponseViewerModel() {
       body: response.body,
       latencyMs: 0,
     };
-    coreStore.setMeta("mockRoutes", [...mockRoutes, newRoute]).catch(() => {});
-    store.set({ sidebarCollapsed: false, sidebarSection: "mocks" });
-    store.addToast("success", "Mock route created");
+    coreStore
+      .setMeta("mockRoutes", [...mockRoutes, newRoute])
+      .then(() => {
+        store.set({ sidebarCollapsed: false, sidebarSection: "mocks" });
+        store.addToast("success", "Mock route created");
+      })
+      .catch((error: unknown) =>
+        store.addToast(
+          "error",
+          `Failed to create mock route: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
   };
 
   return {

@@ -80,7 +80,12 @@ export function MockPanel() {
   };
 
   const persistRoutes = (routes: MockRoute[]) => {
-    coreStore.setMeta("mockRoutes", routes).catch(() => {});
+    coreStore.setMeta("mockRoutes", routes).catch((error: unknown) =>
+      addToast(
+        "error",
+        `Failed to save mock routes: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+    );
   };
 
   const saveRoute = (route: MockRoute) => {

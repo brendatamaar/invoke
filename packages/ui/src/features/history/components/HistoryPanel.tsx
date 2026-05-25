@@ -82,9 +82,18 @@ export function HistoryPanel() {
       body: entry.response?.body ?? "",
       latencyMs: 0,
     };
-    coreStore.setMeta("mockRoutes", [...mockRoutes, newRoute]).catch(() => {});
-    set({ sidebarCollapsed: false, sidebarSection: "mocks" });
-    addToast("success", "Mock route created");
+    coreStore
+      .setMeta("mockRoutes", [...mockRoutes, newRoute])
+      .then(() => {
+        set({ sidebarCollapsed: false, sidebarSection: "mocks" });
+        addToast("success", "Mock route created");
+      })
+      .catch((error: unknown) =>
+        addToast(
+          "error",
+          `Failed to create mock route: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
   };
 
   return (
