@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import type { WebhookEndpoint, WebhookValidationConfig } from "../../../types";
+import { useStore } from "../../../store";
 import { deleteWebhookEndpoint } from "../../webhook";
 import { DEFAULT_VALIDATION } from "./webhook/constants";
 import { WebhookEndpointRow } from "./webhook/WebhookEndpointRow";
@@ -10,6 +11,7 @@ export function WebhookSection() {
   const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<WebhookEndpoint | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const addToast = useStore((s) => s.addToast);
   const serverBase = `${window.location.protocol}//${window.location.hostname}:4000`;
 
   const addEndpoint = () => {
@@ -24,8 +26,9 @@ export function WebhookSection() {
   const removeEndpoint = async (id: string) => {
     try {
       await deleteWebhookEndpoint(id);
-    } catch {
-      /* ignore */
+    } catch (error) {
+      addToast("error", `Failed to delete webhook: ${error instanceof Error ? error.message : String(error)}`);
+      return;
     }
     setEndpoints((previous) => previous.filter((endpoint) => endpoint.id !== id));
     if (activeEndpoint?.id === id) setActiveEndpoint(null);
