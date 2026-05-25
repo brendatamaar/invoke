@@ -1,33 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Search, ArrowRight } from "lucide-react";
-import MiniSearch from "minisearch";
 import { useStore } from "../../store";
-import { useCollections, useFlows, useHistory, useMockRoutes } from "../../hooks/useDb";
-import { MethodBadge } from "../shared/MethodBadge";
-import type { PaletteItem } from "../../types";
-import {
-  newGraphQLRequest,
-  newGrpcRequest,
-  newWebSocketRequest,
-} from "../../lib/createRequest";
+import { CommandFooter } from "./command-palette/CommandFooter";
+import { CommandList } from "./command-palette/CommandList";
+import { CommandSearchInput } from "./command-palette/CommandSearchInput";
+import { usePaletteItems } from "./command-palette/usePaletteItems";
+import { searchPaletteItems } from "./utils/commandSearch";
 
 export function CommandPalette() {
-  const {
-    commandPaletteOpen,
-    commandQuery,
-    set,
-    requests,
-    environments,
-    sidebarCollapsed,
-    setRequest,
-    resetRequest,
-  } = useStore();
-  const collections = useCollections();
-  const flows = useFlows();
-  const history = useHistory(50);
-  const mockRoutes = useMockRoutes();
+  const { commandPaletteOpen, commandQuery, set } = useStore();
+  const allItems = usePaletteItems();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const items = searchPaletteItems(allItems, commandQuery);
 
   useEffect(() => {
     if (commandPaletteOpen) {
@@ -37,357 +21,61 @@ export function CommandPalette() {
   }, [commandPaletteOpen]);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
+    const handler = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "k") {
+        event.preventDefault();
         set({ commandPaletteOpen: !commandPaletteOpen, commandQuery: "" });
       }
       if (!commandPaletteOpen) return;
-      if (e.key === "Escape") {
-        set({ commandPaletteOpen: false });
+      if (event.key === "Escape") set({ commandPaletteOpen: false });
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSelectedIndex((index) => Math.min(index + 1, items.length - 1));
       }
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedIndex((i) => Math.min(i + 1, items.length - 1));
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelectedIndex((index) => Math.max(index - 1, 0));
       }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((i) => Math.max(i - 1, 0));
-      }
-      if (e.key === "Enter") {
+      if (event.key === "Enter") {
         items[selectedIndex]?.run();
         set({ commandPaletteOpen: false });
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [commandPaletteOpen, selectedIndex]); // eslint-disable-line
-
-  const allItems: PaletteItem[] = [
-    // Saved requests
-    ...requests.map((r) => {
-      const req = r.request as { method?: string; url?: string } | undefined;
-      return {
-        id: r.id,
-        kind: "request" as const,
-        title: r.name || req?.url || "Untitled",
-        subtitle: req?.url || "",
-        keywords: `${req?.method ?? ""} ${req?.url ?? ""} ${r.name}`,
-        method: req?.method,
-        run: () =>
-          setRequest({
-            method: (req?.method ?? "GET") as Parameters<
-              typeof setRequest
-            >[0]["method"],
-            url: req?.url ?? "",
-            name: r.name,
-          }),
-      };
-    }),
-    // Environments
-    ...environments.map((e) => ({
-      id: e.id,
-      kind: "environment" as const,
-      title: e.name,
-      subtitle: `${e.variables?.length ?? 0} variables`,
-      keywords: e.name,
-      run: () => set({ activeEnvironmentId: e.id }),
-    })),
-    // Flows
-    ...flows.map((f) => ({
-      id: `flow-${f.id}`,
-      kind: "flow" as const,
-      title: f.name,
-      subtitle: `${f.steps?.length ?? 0} steps`,
-      keywords: `flow ${f.name}`,
-      run: () => { set({ sidebarCollapsed: false, sidebarSection: "flows", flowDraft: f }); },
-    })),
-    // Collections
-    ...collections.map((c) => ({
-      id: `col-${c.id}`,
-      kind: "collection" as const,
-      title: c.name,
-      subtitle: "Collection",
-      keywords: `collection ${c.name}`,
-      run: () => { set({ sidebarCollapsed: false, sidebarSection: "collections" }); },
-    })),
-    // History entries (most recent 50 only)
-    ...history.slice(0, 50).map((h) => {
-      const req = h.request as { method?: string; url?: string } | undefined;
-      const url = req?.url ?? "";
-      const method = req?.method ?? "GET";
-      return {
-        id: `hist-${h.id}`,
-        kind: "history" as const,
-        title: h.label ? `${h.label} — ${url}` : url,
-        subtitle: `${method} · ${h.response?.status ?? "—"}`,
-        keywords: `history ${method} ${url} ${h.label ?? ""} ${h.response?.status ?? ""}`,
-        method,
-        run: () => {
-          setRequest({
-            method: method as Parameters<typeof setRequest>[0]["method"],
-            url,
-            headers:
-              ((req as { headers?: unknown[] })?.headers as Parameters<
-                typeof setRequest
-              >[0]["headers"]) ?? [],
-            body: (req as { body?: string })?.body ?? "",
-          });
-          set({ sidebarCollapsed: false, sidebarSection: "history" });
-        },
-      };
-    }),
-    // Mock routes
-    ...mockRoutes.map((m) => ({
-      id: `mock-${m.id}`,
-      kind: "mock" as const,
-      title: `${m.method} ${m.pathPattern}`,
-      subtitle: `Mock · ${m.status}`,
-      keywords: `mock ${m.method} ${m.pathPattern}`,
-      method: m.method,
-      run: () => { set({ sidebarCollapsed: false, sidebarSection: "mocks" }); },
-    })),
-    // New request commands
-    {
-      id: "new-request",
-      kind: "command" as const,
-      title: "New REST Request",
-      subtitle: "Start a blank REST request",
-      keywords: "new request create http",
-      run: () => resetRequest(),
-    },
-    {
-      id: "new-graphql",
-      kind: "command" as const,
-      title: "New GraphQL Request",
-      subtitle: "Start a blank GraphQL request",
-      keywords: "new graphql request create",
-      run: () => {
-        resetRequest();
-        setRequest({ protocol: "graphql" });
-        set({ requestTab: "graphql", graphqlRequest: newGraphQLRequest() });
-      },
-    },
-    {
-      id: "new-websocket",
-      kind: "command" as const,
-      title: "New WebSocket Request",
-      subtitle: "Start a blank WebSocket connection",
-      keywords: "new websocket ws request create",
-      run: () => {
-        resetRequest();
-        setRequest({ protocol: "websocket" });
-        set({
-          requestTab: "websocket",
-          websocketRequest: newWebSocketRequest(),
-        });
-      },
-    },
-    {
-      id: "new-grpc",
-      kind: "command" as const,
-      title: "New gRPC Request",
-      subtitle: "Start a blank gRPC request",
-      keywords: "new grpc request create",
-      run: () => {
-        resetRequest();
-        setRequest({ protocol: "grpc" });
-        set({ requestTab: "grpc", grpcRequest: newGrpcRequest() });
-      },
-    },
-    // Navigation
-    {
-      id: "nav-collections",
-      kind: "command" as const,
-      title: "Go to Collections",
-      subtitle: "Open Collections sidebar",
-      keywords: "go navigate collections sidebar",
-      run: () => { set({ sidebarCollapsed: false, sidebarSection: "collections" }); },
-    },
-    {
-      id: "nav-history",
-      kind: "command" as const,
-      title: "Go to History",
-      subtitle: "Open History sidebar",
-      keywords: "go navigate history sidebar",
-      run: () => { set({ sidebarCollapsed: false, sidebarSection: "history" }); },
-    },
-    {
-      id: "nav-environments",
-      kind: "command" as const,
-      title: "Go to Environments",
-      subtitle: "Open Environments sidebar",
-      keywords: "go navigate environments sidebar",
-      run: () => { set({ sidebarCollapsed: false, sidebarSection: "environments" }); },
-    },
-    {
-      id: "nav-flows",
-      kind: "command" as const,
-      title: "Go to Flows",
-      subtitle: "Open Flows sidebar",
-      keywords: "go navigate flows sidebar",
-      run: () => { set({ sidebarCollapsed: false, sidebarSection: "flows" }); },
-    },
-    {
-      id: "nav-mocks",
-      kind: "command" as const,
-      title: "Go to Mocks",
-      subtitle: "Open Mock server sidebar",
-      keywords: "go navigate mocks mock server sidebar",
-      run: () => { set({ sidebarCollapsed: false, sidebarSection: "mocks" }); },
-    },
-    // UI toggles
-    {
-      id: "toggle-sidebar",
-      kind: "command" as const,
-      title: "Toggle Sidebar",
-      subtitle: sidebarCollapsed ? "Show sidebar" : "Hide sidebar",
-      keywords: "toggle sidebar show hide collapse",
-      run: () => set({ sidebarCollapsed: !sidebarCollapsed }),
-    },
-    {
-      id: "open-settings",
-      kind: "command" as const,
-      title: "Open Settings",
-      subtitle: "View and edit settings",
-      keywords: "settings preferences open",
-      run: () => set({ showSettings: true, settingsTab: undefined }),
-    },
-    {
-      id: "open-help",
-      kind: "command" as const,
-      title: "Open Help",
-      subtitle: "View keyboard shortcuts and tips",
-      keywords: "help shortcuts tips keyboard",
-      run: () => set({ showHelp: true }),
-    },
-    {
-      id: "clear-history",
-      kind: "command" as const,
-      title: "Clear History",
-      subtitle: "Remove all history entries",
-      keywords: "clear history delete remove",
-      run: () => set({ showClearHistoryModal: true }),
-    },
-  ];
-
-  const query = commandQuery.trim();
-  const ms = new MiniSearch<PaletteItem>({
-    fields: ["title", "keywords", "subtitle"],
-    idField: "id",
-  });
-  ms.addAll(allItems);
-  const items = query
-    ? ms.search(query, { prefix: true, fuzzy: 0.2 }).map((r) => allItems.find((i) => i.id === r.id)!).filter(Boolean)
-    : allItems.slice(0, 10);
+  }, [commandPaletteOpen, items, selectedIndex, set]);
 
   if (!commandPaletteOpen) return null;
 
-  const KIND_LABELS: Record<string, string> = {
-    request: "Request",
-    environment: "Env",
-    command: "Command",
-    collection: "Collection",
-    flow: "Flow",
-    history: "History",
-    mock: "Mock",
-  };
-  const KIND_COLORS: Record<string, string> = {
-    request: "text-[var(--info)]",
-    environment: "text-[var(--method-patch)]",
-    command: "text-[var(--fg-2)]",
-    collection: "text-[var(--warn)]",
-    flow: "text-[var(--ok)]",
-    history: "text-[var(--accent)]",
-    mock: "text-[var(--danger)]",
+  const close = () => set({ commandPaletteOpen: false });
+  const runItem = (index: number) => {
+    items[index]?.run();
+    close();
   };
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/20 backdrop-blur-[1px]"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) set({ commandPaletteOpen: false });
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) close();
       }}
     >
       <div className="w-full max-w-lg bg-[var(--bg-2)] border border-[var(--line-2)] rounded-md shadow-[var(--shadow-pop)] overflow-hidden">
-        {/* Search input */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
-          <Search size={15} className="text-[var(--text-3)] shrink-0" />
-          <input
-            ref={inputRef}
-            value={commandQuery}
-            onChange={(e) => {
-              set({ commandQuery: e.target.value });
-              setSelectedIndex(0);
-            }}
-            placeholder="Search requests, environments, commands…"
-            className="flex-1 bg-transparent outline-none text-sm text-[var(--text-1)] placeholder-[var(--text-3)]"
-          />
-          <kbd className="text-2xs px-1.5 py-0.5 rounded bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-3)]">
-            esc
-          </kbd>
-        </div>
-
-        {/* Results */}
-        <div className="max-h-80 overflow-y-auto py-1">
-          {items.length === 0 && (
-            <p className="px-4 py-6 text-sm text-[var(--text-3)] text-center">
-              No results
-            </p>
-          )}
-          {items.map((item, i) => (
-            <div
-              key={item.id}
-              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer ${i === selectedIndex ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--surface-2)]"}`}
-              onMouseEnter={() => setSelectedIndex(i)}
-              onClick={() => {
-                item.run();
-                set({ commandPaletteOpen: false });
-              }}
-            >
-              {item.method ? (
-                <MethodBadge method={item.method} />
-              ) : (
-                <span
-                  className={`text-2xs font-medium ${KIND_COLORS[item.kind] ?? "text-[var(--fg-2)]"}`}
-                >
-                  {KIND_LABELS[item.kind] ?? item.kind}
-                </span>
-              )}
-              <span className="flex-1 text-sm text-[var(--text-1)] truncate">
-                {item.title}
-              </span>
-              <span className="text-xs text-[var(--text-3)] truncate max-w-[160px]">
-                {item.subtitle}
-              </span>
-              {i === selectedIndex && (
-                <ArrowRight
-                  size={12}
-                  className="text-[var(--accent)] shrink-0"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Footer hint */}
-        <div className="flex items-center gap-3 px-4 py-2 border-t border-[var(--border)] bg-[var(--surface-2)]">
-          {[
-            ["↑↓", "Navigate"],
-            ["↵", "Select"],
-            ["esc", "Close"],
-          ].map(([key, label]) => (
-            <span
-              key={key}
-              className="flex items-center gap-1.5 text-2xs text-[var(--text-3)]"
-            >
-              <kbd className="px-1 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)] font-mono">
-                {key}
-              </kbd>{" "}
-              {label}
-            </span>
-          ))}
-        </div>
+        <CommandSearchInput
+          inputRef={inputRef}
+          query={commandQuery}
+          onChange={(query) => {
+            set({ commandQuery: query });
+            setSelectedIndex(0);
+          }}
+        />
+        <CommandList
+          items={items}
+          selectedIndex={selectedIndex}
+          onHover={setSelectedIndex}
+          onSelect={runItem}
+        />
+        <CommandFooter />
       </div>
     </div>
   );

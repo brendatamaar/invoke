@@ -444,23 +444,24 @@ function assertOpenApiDocument(doc: any) {
 }
 
 function assertNoExternalRefs(value: unknown) {
-  if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
     value.forEach(assertNoExternalRefs);
     return;
   }
-  const record = value as Record<string, unknown>;
-  if (typeof record.$ref === "string" && !record.$ref.startsWith("#/")) {
-    throw new Error(`${EXTERNAL_REF_ERROR}: ${record.$ref}`);
+  if (!isPlainObject(value)) return;
+  if (typeof value.$ref === "string" && !value.$ref.startsWith("#/")) {
+    throw new Error(`${EXTERNAL_REF_ERROR}: ${value.$ref}`);
   }
-  Object.values(record).forEach(assertNoExternalRefs);
+  Object.values(value).forEach(assertNoExternalRefs);
 }
 
 function openApiImportError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  if (message.startsWith("OpenAPI import failed:"))
-    return error instanceof Error ? error : new Error(message);
-  return new Error(`OpenAPI import failed: ${message}`);
+  if (error instanceof Error) {
+    return error.message.startsWith("OpenAPI import failed:")
+      ? error
+      : new Error(`OpenAPI import failed: ${error.message}`, { cause: error });
+  }
+  return new Error(`OpenAPI import failed: ${String(error)}`);
 }
 
 function clonePlain<T>(value: T): T {

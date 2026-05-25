@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import type { MockLogEntry } from "@invoke/core";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
-import { formatTime } from "./mockRouteUtils";
+import { formatTime } from "../mockRouteUtils";
 
 function statusColor(status: number) {
   if (status >= 400) return "text-[var(--danger)]";
