@@ -167,7 +167,7 @@ export function GraphQLSchemaModal({
               onDelete={(id) => {
                 const updated = fragments.filter((f) => f.id !== id);
                 setFragments(updated);
-                saveFragments(updated);
+                persistFragments(updated, addToast);
               }}
               onSaveFromQuery={() => {
                 const updated = mergeFragments(
@@ -175,7 +175,7 @@ export function GraphQLSchemaModal({
                   extractFragmentDefs(graphqlRequest.query ?? ""),
                 );
                 setFragments(updated);
-                saveFragments(updated);
+                persistFragments(updated, addToast);
               }}
             />
           )}
@@ -183,4 +183,18 @@ export function GraphQLSchemaModal({
       </div>
     </div>
   );
+}
+
+function persistFragments(
+  fragments: Parameters<typeof saveFragments>[0],
+  addToast: (kind: "error", message: string) => void,
+) {
+  try {
+    saveFragments(fragments);
+  } catch (error) {
+    addToast(
+      "error",
+      `Failed to save fragments: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }

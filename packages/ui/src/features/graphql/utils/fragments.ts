@@ -13,11 +13,7 @@ export function loadFragments(): SavedFragment[] {
 }
 
 export function saveFragments(fragments: SavedFragment[]) {
-  try {
-    localStorage.setItem(FRAGMENTS_KEY, JSON.stringify(fragments));
-  } catch {
-    /* quota exceeded */
-  }
+  localStorage.setItem(FRAGMENTS_KEY, JSON.stringify(fragments));
 }
 
 export function extractFragmentDefs(query: string): SavedFragment[] {
