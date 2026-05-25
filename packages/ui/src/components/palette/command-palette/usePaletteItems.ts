@@ -1,5 +1,9 @@
+import {
+  emptyGraphQLRequest,
+  emptyGrpcRequest,
+  emptyWebSocketRequest,
+} from "@invoke/core";
 import { useCollections, useFlows, useHistory, useMockRoutes } from "../../../hooks/useDb";
-import { newGraphQLRequest, newGrpcRequest, newWebSocketRequest } from "../../../lib/createRequest";
 import { useStore } from "../../../store";
 import type { PaletteItem } from "../../../types";
 
@@ -112,7 +116,7 @@ function useCommandPaletteItems(): PaletteItem[] {
       run: () => {
         resetRequest();
         setRequest({ protocol: "graphql" });
-        set({ requestTab: "graphql", graphqlRequest: newGraphQLRequest() });
+        set({ requestTab: "graphql", graphqlRequest: emptyGraphQLRequest() });
       },
     },
     {
@@ -124,7 +128,7 @@ function useCommandPaletteItems(): PaletteItem[] {
       run: () => {
         resetRequest();
         setRequest({ protocol: "websocket" });
-        set({ requestTab: "websocket", websocketRequest: newWebSocketRequest() });
+        set({ requestTab: "websocket", websocketRequest: emptyWebSocketRequest() });
       },
     },
     {
@@ -136,7 +140,7 @@ function useCommandPaletteItems(): PaletteItem[] {
       run: () => {
         resetRequest();
         setRequest({ protocol: "grpc" });
-        set({ requestTab: "grpc", grpcRequest: newGrpcRequest() });
+        set({ requestTab: "grpc", grpcRequest: emptyGrpcRequest() });
       },
     },
     ...navItems(set),
