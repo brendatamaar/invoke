@@ -33,7 +33,7 @@ export function GrpcStreamTranscript({
 
   return (
     <>
-      <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)] flex items-center gap-2">
+      <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)] flex items-center gap-2 shrink-0">
         <span>Stream transcript</span>
         {grpcStreaming && (
           <span className="text-[var(--accent)] animate-pulse">
@@ -63,10 +63,10 @@ export function GrpcStreamTranscript({
           Clear
         </button>
       </div>
-      <div ref={logRef} className="overflow-y-auto flex-1">
+      <div ref={logRef} className="overflow-y-auto flex-1 min-h-0">
         {sentMessages.length === 0 && receivedMessages.length === 0 && (
           <p className="p-3 text-2xs text-[var(--text-3)]">
-            Compose a message below and press Enter or click Send.
+            No stream messages yet.
           </p>
         )}
         {sentMessages.map((body, i) => (

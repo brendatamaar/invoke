@@ -3,7 +3,7 @@ import { resolveGrpcRequest } from "@invoke/core";
 import { useStore } from "../../../store";
 import { useGrpcReflect } from "../useGrpcReflect";
 import { runGrpcHealthCheck } from "../utils/health";
-import { executeCurrentGrpcRequest } from "../utils/invoke";
+import { executeCurrentGrpcRequest } from "../utils/execution";
 import {
   grpcMethodFlags,
   hasGrpcTlsLocalhostWarning,

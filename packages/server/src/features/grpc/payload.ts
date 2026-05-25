@@ -44,6 +44,7 @@ export function grpcPayload(input: GrpcReflectInput) {
       ...input.metadata.filter((header) => header.enabled !== false),
     ],
     verifySsl: input.verifySsl,
+    allowPrivate: input.allowPrivateAddresses ?? true,
     tlsClientConfig: tlsClientConfigPayload(input.tlsClientConfig),
     protosetBase64: input.protosetBase64,
   };

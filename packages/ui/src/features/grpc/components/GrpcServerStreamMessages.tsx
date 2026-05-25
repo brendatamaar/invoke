@@ -18,11 +18,8 @@ export function GrpcServerStreamMessages({
   const receivedStreamBodies = messages.filter((m) => !m.done && m.bodyJson);
 
   return (
-    <div
-      className="border-t border-[var(--border)] flex flex-col"
-      style={{ maxHeight: 200 }}
-    >
-      <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)] flex items-center gap-2">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)] flex items-center gap-2 shrink-0">
         <span>Stream messages</span>
         {grpcStreaming && (
           <span className="text-[var(--accent)] animate-pulse">
@@ -46,7 +43,7 @@ export function GrpcServerStreamMessages({
           </button>
         )}
       </div>
-      <div className="overflow-y-auto flex-1">
+      <div className="overflow-y-auto flex-1 min-h-0">
         {messages.length === 0 && !grpcStreaming && (
           <p className="p-3 text-2xs text-[var(--text-3)]">
             No messages yet. Click Invoke to start streaming.

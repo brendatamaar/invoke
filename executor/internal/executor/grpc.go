@@ -55,7 +55,7 @@ func (s *Service) GrpcReflect(ctx context.Context, req *GrpcReflectRequest) (*Gr
 		return &GrpcReflectResponse{Methods: methods}, nil
 	}
 
-	conn, err := grpcClientConn(ctx, address, req.GetTls(), req.GetVerifySsl(), req.GetTlsClientConfig(), false)
+	conn, err := grpcClientConn(ctx, address, req.GetTls(), req.GetVerifySsl(), req.GetTlsClientConfig(), req.GetAllowPrivate())
 	if err != nil {
 		return &GrpcReflectResponse{Error: err.Error()}, nil
 	}
@@ -88,7 +88,7 @@ func (s *Service) GrpcServerStream(req *GrpcExecuteRequest, stream GrpcServerStr
 	ctx, cancel := context.WithTimeout(stream.Context(), timeout)
 	defer cancel()
 
-	conn, err := grpcClientConn(ctx, address, req.GetTls(), req.GetVerifySsl(), req.GetTlsClientConfig(), false)
+	conn, err := grpcClientConn(ctx, address, req.GetTls(), req.GetVerifySsl(), req.GetTlsClientConfig(), req.GetAllowPrivate())
 	if err != nil {
 		return stream.Send(&GrpcStreamMessage{Done: true, Error: err.Error()})
 	}
@@ -199,7 +199,7 @@ func (s *Service) GrpcExecute(ctx context.Context, req *GrpcExecuteRequest) (*Gr
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	conn, err := grpcClientConn(ctx, address, req.GetTls(), req.GetVerifySsl(), req.GetTlsClientConfig(), false)
+	conn, err := grpcClientConn(ctx, address, req.GetTls(), req.GetVerifySsl(), req.GetTlsClientConfig(), req.GetAllowPrivate())
 	if err != nil {
 		return &GrpcExecuteResponse{Error: err.Error()}, nil
 	}
@@ -290,10 +290,15 @@ func grpcClientConn(ctx context.Context, address string, useTLS bool, verify boo
 	}
 
 	ssrfDial := ssrfDialContext(&net.Dialer{}, allowPrivate)
+	var lastDialErr error
 	conn, err := grpc.NewClient(address,
 		grpc.WithTransportCredentials(transportCredentials),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-			return ssrfDial(ctx, "tcp", addr)
+			c, dialErr := ssrfDial(ctx, "tcp", addr)
+			if dialErr != nil {
+				lastDialErr = dialErr
+			}
+			return c, dialErr
 		}),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                30 * time.Second,
@@ -312,6 +317,9 @@ func grpcClientConn(ctx context.Context, address string, useTLS bool, verify boo
 		}
 		if state == connectivity.TransientFailure || state == connectivity.Shutdown {
 			_ = conn.Close()
+			if lastDialErr != nil {
+				return nil, lastDialErr
+			}
 			return nil, fmt.Errorf("connection failed (state=%s): check address, TLS settings, and network", state)
 		}
 		if !conn.WaitForStateChange(ctx, state) {

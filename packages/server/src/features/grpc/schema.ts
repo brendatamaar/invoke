@@ -20,6 +20,7 @@ export const grpcReflectSchema = Schema.Struct({
   timeoutMs: Schema.optionalWith(Schema.Number, { default: () => 30000 }),
   metadata: Schema.optionalWith(Schema.Array(headerSchema), { default: () => [] }),
   verifySsl: Schema.optionalWith(Schema.Boolean, { default: () => true }),
+  allowPrivateAddresses: Schema.optionalWith(Schema.Boolean, { default: () => true }),
   tlsClientConfig: tlsClientConfigSchema,
   auth: grpcAuthSchema,
   protosetBase64: Schema.optional(Schema.String),

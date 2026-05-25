@@ -421,7 +421,6 @@ func (x *HttpRequest) GetTlsClientConfig() *TlsClientConfig {
 	return nil
 }
 
-
 type Timing struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DnsMs         float64                `protobuf:"fixed64,1,opt,name=dns_ms,json=dnsMs,proto3" json:"dns_ms,omitempty"`
@@ -1587,6 +1586,7 @@ type GrpcReflectRequest struct {
 	VerifySsl       bool                   `protobuf:"varint,5,opt,name=verify_ssl,json=verifySsl,proto3" json:"verify_ssl,omitempty"`
 	TlsClientConfig *TlsClientConfig       `protobuf:"bytes,6,opt,name=tls_client_config,json=tlsClientConfig,proto3" json:"tls_client_config,omitempty"`
 	ProtosetBase64  string                 `protobuf:"bytes,7,opt,name=protoset_base64,json=protosetBase64,proto3" json:"protoset_base64,omitempty"`
+	AllowPrivate    bool                   `protobuf:"varint,8,opt,name=allow_private,json=allowPrivate,proto3" json:"allow_private,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1668,6 +1668,13 @@ func (x *GrpcReflectRequest) GetProtosetBase64() string {
 		return x.ProtosetBase64
 	}
 	return ""
+}
+
+func (x *GrpcReflectRequest) GetAllowPrivate() bool {
+	if x != nil {
+		return x.AllowPrivate
+	}
+	return false
 }
 
 type GrpcMethod struct {
@@ -1834,6 +1841,7 @@ type GrpcExecuteRequest struct {
 	TlsClientConfig *TlsClientConfig       `protobuf:"bytes,8,opt,name=tls_client_config,json=tlsClientConfig,proto3" json:"tls_client_config,omitempty"`
 	ProtosetBase64  string                 `protobuf:"bytes,9,opt,name=protoset_base64,json=protosetBase64,proto3" json:"protoset_base64,omitempty"`
 	Compression     string                 `protobuf:"bytes,10,opt,name=compression,proto3" json:"compression,omitempty"`
+	AllowPrivate    bool                   `protobuf:"varint,11,opt,name=allow_private,json=allowPrivate,proto3" json:"allow_private,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1936,6 +1944,13 @@ func (x *GrpcExecuteRequest) GetCompression() string {
 		return x.Compression
 	}
 	return ""
+}
+
+func (x *GrpcExecuteRequest) GetAllowPrivate() bool {
+	if x != nil {
+		return x.AllowPrivate
+	}
+	return false
 }
 
 type GrpcExecuteResponse struct {
@@ -2680,7 +2695,7 @@ const file_executor_proto_rawDesc = "" +
 	"\x15WebSocketCloseRequest\x12#\n" +
 	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\".\n" +
 	"\x16WebSocketCloseResponse\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"\xaa\x02\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\xcf\x02\n" +
 	"\x12GrpcReflectRequest\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x10\n" +
 	"\x03tls\x18\x02 \x01(\bR\x03tls\x12\x1d\n" +
@@ -2690,7 +2705,8 @@ const file_executor_proto_rawDesc = "" +
 	"\n" +
 	"verify_ssl\x18\x05 \x01(\bR\tverifySsl\x12L\n" +
 	"\x11tls_client_config\x18\x06 \x01(\v2 .invoke.executor.TlsClientConfigR\x0ftlsClientConfig\x12'\n" +
-	"\x0fprotoset_base64\x18\a \x01(\tR\x0eprotosetBase64\"\x94\x02\n" +
+	"\x0fprotoset_base64\x18\a \x01(\tR\x0eprotosetBase64\x12#\n" +
+	"\rallow_private\x18\b \x01(\bR\fallowPrivate\"\x94\x02\n" +
 	"\n" +
 	"GrpcMethod\x12\x18\n" +
 	"\aservice\x18\x01 \x01(\tR\aservice\x12\x16\n" +
@@ -2707,7 +2723,7 @@ const file_executor_proto_rawDesc = "" +
 	"\x10server_streaming\x18\b \x01(\bR\x0fserverStreaming\"b\n" +
 	"\x13GrpcReflectResponse\x125\n" +
 	"\amethods\x18\x01 \x03(\v2\x1b.invoke.executor.GrpcMethodR\amethods\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"\x8a\x03\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\xaf\x03\n" +
 	"\x12GrpcExecuteRequest\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x10\n" +
 	"\x03tls\x18\x02 \x01(\bR\x03tls\x12\x1f\n" +
@@ -2722,7 +2738,8 @@ const file_executor_proto_rawDesc = "" +
 	"\x11tls_client_config\x18\b \x01(\v2 .invoke.executor.TlsClientConfigR\x0ftlsClientConfig\x12'\n" +
 	"\x0fprotoset_base64\x18\t \x01(\tR\x0eprotosetBase64\x12 \n" +
 	"\vcompression\x18\n" +
-	" \x01(\tR\vcompression\"\xcb\x02\n" +
+	" \x01(\tR\vcompression\x12#\n" +
+	"\rallow_private\x18\v \x01(\bR\fallowPrivate\"\xcb\x02\n" +
 	"\x13GrpcExecuteResponse\x12\x1b\n" +
 	"\tbody_json\x18\x01 \x01(\tR\bbodyJson\x123\n" +
 	"\bmetadata\x18\x02 \x03(\v2\x17.invoke.executor.HeaderR\bmetadata\x123\n" +

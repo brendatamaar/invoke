@@ -144,6 +144,7 @@ export interface GrpcReflectInput {
   timeoutMs: number;
   metadata: ServerHeaderInput[];
   verifySsl: boolean;
+  allowPrivateAddresses?: boolean;
   tlsClientConfig?: TlsClientConfigInput;
   auth?: GrpcAuthInput;
   protosetBase64?: string;

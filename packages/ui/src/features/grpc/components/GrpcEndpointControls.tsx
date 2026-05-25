@@ -1,5 +1,5 @@
 import { Activity, Heart, RefreshCw } from "lucide-react";
-import { GrpcInvokeControls } from "./GrpcInvokeControls";
+import { GrpcCallControls } from "./GrpcCallControls";
 
 export function GrpcEndpointControls({
   address,
@@ -75,7 +75,7 @@ export function GrpcEndpointControls({
           {latencyMs}ms
         </span>
       )}
-      <GrpcInvokeControls
+      <GrpcCallControls
         grpcStreamId={grpcStreamId}
         grpcStreaming={grpcStreaming}
         isExecuting={isExecuting}

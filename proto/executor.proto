@@ -188,6 +188,7 @@ message GrpcReflectRequest {
   bool verify_ssl = 5;
   TlsClientConfig tls_client_config = 6;
   string protoset_base64 = 7;
+  bool allow_private = 8;
 }
 
 message GrpcMethod {
@@ -217,6 +218,7 @@ message GrpcExecuteRequest {
   TlsClientConfig tls_client_config = 8;
   string protoset_base64 = 9;
   string compression = 10;
+  bool allow_private = 11;
 }
 
 message GrpcExecuteResponse {
