@@ -456,10 +456,12 @@ function assertNoExternalRefs(value: unknown) {
 }
 
 function openApiImportError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  if (message.startsWith("OpenAPI import failed:"))
-    return error instanceof Error ? error : new Error(message);
-  return new Error(`OpenAPI import failed: ${message}`);
+  if (error instanceof Error) {
+    return error.message.startsWith("OpenAPI import failed:")
+      ? error
+      : new Error(`OpenAPI import failed: ${error.message}`, { cause: error });
+  }
+  return new Error(`OpenAPI import failed: ${String(error)}`);
 }
 
 function clonePlain<T>(value: T): T {
