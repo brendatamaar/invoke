@@ -444,16 +444,15 @@ function assertOpenApiDocument(doc: any) {
 }
 
 function assertNoExternalRefs(value: unknown) {
-  if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
     value.forEach(assertNoExternalRefs);
     return;
   }
-  const record = value as Record<string, unknown>;
-  if (typeof record.$ref === "string" && !record.$ref.startsWith("#/")) {
-    throw new Error(`${EXTERNAL_REF_ERROR}: ${record.$ref}`);
+  if (!isPlainObject(value)) return;
+  if (typeof value.$ref === "string" && !value.$ref.startsWith("#/")) {
+    throw new Error(`${EXTERNAL_REF_ERROR}: ${value.$ref}`);
   }
-  Object.values(record).forEach(assertNoExternalRefs);
+  Object.values(value).forEach(assertNoExternalRefs);
 }
 
 function openApiImportError(error: unknown) {
