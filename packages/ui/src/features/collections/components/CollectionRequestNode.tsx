@@ -1,23 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
-import type { GraphQLRequestConfig, GrpcRequestConfig, RequestConfig, SavedRequest, WebSocketRequestConfig } from "@invoke/core";
+import { GripVertical } from "lucide-react";
+import type { RequestConfig, SavedRequest } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
-import { webSocketClose } from "../../websocket/api";
+import { webSocketClose } from "../../websocket";
 import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
-import { ConfirmModal } from "../../../components/shared/ConfirmModal";
-import { PromptModal } from "../../../components/shared/PromptModal";
-import { CollectionMenuItem } from "./CollectionMenuItem";
+import { CollectionRequestMenu } from "./tree/CollectionRequestMenu";
+import { CollectionRequestModals } from "./tree/CollectionRequestModals";
+import { openSavedRequest } from "./tree/openSavedRequest";
 
 const COMPARE_FIELDS: (keyof RequestConfig)[] = [
   "method", "url", "params", "headers", "bodyMode", "body", "auth",
   "timeoutMs", "variables", "assertions", "extractionRules", "options",
   "scripts", "retryPolicy",
 ];
-
-function pickFields(obj: unknown) {
-  const o = obj as Record<string, unknown>;
-  return Object.fromEntries(COMPARE_FIELDS.map((k) => [k, o[k]]));
-}
 
 export function CollectionRequestNode({
   request,
@@ -26,7 +21,7 @@ export function CollectionRequestNode({
   request: SavedRequest;
   collectionId: string;
 }) {
-  const { set, setRequest, setGraphqlRequest, setGrpcRequest, setWsSession, addToast, request: activeRequest, wsSessions, activeWsSessionId } = useStore();
+  const store = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -34,103 +29,41 @@ export function CollectionRequestNode({
   const [dragging, setDragging] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const pendingOpenRef = useRef<(() => void) | null>(null);
-
   useEffect(() => {
     if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+    const handler = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
 
-  const isActive = activeRequest.id === request.id;
-  const isDirty = useMemo(() => {
-    if (!isActive) return false;
-    return (
-      JSON.stringify(pickFields(activeRequest)) !==
-      JSON.stringify(pickFields(request.request))
-    );
-  }, [isActive, activeRequest, request.request]);
+  const isActive = store.request.id === request.id;
+  const isDirty = useMemo(
+    () =>
+      isActive &&
+      JSON.stringify(pickFields(store.request)) !==
+        JSON.stringify(pickFields(request.request)),
+    [isActive, store.request, request.request],
+  );
 
-  const doOpen = () => {
-    const meta = {
-      id: request.id,
-      name: request.name,
-      collectionId: request.collectionId,
-      folderId: request.folderId,
-      protocol: request.protocol,
-    };
-
-    if (request.protocol === "graphql") {
-      setGraphqlRequest(request.request as GraphQLRequestConfig);
-      setRequest(meta);
-      set({ requestTab: "graphql" });
-      return;
-    }
-
-    if (request.protocol === "websocket") {
-      const wsReq = request.request as WebSocketRequestConfig;
-      setRequest(meta);
-      set((s) => ({
-        wsSessions: s.wsSessions.map((sess) =>
-          sess.id === s.activeWsSessionId
-            ? { ...sess, websocketRequest: wsReq, requestId: request.id, log: [] }
-            : sess,
-        ),
-        websocketRequest: wsReq,
-      }));
-      return;
-    }
-
-    if (request.protocol === "grpc") {
-      setGrpcRequest(request.request as GrpcRequestConfig);
-      setRequest(meta);
-      return;
-    }
-
-    const draft = request.request as RequestConfig;
-    const draftParams = draft.params ?? [];
-    let params = draftParams;
-    if (draftParams.length === 0) {
-      const url = draft.url ?? "";
-      const qIdx = url.indexOf("?");
-      if (qIdx !== -1) {
-        const parsed: typeof params = [];
-        new URLSearchParams(url.slice(qIdx + 1)).forEach((value, key) => {
-          if (key) parsed.push({ key, value, enabled: true });
-        });
-        if (parsed.length > 0) params = parsed;
-      }
-    }
-    setRequest({ ...draft, params, ...meta });
-  };
-
+  const doOpen = () => openSavedRequest(request, store);
   const open = () => {
-    const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
-    const activeIsConnected = activeSession?.state === "connected" || activeSession?.state === "connecting";
-    const nonWsHasConnections = request.protocol !== "websocket" && wsSessions.some((s) => s.state === "connected" || s.state === "connecting");
-
-    if ((request.protocol === "websocket" && activeIsConnected) || nonWsHasConnections) {
+    const activeSession =
+      store.wsSessions.find((session) => session.id === store.activeWsSessionId) ??
+      store.wsSessions[0];
+    const activeWs = ["connected", "connecting"].includes(activeSession?.state ?? "");
+    const anyWs = store.wsSessions.some((session) =>
+      ["connected", "connecting"].includes(session.state),
+    );
+    if ((request.protocol === "websocket" && activeWs) || (request.protocol !== "websocket" && anyWs)) {
       pendingOpenRef.current = doOpen;
       setConfirmDisconnect(true);
       return;
     }
-
     doOpen();
-  };
-
-  const handleConfirmDisconnect = () => {
-    setConfirmDisconnect(false);
-    const activeSession = wsSessions.find((s) => s.id === activeWsSessionId);
-    const toDisconnect = request.protocol === "websocket" && activeSession ? [activeSession] : wsSessions;
-    for (const sess of toDisconnect) {
-      if (sess.connectionId) webSocketClose(sess.connectionId).catch(() => {});
-      if (sess.state !== "disconnected") setWsSession(sess.id, { state: "disconnected", connectionId: "" });
-    }
-    pendingOpenRef.current?.();
-    pendingOpenRef.current = null;
   };
 
   const duplicate = async (name: string) => {
@@ -142,11 +75,10 @@ export function CollectionRequestNode({
         collectionId,
         { folderId: request.folderId ?? null },
       );
-      const reqs = await coreStore.listRequests(collectionId);
-      set({ requests: reqs });
-      addToast("success", "Request duplicated");
-    } catch (e) {
-      addToast("error", String(e));
+      store.set({ requests: await coreStore.listRequests(collectionId) });
+      store.addToast("success", "Request duplicated");
+    } catch (error) {
+      store.addToast("error", String(error));
     }
   };
 
@@ -154,119 +86,94 @@ export function CollectionRequestNode({
     setConfirmDelete(false);
     try {
       await coreStore.deleteRequest(request.id);
-      const reqs = await coreStore.listRequests(collectionId);
-      set({ requests: reqs });
-      addToast("success", "Request deleted");
-    } catch (e) {
-      addToast("error", String(e));
+      store.set({ requests: await coreStore.listRequests(collectionId) });
+      store.addToast("success", "Request deleted");
+    } catch (error) {
+      store.addToast("error", String(error));
     }
+  };
+
+  const disconnectAndOpen = () => {
+    setConfirmDisconnect(false);
+    const activeSession = store.wsSessions.find(
+      (session) => session.id === store.activeWsSessionId,
+    );
+    const sessions =
+      request.protocol === "websocket" && activeSession
+        ? [activeSession]
+        : store.wsSessions;
+    for (const session of sessions) {
+      if (session.connectionId) webSocketClose(session.connectionId).catch(() => {});
+      if (session.state !== "disconnected") {
+        store.setWsSession(session.id, { state: "disconnected", connectionId: "" });
+      }
+    }
+    pendingOpenRef.current?.();
+    pendingOpenRef.current = null;
   };
 
   return (
     <>
       <div
         draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData("requestId", request.id);
-          e.dataTransfer.setData("collectionId", request.collectionId);
-          e.dataTransfer.setData(`collection/${request.collectionId}`, "");
-          e.dataTransfer.setData(`folder/${request.folderId ?? "none"}`, "");
-          e.dataTransfer.effectAllowed = "move";
-          setDragging(true);
-        }}
+        onDragStart={(event) => startDrag(event, request, setDragging)}
         onDragEnd={() => setDragging(false)}
         className={`group relative flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 transition-opacity ${dragging ? "opacity-40" : ""}`}
         onClick={open}
       >
-        <GripVertical
-          size={11}
-          className="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--text-3)] cursor-grab"
-        />
-        <MethodBadge
-          method={protocolMethod(request.protocol, (request.request as { method?: string })?.method)}
-        />
+        <GripVertical size={11} className="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--text-3)] cursor-grab" />
+        <MethodBadge method={protocolMethod(request.protocol, (request.request as { method?: string })?.method)} />
         <span className="flex-1 text-xs text-[var(--text-1)] truncate">
-          {request.name ||
-            (request.request as { url?: string })?.url ||
-            "Untitled"}
+          {request.name || (request.request as { url?: string })?.url || "Untitled"}
         </span>
-        {isDirty && (
-          <span
-            title="Unsaved changes"
-            className="shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--warn)]"
-          />
-        )}
-        <div
-          ref={menuRef}
-          className="opacity-0 group-hover:opacity-100 relative"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
-          >
-            <MoreHorizontal size={13} />
-          </button>
-          {menuOpen && (
-            <div
-              className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] py-1 min-w-[140px]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <CollectionMenuItem
-                icon={<Copy size={12} />}
-                label="Duplicate"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setDuplicateName(`${request.name || "Untitled"} Copy`);
-                }}
-              />
-              <CollectionMenuItem
-                icon={<Trash2 size={12} />}
-                label="Delete"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setConfirmDelete(true);
-                }}
-                danger
-              />
-            </div>
-          )}
-        </div>
+        {isDirty && <span title="Unsaved changes" className="shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--warn)]" />}
+        <CollectionRequestMenu
+          open={menuOpen}
+          menuRef={menuRef}
+          onToggle={() => setMenuOpen((value) => !value)}
+          onDuplicate={() => {
+            setMenuOpen(false);
+            setDuplicateName(`${request.name || "Untitled"} Copy`);
+          }}
+          onDelete={() => {
+            setMenuOpen(false);
+            setConfirmDelete(true);
+          }}
+        />
       </div>
-
-      <PromptModal
-        open={duplicateName !== null}
-        title="Duplicate Request"
-        label="Name"
-        defaultValue={duplicateName ?? ""}
-        confirmLabel="Duplicate"
-        onConfirm={duplicate}
-        onClose={() => setDuplicateName(null)}
-      />
-      <ConfirmModal
-        open={confirmDisconnect}
-        title="Active WebSocket Connection"
-        message="Switching requests will disconnect the active session. Continue?"
-        confirmLabel="Disconnect & Load"
-        danger
-        onConfirm={handleConfirmDisconnect}
-        onClose={() => { setConfirmDisconnect(false); pendingOpenRef.current = null; }}
-      />
-      <ConfirmModal
-        open={confirmDelete}
-        title="Delete Request"
-        message={
-          <span className="flex flex-col gap-2">
-            <span>Are you sure you want to delete:</span>
-            <strong className="break-all">{request.name || "Untitled"}</strong>
-            <span>This action cannot be undone.</span>
-          </span>
-        }
-        confirmLabel="Delete"
-        danger
-        onConfirm={del}
-        onClose={() => setConfirmDelete(false)}
+      <CollectionRequestModals
+        requestName={request.name || "Untitled"}
+        duplicateName={duplicateName}
+        confirmDisconnect={confirmDisconnect}
+        confirmDelete={confirmDelete}
+        onDuplicate={duplicate}
+        onDuplicateClose={() => setDuplicateName(null)}
+        onConfirmDisconnect={disconnectAndOpen}
+        onDisconnectClose={() => {
+          setConfirmDisconnect(false);
+          pendingOpenRef.current = null;
+        }}
+        onConfirmDelete={del}
+        onDeleteClose={() => setConfirmDelete(false)}
       />
     </>
   );
+}
+
+function pickFields(obj: unknown) {
+  const record = obj as Record<string, unknown>;
+  return Object.fromEntries(COMPARE_FIELDS.map((key) => [key, record[key]]));
+}
+
+function startDrag(
+  event: React.DragEvent,
+  request: SavedRequest,
+  setDragging: (dragging: boolean) => void,
+) {
+  event.dataTransfer.setData("requestId", request.id);
+  event.dataTransfer.setData("collectionId", request.collectionId);
+  event.dataTransfer.setData(`collection/${request.collectionId}`, "");
+  event.dataTransfer.setData(`folder/${request.folderId ?? "none"}`, "");
+  event.dataTransfer.effectAllowed = "move";
+  setDragging(true);
 }

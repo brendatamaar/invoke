@@ -3,7 +3,7 @@ import {
   HTTP_METHODS,
   makeRoute,
   makeSequenceItem,
-} from "../features/mock/components/mockRouteUtils";
+} from "../features/mock/mockRouteUtils";
 
 describe("mock route utils", () => {
   it("defines supported HTTP methods", () => {

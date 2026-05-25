@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmt, fmtMs, fmtSize } from "../features/response/components/responseFormatting";
+import { fmt, fmtMs, fmtSize } from "../features/response/responseFormatting";
 
 describe("response formatting", () => {
   it("formats request timings", () => {

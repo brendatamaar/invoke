@@ -107,6 +107,12 @@ export function CodeEditor({
   const wrapCompartment = useRef(new Compartment()).current;
   const editorWordWrap = useStore((s) => s.editorWordWrap);
   onChangeRef.current = onChange;
+  const extraExtensionsRef = useRef(extraExtensions);
+  extraExtensionsRef.current = extraExtensions;
+  const editorWordWrapRef = useRef(editorWordWrap);
+  editorWordWrapRef.current = editorWordWrap;
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -114,12 +120,12 @@ export function CodeEditor({
     const extensions = [
       basicSetup,
       getLangExtension(lang),
-      ...extraExtensions,
+      ...extraExtensionsRef.current,
       EditorView.theme({
         "&": { minHeight },
         ".cm-scroller": { fontFamily: "'JetBrains Mono', monospace" },
       }),
-      wrapCompartment.of(editorWordWrap ? EditorView.lineWrapping : []),
+      wrapCompartment.of(editorWordWrapRef.current ? EditorView.lineWrapping : []),
     ];
 
     if (readOnly) {
@@ -135,7 +141,7 @@ export function CodeEditor({
     }
 
     const view = new EditorView({
-      state: EditorState.create({ doc: value, extensions }),
+      state: EditorState.create({ doc: valueRef.current, extensions }),
       parent: containerRef.current,
     });
     viewRef.current = view;
@@ -144,8 +150,7 @@ export function CodeEditor({
       view.destroy();
       viewRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, readOnly, minHeight]);
+  }, [lang, readOnly, minHeight, wrapCompartment]);
 
   useEffect(() => {
     viewRef.current?.dispatch({

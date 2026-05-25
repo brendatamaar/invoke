@@ -13,7 +13,7 @@ import { RouteModal } from "./RouteModal";
 import { WebhookSection } from "./WebhookSection";
 
 export function MockPanel() {
-  const { set, addToast } = useStore();
+  const { addToast } = useStore();
   const mockRoutes = useMockRoutes();
   const [editingRoute, setEditingRoute] = useState<MockRoute | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);

@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { List, Network, Play, Square, X } from "lucide-react";
 import {
   FlowRunner,
   validateFlow,
@@ -8,12 +7,13 @@ import {
   type VariableScope,
 } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
-import { execute } from "../../execute/api";
-import { FlowCanvas } from "./FlowCanvas";
+import { execute } from "../../execute";
+import { showFlowValidation } from "../utils/validation";
+import { FlowModalBody } from "./flow-modal/FlowModalBody";
+import { FlowModalFooter } from "./flow-modal/FlowModalFooter";
+import { FlowModalHeader } from "./flow-modal/FlowModalHeader";
 import { FlowRunLog } from "./FlowRunLog";
-import { FlowStepList } from "./FlowStepList";
-import { makeStep } from "./flowStepUtils";
-import { StepEditorPanel } from "./StepEditorPanel";
+import { makeStep } from "../flowStepUtils";
 
 export function FlowModal({
   flow,
@@ -81,29 +81,8 @@ export function FlowModal({
     setSelectedIndex(to);
   };
 
-  const showValidation = (validation: ReturnType<typeof validateFlow>) => {
-    if (!validation.valid) {
-      const [firstError] = validation.errors;
-      const remaining = validation.errors.length - 1;
-      addToast(
-        "error",
-        `${firstError.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`,
-      );
-      return false;
-    }
-    if (validation.warnings.length > 0) {
-      const [firstWarning] = validation.warnings;
-      const remaining = validation.warnings.length - 1;
-      addToast(
-        "warn",
-        `${firstWarning.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`,
-      );
-    }
-    return true;
-  };
-
   const saveFlow = async () => {
-    if (!showValidation(validateFlow(draft))) return;
+    if (!showFlowValidation(validateFlow(draft), addToast)) return;
     try {
       await coreStore.saveFlow(draft);
       addToast("success", "Flow saved");
@@ -113,7 +92,7 @@ export function FlowModal({
   };
 
   const runFlow = async () => {
-    if (!showValidation(validateFlow(draft, { requireSteps: true }))) return;
+    if (!showFlowValidation(validateFlow(draft, { requireSteps: true }), addToast)) return;
     set({ flowRunning: true, flowResult: undefined, flowLog: [] });
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const scopes: VariableScope[] = [];
@@ -152,9 +131,6 @@ export function FlowModal({
     set({ flowRunning: false });
   };
 
-  const selectedStep =
-    selectedIndex !== null ? draft.steps[selectedIndex] : null;
-
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-[1px]"
@@ -166,127 +142,40 @@ export function FlowModal({
         className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col overflow-hidden"
         style={{ width: viewMode === "canvas" ? "90vw" : 720, height: "82vh" }}
       >
-        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[var(--border)] shrink-0">
-          <input
-            className="input text-sm py-1 flex-1 font-medium"
-            placeholder="Flow name"
-            value={draft.name}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          />
-          <div className="flex rounded border border-[var(--border)] overflow-hidden">
-            <button
-              onClick={() => setViewMode("list")}
-              className={`px-2 py-1 text-2xs flex items-center gap-1 ${viewMode === "list" ? "bg-[var(--accent)] text-white" : "text-[var(--text-3)] hover:bg-[var(--surface-2)]"}`}
-              title="List view"
-            >
-              <List size={12} /> List
-            </button>
-            <button
-              onClick={() => setViewMode("canvas")}
-              className={`px-2 py-1 text-2xs flex items-center gap-1 ${viewMode === "canvas" ? "bg-[var(--accent)] text-white" : "text-[var(--text-3)] hover:bg-[var(--surface-2)]"}`}
-              title="Canvas view"
-            >
-              <Network size={12} /> Canvas
-            </button>
-          </div>
-          <button
-            onClick={handleClose}
-            className="text-[var(--text-3)] hover:text-[var(--text-1)] p-1 rounded hover:bg-[var(--surface-2)]"
-          >
-            <X size={14} />
-          </button>
-        </div>
+        <FlowModalHeader
+          name={draft.name}
+          viewMode={viewMode}
+          onNameChange={(name) => setDraft({ ...draft, name })}
+          onViewModeChange={setViewMode}
+          onClose={handleClose}
+        />
 
-        <div className="flex flex-1 min-h-0">
-          {viewMode === "canvas" && (
-            <div className="flex flex-1 min-h-0 min-w-0">
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <FlowCanvas
-                  steps={draft.steps}
-                  selectedIndex={selectedIndex}
-                  flowResult={flowResult}
-                  onSelect={setSelectedIndex}
-                  onAddStep={addStep}
-                />
-              </div>
-              {selectedIndex !== null && draft.steps[selectedIndex] && (
-                <div
-                  className="border-l border-[var(--border)] overflow-y-auto p-5 shrink-0"
-                  style={{ width: 280 }}
-                >
-                  <StepEditorPanel
-                    step={draft.steps[selectedIndex]}
-                    onChange={(s) => updateStep(selectedIndex, s)}
-                    onRemove={() => removeStep(selectedIndex)}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {viewMode === "list" && (
-            <>
-              <FlowStepList
-                steps={draft.steps}
-                selectedIndex={selectedIndex}
-                flowResult={flowResult}
-                addingStep={addingStep}
-                dragOver={dragOver}
-                dragIndex={dragIndex}
-                onSelect={setSelectedIndex}
-                onAddStep={addStep}
-                onSetAddingStep={setAddingStep}
-                onSetDragOver={setDragOver}
-                onReorderStep={reorderStep}
-                onRemoveStep={removeStep}
-              />
-
-              <div className="flex-1 overflow-y-auto p-6">
-                {selectedStep ? (
-                  <StepEditorPanel
-                    step={selectedStep}
-                    onChange={(s) => updateStep(selectedIndex!, s)}
-                    onRemove={() => removeStep(selectedIndex!)}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-1 text-[var(--text-3)]">
-                    <p className="text-sm">
-                      Select a step to edit or add a new step
-                    </p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+        <FlowModalBody
+          viewMode={viewMode}
+          steps={draft.steps}
+          selectedIndex={selectedIndex}
+          flowResult={flowResult}
+          addingStep={addingStep}
+          dragOver={dragOver}
+          dragIndex={dragIndex}
+          onSelect={setSelectedIndex}
+          onAddStep={addStep}
+          onSetAddingStep={setAddingStep}
+          onSetDragOver={setDragOver}
+          onReorderStep={reorderStep}
+          onUpdateStep={updateStep}
+          onRemoveStep={removeStep}
+        />
 
         <FlowRunLog flowLog={flowLog} flowResult={flowResult} />
 
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-2)] shrink-0">
-          <button onClick={handleClose} className="btn text-xs">
-            Close
-          </button>
-          <button onClick={saveFlow} className="btn text-xs">
-            Save
-          </button>
-          {flowRunning ? (
-            <button
-              onClick={stopFlow}
-              className="btn btn-danger text-xs flex items-center gap-1.5"
-            >
-              <Square size={12} />
-              Stop
-            </button>
-          ) : (
-            <button
-              onClick={runFlow}
-              className="btn btn-primary text-xs flex items-center gap-1.5"
-            >
-              <Play size={12} />
-              Run
-            </button>
-          )}
-        </div>
+        <FlowModalFooter
+          running={flowRunning}
+          onClose={handleClose}
+          onSave={saveFlow}
+          onRun={runFlow}
+          onStop={stopFlow}
+        />
       </div>
     </div>
   );

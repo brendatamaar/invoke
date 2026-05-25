@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RequestConfig } from "@invoke/core";
 import { applyOAuth2Token } from "../features/execution/oauth2";
-import { oauth2ClientCredentials } from "../features/oauth2/api";
+import { oauth2ClientCredentials } from "../features/oauth2";
 
-vi.mock("../features/oauth2/api", () => ({
+vi.mock("../features/oauth2", () => ({
   oauth2ClientCredentials: vi.fn(),
 }));
 
@@ -35,7 +35,7 @@ describe("OAuth2 execution helper", () => {
           type: "oauth2",
           flow: "authorization_code",
           accessToken: "token_123",
-          tokenExpiresAt: Date.now() + 60_000,
+          tokenExpiresAt: Date.now() + 120_000,
         },
       },
       warn,

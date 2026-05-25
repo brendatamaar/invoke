@@ -50,5 +50,52 @@ module.exports = {
         }],
       },
     },
+    {
+      // Catches code OUTSIDE features/ importing deep into a slice (e.g. App.tsx →
+      // "./features/grpc/components/X"). Does NOT catch relative cross-slice imports
+      // from within a feature (e.g. "../../websocket/components/Y") because
+      // no-restricted-imports matches on the literal module string, and relative paths
+      // don't contain the "features/" segment. For full cross-slice enforcement install
+      // eslint-plugin-boundaries and configure per-slice allow lists.
+      files: [
+        "packages/ui/src/**/*.ts",
+        "packages/ui/src/**/*.tsx",
+        "src/**/*.ts",
+        "src/**/*.tsx",
+      ],
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          {
+            patterns: [
+              {
+                group: [
+                  "**/features/*/components/**",
+                  "**/features/*/hooks/**",
+                  "**/features/*/utils/**",
+                  "**/features/*/api",
+                ],
+                message:
+                  "Import from the feature's index.ts (the slice public API), not deep paths.",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      // Files inside a feature may use relative deep paths to their own siblings.
+      // NOTE: this also disables the rule for cross-slice relative imports from within
+      // a feature — a known gap. See comment above.
+      files: [
+        "packages/ui/src/features/*/**/*.ts",
+        "packages/ui/src/features/*/**/*.tsx",
+        "src/features/*/**/*.ts",
+        "src/features/*/**/*.tsx",
+      ],
+      rules: {
+        "no-restricted-imports": "off",
+      },
+    },
   ],
 };
