@@ -91,16 +91,3 @@ export async function decryptJson<T>(
   return JSON.parse(new TextDecoder().decode(plaintext)) as T;
 }
 
-export async function encryptString(
-  value: string,
-  key: CryptoKey,
-): Promise<string> {
-  return encryptJson(value, key);
-}
-
-export async function decryptString(
-  encrypted: string,
-  key: CryptoKey,
-): Promise<string> {
-  return decryptJson<string>(encrypted, key);
-}

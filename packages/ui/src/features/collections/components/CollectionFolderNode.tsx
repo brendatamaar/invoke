@@ -5,17 +5,18 @@ import {
   FileText,
   Folder,
   FolderOpen,
-  MoreHorizontal,
-  Play,
-  Trash2,
-  Variable,
 } from "lucide-react";
 import type { Folder as FolderType } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
-import { ConfirmModal } from "../../../components/shared/ConfirmModal";
-import { PromptModal } from "../../../components/shared/PromptModal";
-import { CollectionMenuItem } from "./CollectionMenuItem";
-import { CollectionRequestNode } from "./CollectionRequestNode";
+import { FolderActionsMenu } from "./tree/FolderActionsMenu";
+import { FolderNodeModals } from "./tree/FolderNodeModals";
+import { FolderRequestList } from "./tree/FolderRequestList";
+import {
+  handleFolderDragOver,
+  handleFolderDrop,
+  handleFolderItemDragOver,
+  handleFolderListDrop,
+} from "./tree/folderDrag";
 
 export function CollectionFolderNode({
   folder,
@@ -31,21 +32,24 @@ export function CollectionFolderNode({
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+    const handler = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
+
   const expanded = expandedFolderIds.includes(folder.id);
-  const folderRequests = requests.filter((r) => r.folderId === folder.id);
   const sortedRequests = useMemo(
-    () => [...folderRequests].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
-    [folderRequests],
+    () =>
+      requests
+        .filter((request) => request.folderId === folder.id)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [folder.id, requests],
   );
 
   const openVariableEditor = () => {
@@ -60,101 +64,27 @@ export function CollectionFolderNode({
       },
     });
   };
-
   const deleteFolder = async () => {
     setDeleteModal(false);
     try {
       await coreStore.deleteFolder(folder.id);
       addToast("success", "Folder deleted");
-    } catch (e) {
-      addToast("error", String(e));
+    } catch (error) {
+      addToast("error", String(error));
     }
   };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    if (!e.dataTransfer.types.includes(`collection/${collectionId}`)) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const requestId = e.dataTransfer.getData("requestId");
-    const sourceCollectionId = e.dataTransfer.getData("collectionId");
-    if (!requestId || sourceCollectionId !== collectionId) return;
-    const req = requests.find((r) => r.id === requestId);
-    if (req?.folderId === folder.id) return;
-    try {
-      await coreStore.moveRequest(requestId, folder.id);
-    } catch (err) {
-      addToast("error", String(err));
-    }
-  };
-
   const saveDescription = async (description: string) => {
     setDescModal(false);
     try {
       await coreStore.updateFolder({ ...folder, description });
-    } catch (e) {
-      addToast("error", String(e));
+    } catch (error) {
+      addToast("error", String(error));
     }
   };
-
-  const handleItemDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-    if (!e.dataTransfer.types.includes(`collection/${collectionId}`)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = "move";
-    const rect = e.currentTarget.getBoundingClientRect();
-    setDragOverIndex(e.clientY < rect.top + rect.height / 2 ? index : index + 1);
-  };
-
-  const handleListDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverIndex(null);
-  };
-
-  const handleListDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const dropIndex = dragOverIndex;
-    setDragOverIndex(null);
-    setIsDragOver(false);
-
-    const requestId = e.dataTransfer.getData("requestId");
-    const sourceCollectionId = e.dataTransfer.getData("collectionId");
-    if (!requestId || sourceCollectionId !== collectionId) return;
-
-    const req = requests.find((r) => r.id === requestId);
-
-    if (req?.folderId === folder.id) {
-      if (dropIndex === null) return;
-      const currentIndex = sortedRequests.findIndex((r) => r.id === requestId);
-      if (currentIndex === -1) return;
-      const targetIndex = dropIndex > currentIndex ? dropIndex - 1 : dropIndex;
-      if (targetIndex === currentIndex) return;
-
-      const newOrder = [...sortedRequests];
-      const [moved] = newOrder.splice(currentIndex, 1);
-      newOrder.splice(targetIndex, 0, moved);
-
-      try {
-        await coreStore.reorderRequests(newOrder.map((r) => r.id));
-      } catch (err) {
-        addToast("error", String(err));
-      }
-    } else {
-      try {
-        await coreStore.moveRequest(requestId, folder.id);
-      } catch (err) {
-        addToast("error", String(err));
-      }
-    }
+  const moveToFolder = async (requestId: string) => {
+    const req = requests.find((request) => request.id === requestId);
+    if (req?.folderId === folder.id) return;
+    await coreStore.moveRequest(requestId, folder.id);
   };
 
   return (
@@ -163,16 +93,27 @@ export function CollectionFolderNode({
         <div
           className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer rounded mx-1 text-[var(--text-2)] transition-colors ${isDragOver ? "bg-[var(--accent-subtle,var(--surface-2))] ring-1 ring-inset ring-[var(--accent,var(--border))]" : "hover:bg-[var(--surface-2)]"}`}
           onClick={() => toggleFolder(folder.id)}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+          onDragOver={(event) =>
+            handleFolderDragOver(event, collectionId, setIsDragOver)
+          }
+          onDragLeave={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+              setIsDragOver(false);
+            }
+          }}
+          onDrop={(event) =>
+            handleFolderDrop(
+              event,
+              collectionId,
+              setIsDragOver,
+              moveToFolder,
+              addToast,
+            )
+          }
         >
           {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
           {expanded ? <FolderOpen size={13} /> : <Folder size={13} />}
-          <span
-            className="flex-1 text-xs truncate"
-            title={folder.description || undefined}
-          >
+          <span className="flex-1 text-xs truncate" title={folder.description || undefined}>
             {folder.name}
           </span>
           {folder.description && (
@@ -180,108 +121,70 @@ export function CollectionFolderNode({
               <FileText size={11} className="text-[var(--text-3)]" />
             </span>
           )}
-          <div
-            ref={menuRef}
-            className="opacity-0 group-hover:opacity-100 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
-            >
-              <MoreHorizontal size={13} />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] py-1 min-w-[140px]">
-                <CollectionMenuItem
-                  icon={<Play size={12} />}
-                  label="Run"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    set({
-                      showCollectionRunner: true,
-                      collectionRunnerTarget: {
-                        type: "folder",
-                        id: folder.id,
-                        name: folder.name,
-                      },
-                    });
-                  }}
-                />
-                <CollectionMenuItem
-                  icon={<Variable size={12} />}
-                  label="Variables"
-                  onClick={openVariableEditor}
-                />
-                <CollectionMenuItem
-                  icon={<FileText size={12} />}
-                  label="Description"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setDescModal(true);
-                  }}
-                />
-                <CollectionMenuItem
-                  icon={<Trash2 size={12} />}
-                  label="Delete"
-                  danger
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setDeleteModal(true);
-                  }}
-                />
-              </div>
-            )}
-          </div>
+          <FolderActionsMenu
+            open={menuOpen}
+            menuRef={menuRef}
+            onToggle={() => setMenuOpen((value) => !value)}
+            onRun={() => {
+              setMenuOpen(false);
+              set({
+                showCollectionRunner: true,
+                collectionRunnerTarget: { type: "folder", id: folder.id, name: folder.name },
+              });
+            }}
+            onVariables={openVariableEditor}
+            onDescription={() => {
+              setMenuOpen(false);
+              setDescModal(true);
+            }}
+            onDelete={() => {
+              setMenuOpen(false);
+              setDeleteModal(true);
+            }}
+          />
         </div>
         {expanded && (
-          <div
-            className="ml-3"
-            onDragLeave={handleListDragLeave}
-            onDrop={handleListDrop}
-          >
-            {sortedRequests.map((r, i) => (
-              <div key={r.id} onDragOver={(e) => handleItemDragOver(e, i)}>
-                {dragOverIndex === i && (
-                  <div className="mx-2 h-0.5 rounded bg-[var(--accent,#3b82f6)]" />
-                )}
-                <CollectionRequestNode request={r} collectionId={collectionId} />
-              </div>
-            ))}
-            {dragOverIndex === sortedRequests.length && (
-              <div className="mx-2 h-0.5 rounded bg-[var(--accent,#3b82f6)]" />
-            )}
-          </div>
+          <FolderRequestList
+            requests={sortedRequests}
+            collectionId={collectionId}
+            dragOverIndex={dragOverIndex}
+            onItemDragOver={(event, index) =>
+              handleFolderItemDragOver(
+                event,
+                index,
+                collectionId,
+                setDragOverIndex,
+              )
+            }
+            onListDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                setDragOverIndex(null);
+              }
+            }}
+            onListDrop={(event) =>
+              handleFolderListDrop(
+                event,
+                collectionId,
+                folder.id,
+                dragOverIndex,
+                sortedRequests,
+                setDragOverIndex,
+                setIsDragOver,
+                addToast,
+              )
+            }
+          />
         )}
       </div>
-
-      <ConfirmModal
-        open={deleteModal}
-        title="Delete Folder"
-        message={
-          <span className="flex flex-col gap-2">
-            <span>Are you sure you want to delete:</span>
-            <strong className="break-all">{folder.name}</strong>
-            <span>This action cannot be undone.</span>
-          </span>
-        }
-        confirmLabel="Delete"
-        danger
-        onConfirm={deleteFolder}
-        onClose={() => setDeleteModal(false)}
-      />
-
-      <PromptModal
-        open={descModal}
-        title={`Description - ${folder.name}`}
-        label="Description"
-        defaultValue={folder.description ?? ""}
-        placeholder="Describe this folder..."
-        multiline
-        confirmLabel="Save"
-        allowEmpty
-        onConfirm={saveDescription}
-        onClose={() => setDescModal(false)}
+      <FolderNodeModals
+        folderName={folder.name}
+        description={folder.description}
+        deleteOpen={deleteModal}
+        descriptionOpen={descModal}
+        onConfirmDelete={deleteFolder}
+        onDeleteClose={() => setDeleteModal(false)}
+        onSaveDescription={saveDescription}
+        onDescriptionClose={() => setDescModal(false)}
       />
     </>
   );

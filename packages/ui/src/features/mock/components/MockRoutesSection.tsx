@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { Plus, Trash2, Upload, Play, Square } from "lucide-react";
 import type { MockRoute } from "@invoke/core";
 import { MethodBadge } from "../../../components/shared/MethodBadge";
-import { makeRoute } from "./mockRouteUtils";
+import { makeRoute } from "../mockRouteUtils";
 
 export function MockRoutesSection({
   routes,

@@ -2,7 +2,7 @@ import type { Timing, TimingAttempt, TimingPhaseName } from "@invoke/core";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
 import { useStore } from "../../../store";
 import type { PhaseBar } from "../../../types";
-import { fmtMs } from "./responseFormatting";
+import { fmtMs } from "../responseFormatting";
 
 const PHASE_DEFS: { name: TimingPhaseName; label: string; color: string }[] = [
   { name: "dns", label: "DNS", color: "#5bc0be" },

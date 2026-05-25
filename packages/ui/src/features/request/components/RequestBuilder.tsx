@@ -2,173 +2,19 @@ import { useStore } from "../../../store";
 import { Select } from "../../../components/shared/Select";
 import { URLBar } from "./URLBar";
 import { KeyValueEditor } from "../../../components/shared/KeyValueEditor";
-import { WebSocketClient } from "../../websocket/components/WebSocketClient";
-import { GRPCClient } from "../../grpc/components/GRPCClient";
+import { WebSocketBar, WebSocketClient } from "../../websocket";
+import { GRPCBar, GRPCClient } from "../../grpc";
 import { BodyPanel } from "./BodyPanel";
-import { AuthPanel } from "./AuthPanel";
-import { GraphQLQueryPanel, GraphQLOptionsPanel } from "./GraphQLPanels";
-import { GRPCBar, WebSocketBar } from "./ProtocolBars";
-import { GraphQLVariablesPanel, ScriptsPanel } from "./ScriptPanels";
-import { AssertionsPanel, ExtractPanel } from "./RulePanels";
+import { AuthPanel } from "./auth/AuthPanel";
+import { GraphQLQueryPanel, GraphQLOptionsPanel, GraphQLVariablesPanel } from "../../graphql";
+import { ScriptsPanel } from "./ScriptsPanel";
+import { AssertionsPanel } from "./AssertionsPanel";
+import { ExtractPanel } from "./ExtractPanel";
 import { OptionsPanel } from "./OptionsPanel";
-import { extractPathVariableNames } from "@invoke/core";
 import type { KeyValue, RequestProtocol } from "@invoke/core";
-import type { RequestBuilderProps, RequestTab } from "../../../types";
-
-const COMMON_HEADERS = [
-  "Accept",
-  "Accept-Charset",
-  "Accept-Encoding",
-  "Accept-Language",
-  "Authorization",
-  "Cache-Control",
-  "Content-Disposition",
-  "Content-Encoding",
-  "Content-Language",
-  "Content-Length",
-  "Content-Type",
-  "Cookie",
-  "DNT",
-  "Date",
-  "ETag",
-  "Expect",
-  "From",
-  "Host",
-  "If-Match",
-  "If-Modified-Since",
-  "If-None-Match",
-  "If-Unmodified-Since",
-  "Keep-Alive",
-  "Last-Modified",
-  "Link",
-  "Location",
-  "Origin",
-  "Pragma",
-  "Range",
-  "Referer",
-  "Retry-After",
-  "Set-Cookie",
-  "TE",
-  "Transfer-Encoding",
-  "Upgrade",
-  "User-Agent",
-  "Vary",
-  "Via",
-  "Warning",
-  "WWW-Authenticate",
-  "X-Api-Key",
-  "X-Auth-Token",
-  "X-Content-Type-Options",
-  "X-Forwarded-For",
-  "X-Frame-Options",
-  "X-Request-ID",
-  "X-Requested-With",
-  "X-XSS-Protection",
-];
-
-const PROTOCOLS: { id: RequestProtocol; label: string }[] = [
-  { id: "rest", label: "REST" },
-  { id: "graphql", label: "GraphQL" },
-  { id: "websocket", label: "WebSocket" },
-  { id: "grpc", label: "gRPC" },
-];
-
-const REST_TABS: { id: RequestTab; label: string }[] = [
-  { id: "params", label: "Params" },
-  { id: "headers", label: "Headers" },
-  { id: "auth", label: "Auth" },
-  { id: "body", label: "Body" },
-  { id: "scripts", label: "Scripts" },
-  { id: "assertions", label: "Assertions" },
-  { id: "extract", label: "Extract" },
-  { id: "options", label: "Options" },
-];
-
-const GQL_TABS: { id: RequestTab; label: string }[] = [
-  { id: "graphql", label: "Query" },
-  { id: "graphqlVariables", label: "Variables" },
-  { id: "headers", label: "Headers" },
-  { id: "auth", label: "Auth" },
-  { id: "assertions", label: "Assertions" },
-  { id: "graphqlOptions", label: "Options" },
-];
-
-const SECTION_HEADER =
-  "px-3 py-1.5 text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wide border-b border-[var(--border)] bg-[var(--surface-2)]";
-
-function ParamsPanel({
-  url,
-  params,
-  pathVariables,
-  onParamsChange,
-  onPathVariablesChange,
-}: {
-  url: string;
-  params: KeyValue[];
-  pathVariables: KeyValue[];
-  onParamsChange: (rows: KeyValue[]) => void;
-  onPathVariablesChange: (rows: KeyValue[]) => void;
-}) {
-  const pathVarNames = extractPathVariableNames(url);
-  const valueMap = new Map(pathVariables.map((v) => [v.key, v.value]));
-
-  return (
-    <div className="flex flex-col">
-      <div>
-        {pathVarNames.length > 0 && (
-          <div className={SECTION_HEADER}>Query Parameters</div>
-        )}
-        <KeyValueEditor
-          rows={params}
-          onChange={(rows) => onParamsChange(rows as KeyValue[])}
-          keyPlaceholder="param"
-          valuePlaceholder="value"
-        />
-      </div>
-      {pathVarNames.length > 0 && (
-        <div className="border-t border-[var(--border)]">
-          <div className={SECTION_HEADER}>Path Variables</div>
-          <div className="grid grid-cols-[1fr_1px_1fr] items-center text-2xs text-[var(--text-3)] py-1 border-b border-[var(--border)] px-3">
-            <span>Key</span>
-            <span />
-            <span className="pl-2">Value</span>
-          </div>
-          {pathVarNames.map((name) => {
-            const val = valueMap.get(name) ?? "";
-            const filled = val.trim() !== "";
-            return (
-              <div
-                key={name}
-                className="grid grid-cols-[1fr_1px_1fr] items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
-              >
-                <span className="px-3 py-1.5 text-xs font-mono text-[var(--text-2)]">
-                  :{name}
-                </span>
-                <span className="h-4 bg-[var(--border)]" />
-                <input
-                  type="text"
-                  value={val}
-                  onChange={(e) => {
-                    const next = pathVarNames.map((n) => ({
-                      key: n,
-                      value: n === name ? e.target.value : (valueMap.get(n) ?? ""),
-                      enabled: true,
-                    }));
-                    onPathVariablesChange(next);
-                  }}
-                  placeholder="value"
-                  className={`w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono placeholder-[var(--text-3)] min-w-0 ${
-                    filled ? "text-[var(--success,#22c55e)]" : "text-[var(--warn)]"
-                  }`}
-                />
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+import type { RequestBuilderProps } from "../../../types";
+import { ParamsPanel } from "./ParamsPanel";
+import { COMMON_HEADERS, PROTOCOLS, REST_TABS, GQL_TABS } from "../constants";
 
 export function RequestBuilder({ onSend }: RequestBuilderProps) {
   const { request, setRequest, requestTab, set, loading } = useStore();

@@ -49,11 +49,7 @@ export function useCodeSnippetGeneration() {
         activeEnvironmentId,
         sessionVariables,
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [request.method, request.url, (request as any).params, request.headers,
-     (request as any).bodyMode, request.body, request.auth,
-     (request as any).timeoutMs, request.protocol,
-     activeEnvironmentId, sessionVariables],
+    [request, activeEnvironmentId, sessionVariables],
   );
 
   return useQuery({

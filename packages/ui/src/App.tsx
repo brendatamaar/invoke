@@ -1,24 +1,25 @@
 import { useCallback, useEffect, useRef } from "react";
 import { TopBar } from "./components/layout/TopBar";
 import { Sidebar } from "./components/layout/Sidebar";
-import { RequestBuilder } from "./features/request/components/RequestBuilder";
-import { ResponseViewer } from "./features/response/components/ResponseViewer";
+import { RequestBuilder } from "./features/request";
+import { ResponseViewer } from "./features/response";
 import { CommandPalette } from "./components/palette/CommandPalette";
 import { Toasts } from "./components/shared/Toast";
-import { DiffModal } from "./features/diff/components/DiffModal";
-import { VariableEditorModal } from "./features/variables/components/VariableEditorModal";
-import { HelpModal } from "./features/help/components/HelpModal";
-import { ClearHistoryModal } from "./features/history/components/ClearHistoryModal";
-import { SettingsPanel } from "./features/settings/components/SettingsPanel";
-import { PassphraseModal } from "./features/settings/components/PassphraseModal";
-import { CollectionRunnerModal } from "./features/collections/components/CollectionRunnerModal";
-import { BatchRunnerModal } from "./features/collections/components/BatchRunnerModal";
-import { SaveRequestModal } from "./features/collections/components/SaveRequestModal";
-import { SaveActionModal } from "./features/collections/components/SaveActionModal";
-import { CookieManagerModal } from "./features/cookies/components/CookieManagerModal";
+import { DiffModal } from "./features/diff";
+import { VariableEditorModal } from "./features/variables";
+import { HelpModal } from "./features/help";
+import { ClearHistoryModal } from "./features/history";
+import { SettingsPanel, PassphraseModal } from "./features/settings";
+import {
+  BatchRunnerModal,
+  CollectionRunnerModal,
+  SaveActionModal,
+  SaveRequestModal,
+} from "./features/collections";
+import { CookieManagerModal } from "./features/cookies";
 import { useAppBootstrap } from "./features/bootstrap/useAppBootstrap";
 import { useActiveEnvironmentPersistence } from "./features/environments/useActiveEnvironmentPersistence";
-import { useRequestExecution } from "./features/execution/useRequestExecution";
+import { useRequestExecution } from "./features/execution";
 import { useResizablePane } from "./hooks/useResizablePane";
 import { checkAndUnlockOnStartup } from "./features/settings/useCrypto";
 import { useStore } from "./store";

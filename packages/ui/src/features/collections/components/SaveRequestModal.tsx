@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { FolderOpen, X } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
 import { useCollections, useFolders } from "../../../hooks/useDb";
-import { Select } from "../../../components/shared/Select";
-
-const NEW_COLLECTION_SENTINEL = "__new_col__";
-const NEW_FOLDER_SENTINEL = "__new_folder__";
+import {
+  NEW_COLLECTION_SENTINEL,
+  NEW_FOLDER_SENTINEL,
+} from "./save/DestinationPicker";
+import { SaveRequestForm } from "./save/SaveRequestForm";
 
 export function SaveRequestModal() {
   const { saveDialog, set, request, addToast, setRequest } = useStore();
@@ -19,41 +20,31 @@ export function SaveRequestModal() {
   const [newCollectionName, setNewCollectionName] = useState("");
   const [folderId, setFolderId] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
-
   const isNewCollection = collectionId === NEW_COLLECTION_SENTINEL;
   const isNewFolder = folderId === NEW_FOLDER_SENTINEL;
 
   useEffect(() => {
-    if (saveDialog.open) {
-      setName(saveDialog.name);
-      const firstCol = collections[0]?.id ?? "";
-      setCollectionId(saveDialog.collectionId || firstCol);
-      setFolderId(saveDialog.folderId || "");
-      setNewCollectionName("");
-      setNewFolderName("");
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [saveDialog.open]); // eslint-disable-line
-
+    if (!saveDialog.open) return;
+    setName(saveDialog.name);
+    setCollectionId(saveDialog.collectionId || collections[0]?.id || "");
+    setFolderId(saveDialog.folderId || "");
+    setNewCollectionName("");
+    setNewFolderName("");
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [collections, saveDialog]);
   useEffect(() => {
     setFolderId("");
     setNewFolderName("");
   }, [collectionId]);
-
   useEffect(() => {
     if (isNewCollection) setTimeout(() => newColInputRef.current?.focus(), 50);
   }, [isNewCollection]);
-
   useEffect(() => {
     if (isNewFolder) setTimeout(() => newFolderInputRef.current?.focus(), 50);
   }, [isNewFolder]);
 
   const close = () => set({ saveDialog: { ...saveDialog, open: false } });
-
-  const availableFolders = isNewCollection
-    ? []
-    : folders.filter((f) => f.collectionId === collectionId);
-
+  const availableFolders = folders.filter((folder) => folder.collectionId === collectionId);
   const canSave =
     name.trim() &&
     (isNewCollection ? newCollectionName.trim() : collectionId) &&
@@ -62,32 +53,24 @@ export function SaveRequestModal() {
   const confirm = async () => {
     if (!canSave) return;
     try {
-      let targetCollectionId = collectionId;
-
-      if (isNewCollection) {
-        const created = await coreStore.createCollection(newCollectionName.trim());
-        targetCollectionId = created.id;
-      }
-
-      let targetFolderId: string | null = folderId || null;
-
-      if (isNewFolder) {
-        const createdFolder = await coreStore.createFolder(
-          targetCollectionId,
-          newFolderName.trim(),
-        );
-        targetFolderId = createdFolder.id;
-      }
-
-      const { id: _id, collectionId: _col, folderId: _folder, ...requestBody } = request as unknown as Record<string, unknown>;
+      const targetCollectionId = await resolveCollectionId(
+        collectionId,
+        newCollectionName,
+      );
+      const targetFolderId = await resolveFolderId(
+        folderId,
+        newFolderName,
+        targetCollectionId,
+      );
+      const { id: _id, collectionId: _col, folderId: _folder, ...requestBody } =
+        request as unknown as Record<string, unknown>;
       const saved = await coreStore.saveRequest(
         requestBody as unknown as Parameters<typeof coreStore.saveRequest>[0],
         name.trim(),
         targetCollectionId,
         { folderId: targetFolderId },
       );
-      const updated = await coreStore.listRequests();
-      set({ requests: updated, saveDialog: { ...saveDialog, open: false } });
+      set({ requests: await coreStore.listRequests(), saveDialog: { ...saveDialog, open: false } });
       setRequest({
         id: saved.id,
         name: saved.name,
@@ -95,129 +78,73 @@ export function SaveRequestModal() {
         folderId: saved.folderId ?? undefined,
       });
       addToast("success", "Request saved to collection");
-    } catch (e) {
-      addToast("error", String(e));
+    } catch (error) {
+      addToast("error", String(error));
     }
   };
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") confirm();
-    if (e.key === "Escape") close();
-  };
-
   if (!saveDialog.open) return null;
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) close();
+      }}
     >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 400 }}
-        onKeyDown={onKeyDown}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") confirm();
+          if (event.key === "Escape") close();
+        }}
       >
-        {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
           <FolderOpen size={15} className="text-[var(--accent)]" />
           <span className="text-sm font-semibold text-[var(--text-1)]">
             Save to Collection
           </span>
-          <button
-            onClick={close}
-            className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
-          >
+          <button onClick={close} className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]">
             <X size={15} />
           </button>
         </div>
-
-        {/* Body */}
-        <div className="p-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-[var(--text-3)]">Name</span>
-            <input
-              ref={inputRef}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Request name"
-              className="input text-sm"
-            />
-          </label>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-[var(--text-3)]">Collection</span>
-            <Select
-              value={collectionId}
-              onChange={(e) => setCollectionId(e.target.value)}
-              size="sm"
-            >
-              {collections.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-              <option value={NEW_COLLECTION_SENTINEL}>+ New collection…</option>
-            </Select>
-          </div>
-
-          {isNewCollection && (
-            <label className="flex flex-col gap-1">
-              <span className="text-xs text-[var(--text-3)]">Collection name</span>
-              <input
-                ref={newColInputRef}
-                value={newCollectionName}
-                onChange={(e) => setNewCollectionName(e.target.value)}
-                placeholder="My Collection"
-                className="input text-sm"
-              />
-            </label>
-          )}
-
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-[var(--text-3)]">Folder (optional)</span>
-            <Select
-              value={folderId}
-              onChange={(e) => setFolderId(e.target.value)}
-              size="sm"
-            >
-              <option value="">No folder</option>
-              {availableFolders.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-              <option value={NEW_FOLDER_SENTINEL}>+ New folder…</option>
-            </Select>
-          </div>
-
-          {isNewFolder && (
-            <label className="flex flex-col gap-1">
-              <span className="text-xs text-[var(--text-3)]">Folder name</span>
-              <input
-                ref={newFolderInputRef}
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="My Folder"
-                className="input text-sm"
-              />
-            </label>
-          )}
-        </div>
-
-        {/* Footer */}
+        <SaveRequestForm
+          name={name}
+          collectionId={collectionId}
+          folderId={folderId}
+          newCollectionName={newCollectionName}
+          newFolderName={newFolderName}
+          collections={collections}
+          availableFolders={availableFolders}
+          inputRef={inputRef}
+          newColInputRef={newColInputRef}
+          newFolderInputRef={newFolderInputRef}
+          onNameChange={setName}
+          onCollectionChange={setCollectionId}
+          onFolderChange={setFolderId}
+          onNewCollectionNameChange={setNewCollectionName}
+          onNewFolderNameChange={setNewFolderName}
+        />
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
           <button onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
             Cancel
           </button>
-          <button
-            onClick={confirm}
-            disabled={!canSave}
-            className="btn btn-primary text-xs px-3 py-1.5"
-          >
+          <button onClick={confirm} disabled={!canSave} className="btn btn-primary text-xs px-3 py-1.5">
             Save
           </button>
         </div>
       </div>
     </div>
   );
+}
+
+async function resolveCollectionId(collectionId: string, newName: string) {
+  if (collectionId !== NEW_COLLECTION_SENTINEL) return collectionId;
+  return (await coreStore.createCollection(newName.trim())).id;
+}
+
+async function resolveFolderId(folderId: string, newName: string, collectionId: string) {
+  if (!folderId) return null;
+  if (folderId !== NEW_FOLDER_SENTINEL) return folderId;
+  return (await coreStore.createFolder(collectionId, newName.trim())).id;
 }

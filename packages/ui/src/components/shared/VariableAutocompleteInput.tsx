@@ -5,6 +5,7 @@ import type {
   VariableAutocompleteInputProps,
   VariableSuggestion,
 } from "../../types";
+import { SuggestionList } from "./variable-autocomplete/SuggestionList";
 
 const DYNAMIC_VARS = [
   "$uuid",
@@ -173,32 +174,11 @@ export function VariableAutocompleteInput({
         title={variableTitle}
       />
       {suggestions.length > 0 && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-[var(--bg-2)] border border-[var(--line-2)] rounded-md shadow-[var(--shadow-2)] py-1 max-h-48 overflow-y-auto min-w-40">
-          {suggestions.map((v, i) => (
-            <button
-              key={v.name}
-              className={`w-full text-left px-3 py-1.5 text-xs ${i === selectedIdx ? "bg-[var(--accent-subtle)] text-[var(--accent)]" : "text-[var(--text-1)] hover:bg-[var(--surface-2)]"}`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                applySuggestion(v.name);
-              }}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono truncate">{`{{${v.name}}}`}</span>
-                <span className="ml-auto text-2xs text-[var(--text-3)] uppercase tracking-wide">
-                  {v.source}
-                </span>
-              </div>
-              {v.source !== "dynamic" && (
-                <div className="text-2xs text-[var(--text-3)] truncate mt-0.5">
-                  {v.sensitive
-                    ? maskedValue(v.value ?? "")
-                    : v.value || "(empty)"}
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
+        <SuggestionList
+          suggestions={suggestions}
+          selectedIndex={selectedIdx}
+          onSelect={applySuggestion}
+        />
       )}
     </div>
   );

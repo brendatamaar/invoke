@@ -1,0 +1,58 @@
+import type { RefObject } from "react";
+import { Download, Upload, X } from "lucide-react";
+
+export function EnvironmentModalHeader({
+  name,
+  fileInputRef,
+  onNameChange,
+  onImportFile,
+  onRequestExport,
+  onClose,
+}: {
+  name: string;
+  fileInputRef: RefObject<HTMLInputElement | null>;
+  onNameChange: (name: string) => void;
+  onImportFile: (file?: File) => void;
+  onRequestExport: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)] shrink-0">
+      <input
+        value={name}
+        onChange={(event) => onNameChange(event.target.value)}
+        className="flex-1 bg-transparent outline-none text-sm font-semibold text-[var(--text-1)] placeholder-[var(--text-3)]"
+        placeholder="Environment name"
+      />
+      <div className="flex items-center gap-1.5">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".env,text/plain"
+          className="hidden"
+          onChange={(event) => onImportFile(event.target.files?.[0])}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
+          title="Import .env"
+        >
+          <Upload size={11} /> Import
+        </button>
+        <button
+          onClick={onRequestExport}
+          className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
+          title="Export .env"
+        >
+          <Download size={11} /> Export
+        </button>
+      </div>
+      <button
+        onClick={onClose}
+        className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] ml-1"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}

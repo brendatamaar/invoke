@@ -1,3 +1,4 @@
+import type { MutableRefObject } from "react";
 import {
   CheckCircle2,
   Clock,
@@ -6,8 +7,8 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
-import type { FlowStep, FlowStepResult } from "@invoke/core";
-import { FLOW_STEP_TYPES, STEP_COLORS } from "./flowStepUtils";
+import type { FlowResult, FlowStep, FlowStepResult } from "@invoke/core";
+import { FLOW_STEP_TYPES, STEP_COLORS } from "../flowStepUtils";
 
 export function FlowStepList({
   steps,
@@ -25,10 +26,10 @@ export function FlowStepList({
 }: {
   steps: FlowStep[];
   selectedIndex: number | null;
-  flowResult: import("@invoke/core").FlowResult | undefined;
+  flowResult: FlowResult | undefined;
   addingStep: boolean;
   dragOver: number | null;
-  dragIndex: React.MutableRefObject<number | null>;
+  dragIndex: MutableRefObject<number | null>;
   onSelect: (index: number) => void;
   onAddStep: (type: FlowStep["type"]) => void;
   onSetAddingStep: (adding: boolean) => void;

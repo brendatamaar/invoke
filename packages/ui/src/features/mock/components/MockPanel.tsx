@@ -13,7 +13,7 @@ import { RouteModal } from "./RouteModal";
 import { WebhookSection } from "./WebhookSection";
 
 export function MockPanel() {
-  const { set, addToast } = useStore();
+  const { addToast } = useStore();
   const mockRoutes = useMockRoutes();
   const [editingRoute, setEditingRoute] = useState<MockRoute | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -80,7 +80,12 @@ export function MockPanel() {
   };
 
   const persistRoutes = (routes: MockRoute[]) => {
-    coreStore.setMeta("mockRoutes", routes).catch(() => {});
+    coreStore.setMeta("mockRoutes", routes).catch((error: unknown) =>
+      addToast(
+        "error",
+        `Failed to save mock routes: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+    );
   };
 
   const saveRoute = (route: MockRoute) => {
