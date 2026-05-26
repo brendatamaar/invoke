@@ -4,7 +4,7 @@ import type { GrpcSavedMessage } from "@invoke/core";
 import { useStore } from "../../../store";
 
 export function GrpcSavedMessagesPanel() {
-  const { grpcRequest, setGrpcRequest } = useStore();
+  const { grpcRequest, setGrpcRequest, addToast } = useStore();
   const saved = grpcRequest.savedMessages ?? [];
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -22,7 +22,10 @@ export function GrpcSavedMessagesPanel() {
   const remove = (id: string) =>
     setGrpcRequest({ savedMessages: saved.filter((m) => m.id !== id) });
 
-  const load = (body: string) => setGrpcRequest({ body });
+  const load = (name: string, body: string) => {
+    setGrpcRequest({ body });
+    addToast("success", `"${name}" loaded to message`);
+  };
 
   const rename = (id: string, name: string) => {
     setGrpcRequest({
@@ -81,7 +84,7 @@ export function GrpcSavedMessagesPanel() {
               </span>
             )}
             <button
-              onClick={() => load(msg.body)}
+              onClick={() => load(msg.name, msg.body)}
               className="text-2xs text-[var(--accent)] hover:underline shrink-0"
             >
               Use

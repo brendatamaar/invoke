@@ -1,4 +1,4 @@
-import { Activity, Heart, RefreshCw } from "lucide-react";
+import { Activity, Heart, Loader2, RefreshCw } from "lucide-react";
 import { GrpcCallControls } from "./GrpcCallControls";
 
 export function GrpcEndpointControls({
@@ -8,10 +8,11 @@ export function GrpcEndpointControls({
   grpcStreamId,
   grpcStreaming,
   isExecuting,
-  isServerStreaming,
   isClientStream,
   onAddressChange,
   onTlsChange,
+  isReflecting,
+  isProtosetLoaded,
   onReflect,
   onHealthCheck,
   onCloseStream,
@@ -25,10 +26,11 @@ export function GrpcEndpointControls({
   grpcStreamId?: string;
   grpcStreaming: boolean;
   isExecuting: boolean;
-  isServerStreaming: boolean;
   isClientStream: boolean;
   onAddressChange: (address: string) => void;
   onTlsChange: (tls: boolean) => void;
+  isReflecting?: boolean;
+  isProtosetLoaded?: boolean;
   onReflect: () => void;
   onHealthCheck: () => void;
   onCloseStream: () => void;
@@ -54,17 +56,18 @@ export function GrpcEndpointControls({
       </label>
       <button
         onClick={onReflect}
+        disabled={isReflecting || isProtosetLoaded}
         className="btn text-xs gap-1"
-        title="Reflect (Ctrl+R)"
+        title={isProtosetLoaded ? "Protoset active — server reflection disabled" : "Reflect (Ctrl+Shift+R)"}
       >
-        <RefreshCw size={12} /> Reflect
+        {isReflecting ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Reflect
       </button>
       <button
         onClick={onHealthCheck}
         className="btn text-xs gap-1"
         title="grpc.health.v1.Health/Check - measures RTT"
       >
-        <Heart size={12} />
+        <Heart size={12} /> Health
       </button>
       {latencyMs !== undefined && (
         <span
@@ -79,7 +82,6 @@ export function GrpcEndpointControls({
         grpcStreamId={grpcStreamId}
         grpcStreaming={grpcStreaming}
         isExecuting={isExecuting}
-        isServerStreaming={isServerStreaming}
         isClientStream={isClientStream}
         onCloseStream={onCloseStream}
         onCancelStream={onCancelStream}

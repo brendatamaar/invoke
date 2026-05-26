@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
@@ -83,31 +82,21 @@ func (s *Service) GrpcStreamOpen(ctx context.Context, req *GrpcExecuteRequest) (
 	// Use a long-lived context for the stream (not bounded by the HTTP request).
 	streamCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 
-	conn, err := grpcClientConn(ctx, address, req.GetTls(), req.GetVerifySsl(), req.GetTlsClientConfig(), false)
+	conn, err := grpcClientConn(ctx, address, req.GetTls(), req.GetVerifySsl(), req.GetTlsClientConfig(), req.GetAllowPrivate())
 	if err != nil {
 		cancel()
 		return &GrpcStreamOpenResponse{Error: err.Error()}, nil
 	}
 
-	// Resolve method descriptor: from protoset or via reflection.
-	var files *protoregistry.Files
-	if ps := strings.TrimSpace(req.GetProtosetBase64()); ps != "" {
-		files, err = registryFromProtosetBase64(ps)
-		if err != nil {
-			cancel()
-			_ = conn.Close()
-			return &GrpcStreamOpenResponse{Error: err.Error()}, nil
-		}
-	} else {
-		reflectCtx, reflectCancel := context.WithTimeout(streamCtx, 30*time.Second)
-		reflectCtx = metadata.NewOutgoingContext(reflectCtx, outgoingMetadata(req.GetMetadata()))
-		files, err = descriptorRegistryForSymbols(reflectCtx, conn, []string{serviceName})
-		reflectCancel()
-		if err != nil {
-			cancel()
-			_ = conn.Close()
-			return &GrpcStreamOpenResponse{Error: err.Error()}, nil
-		}
+	// Resolve method descriptor: from protoset → reflection → well-known fallback.
+	reflectCtx, reflectCancel := context.WithTimeout(streamCtx, 30*time.Second)
+	reflectCtx = metadata.NewOutgoingContext(reflectCtx, outgoingMetadata(req.GetMetadata()))
+	files, err := registryForService(reflectCtx, conn, req.GetProtosetBase64(), serviceName)
+	reflectCancel()
+	if err != nil {
+		cancel()
+		_ = conn.Close()
+		return &GrpcStreamOpenResponse{Error: err.Error()}, nil
 	}
 	methodDesc, err := findGrpcMethod(files, serviceName, methodName)
 	if err != nil {

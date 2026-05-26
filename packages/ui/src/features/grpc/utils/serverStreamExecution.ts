@@ -6,11 +6,16 @@ export async function runGrpcServerStream(request: GrpcRequestConfig) {
   const { set, addToast } = useStore.getState();
   const controller = new AbortController();
   const deadlineEnd = request.timeoutMs ? Date.now() + request.timeoutMs : undefined;
+  const deadlineTimer = request.timeoutMs
+    ? setTimeout(() => controller.abort(), request.timeoutMs + 500)
+    : undefined;
   set({
     grpcStreaming: true,
     grpcStreamMessages: [],
     grpcStreamController: controller,
     grpcResponse: undefined,
+    grpcSentMetadata: (request.metadata ?? []).filter((m) => m.enabled !== false),
+    grpcAssertionResults: [],
     grpcStatus: "Streaming...",
     grpcDeadlineEnd: deadlineEnd,
   });
@@ -19,10 +24,14 @@ export async function runGrpcServerStream(request: GrpcRequestConfig) {
     await grpcServerStream(request, {
       onMessage: (message) => {
         set((state) => ({
-          grpcStreamMessages: [...state.grpcStreamMessages, message],
+          grpcStreamMessages: [
+            ...state.grpcStreamMessages,
+            { ...message, receivedAt: Date.now() },
+          ],
         }));
       },
       onDone: async (message) => {
+        clearTimeout(deadlineTimer);
         const msgCount = useStore
           .getState()
           .grpcStreamMessages.filter((item) => !item.done).length;
@@ -56,6 +65,7 @@ export async function runGrpcServerStream(request: GrpcRequestConfig) {
       signal: controller.signal,
     });
   } catch (error) {
+    clearTimeout(deadlineTimer);
     if ((error as Error).name !== "AbortError") addToast("error", String(error));
     set({
       grpcStreaming: false,

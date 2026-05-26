@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { resolveGrpcRequest } from "@invoke/core";
 import { useStore } from "../../../store";
+import { grpcReflect } from "../api";
 import { useGrpcReflect } from "../useGrpcReflect";
 import { runGrpcHealthCheck } from "../utils/health";
 import { executeCurrentGrpcRequest } from "../utils/execution";
@@ -39,15 +40,41 @@ export function useGrpcBar() {
     return resolveGrpcRequest(grpcRequest, activeEnv, sessionVariables).request;
   }, [grpcRequest, activeEnv, sessionVariables]);
 
-  const { refetch: reflectRefetch } = useGrpcReflect(
+  const resolvedForReflectRef = useRef(resolvedForReflect);
+  resolvedForReflectRef.current = resolvedForReflect;
+
+  const { fetchReflect, isFetching: isReflecting } = useGrpcReflect(
     resolvedForReflect,
     grpcRequest.address ?? "",
   );
 
+  // Auto-load methods from protoset when it changes (e.g. loading from collection)
+  useEffect(() => {
+    const req = resolvedForReflectRef.current;
+    if (!req?.protosetBase64) return;
+    grpcReflect(req).then((data) => {
+      if (!data.error) {
+        set({ grpcMethods: data.methods, grpcStatus: `${data.methods.length} methods found` });
+      }
+    }).catch(() => {});
+  }, [grpcRequest.protosetBase64, set]);
+
   const reflect = useCallback(async () => {
-    const result = await reflectRefetch();
-    if (result.error) addToast("error", String(result.error));
-  }, [reflectRefetch, addToast]);
+    try {
+      const data = await fetchReflect();
+      if (data.error) {
+        set({ grpcMethods: [], grpcStatus: "Error" });
+        addToast("error", data.error);
+      } else {
+        set({ grpcMethods: data.methods, grpcStatus: `${data.methods.length} methods found` });
+        if (data.methods.length === 0)
+          addToast("warn", "Reflection returned no methods");
+      }
+    } catch (error) {
+      set({ grpcMethods: [], grpcStatus: "Error" });
+      addToast("error", String(error));
+    }
+  }, [fetchReflect, addToast, set]);
 
   const execute = useCallback(
     () => executeCurrentGrpcRequest(selectedMethod),
@@ -62,7 +89,7 @@ export function useGrpcBar() {
       if (event.key === "Enter") {
         event.preventDefault();
         if (!grpcStreaming && !grpcExecuteController && !grpcStreamId) execute();
-      } else if (event.key === "r") {
+      } else if (event.key === "R" && event.shiftKey) {
         event.preventDefault();
         reflect();
       } else if (event.key === "l") {
@@ -93,12 +120,14 @@ export function useGrpcBar() {
     isExecuting: !!grpcExecuteController,
     isServerStreaming,
     isClientStream,
+    isProtosetLoaded: !!grpcRequest.protosetBase64,
     tlsLocalhostWarning: hasGrpcTlsLocalhostWarning(grpcRequest),
     setAddress: (address: string) => {
       setGrpcRequest({ address, service: "", method: "" });
       set({ grpcMethods: [], grpcStatus: "" });
     },
     setTls: (tls: boolean) => setGrpcRequest({ tls }),
+    isReflecting,
     reflect,
     healthCheck: runGrpcHealthCheck,
     execute,

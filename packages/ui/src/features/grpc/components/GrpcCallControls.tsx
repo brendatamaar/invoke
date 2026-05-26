@@ -4,7 +4,6 @@ export function GrpcCallControls({
   grpcStreamId,
   grpcStreaming,
   isExecuting,
-  isServerStreaming,
   isClientStream,
   onCloseStream,
   onCancelStream,
@@ -14,7 +13,6 @@ export function GrpcCallControls({
   grpcStreamId?: string;
   grpcStreaming: boolean;
   isExecuting: boolean;
-  isServerStreaming: boolean;
   isClientStream: boolean;
   onCloseStream: () => void;
   onCancelStream: () => void;
@@ -57,7 +55,7 @@ export function GrpcCallControls({
       className="btn btn-primary text-xs flex items-center gap-1"
       title={isClientStream ? "Open Stream (Ctrl+Enter)" : "Call (Ctrl+Enter)"}
     >
-      {(isServerStreaming || isClientStream) && <Zap size={12} />}
+      <Zap size={12} />
       {isClientStream ? "Open Stream" : "Call"}
     </button>
   );

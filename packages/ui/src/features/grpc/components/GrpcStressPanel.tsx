@@ -138,8 +138,9 @@ export function GrpcStressPanel({ streamId }: { streamId: string }) {
             </div>
           )}
           {stats.running && (
-            <span className="text-[var(--accent)] animate-pulse">
-              {"\u25cf"} running\u2026
+            <span className="flex items-center gap-1 text-[var(--accent)]">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+              running…
             </span>
           )}
         </div>

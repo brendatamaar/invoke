@@ -1,6 +1,6 @@
 import type { GrpcMethodInfo, GrpcRequestConfig } from "@invoke/core";
 import { useStore } from "../../../store";
-import { grpcStreamEvents, grpcStreamOpen } from "../api";
+import { grpcStreamClose, grpcStreamEvents, grpcStreamOpen } from "../api";
 
 export async function openGrpcClientStream(
   request: GrpcRequestConfig,
@@ -16,12 +16,27 @@ export async function openGrpcClientStream(
     grpcDeadlineEnd: deadlineEnd,
   });
 
+  let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
   try {
     const { streamId, error } = await grpcStreamOpen(request);
     if (error || !streamId) throw new Error(error ?? "Failed to open stream");
     set({ grpcStreamId: streamId, grpcStatus: "Stream open" });
     const controller = new AbortController();
     set({ grpcStreamController: controller });
+    const msLeft = deadlineEnd ? Math.max(0, deadlineEnd - Date.now()) : undefined;
+    deadlineTimer = msLeft !== undefined
+      ? setTimeout(async () => {
+          try { await grpcStreamClose(streamId); } catch {}
+          controller.abort();
+          useStore.getState().set({
+            grpcStreamId: undefined,
+            grpcStreaming: false,
+            grpcStreamController: undefined,
+            grpcStatus: "Deadline exceeded",
+            grpcDeadlineEnd: undefined,
+          });
+        }, msLeft + 500)
+      : undefined;
     if (selectedMethod?.serverStreaming) {
       grpcStreamEvents(streamId, {
         onMessage: (message) => {
@@ -33,6 +48,7 @@ export async function openGrpcClientStream(
           }));
         },
         onDone: (message) => {
+          clearTimeout(deadlineTimer);
           set((state) => ({
             grpcStreamReceivedMessages: [
               ...state.grpcStreamReceivedMessages,
@@ -51,6 +67,7 @@ export async function openGrpcClientStream(
       }).catch(() => {});
     }
   } catch (error) {
+    clearTimeout(deadlineTimer);
     addToast("error", String(error));
     set({
       grpcStreaming: false,

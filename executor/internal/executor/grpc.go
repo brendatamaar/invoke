@@ -95,12 +95,7 @@ func (s *Service) GrpcServerStream(req *GrpcExecuteRequest, stream GrpcServerStr
 	defer conn.Close()
 
 	ctx = metadata.NewOutgoingContext(ctx, outgoingMetadata(req.GetMetadata()))
-	var files *protoregistry.Files
-	if ps := strings.TrimSpace(req.GetProtosetBase64()); ps != "" {
-		files, err = registryFromProtosetBase64(ps)
-	} else {
-		files, err = descriptorRegistryForSymbols(ctx, conn, []string{serviceName})
-	}
+	files, err := registryForService(ctx, conn, req.GetProtosetBase64(), serviceName)
 	if err != nil {
 		return stream.Send(&GrpcStreamMessage{Done: true, Error: err.Error()})
 	}
@@ -206,12 +201,7 @@ func (s *Service) GrpcExecute(ctx context.Context, req *GrpcExecuteRequest) (*Gr
 	defer conn.Close()
 
 	ctx = metadata.NewOutgoingContext(ctx, outgoingMetadata(req.GetMetadata()))
-	var files *protoregistry.Files
-	if ps := strings.TrimSpace(req.GetProtosetBase64()); ps != "" {
-		files, err = registryFromProtosetBase64(ps)
-	} else {
-		files, err = descriptorRegistryForSymbols(ctx, conn, []string{serviceName})
-	}
+	files, err := registryForService(ctx, conn, req.GetProtosetBase64(), serviceName)
 	if err != nil {
 		return &GrpcExecuteResponse{Error: err.Error()}, nil
 	}

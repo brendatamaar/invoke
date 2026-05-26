@@ -15,16 +15,22 @@ export async function runGrpcUnary(
   const { set, addToast } = useStore.getState();
   const controller = new AbortController();
   const deadlineEnd = request.timeoutMs ? Date.now() + request.timeoutMs : undefined;
+  const deadlineTimer = request.timeoutMs
+    ? setTimeout(() => controller.abort(), request.timeoutMs + 500)
+    : undefined;
   set({
     grpcStatus: "Executing...",
     grpcExecuteController: controller,
     grpcResponse: undefined,
+    grpcSentMetadata: [],
+    grpcStreamMessages: [],
     grpcAssertionResults: [],
     grpcDeadlineEnd: deadlineEnd,
   });
 
   try {
     const grpcResponse = await grpcExecute(request, controller.signal);
+    clearTimeout(deadlineTimer);
     const execResponse = grpcResponseToExecuteResponse(grpcResponse);
     try {
       const postResult = await runPostResponseScript(
@@ -51,10 +57,10 @@ export async function runGrpcUnary(
       }));
     }
 
-    const assertionResults = runAssertions(
-      execResponse,
-      request.assertions ?? [],
-    );
+    const isClientSideError = !!grpcResponse.error && grpcResponse.statusCode === 0;
+    const assertionResults = isClientSideError
+      ? []
+      : runAssertions(execResponse, request.assertions ?? []);
     const extracted = extractVariables(
       execResponse,
       request.extractionRules ?? [],
@@ -65,12 +71,14 @@ export async function runGrpcUnary(
         : `Done - ${grpcResponse.durationMs?.toFixed(0)}ms`,
       grpcExecuteController: undefined,
       grpcResponse,
+      grpcSentMetadata: (request.metadata ?? []).filter((m) => m.enabled !== false),
       grpcAssertionResults: assertionResults,
       sessionVariables: { ...sessionVariables, ...extracted },
       grpcDeadlineEnd: undefined,
     });
     await coreStore.addHistory({ request, response: execResponse, protocol: "grpc" });
   } catch (error) {
+    clearTimeout(deadlineTimer);
     if ((error as Error).name !== "AbortError") addToast("error", String(error));
     set({
       grpcStatus: "Error",

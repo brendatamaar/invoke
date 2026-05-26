@@ -7,6 +7,7 @@ import { GrpcAuthPanel } from "./GrpcAuthPanel";
 import { GrpcOptionsPanel } from "./GrpcOptionsPanel";
 import { GrpcSavedMessagesPanel } from "./GrpcSavedMessagesPanel";
 import { GrpcScriptsPanel } from "./GrpcScriptsPanel";
+import { GrpcStreamComposer } from "./GrpcStreamComposer";
 import { GrpcStressPanel } from "./GrpcStressPanel";
 import { GrpcTabBar } from "./GrpcTabBar";
 
@@ -27,42 +28,43 @@ export function GrpcRequestTabs({
     <>
       <GrpcTabBar
         activeTab={activeTab}
-        includeMessage={!isClientStream}
+        includeMessage={true}
         onSelect={onSelectTab}
       />
-      {(!isClientStream || activeTab !== "message") && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {activeTab === "message" && !isClientStream && (
-            <div className="flex-1 overflow-auto">
-              <CodeEditor
-                value={grpcRequest.body ?? "{}"}
-                onChange={(v) => setGrpcRequest({ body: v })}
-                lang="json"
-              />
-            </div>
-          )}
-          {activeTab === "metadata" && (
-            <KeyValueEditor
-              rows={(grpcRequest.metadata as KeyValue[] | undefined) ?? []}
-              onChange={(rows) =>
-                setGrpcRequest({ metadata: rows as KeyValue[] })
-              }
-              keyPlaceholder="key"
-              valuePlaceholder="value"
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+        {activeTab === "message" && grpcStreamId && (
+          <GrpcStreamComposer streamId={grpcStreamId} />
+        )}
+        {activeTab === "message" && !grpcStreamId && (
+          <div className="flex-1 overflow-auto">
+            <CodeEditor
+              value={grpcRequest.body ?? "{}"}
+              onChange={(v) => setGrpcRequest({ body: v })}
+              lang="json"
             />
-          )}
-          {activeTab === "auth" && <GrpcAuthPanel />}
-          {activeTab === "scripts" && <GrpcScriptsPanel />}
-          {activeTab === "options" && <GrpcOptionsPanel />}
-          {activeTab === "saved" && <GrpcSavedMessagesPanel />}
-          {activeTab === "stress" && (
-            <GrpcStressContent
-              isClientStream={isClientStream}
-              grpcStreamId={grpcStreamId}
-            />
-          )}
-        </div>
-      )}
+          </div>
+        )}
+        {activeTab === "metadata" && (
+          <KeyValueEditor
+            rows={(grpcRequest.metadata as KeyValue[] | undefined) ?? []}
+            onChange={(rows) =>
+              setGrpcRequest({ metadata: rows as KeyValue[] })
+            }
+            keyPlaceholder="key"
+            valuePlaceholder="value"
+          />
+        )}
+        {activeTab === "auth" && <GrpcAuthPanel />}
+        {activeTab === "scripts" && <GrpcScriptsPanel />}
+        {activeTab === "options" && <GrpcOptionsPanel />}
+        {activeTab === "saved" && <GrpcSavedMessagesPanel />}
+        {activeTab === "stress" && (
+          <GrpcStressContent
+            isClientStream={isClientStream}
+            grpcStreamId={grpcStreamId}
+          />
+        )}
+      </div>
     </>
   );
 }
