@@ -127,6 +127,7 @@ export interface AppState {
   grpcStreamMessages: GrpcStreamMessage[];
   grpcStreamController: AbortController | undefined;
   grpcResponse: GrpcExecuteResponse | undefined;
+  grpcSentMetadata: KeyValue[];
   grpcExecuteController: AbortController | undefined;
   grpcAssertionResults: AssertionResult[];
   grpcStreamId: string | undefined;

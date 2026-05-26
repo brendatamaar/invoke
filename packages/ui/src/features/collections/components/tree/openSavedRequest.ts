@@ -6,6 +6,7 @@ import type {
   SavedRequest,
   WebSocketRequestConfig,
 } from "@invoke/core";
+import { emptyGrpcRequest } from "@invoke/core";
 import type { AppState } from "../../../../types";
 
 export function openSavedRequest(request: SavedRequest, store: AppState) {
@@ -36,7 +37,7 @@ export function openSavedRequest(request: SavedRequest, store: AppState) {
     return;
   }
   if (request.protocol === "grpc") {
-    store.setGrpcRequest(request.request as GrpcRequestConfig);
+    store.set({ grpcRequest: { ...emptyGrpcRequest(), ...(request.request as GrpcRequestConfig) } });
     store.setRequest(meta);
     return;
   }

@@ -100,6 +100,7 @@ export interface GrpcStreamMessage {
   statusCode?: number;
   statusMessage?: string;
   durationMs?: number;
+  receivedAt?: number;
 }
 
 export interface GrpcExecuteResponse {

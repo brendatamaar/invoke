@@ -19,6 +19,7 @@ export type ProtocolSlice = Pick<
   | "grpcStreamMessages"
   | "grpcStreamController"
   | "grpcResponse"
+  | "grpcSentMetadata"
   | "grpcExecuteController"
   | "grpcAssertionResults"
   | "grpcStreamId"
@@ -62,6 +63,7 @@ export function createProtocolSlice(): ProtocolSlice {
     grpcStreamMessages: [],
     grpcStreamController: undefined,
     grpcResponse: undefined,
+    grpcSentMetadata: [],
     grpcExecuteController: undefined,
     grpcAssertionResults: [],
     grpcStreamId: undefined,

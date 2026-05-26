@@ -13,6 +13,7 @@ import { QuickAssertionOverlay } from "./overlays/QuickAssertionOverlay";
 import { QuickExtractionOverlay } from "./overlays/QuickExtractionOverlay";
 import { SaveExampleOverlay } from "./overlays/SaveExampleOverlay";
 import { WebSocketLogPanel } from "../../websocket";
+import { GrpcResponseViewer } from "../../grpc";
 import { useResponseViewerModel } from "../hooks/useResponseViewerModel";
 import { ResponseBodyPanel } from "./panels/ResponseBodyPanel";
 import {
@@ -41,6 +42,7 @@ export function ResponseViewer() {
   } = store;
 
   if (request.protocol === "websocket") return <WebSocketLogPanel />;
+  if (request.protocol === "grpc") return <GrpcResponseViewer />;
   if (!response && !streaming) return <EmptyResponseState />;
   if (response?.status === 0) return <FailedResponseState error={response.error} />;
 

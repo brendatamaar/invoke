@@ -28,7 +28,7 @@ export function WebSocketLogToolbar({
         <input
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search messages\u2026"
+          placeholder="Search messages..."
           className="bg-transparent text-2xs text-[var(--text-1)] placeholder-[var(--text-3)] outline-none w-full"
         />
         {search && (

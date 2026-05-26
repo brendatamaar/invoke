@@ -58,7 +58,7 @@ const mockGrpcRoutesSchema = Schema.Struct({
   routes: Schema.Array(mockGrpcRouteSchema),
 });
 
-const mockGrpcInvokeSchema = Schema.Struct({
+const mockGrpcCallSchema = Schema.Struct({
   fullMethod: Schema.String.pipe(Schema.minLength(1)),
   bodyJson: Schema.optionalWith(Schema.String, { default: () => "{}" }),
 });
@@ -85,7 +85,7 @@ export function registerMockGrpcRoutes(app: Hono) {
   });
 
   app.post("/api/mock-grpc/invoke", async (c) => {
-    const parsed = await parseJsonBody(c, mockGrpcInvokeSchema);
+    const parsed = await parseJsonBody(c, mockGrpcCallSchema);
     if (!parsed.ok) return parsed.response;
     {
       const { fullMethod, bodyJson } = parsed.data;

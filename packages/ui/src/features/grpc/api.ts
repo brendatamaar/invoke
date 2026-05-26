@@ -95,6 +95,7 @@ function buildGrpcPayload(req: GrpcRequestConfig) {
     timeoutMs: req.timeoutMs,
     metadata: req.metadata,
     verifySsl: req.options?.verifySsl ?? true,
+    allowPrivateAddresses: req.options?.allowPrivateAddresses ?? true,
     tlsClientConfig: req.options?.tlsClientConfig,
     auth: req.auth,
     protosetBase64: req.protosetBase64,

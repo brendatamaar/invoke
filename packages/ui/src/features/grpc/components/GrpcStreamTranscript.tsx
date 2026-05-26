@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, CheckCircle2, Circle, Copy, Trash2, X } from "lucide-react";
 import type { GrpcStreamMessage } from "@invoke/core";
+import { useStore } from "../../../store";
+import { useAutoScroll, CollapsibleBody, ScrollToBottomBtn } from "./GrpcStreamShared";
 import { GrpcDeadlineCountdown } from "./GrpcDeadlineCountdown";
 
 export function GrpcStreamTranscript({
@@ -20,101 +21,177 @@ export function GrpcStreamTranscript({
   onResetDiff: () => void;
   onSelectForDiff: (body: string) => void;
 }) {
-  const logRef = useRef<HTMLDivElement>(null);
+  const { addToast } = useStore();
+  const triggerCount = sentMessages.length + receivedMessages.length;
+  const { scrollRef, showScrollBtn, handleScroll, scrollToBottom } = useAutoScroll(triggerCount, grpcStreaming);
 
-  useEffect(() => {
-    logRef.current?.scrollTo({
-      top: logRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [sentMessages.length, receivedMessages.length]);
+  const sentCount = sentMessages.length;
+  const receivedCount = receivedMessages.filter((m) => !m.done).length;
+  const hasDiffSelection = diffLeft !== null;
+  const firstArrival = receivedMessages.find((m) => m.receivedAt)?.receivedAt;
 
-  const receivedBodies = receivedMessages.filter((m) => !m.done && m.bodyJson);
+  const copyText = (text: string) => {
+    navigator.clipboard
+      .writeText(text)
+      .catch((e: unknown) =>
+        addToast("error", `Copy failed: ${e instanceof Error ? e.message : String(e)}`),
+      );
+  };
 
   return (
     <>
-      <div className="px-3 py-1 text-2xs text-[var(--text-3)] border-b border-[var(--border)] flex items-center gap-2">
-        <span>Stream transcript</span>
+      <div className="px-3 py-2 border-b border-[var(--border)] bg-[var(--surface-2)] flex items-center gap-2 shrink-0">
+        <span className="text-2xs text-[var(--text-3)]">Stream transcript</span>
         {grpcStreaming && (
-          <span className="text-[var(--accent)] animate-pulse">
-            {"\u25cf"} live
+          <span className="flex items-center gap-1 text-[var(--accent)] text-2xs">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+            live
           </span>
         )}
         <GrpcDeadlineCountdown />
-        <span className="ml-auto text-2xs">
-          {sentMessages.length} sent {"\u00b7"}{" "}
-          {receivedMessages.filter((m) => !m.done).length} received
-        </span>
-        {receivedBodies.length >= 2 && (
+        {(sentCount > 0 || receivedCount > 0) && (
+          <span className="ml-auto text-2xs text-[var(--text-3)]">
+            {sentCount} sent · {receivedCount} received
+          </span>
+        )}
+        {(sentMessages.length > 0 || receivedMessages.length > 0) && (
           <button
-            className="flex items-center gap-1 text-2xs text-[var(--accent)] hover:underline shrink-0"
-            title="Select two received messages to diff (click first, then second)"
-            onClick={onResetDiff}
+            className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
+            title="Clear transcript (Ctrl+L)"
+            onClick={onClear}
           >
-            <ArrowLeftRight size={10} />
-            {diffLeft ? "pick 2nd" : "Diff msgs"}
+            <Trash2 size={11} />
           </button>
         )}
-        <button
-          className="text-2xs text-[var(--text-3)] hover:text-[var(--text-1)] shrink-0"
-          title="Clear log (Ctrl+L)"
-          onClick={onClear}
-        >
-          Clear
-        </button>
       </div>
-      <div ref={logRef} className="overflow-y-auto flex-1">
-        {sentMessages.length === 0 && receivedMessages.length === 0 && (
-          <p className="p-3 text-2xs text-[var(--text-3)]">
-            Compose a message below and press Enter or click Send.
-          </p>
-        )}
-        {sentMessages.map((body, i) => (
-          <div
-            key={`s${i}`}
-            className="px-3 py-1.5 border-b border-[var(--border)] last:border-0 flex items-start gap-2"
-          >
-            <span className="text-2xs font-semibold text-[var(--accent)] shrink-0">
-              {"\u2192"}
-            </span>
-            <pre className="text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all flex-1">
-              {body}
-            </pre>
-          </div>
-        ))}
-        {receivedMessages.map((msg, i) => (
-          <div
-            key={`r${i}`}
-            className={`px-3 py-1.5 border-b border-[var(--border)] last:border-0 flex items-start gap-2 ${msg.done ? "bg-[var(--surface-2)]" : ""}`}
-          >
-            {msg.done ? (
-              <span
-                className={`text-2xs font-semibold ${msg.error ? "text-[var(--danger)]" : "text-[var(--ok)]"}`}
-              >
-                {msg.error
-                  ? `Error: ${msg.statusMessage || msg.error}`
-                  : `Done${msg.durationMs != null ? ` \u2014 ${msg.durationMs.toFixed(0)}ms` : ""}`}
-              </span>
-            ) : (
-              <>
-                <span className="text-2xs font-semibold text-[var(--ok)] shrink-0">
-                  {"\u2190"}
-                </span>
-                <pre
-                  className={`text-2xs font-mono text-[var(--text-1)] whitespace-pre-wrap break-all flex-1 cursor-pointer ${diffLeft === msg.bodyJson ? "bg-yellow-100 dark:bg-yellow-900/20 rounded" : ""}`}
-                  title={
-                    diffLeft
-                      ? "Click to select as right side of diff"
-                      : "Click to select as left side of diff"
-                  }
-                  onClick={() => msg.bodyJson && onSelectForDiff(msg.bodyJson)}
+
+      <div className="flex-1 min-h-0 relative overflow-hidden">
+        <div
+          ref={scrollRef}
+          className="h-full overflow-y-auto"
+          onScroll={handleScroll}
+        >
+          {sentMessages.length === 0 && receivedMessages.length === 0 && !grpcStreaming && (
+            <p className="p-3 text-2xs text-[var(--text-3)]">No stream messages yet.</p>
+          )}
+
+          {sentMessages.map((body, i) => (
+            <div
+              key={`s${i}`}
+              className="group flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+            >
+              <span className="mt-0.5 text-2xs font-bold text-[var(--accent)] shrink-0">→</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-2xs font-mono font-medium text-[var(--text-3)] shrink-0">
+                    #{i}
+                  </span>
+                  <button
+                    className="ml-auto p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Copy message"
+                    onClick={() => copyText(body)}
+                  >
+                    <Copy size={10} />
+                  </button>
+                </div>
+                <CollapsibleBody text={body} />
+              </div>
+            </div>
+          ))}
+
+          {receivedMessages.map((msg, i) => {
+            if (!msg.done && !msg.bodyJson) return null;
+
+            const relativeMs =
+              firstArrival != null && msg.receivedAt != null && msg.receivedAt > firstArrival
+                ? msg.receivedAt - firstArrival
+                : null;
+
+            if (msg.done) {
+              return (
+                <div
+                  key={`r${i}`}
+                  className="px-3 py-2 border-b border-[var(--border)] last:border-0 bg-[var(--surface-2)]"
                 >
-                  {msg.bodyJson}
-                </pre>
-              </>
-            )}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-2xs font-semibold ${msg.error ? "text-[var(--danger)]" : "text-[var(--ok)]"}`}
+                    >
+                      {msg.error
+                        ? `Error: ${msg.statusMessage || msg.error}`
+                        : `Completed  ${msg.durationMs?.toFixed(0)}ms`}
+                    </span>
+                    {msg.trailers && msg.trailers.length > 0 && (
+                      <span className="text-2xs text-[var(--text-3)]">
+                        {msg.trailers.map((t) => `${t.key}: ${t.value}`).join(", ")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            const isSelected = diffLeft === msg.bodyJson;
+            const showCheckbox = isSelected || hasDiffSelection;
+
+            return (
+              <div
+                key={`r${i}`}
+                className={`group flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] last:border-0 transition-colors ${isSelected ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--surface-2)]"}`}
+              >
+                <button
+                  onClick={() => msg.bodyJson && onSelectForDiff(msg.bodyJson)}
+                  title={isSelected ? "Deselect" : hasDiffSelection ? "Select as 2nd message" : "Select for diff"}
+                  className={`mt-0.5 shrink-0 transition-opacity ${showCheckbox ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isSelected ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
+                >
+                  {isSelected ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                </button>
+
+                <span className="mt-0.5 text-2xs font-bold text-[var(--ok)] shrink-0">←</span>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-2xs font-mono font-medium text-[var(--text-3)] shrink-0">
+                      #{i}
+                    </span>
+                    {relativeMs != null && (
+                      <span className="text-2xs text-[var(--text-3)]">+{relativeMs}ms</span>
+                    )}
+                    <button
+                      className="ml-auto p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Copy message"
+                      onClick={() => msg.bodyJson && copyText(msg.bodyJson)}
+                    >
+                      <Copy size={10} />
+                    </button>
+                  </div>
+                  <CollapsibleBody text={msg.bodyJson ?? ""} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {hasDiffSelection && (
+          <div className="absolute bottom-0 left-0 right-0 border-t border-[var(--border)] px-3 py-1.5 flex items-center gap-2 bg-[var(--surface-2)] shrink-0">
+            <ArrowLeftRight size={11} className="text-[var(--accent)] shrink-0" />
+            <span className="text-2xs text-[var(--text-2)] flex-1">
+              Select one more to diff
+            </span>
+            <button
+              onClick={onResetDiff}
+              className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
+            >
+              <X size={11} />
+            </button>
           </div>
-        ))}
+        )}
+
+        <ScrollToBottomBtn
+          show={showScrollBtn}
+          onClick={scrollToBottom}
+          offset={hasDiffSelection}
+        />
       </div>
     </>
   );

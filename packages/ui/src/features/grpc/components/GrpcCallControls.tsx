@@ -1,10 +1,9 @@
 import { StopCircle, Zap } from "lucide-react";
 
-export function GrpcInvokeControls({
+export function GrpcCallControls({
   grpcStreamId,
   grpcStreaming,
   isExecuting,
-  isServerStreaming,
   isClientStream,
   onCloseStream,
   onCancelStream,
@@ -14,7 +13,6 @@ export function GrpcInvokeControls({
   grpcStreamId?: string;
   grpcStreaming: boolean;
   isExecuting: boolean;
-  isServerStreaming: boolean;
   isClientStream: boolean;
   onCloseStream: () => void;
   onCancelStream: () => void;
@@ -55,10 +53,10 @@ export function GrpcInvokeControls({
     <button
       onClick={onExecute}
       className="btn btn-primary text-xs flex items-center gap-1"
-      title={isClientStream ? "Open Stream (Ctrl+Enter)" : "Invoke (Ctrl+Enter)"}
+      title={isClientStream ? "Open Stream (Ctrl+Enter)" : "Call (Ctrl+Enter)"}
     >
-      {(isServerStreaming || isClientStream) && <Zap size={12} />}
-      {isClientStream ? "Open Stream" : "Invoke"}
+      <Zap size={12} />
+      {isClientStream ? "Open Stream" : "Call"}
     </button>
   );
 }

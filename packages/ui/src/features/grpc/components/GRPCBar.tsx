@@ -13,10 +13,11 @@ export function GRPCBar() {
         grpcStreamId={bar.grpcStreamId}
         grpcStreaming={bar.grpcStreaming}
         isExecuting={bar.isExecuting}
-        isServerStreaming={bar.isServerStreaming}
         isClientStream={bar.isClientStream}
         onAddressChange={bar.setAddress}
         onTlsChange={bar.setTls}
+        isReflecting={bar.isReflecting}
+        isProtosetLoaded={bar.isProtosetLoaded}
         onReflect={bar.reflect}
         onHealthCheck={bar.healthCheck}
         onCloseStream={bar.closeStream}
