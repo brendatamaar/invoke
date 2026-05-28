@@ -19,7 +19,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run --passWithNoTests",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "oxlint src"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.1",

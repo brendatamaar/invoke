@@ -29,7 +29,7 @@
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "dev": "tsup src/index.ts --format esm --dts --watch",
     "test": "vitest run",
-    "lint": "eslint src test --ext .ts"
+    "lint": "oxlint src test"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",
