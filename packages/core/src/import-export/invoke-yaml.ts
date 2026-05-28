@@ -1,12 +1,7 @@
 import yaml from "js-yaml";
 import JSZip from "jszip";
 import { slug } from "../lib/format";
-import {
-  emptyGrpcRequest,
-  emptyRequest,
-  id,
-  toRequestConfig,
-} from "../request";
+import { emptyGrpcRequest, emptyRequest, id, toRequestConfig } from "../request";
 import { recordToKeyValues } from "./shared";
 import type {
   BodyMode,
@@ -32,12 +27,8 @@ export async function exportCollectionZip(
 ) {
   const zip = new JSZip();
   const root = zip.folder(slug(collection.name))!;
-  const collectionFolders = folders.filter(
-    (folder) => folder.collectionId === collection.id,
-  );
-  const foldersById = new Map(
-    collectionFolders.map((folder) => [folder.id, folder]),
-  );
+  const collectionFolders = folders.filter((folder) => folder.collectionId === collection.id);
+  const foldersById = new Map(collectionFolders.map((folder) => [folder.id, folder]));
   const folderPaths = exportFolderPaths(collectionFolders);
   const requestNamesByPath = new Map<string, Set<string>>();
   root.file(
@@ -55,15 +46,9 @@ export async function exportCollectionZip(
       .folder(folderPaths.get(folder.id) ?? folderPath(folder, foldersById))!
       .file("folder.invoke.yaml", yaml.dump(folderDocument(folder)));
   }
-  for (const request of requests.filter(
-    (item) => item.collectionId === collection.id,
-  )) {
-    const folder = request.folderId
-      ? foldersById.get(request.folderId)
-      : undefined;
-    const path = folder
-      ? (folderPaths.get(folder.id) ?? folderPath(folder, foldersById))
-      : "";
+  for (const request of requests.filter((item) => item.collectionId === collection.id)) {
+    const folder = request.folderId ? foldersById.get(request.folderId) : undefined;
+    const path = folder ? (folderPaths.get(folder.id) ?? folderPath(folder, foldersById)) : "";
     const target = path ? root.folder(path)! : root;
     target.file(
       uniqueRequestFileName(request.name, path, requestNamesByPath),
@@ -78,9 +63,7 @@ export async function importInvokeZip(file: Blob) {
   const documents = await Promise.all(
     Object.values(zip.files)
       .filter(
-        (entry) =>
-          !entry.dir &&
-          (entry.name.endsWith(".yaml") || entry.name.endsWith(".yml")),
+        (entry) => !entry.dir && (entry.name.endsWith(".yaml") || entry.name.endsWith(".yml")),
       )
       .map(async (entry) => parseYamlDocument(await entry.async("string"))),
   );
@@ -93,9 +76,7 @@ export async function importYamlFiles(files: File[]) {
 
   const parsed = await Promise.all(
     files
-      .filter(
-        (file) => file.name.endsWith(".yaml") || file.name.endsWith(".yml"),
-      )
+      .filter((file) => file.name.endsWith(".yaml") || file.name.endsWith(".yml"))
       .map(async (file) => parseYamlDocument(await file.text())),
   );
   return importedFromDocuments(parsed);
@@ -175,12 +156,8 @@ function importedFromDocuments(documents: any[]) {
   const collectionDoc = documents.find((doc) => doc?.type === "collection");
   const collection: Collection = {
     id: id(),
-    name:
-      collectionDoc?.name ??
-      collectionDoc?.collection?.name ??
-      "Imported collection",
-    description:
-      collectionDoc?.description ?? collectionDoc?.collection?.description,
+    name: collectionDoc?.name ?? collectionDoc?.collection?.name ?? "Imported collection",
+    description: collectionDoc?.description ?? collectionDoc?.collection?.description,
     variables: recordToKeyValues(
       collectionDoc?.variables ?? collectionDoc?.collection?.variables ?? {},
     ),
@@ -195,9 +172,7 @@ function importedFromDocuments(documents: any[]) {
   );
   const requests = documents
     .filter((doc) => doc?.type === "request")
-    .map((doc, index) =>
-      savedRequestFromDocument(doc, collection.id, now + index, folderIdMap),
-    );
+    .map((doc, index) => savedRequestFromDocument(doc, collection.id, now + index, folderIdMap));
   return { collection, folders, requests };
 }
 
@@ -214,11 +189,7 @@ function folderDocument(folder: Folder): FolderDocument {
   };
 }
 
-function foldersFromDocuments(
-  folderDocs: any[],
-  collectionId: string,
-  now: number,
-) {
+function foldersFromDocuments(folderDocs: any[], collectionId: string, now: number) {
   const folderIdMap = new Map<string, string>();
   const originals = folderDocs.map((doc, index) => {
     const sourceId = String(doc.id ?? `folder_${index}`);
@@ -241,9 +212,7 @@ function foldersFromDocuments(
   });
   const folders = originals.map(({ folder, sourceParentId }) => ({
     ...folder,
-    parentFolderId: sourceParentId
-      ? (folderIdMap.get(sourceParentId) ?? null)
-      : null,
+    parentFolderId: sourceParentId ? (folderIdMap.get(sourceParentId) ?? null) : null,
   }));
   return { folders, folderIdMap };
 }
@@ -261,12 +230,7 @@ function savedRequestFromDocument(
   folderIdMap: Map<string, string> = new Map(),
 ): SavedRequest {
   if (doc.request)
-    return savedRequestFromWrappedDocument(
-      doc,
-      collectionId,
-      sortOrder,
-      folderIdMap,
-    );
+    return savedRequestFromWrappedDocument(doc, collectionId, sortOrder, folderIdMap);
 
   const now = Date.now();
   const folderId = remapFolderId(doc.folderId, folderIdMap);
@@ -408,40 +372,29 @@ function yamlBodyToMode(mode: string | undefined): BodyMode {
 function sortFoldersForExport(folders: Folder[]) {
   const foldersById = new Map(folders.map((folder) => [folder.id, folder]));
   return [...folders].sort((left, right) => {
-    const depth =
-      folderDepth(left, foldersById) - folderDepth(right, foldersById);
+    const depth = folderDepth(left, foldersById) - folderDepth(right, foldersById);
     return (
-      depth ||
-      (left.sortOrder ?? 0) - (right.sortOrder ?? 0) ||
-      left.name.localeCompare(right.name)
+      depth || (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.name.localeCompare(right.name)
     );
   });
 }
 
 function folderDepth(folder: Folder, foldersById: Map<string, Folder>) {
   let depth = 0;
-  let current = folder.parentFolderId
-    ? foldersById.get(folder.parentFolderId)
-    : undefined;
+  let current = folder.parentFolderId ? foldersById.get(folder.parentFolderId) : undefined;
   while (current) {
     depth += 1;
-    current = current.parentFolderId
-      ? foldersById.get(current.parentFolderId)
-      : undefined;
+    current = current.parentFolderId ? foldersById.get(current.parentFolderId) : undefined;
   }
   return depth;
 }
 
 function folderPath(folder: Folder, foldersById: Map<string, Folder>) {
   const parts = [slug(folder.name)];
-  let current = folder.parentFolderId
-    ? foldersById.get(folder.parentFolderId)
-    : undefined;
+  let current = folder.parentFolderId ? foldersById.get(folder.parentFolderId) : undefined;
   while (current) {
     parts.unshift(slug(current.name));
-    current = current.parentFolderId
-      ? foldersById.get(current.parentFolderId)
-      : undefined;
+    current = current.parentFolderId ? foldersById.get(current.parentFolderId) : undefined;
   }
   return parts.join("/");
 }
@@ -461,10 +414,7 @@ function exportFolderPaths(folders: Folder[]) {
     }
   }
   return new Map(
-    folders.map((folder) => [
-      folder.id,
-      folderExportPath(folder, foldersById, slugById),
-    ]),
+    folders.map((folder) => [folder.id, folderExportPath(folder, foldersById, slugById)]),
   );
 }
 
@@ -474,23 +424,15 @@ function folderExportPath(
   slugById: Map<string, string>,
 ) {
   const parts = [slugById.get(folder.id) ?? slug(folder.name)];
-  let current = folder.parentFolderId
-    ? foldersById.get(folder.parentFolderId)
-    : undefined;
+  let current = folder.parentFolderId ? foldersById.get(folder.parentFolderId) : undefined;
   while (current) {
     parts.unshift(slugById.get(current.id) ?? slug(current.name));
-    current = current.parentFolderId
-      ? foldersById.get(current.parentFolderId)
-      : undefined;
+    current = current.parentFolderId ? foldersById.get(current.parentFolderId) : undefined;
   }
   return parts.join("/");
 }
 
-function uniqueRequestFileName(
-  name: string,
-  path: string,
-  usedByPath: Map<string, Set<string>>,
-) {
+function uniqueRequestFileName(name: string, path: string, usedByPath: Map<string, Set<string>>) {
   const used = usedByPath.get(path) ?? new Set<string>();
   usedByPath.set(path, used);
   return `${uniqueSlug(name, used)}.invoke.yaml`;
@@ -509,8 +451,5 @@ function uniqueSlug(name: string, used: Set<string>) {
 }
 
 function sortByOrderThenName(left: Folder, right: Folder) {
-  return (
-    (left.sortOrder ?? 0) - (right.sortOrder ?? 0) ||
-    left.name.localeCompare(right.name)
-  );
+  return (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.name.localeCompare(right.name);
 }

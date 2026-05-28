@@ -10,15 +10,11 @@ export function extractMultipartBoundary(contentType: string): string | null {
 function splitPartBody(raw: string): string {
   const crlfBlank = raw.indexOf("\r\n\r\n");
   const lfBlank = raw.indexOf("\n\n");
-  const sep =
-    crlfBlank !== -1 ? crlfBlank + 4 : lfBlank !== -1 ? lfBlank + 2 : 0;
+  const sep = crlfBlank !== -1 ? crlfBlank + 4 : lfBlank !== -1 ? lfBlank + 2 : 0;
   return raw.slice(sep).trim();
 }
 
-export function parseMultipartMixed(
-  rawBody: string,
-  boundary: string,
-): GraphQLDeferredPart[] {
+export function parseMultipartMixed(rawBody: string, boundary: string): GraphQLDeferredPart[] {
   const delimiter = "--" + boundary;
   const parts: GraphQLDeferredPart[] = [];
   const sections = rawBody.split(delimiter);
@@ -136,9 +132,7 @@ export function processMultipartResponse(response: ExecuteResponse): {
   response: ExecuteResponse;
   parts: GraphQLDeferredPart[] | null;
 } {
-  const ctHeader = response.headers.find(
-    (h) => h.key.toLowerCase() === "content-type",
-  );
+  const ctHeader = response.headers.find((h) => h.key.toLowerCase() === "content-type");
   const ct = ctHeader?.value ?? "";
   if (!ct.includes("multipart/mixed")) return { response, parts: null };
 

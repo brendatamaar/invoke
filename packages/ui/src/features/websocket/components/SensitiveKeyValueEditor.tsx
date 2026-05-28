@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 
-const SENSITIVE_KEYS = new Set([
-  "authorization",
-  "cookie",
-  "set-cookie",
-  "proxy-authorization",
-]);
+const SENSITIVE_KEYS = new Set(["authorization", "cookie", "set-cookie", "proxy-authorization"]);
 
 export function SensitiveKeyValueEditor({
   rows,

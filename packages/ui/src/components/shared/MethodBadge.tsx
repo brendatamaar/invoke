@@ -22,8 +22,7 @@ export function protocolMethod(protocol: string | undefined, method?: string): s
 
 export function MethodBadge({ method, size = "sm" }: MethodBadgeProps) {
   const color = METHOD_COLOR[method] ?? "var(--fg-2)";
-  const display =
-    method === "DELETE" ? "DEL" : method === "OPTIONS" ? "OPT" : method;
+  const display = method === "DELETE" ? "DEL" : method === "OPTIONS" ? "OPT" : method;
   return (
     <span
       style={{

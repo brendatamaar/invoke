@@ -29,27 +29,19 @@ export function ProxyTab({
           title={`${PROTOCOL_LABELS[editingProtocol]} proxy`}
           description="Proxy policy for all requests in this protocol."
         />
-        <button
-          onClick={activeProxy ? removeProxy : ensureProxy}
-          className="btn text-xs"
-        >
+        <button onClick={activeProxy ? removeProxy : ensureProxy} className="btn text-xs">
           {activeProxy ? "Remove" : "Configure"}
         </button>
       </div>
 
-      <ProtocolPills
-        editingProtocol={editingProtocol}
-        onChange={setEditingProtocol}
-      />
+      <ProtocolPills editingProtocol={editingProtocol} onChange={setEditingProtocol} />
 
       {activeProxy ? (
         <div className="flex flex-col gap-3 border-t border-[var(--border)] pt-4">
           <FieldRow label="Type">
             <Select
               value={activeProxy.type}
-              onChange={(e) =>
-                patchProxy({ type: e.target.value as "http" | "socks5" })
-              }
+              onChange={(e) => patchProxy({ type: e.target.value as "http" | "socks5" })}
               size="xs"
               wrapperClassName="w-32"
             >

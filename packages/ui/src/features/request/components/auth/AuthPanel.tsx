@@ -70,9 +70,7 @@ export function AuthPanel() {
       <Field label="Type">
         <Select
           value={auth.type}
-          onChange={(event) =>
-            setAuth({ type: event.target.value as AuthConfig["type"] })
-          }
+          onChange={(event) => setAuth({ type: event.target.value as AuthConfig["type"] })}
         >
           {AUTH_TYPES.map((type) => (
             <option key={type} value={type}>
@@ -96,9 +94,7 @@ export function AuthPanel() {
       )}
       {auth.type === "digest" && <DigestAuthForm auth={auth} setAuth={setAuth} />}
       {auth.type === "ntlm" && <NtlmAuthForm auth={auth} setAuth={setAuth} />}
-      {auth.type === "aws-sigv4" && (
-        <AwsSigV4Form auth={auth} setAuth={setAuth} />
-      )}
+      {auth.type === "aws-sigv4" && <AwsSigV4Form auth={auth} setAuth={setAuth} />}
     </div>
   );
 }

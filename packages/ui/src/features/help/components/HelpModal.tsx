@@ -64,13 +64,8 @@ export function HelpModal() {
             </p>
             <ul className="flex flex-col gap-1.5">
               {TIPS.map((tip) => (
-                <li
-                  key={tip}
-                  className="text-xs text-[var(--text-2)] flex gap-2"
-                >
-                  <span className="text-[var(--accent)] shrink-0 mt-0.5">
-                    •
-                  </span>
+                <li key={tip} className="text-xs text-[var(--text-2)] flex gap-2">
+                  <span className="text-[var(--accent)] shrink-0 mt-0.5">•</span>
                   {tip}
                 </li>
               ))}
@@ -79,9 +74,7 @@ export function HelpModal() {
         </div>
 
         <div className="px-4 py-3 border-t border-[var(--border)]">
-          <p className="text-2xs text-[var(--text-3)]">
-            invoke — open-source API client
-          </p>
+          <p className="text-2xs text-[var(--text-3)]">invoke — open-source API client</p>
         </div>
       </div>
     </div>

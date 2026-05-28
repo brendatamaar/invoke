@@ -1,11 +1,7 @@
 import type { MsgTemplate } from "../types";
 import { PROTOCOL_TEMPLATES } from "../utils/templates";
 
-export function TemplateMenu({
-  onSelect,
-}: {
-  onSelect: (template: MsgTemplate) => void;
-}) {
+export function TemplateMenu({ onSelect }: { onSelect: (template: MsgTemplate) => void }) {
   return (
     <div
       className="absolute right-0 top-full mt-1 z-50 min-w-48 overflow-y-auto"

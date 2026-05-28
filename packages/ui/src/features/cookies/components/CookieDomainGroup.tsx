@@ -20,9 +20,7 @@ export function CookieDomainGroup({
   return (
     <div>
       <div className="flex items-center gap-2 px-4 py-1.5 bg-[var(--surface-2)] border-b border-[var(--border)] sticky top-0">
-        <span className="text-2xs font-semibold text-[var(--text-2)] flex-1">
-          {domain}
-        </span>
+        <span className="text-2xs font-semibold text-[var(--text-2)] flex-1">{domain}</span>
         <span className="text-2xs text-[var(--text-3)]">{cookies.length}</span>
         <button
           onClick={() => onClearDomain(domain)}

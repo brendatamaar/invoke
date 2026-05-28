@@ -18,10 +18,7 @@ export function BatchFooter({
   return (
     <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
       {running ? (
-        <button
-          onClick={onCancel}
-          className="btn btn-danger text-xs flex items-center gap-1.5"
-        >
+        <button onClick={onCancel} className="btn btn-danger text-xs flex items-center gap-1.5">
           <StopCircle size={13} /> Cancel
         </button>
       ) : (

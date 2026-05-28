@@ -30,20 +30,12 @@ export const PROTOCOL_TEMPLATES: Record<string, MsgTemplate[]> = {
   MQTT: [
     {
       label: "CONNECT",
-      body: JSON.stringify(
-        { type: "CONNECT", clientId: "invoke-client", keepAlive: 60 },
-        null,
-        2,
-      ),
+      body: JSON.stringify({ type: "CONNECT", clientId: "invoke-client", keepAlive: 60 }, null, 2),
       type: "text",
     },
     {
       label: "PUBLISH",
-      body: JSON.stringify(
-        { type: "PUBLISH", topic: "test/topic", payload: "hello" },
-        null,
-        2,
-      ),
+      body: JSON.stringify({ type: "PUBLISH", topic: "test/topic", payload: "hello" }, null, 2),
       type: "text",
     },
     {

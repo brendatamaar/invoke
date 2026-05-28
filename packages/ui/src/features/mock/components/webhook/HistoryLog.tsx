@@ -42,9 +42,7 @@ export function HistoryLog({
         </div>
       </div>
       {entries.length === 0 ? (
-        <p className="text-xs text-[var(--text-3)] text-center py-6">
-          Waiting for requests...
-        </p>
+        <p className="text-xs text-[var(--text-3)] text-center py-6">Waiting for requests...</p>
       ) : (
         <div className="flex flex-col gap-1">
           {entries.map((entry) => (
@@ -53,9 +51,7 @@ export function HistoryLog({
               entry={entry}
               expanded={expandedId === entry.id}
               hasValidation={hasValidation}
-              onToggle={() =>
-                setExpandedId(expandedId === entry.id ? null : entry.id)
-              }
+              onToggle={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
             />
           ))}
         </div>

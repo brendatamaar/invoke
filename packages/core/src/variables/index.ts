@@ -18,9 +18,7 @@ import type {
 const SENSITIVE_VARIABLE_RE =
   /(^|_)(secret|token|password|passwd|pwd|credential|credentials|private|auth|api[_-]?key|access[_-]?key|client[_-]?secret)($|_)/i;
 
-export function variablesFromEnvironment(
-  environment?: Environment,
-): Record<string, string> {
+export function variablesFromEnvironment(environment?: Environment): Record<string, string> {
   return variablesFromKeyValues(environment?.variables ?? []);
 }
 
@@ -30,26 +28,20 @@ export function variablesFromScopes(scopes: VariableScope[]) {
   }, {});
 }
 
-export function resolveTemplate(
-  input: string,
-  variables: Record<string, string>,
-) {
+export function resolveTemplate(input: string, variables: Record<string, string>) {
   const unresolved = new Set<string>();
   const resolveOne = (value: string, depth = 0): string => {
     if (depth > 8) return value;
-    return value.replace(
-      /\{\{\s*([^}]+?)\s*\}\}/g,
-      (_match, rawName: string) => {
-        const name = rawName.trim();
-        if (name.startsWith("$")) return dynamicVariable(name);
-        const resolved = variables[name];
-        if (resolved == null) {
-          unresolved.add(name);
-          return `{{${name}}}`;
-        }
-        return resolveOne(resolved, depth + 1);
-      },
-    );
+    return value.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_match, rawName: string) => {
+      const name = rawName.trim();
+      if (name.startsWith("$")) return dynamicVariable(name);
+      const resolved = variables[name];
+      if (resolved == null) {
+        unresolved.add(name);
+        return `{{${name}}}`;
+      }
+      return resolveOne(resolved, depth + 1);
+    });
   };
   return { value: resolveOne(input), unresolved: [...unresolved] };
 }
@@ -292,10 +284,7 @@ export function resolveGrpcRequest(
   return { request: resolved, unresolved: [...unresolved] };
 }
 
-export function extractVariables(
-  response: ExecuteResponse,
-  rules: ExtractionRule[],
-) {
+export function extractVariables(response: ExecuteResponse, rules: ExtractionRule[]) {
   const values: Record<string, string> = {};
   let json: unknown;
   try {
@@ -312,15 +301,12 @@ export function extractVariables(
     const result = extractValue(response, source, expression, json);
     const value = result ?? rule.fallback;
     if (value != null)
-      values[variableName.trim()] =
-        typeof value === "string" ? value : JSON.stringify(value);
+      values[variableName.trim()] = typeof value === "string" ? value : JSON.stringify(value);
   }
   return values;
 }
 
-export function normalizeExtractionRules(
-  rules: unknown[] | undefined = [],
-): ExtractionRule[] {
+export function normalizeExtractionRules(rules: unknown[] | undefined = []): ExtractionRule[] {
   return (rules ?? []).map((raw) => {
     const rule = raw as Partial<ExtractionRule> & {
       name?: string;
@@ -366,10 +352,7 @@ export function parseEnvText(text: string): KeyValue[] {
   return variables;
 }
 
-export function exportEnvText(
-  variables: KeyValue[],
-  options: { includeSensitive?: boolean } = {},
-) {
+export function exportEnvText(variables: KeyValue[], options: { includeSensitive?: boolean } = {}) {
   return variables
     .filter((item) => item.enabled !== false && item.key.trim())
     .filter((item) => options.includeSensitive || !item.sensitive)
@@ -378,10 +361,7 @@ export function exportEnvText(
 }
 
 function parseEnvValue(raw: string) {
-  if (
-    (raw.startsWith('"') && raw.endsWith('"')) ||
-    (raw.startsWith("'") && raw.endsWith("'"))
-  ) {
+  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
     const inner = raw.slice(1, -1);
     if (raw.startsWith('"')) {
       return inner
@@ -409,9 +389,7 @@ function extractValue(
   if (source === "status") return response.status;
   if (source === "header") {
     const normalized = expression.trim().toLowerCase();
-    return response.headers.find(
-      (header) => header.key.trim().toLowerCase() === normalized,
-    )?.value;
+    return response.headers.find((header) => header.key.trim().toLowerCase() === normalized)?.value;
   }
   if (json == null || !expression.trim()) return undefined;
   return JSONPath({ path: expression, json, wrap: false }) as unknown;
@@ -463,9 +441,10 @@ function dynamicVariable(name: string) {
   }
 }
 
-function resolveOptions<
-  T extends { options?: RequestConfig["options"] }["options"],
->(options: T, resolve: (value: string) => string): T {
+function resolveOptions<T extends { options?: RequestConfig["options"] }["options"]>(
+  options: T,
+  resolve: (value: string) => string,
+): T {
   if (!options) return options;
   return {
     ...options,
@@ -489,8 +468,7 @@ function resolveOptions<
 }
 
 function variablesFromScope(scope: VariableScope) {
-  if (Array.isArray(scope.variables))
-    return variablesFromKeyValues(scope.variables);
+  if (Array.isArray(scope.variables)) return variablesFromKeyValues(scope.variables);
   return Object.fromEntries(
     Object.entries(scope.variables)
       .filter(([key]) => key.trim())
@@ -535,17 +513,12 @@ export function resolveTemplateEffect(
 ): Effect.Effect<string, UndefinedVariableError> {
   const { value, unresolved } = resolveTemplate(template, variables);
   if (unresolved.length > 0) {
-    return Effect.fail(
-      new UndefinedVariableError({ name: unresolved[0], template }),
-    );
+    return Effect.fail(new UndefinedVariableError({ name: unresolved[0], template }));
   }
   return Effect.succeed(value);
 }
 
-export function extractByJsonPath(
-  body: unknown,
-  path: string,
-): Option.Option<string> {
+export function extractByJsonPath(body: unknown, path: string): Option.Option<string> {
   if (body == null || !path.trim()) return Option.none();
   const result = JSONPath({ path, json: body, wrap: false }) as unknown;
   if (result == null) return Option.none();

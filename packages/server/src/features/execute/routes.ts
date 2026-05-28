@@ -1,10 +1,7 @@
 import type { Hono } from "hono";
 import type { ExecuteInput } from "../../types/index.js";
 import { parseJsonBody } from "../../lib/validate.js";
-import {
-  executorClient,
-  grpcCallWithSignal,
-} from "../../grpc/executor-client.js";
+import { executorClient, grpcCallWithSignal } from "../../grpc/executor-client.js";
 import { executeDigest } from "./digest-auth.js";
 import { executePayload } from "./payload.js";
 import { bytesFrom, normalizeResponse } from "./response.js";
@@ -20,11 +17,7 @@ export function registerExecuteRoutes(app: Hono) {
       const raw =
         input.auth?.type === "digest"
           ? await executeDigest(input)
-          : await grpcCallWithSignal<any>(
-              "Execute",
-              executePayload(input),
-              signal,
-            );
+          : await grpcCallWithSignal<any>("Execute", executePayload(input), signal);
       return c.json(normalizeResponse(raw));
     } catch (e: any) {
       if (signal.aborted || e?.code === "CANCELLED") {
@@ -59,9 +52,7 @@ export function registerExecuteRoutes(app: Hono) {
         const send = (event: string, data: unknown) => {
           if (!closed)
             controller.enqueue(
-              encoder.encode(
-                `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
-              ),
+              encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
             );
         };
 

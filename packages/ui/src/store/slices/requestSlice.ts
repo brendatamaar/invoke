@@ -27,10 +27,7 @@ export type RequestSlice = Pick<
 type StoreSet = Parameters<StateCreator<AppState>>[0];
 type StoreGet = Parameters<StateCreator<AppState>>[1];
 
-export function createRequestSlice(
-  set: StoreSet,
-  _get: StoreGet,
-): RequestSlice {
+export function createRequestSlice(set: StoreSet, _get: StoreGet): RequestSlice {
   return {
     request: emptyRequest(),
     graphqlRequest: emptyGraphQLRequest(),
@@ -41,8 +38,7 @@ export function createRequestSlice(
     extractRules: [],
     consoleLogs: { preRequest: [], preRequestRan: false, postResponse: [], postResponseRan: false },
 
-    setRequest: (partial) =>
-      set((state) => ({ request: { ...state.request, ...partial } })),
+    setRequest: (partial) => set((state) => ({ request: { ...state.request, ...partial } })),
 
     setGraphqlRequest: (partial) =>
       set((state) => ({
@@ -55,9 +51,7 @@ export function createRequestSlice(
         return {
           websocketRequest: newWsReq,
           wsSessions: state.wsSessions.map((sess) =>
-            sess.id === state.activeWsSessionId
-              ? { ...sess, websocketRequest: newWsReq }
-              : sess,
+            sess.id === state.activeWsSessionId ? { ...sess, websocketRequest: newWsReq } : sess,
           ),
         };
       }),
@@ -70,7 +64,12 @@ export function createRequestSlice(
         request: emptyRequest(),
         response: undefined,
         assertionResults: [],
-        consoleLogs: { preRequest: [], preRequestRan: false, postResponse: [], postResponseRan: false },
+        consoleLogs: {
+          preRequest: [],
+          preRequestRan: false,
+          postResponse: [],
+          postResponseRan: false,
+        },
         requestTab: "params",
         responseTab: "body",
       }),

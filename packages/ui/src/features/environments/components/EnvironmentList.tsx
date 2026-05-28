@@ -53,9 +53,7 @@ export function EnvironmentList({
         </div>
       ))}
       {!environments.length && (
-        <p className="p-4 text-xs text-[var(--text-3)] text-center">
-          No environments yet
-        </p>
+        <p className="p-4 text-xs text-[var(--text-3)] text-center">No environments yet</p>
       )}
     </div>
   );

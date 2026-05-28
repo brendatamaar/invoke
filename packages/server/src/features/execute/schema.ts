@@ -1,5 +1,5 @@
-import { Schema } from "effect"
-import { headerSchema, tlsClientConfigSchema } from "../shared/schema.js"
+import { Schema } from "effect";
+import { headerSchema, tlsClientConfigSchema } from "../shared/schema.js";
 
 export const executeSchema = Schema.Struct({
   method: Schema.optionalWith(Schema.String, { default: () => "GET" }),
@@ -32,11 +32,13 @@ export const executeSchema = Schema.Struct({
   allowPrivateAddresses: Schema.optionalWith(Schema.Boolean, { default: () => true }),
   proxy: Schema.optional(
     Schema.Struct({
-      type: Schema.optionalWith(Schema.Literal("http", "socks5"), { default: () => "http" as const }),
+      type: Schema.optionalWith(Schema.Literal("http", "socks5"), {
+        default: () => "http" as const,
+      }),
       url: Schema.optionalWith(Schema.String, { default: () => "" }),
       username: Schema.optionalWith(Schema.String, { default: () => "" }),
       password: Schema.optionalWith(Schema.String, { default: () => "" }),
     }),
   ),
   tlsClientConfig: tlsClientConfigSchema,
-})
+});

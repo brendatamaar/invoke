@@ -78,9 +78,7 @@ export function SavedMessagesModal({
               selected={selectedSaved === msg.id}
               expanded={expandedSaved === msg.id}
               editDraft={editDraft}
-              onSelect={() =>
-                onSelectSaved(selectedSaved === msg.id ? null : msg.id)
-              }
+              onSelect={() => onSelectSaved(selectedSaved === msg.id ? null : msg.id)}
               onExpand={() => {
                 if (expandedSaved === msg.id) {
                   onExpandedSaved(null);
@@ -113,9 +111,7 @@ export function SavedMessagesModal({
           ))}
 
           {savedMessages.length === 0 && (
-            <p className="text-2xs text-[var(--text-3)] text-center mt-6">
-              No saved messages yet
-            </p>
+            <p className="text-2xs text-[var(--text-3)] text-center mt-6">No saved messages yet</p>
           )}
         </div>
 

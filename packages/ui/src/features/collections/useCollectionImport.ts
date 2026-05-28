@@ -64,21 +64,13 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
   };
 
   const persistImported = async (imported: CollectionImportResult) => {
-    const col = await coreStore.createCollection(
-      imported.collection.name,
-      imported.collection,
-    );
+    const col = await coreStore.createCollection(imported.collection.name, imported.collection);
     const folderIds = new Map<string, string>();
     for (const folder of imported.folders ?? []) {
       const parentId = folder.parentFolderId
         ? (folderIds.get(folder.parentFolderId) ?? null)
         : null;
-      const saved = await coreStore.createFolder(
-        col.id,
-        folder.name,
-        parentId,
-        folder,
-      );
+      const saved = await coreStore.createFolder(col.id, folder.name, parentId, folder);
       folderIds.set(folder.id, saved.id);
     }
     for (const item of imported.requests) {
@@ -88,9 +80,7 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
         col.id,
         {
           protocol: item.protocol,
-          folderId: item.folderId
-            ? (folderIds.get(item.folderId) ?? null)
-            : null,
+          folderId: item.folderId ? (folderIds.get(item.folderId) ?? null) : null,
         },
       );
     }
@@ -104,9 +94,7 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
     try {
       let imported: CollectionImportResult | undefined;
       if (importType === "zip") {
-        imported = (await importInvokeZip(
-          files[0],
-        )) as unknown as CollectionImportResult;
+        imported = (await importInvokeZip(files[0])) as unknown as CollectionImportResult;
       } else if (importType === "postman") {
         imported = importPostmanCollection(
           JSON.parse(await files[0].text()),
@@ -124,9 +112,7 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
           await files[0].text(),
         )) as unknown as CollectionImportResult;
       } else if (importType === "yaml") {
-        imported = (await importYamlFiles(
-          files,
-        )) as unknown as CollectionImportResult;
+        imported = (await importYamlFiles(files)) as unknown as CollectionImportResult;
       }
       if (importType === "har") {
         imported = importHarFile(
@@ -142,8 +128,7 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
     }
   };
 
-  const accept =
-    COLLECTION_IMPORT_OPTIONS.find((o) => o.type === importType)?.accept ?? "*";
+  const accept = COLLECTION_IMPORT_OPTIONS.find((o) => o.type === importType)?.accept ?? "*";
 
   return {
     accept,

@@ -7,17 +7,12 @@ import {
 } from "@invoke/core";
 import { coreStore } from "../../store";
 
-export function injectCookies(
-  request: RequestConfig,
-  cookies: StoredCookie[],
-): RequestConfig {
+export function injectCookies(request: RequestConfig, cookies: StoredCookie[]): RequestConfig {
   const matched = matchCookies(cookies, request.url);
   if (matched.length === 0) return request;
 
   const cookieHeader = buildCookieHeader(matched);
-  const existing = request.headers.find(
-    (header) => header.key.toLowerCase() === "cookie",
-  );
+  const existing = request.headers.find((header) => header.key.toLowerCase() === "cookie");
 
   if (existing) {
     return {
@@ -26,9 +21,7 @@ export function injectCookies(
         header.key.toLowerCase() === "cookie"
           ? {
               ...header,
-              value: header.value
-                ? `${header.value}; ${cookieHeader}`
-                : cookieHeader,
+              value: header.value ? `${header.value}; ${cookieHeader}` : cookieHeader,
             }
           : header,
       ),
@@ -37,10 +30,7 @@ export function injectCookies(
 
   return {
     ...request,
-    headers: [
-      ...request.headers,
-      { key: "Cookie", value: cookieHeader, enabled: true },
-    ],
+    headers: [...request.headers, { key: "Cookie", value: cookieHeader, enabled: true }],
   };
 }
 

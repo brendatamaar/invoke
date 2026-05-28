@@ -14,9 +14,7 @@ describe("mock routes", () => {
             method: "POST",
             pathPattern: "/users/:id",
             status: 202,
-            headers: [
-              { key: "Content-Type", value: "application/json", enabled: true },
-            ],
+            headers: [{ key: "Content-Type", value: "application/json", enabled: true }],
             body: '{ "matched": true, "id": "{{param.id}}", "plan": "{{query.plan}}" }',
             conditions: [
               {
@@ -148,9 +146,7 @@ describe("webhook receiver", () => {
     });
     expect(
       logs.entries[0].headers.some(
-        (header: any) =>
-          header.key.toLowerCase() === "x-webhook-test" &&
-          header.value === "yes",
+        (header: any) => header.key.toLowerCase() === "x-webhook-test" && header.value === "yes",
       ),
     ).toBe(true);
 

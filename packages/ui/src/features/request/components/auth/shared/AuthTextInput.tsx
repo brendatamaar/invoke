@@ -1,12 +1,7 @@
 import { VariableAutocompleteInput } from "../../../../../components/shared/VariableAutocompleteInput";
 import type { AuthTextInputProps } from "../../../../../types";
 
-export function AuthTextInput({
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: AuthTextInputProps) {
+export function AuthTextInput({ value, onChange, placeholder, type = "text" }: AuthTextInputProps) {
   return (
     <VariableAutocompleteInput
       type={type}

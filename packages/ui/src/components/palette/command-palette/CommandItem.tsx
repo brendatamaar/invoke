@@ -42,21 +42,13 @@ export function CommandItem({
       {item.method ? (
         <MethodBadge method={item.method} />
       ) : (
-        <span
-          className={`text-2xs font-medium ${KIND_COLORS[item.kind] ?? "text-[var(--fg-2)]"}`}
-        >
+        <span className={`text-2xs font-medium ${KIND_COLORS[item.kind] ?? "text-[var(--fg-2)]"}`}>
           {KIND_LABELS[item.kind] ?? item.kind}
         </span>
       )}
-      <span className="flex-1 text-sm text-[var(--text-1)] truncate">
-        {item.title}
-      </span>
-      <span className="text-xs text-[var(--text-3)] truncate max-w-[160px]">
-        {item.subtitle}
-      </span>
-      {selected && (
-        <ArrowRight size={12} className="text-[var(--accent)] shrink-0" />
-      )}
+      <span className="flex-1 text-sm text-[var(--text-1)] truncate">{item.title}</span>
+      <span className="text-xs text-[var(--text-3)] truncate max-w-[160px]">{item.subtitle}</span>
+      {selected && <ArrowRight size={12} className="text-[var(--accent)] shrink-0" />}
     </div>
   );
 }

@@ -1,12 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import React from "react";
-import type {
-  SelectOptionItem,
-  SelectProps,
-  SelectSize,
-  SelectSizeClasses,
-} from "../../types";
+import type { SelectOptionItem, SelectProps, SelectSize, SelectSizeClasses } from "../../types";
 
 function parseOptions(children: React.ReactNode): SelectOptionItem[] {
   const items: SelectOptionItem[] = [];
@@ -53,8 +48,7 @@ export function Select({
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
-        setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -81,9 +75,7 @@ export function Select({
       e.preventDefault();
       const idx = options.findIndex((o) => o.value === value);
       const next =
-        e.key === "ArrowDown"
-          ? Math.min(idx + 1, options.length - 1)
-          : Math.max(idx - 1, 0);
+        e.key === "ArrowDown" ? Math.min(idx + 1, options.length - 1) : Math.max(idx - 1, 0);
       pick(options[next]?.value ?? "");
     }
   };
@@ -142,14 +134,10 @@ export function Select({
                   transition: "background var(--dur-fast)",
                 }}
                 onMouseEnter={(e) => {
-                  if (!active)
-                    (e.currentTarget as HTMLElement).style.background =
-                      "var(--bg-3)";
+                  if (!active) (e.currentTarget as HTMLElement).style.background = "var(--bg-3)";
                 }}
                 onMouseLeave={(e) => {
-                  if (!active)
-                    (e.currentTarget as HTMLElement).style.background =
-                      "transparent";
+                  if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
                 }}
               >
                 <span className="w-3 shrink-0 flex items-center justify-center">

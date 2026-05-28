@@ -11,8 +11,7 @@ export function applyProtocolDefaults<
   T extends { protocol?: RequestProtocol; options?: RequestOptions },
 >(request: T, protocolOverride?: RequestProtocol): T {
   const protocol =
-    protocolOverride ??
-    inferProtocol(request as unknown as ProtocolRequestConfig, "rest");
+    protocolOverride ?? inferProtocol(request as unknown as ProtocolRequestConfig, "rest");
   const defaults = useStore.getState().protocolDefaults[protocol];
   return {
     ...request,

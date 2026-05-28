@@ -48,8 +48,7 @@ const graphqlStreamLanguage = StreamLanguage.define({
     if (stream.match("...")) return "punctuation";
     if (stream.match(/^[A-Za-z_]\w*/)) {
       const w = stream.current();
-      if (["query", "mutation", "subscription", "fragment", "on"].includes(w))
-        return "keyword";
+      if (["query", "mutation", "subscription", "fragment", "on"].includes(w)) return "keyword";
       if (
         [
           "type",
@@ -154,9 +153,7 @@ export function CodeEditor({
 
   useEffect(() => {
     viewRef.current?.dispatch({
-      effects: wrapCompartment.reconfigure(
-        editorWordWrap ? EditorView.lineWrapping : [],
-      ),
+      effects: wrapCompartment.reconfigure(editorWordWrap ? EditorView.lineWrapping : []),
     });
   }, [editorWordWrap, wrapCompartment]);
 

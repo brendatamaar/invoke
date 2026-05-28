@@ -2,11 +2,7 @@ import { useState } from "react";
 import { evaluateJsonPath } from "@invoke/core";
 import type { HttpMethod } from "@invoke/core";
 import { coreStore, useStore } from "../../../store";
-import {
-  useHistory,
-  useMockRoutes,
-  useResponseExamples,
-} from "../../../hooks/useDb";
+import { useHistory, useMockRoutes, useResponseExamples } from "../../../hooks/useDb";
 import type { AssertionDraft, ExtractionDraft } from "../../../types";
 import { parseGraphQLErrors, parseGraphQLCost } from "../components/GraphQLErrorsTab";
 import { getBodyInfo, responsePath } from "../utils/body";
@@ -26,13 +22,7 @@ export function useResponseViewerModel() {
   const [jsonPathInput, setJsonPathInput] = useState("");
   const [jsonPathResult, setJsonPathResult] = useState<string | null>(null);
 
-  const {
-    response,
-    responsePretty,
-    assertionResults,
-    request,
-    consoleLogs,
-  } = store;
+  const { response, responsePretty, assertionResults, request, consoleLogs } = store;
   const graphqlErrors = response ? parseGraphQLErrors(response.body) : [];
   const { cost: gqlCost, complexity: gqlComplexity } = response
     ? parseGraphQLCost(response.body)
@@ -44,12 +34,10 @@ export function useResponseViewerModel() {
     consoleLogs.postResponse.length > 0 ||
     !!consoleLogs.preRequestError ||
     !!consoleLogs.postResponseError;
-  const hasConsoleError =
-    !!consoleLogs.preRequestError || !!consoleLogs.postResponseError;
+  const hasConsoleError = !!consoleLogs.preRequestError || !!consoleLogs.postResponseError;
   const isGraphQL = request.protocol === "graphql";
   const hasGraphQLTab =
-    isGraphQL &&
-    (graphqlErrors.length > 0 || gqlCost !== null || gqlComplexity !== null);
+    isGraphQL && (graphqlErrors.length > 0 || gqlCost !== null || gqlComplexity !== null);
   const bodyInfo = getBodyInfo(response, responsePretty);
 
   const setJsonPath = (value: string) => {
@@ -57,9 +45,7 @@ export function useResponseViewerModel() {
     if (response && value.trim()) {
       const result = evaluateJsonPath(response.body, value);
       setJsonPathResult(
-        result.error
-          ? `Error: ${result.error}`
-          : JSON.stringify(result.value, null, 2),
+        result.error ? `Error: ${result.error}` : JSON.stringify(result.value, null, 2),
       );
     } else {
       setJsonPathResult(null);
@@ -123,9 +109,7 @@ export function useResponseViewerModel() {
       status: response.status,
       headers: response.headers.filter(
         (h) =>
-          !["content-encoding", "transfer-encoding", "connection"].includes(
-            h.key.toLowerCase(),
-          ),
+          !["content-encoding", "transfer-encoding", "connection"].includes(h.key.toLowerCase()),
       ),
       body: response.body,
       latencyMs: 0,

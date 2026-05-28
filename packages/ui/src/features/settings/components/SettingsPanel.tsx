@@ -14,18 +14,11 @@ import type { GeneralDraft, SettingsTab } from "../../../types";
 import { DEFAULT_RETENTION, PROTOCOLS } from "../constants";
 import { SettingsFrame } from "./SettingsFrame";
 import { SettingsTabContent } from "./SettingsTabContent";
-import {
-  buildGeneralDraft,
-  buildStatItems,
-  cloneProtocolDefaults,
-} from "../utils/draft";
+import { buildGeneralDraft, buildStatItems, cloneProtocolDefaults } from "../utils/draft";
 import { useProtocolDefaultDrafts } from "../hooks/useProtocolDefaultDrafts";
 import { sameValue } from "../utils/numbers";
 import { saveSettings } from "../utils/saveSettings";
-import {
-  exportWorkspaceBackup,
-  importWorkspaceBackup,
-} from "../utils/workspaceBackup";
+import { exportWorkspaceBackup, importWorkspaceBackup } from "../utils/workspaceBackup";
 
 export function SettingsPanel() {
   const {
@@ -78,8 +71,7 @@ export function SettingsPanel() {
       !sameValue(general, persistedGeneral) ||
       !sameValue(retentionDraft, normalizedRetention) ||
       PROTOCOLS.some(
-        (protocol) =>
-          !sameValue(protocolDrafts.drafts[protocol], persistedDrafts[protocol]),
+        (protocol) => !sameValue(protocolDrafts.drafts[protocol], persistedDrafts[protocol]),
       ),
     [
       general,
@@ -101,13 +93,7 @@ export function SettingsPanel() {
       .getStorageStats()
       .then(setStorageStats)
       .catch(() => {});
-  }, [
-    editorWordWrap,
-    retentionSettings,
-    showSettings,
-    settingsTab,
-    uiFontSize,
-  ]);
+  }, [editorWordWrap, retentionSettings, showSettings, settingsTab, uiFontSize]);
 
   useEscapeKey(showSettings, () => set({ showSettings: false, settingsTab: undefined }));
 

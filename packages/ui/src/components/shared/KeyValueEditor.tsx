@@ -17,14 +17,8 @@ export function KeyValueEditor({
 }: KeyValueEditorProps) {
   const uid = useId();
   const datalistId = keyDatalist ? `kve-key-${uid}` : undefined;
-  const update = (
-    i: number,
-    field: keyof KeyValue,
-    value: string | boolean,
-  ) => {
-    const next = rows.map((r, idx) =>
-      idx === i ? { ...r, [field]: value } : r,
-    );
+  const update = (i: number, field: keyof KeyValue, value: string | boolean) => {
+    const next = rows.map((r, idx) => (idx === i ? { ...r, [field]: value } : r));
     onChange(next);
   };
 
@@ -42,7 +36,9 @@ export function KeyValueEditor({
         </datalist>
       )}
       {rows.length > 0 && (
-        <div className={`grid ${COL_TEMPLATE} items-center text-2xs text-[var(--text-3)] py-1 border-b border-[var(--border)]`}>
+        <div
+          className={`grid ${COL_TEMPLATE} items-center text-2xs text-[var(--text-3)] py-1 border-b border-[var(--border)]`}
+        >
           <span />
           <span />
           <span />

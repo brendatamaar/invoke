@@ -121,9 +121,7 @@ export async function generateCodeSnippet(
   request: RequestConfig,
   target: CodeExportTarget,
 ): Promise<CodeSnippet> {
-  const meta =
-    CODE_EXPORT_TARGETS.find((item) => item.target === target) ??
-    CODE_EXPORT_TARGETS[0];
+  const meta = CODE_EXPORT_TARGETS.find((item) => item.target === target) ?? CODE_EXPORT_TARGETS[0];
   const code = await generatorFor(target)(request);
   return { ...meta, code };
 }
@@ -151,8 +149,7 @@ function generatorFor(target: CodeExportTarget) {
     case "php-guzzle":
       return async (request: RequestConfig) => generatePhpGuzzle(request);
     case "csharp-httpclient":
-      return async (request: RequestConfig) =>
-        generateCSharpHttpClient(request);
+      return async (request: RequestConfig) => generateCSharpHttpClient(request);
     case "rust-reqwest":
       return async (request: RequestConfig) => generateRustReqwest(request);
     case "powershell":
@@ -171,12 +168,7 @@ function generatorFor(target: CodeExportTarget) {
 }
 
 function generateCurl(request: RequestConfig) {
-  const parts = [
-    "curl",
-    "-X",
-    shellQuote(request.method),
-    shellQuote(request.url),
-  ];
+  const parts = ["curl", "-X", shellQuote(request.method), shellQuote(request.url)];
   for (const header of enabledHeaders(request.headers)) {
     parts.push("-H", shellQuote(`${header.key}: ${header.value}`));
   }
@@ -219,16 +211,9 @@ ${await generateFetch(request)}
 
 function generatePythonRequests(request: RequestConfig) {
   const method = request.method.toLowerCase();
-  const headers = JSON.stringify(
-    enabledHeadersObject(request.headers),
-    null,
-    2,
-  );
+  const headers = JSON.stringify(enabledHeadersObject(request.headers), null, 2);
   const imports = ["import requests"];
-  const lines = [
-    `url = ${JSON.stringify(request.url)}`,
-    `headers = ${headers}`,
-  ];
+  const lines = [`url = ${JSON.stringify(request.url)}`, `headers = ${headers}`];
   const args = ["url", "headers=headers"];
 
   if (hasBody(request)) {
@@ -248,16 +233,9 @@ function generatePythonRequests(request: RequestConfig) {
 
 function generatePythonHttpx(request: RequestConfig) {
   const method = request.method.toLowerCase();
-  const headers = JSON.stringify(
-    enabledHeadersObject(request.headers),
-    null,
-    2,
-  );
+  const headers = JSON.stringify(enabledHeadersObject(request.headers), null, 2);
   const imports = ["import httpx"];
-  const lines = [
-    `url = ${JSON.stringify(request.url)}`,
-    `headers = ${headers}`,
-  ];
+  const lines = [`url = ${JSON.stringify(request.url)}`, `headers = ${headers}`];
   const args = ["url", "headers=headers"];
 
   if (hasBody(request)) {
@@ -299,14 +277,9 @@ console.log(response.status, response.data);
 
 function generateGoNetHttp(request: RequestConfig) {
   const headers = enabledHeaders(request.headers)
-    .map(
-      (header) =>
-        `req.Header.Set(${goString(header.key)}, ${goString(header.value)})`,
-    )
+    .map((header) => `req.Header.Set(${goString(header.key)}, ${goString(header.value)})`)
     .join("\n\t");
-  const body = hasBody(request)
-    ? `strings.NewReader(${goString(request.body)})`
-    : "nil";
+  const body = hasBody(request) ? `strings.NewReader(${goString(request.body)})` : "nil";
   const imports = ["fmt", "io", "net/http"];
   if (hasBody(request)) imports.push("strings");
   return `package main
@@ -343,8 +316,7 @@ function generateJavaOkHttp(request: RequestConfig) {
     ? `RequestBody body = RequestBody.create(${javaString(request.body)}, MediaType.parse(${javaString(contentType(request) || "text/plain")}));`
     : "RequestBody body = null;";
   const headers = enabledHeaders(request.headers).map(
-    (header) =>
-      `      .addHeader(${javaString(header.key)}, ${javaString(header.value)})`,
+    (header) => `      .addHeader(${javaString(header.key)}, ${javaString(header.value)})`,
   );
   return `import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -375,8 +347,7 @@ function generateKotlinOkHttp(request: RequestConfig) {
     ? `val body = ${kotlinString(request.body)}.toRequestBody(${kotlinString(contentType(request) || "text/plain")}.toMediaType())`
     : "val body = null";
   const headers = enabledHeaders(request.headers).map(
-    (header) =>
-      `    .addHeader(${kotlinString(header.key)}, ${kotlinString(header.value)})`,
+    (header) => `    .addHeader(${kotlinString(header.key)}, ${kotlinString(header.value)})`,
   );
   return `import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -402,10 +373,7 @@ ${headers.length ? `${headers.join("\n")}\n` : ""}    .method(${kotlinString(req
 function generateRubyNetHttp(request: RequestConfig) {
   const requestClass = rubyRequestClass(request.method);
   const headers = enabledHeaders(request.headers)
-    .map(
-      (header) =>
-        `request[${rubyString(header.key)}] = ${rubyString(header.value)}`,
-    )
+    .map((header) => `request[${rubyString(header.key)}] = ${rubyString(header.value)}`)
     .join("\n");
   return `require "net/http"
 require "uri"
@@ -427,9 +395,7 @@ puts response.body
 function generatePhpGuzzle(request: RequestConfig) {
   const options: string[] = [];
   if (enabledHeaders(request.headers).length)
-    options.push(
-      `'headers' => ${phpArray(enabledHeadersObject(request.headers))}`,
-    );
+    options.push(`'headers' => ${phpArray(enabledHeadersObject(request.headers))}`);
   if (hasBody(request)) options.push(`'body' => ${phpString(request.body)}`);
   return `<?php
 
@@ -471,8 +437,7 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());
 
 function generateRustReqwest(request: RequestConfig) {
   const headers = enabledHeaders(request.headers).map(
-    (header) =>
-      `        .header(${rustString(header.key)}, ${rustString(header.value)})`,
+    (header) => `        .header(${rustString(header.key)}, ${rustString(header.value)})`,
   );
   return `#[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -552,9 +517,7 @@ function parseGQLBody(request: RequestConfig): ParsedGQLBody | null {
     if (!parsed.query) return null;
     const q = parsed.query.trim().replace(/^[\s\n]+/, "");
     const lower = q.toLowerCase();
-    const operationKind: ParsedGQLBody["operationKind"] = lower.startsWith(
-      "mutation",
-    )
+    const operationKind: ParsedGQLBody["operationKind"] = lower.startsWith("mutation")
       ? "mutation"
       : lower.startsWith("subscription")
         ? "subscription"
@@ -589,8 +552,7 @@ async function generateGraphQLFetch(request: RequestConfig): Promise<string> {
   const extraHeaders = enabledHeaders(request.headers).filter(
     (h) => h.key.toLowerCase() !== "content-type",
   );
-  const hasVars =
-    gql.variables !== null && Object.keys(gql.variables).length > 0;
+  const hasVars = gql.variables !== null && Object.keys(gql.variables).length > 0;
 
   const headerLines = [
     `    "Content-Type": "application/json"`,
@@ -600,9 +562,7 @@ async function generateGraphQLFetch(request: RequestConfig): Promise<string> {
   const bodyFields = [
     `    query: QUERY`,
     ...(hasVars ? [`    variables`] : []),
-    ...(gql.operationName
-      ? [`    operationName: ${jsString(gql.operationName)}`]
-      : []),
+    ...(gql.operationName ? [`    operationName: ${jsString(gql.operationName)}`] : []),
   ].join(",\n");
 
   const source = `
@@ -632,11 +592,8 @@ async function generateGraphQLApollo(request: RequestConfig): Promise<string> {
   if (!gql) return generateFetch(request);
 
   const constName = gqlConstName(gql);
-  const hasVars =
-    gql.variables !== null && Object.keys(gql.variables).length > 0;
-  const varStr = hasVars
-    ? `,\n  variables: ${JSON.stringify(gql.variables, null, 2)}`
-    : "";
+  const hasVars = gql.variables !== null && Object.keys(gql.variables).length > 0;
+  const varStr = hasVars ? `,\n  variables: ${JSON.stringify(gql.variables, null, 2)}` : "";
 
   let hookImport: string;
   let hookUsage: string;
@@ -669,8 +626,7 @@ async function generateGraphQLUrql(request: RequestConfig): Promise<string> {
   if (!gql) return generateFetch(request);
 
   const constName = gqlConstName(gql);
-  const hasVars =
-    gql.variables !== null && Object.keys(gql.variables).length > 0;
+  const hasVars = gql.variables !== null && Object.keys(gql.variables).length > 0;
 
   let hookImport: string;
   let hookUsage: string;
@@ -706,9 +662,7 @@ ${hookUsage}
 }
 
 function toCamelCase(screaming: string): string {
-  return screaming
-    .toLowerCase()
-    .replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+  return screaming.toLowerCase().replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 }
 
 function hasBody(request: RequestConfig) {
@@ -716,9 +670,7 @@ function hasBody(request: RequestConfig) {
 }
 
 function enabledHeaders(headers: KeyValue[]) {
-  return headers.filter(
-    (header) => header.enabled !== false && header.key.trim(),
-  );
+  return headers.filter((header) => header.enabled !== false && header.key.trim());
 }
 
 function enabledHeadersObject(headers: KeyValue[]) {
@@ -728,9 +680,7 @@ function enabledHeadersObject(headers: KeyValue[]) {
 }
 
 function objectEntries(headers: KeyValue[]) {
-  return headers.filter(
-    (header) => header.enabled !== false && header.key.trim(),
-  );
+  return headers.filter((header) => header.enabled !== false && header.key.trim());
 }
 
 function jsObject(value: Record<string, string>) {
@@ -777,9 +727,8 @@ function pythonTimeout(timeoutMs: number) {
 
 function contentType(request: RequestConfig) {
   return (
-    enabledHeaders(request.headers).find(
-      (header) => header.key.toLowerCase() === "content-type",
-    )?.value ?? ""
+    enabledHeaders(request.headers).find((header) => header.key.toLowerCase() === "content-type")
+      ?.value ?? ""
   );
 }
 
@@ -816,8 +765,7 @@ function powershellString(value: string) {
 }
 
 function rubyRequestClass(method: string) {
-  const normalized =
-    method.charAt(0).toUpperCase() + method.slice(1).toLowerCase();
+  const normalized = method.charAt(0).toUpperCase() + method.slice(1).toLowerCase();
   return normalized === "Delete" ? "Delete" : normalized;
 }
 
@@ -880,9 +828,7 @@ export function generateWsCodeSnippet(
   request: WebSocketRequestConfig,
   target: WsCodeExportTarget,
 ): WsCodeSnippet {
-  const meta =
-    WS_CODE_EXPORT_TARGETS.find((t) => t.target === target) ??
-    WS_CODE_EXPORT_TARGETS[0];
+  const meta = WS_CODE_EXPORT_TARGETS.find((t) => t.target === target) ?? WS_CODE_EXPORT_TARGETS[0];
   const code = wsGeneratorFor(target)(request);
   return { ...meta, code };
 }
@@ -941,10 +887,7 @@ function generateWscat(request: WebSocketRequestConfig): string {
       parts.push("--protocol", shellQuote(p));
     }
   }
-  return parts.reduce(
-    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
-    "",
-  );
+  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
 }
 
 function generateWebsocat(request: WebSocketRequestConfig): string {
@@ -952,10 +895,7 @@ function generateWebsocat(request: WebSocketRequestConfig): string {
   for (const h of wsEffectiveHeaders(request)) {
     parts.push(`-H ${shellQuote(`${h.key}: ${h.value}`)}`);
   }
-  return parts.reduce(
-    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
-    "",
-  );
+  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
 }
 
 function generateWsJavaScript(request: WebSocketRequestConfig): string {
@@ -967,9 +907,7 @@ function generateWsJavaScript(request: WebSocketRequestConfig): string {
           .filter(Boolean),
       )}`
     : "";
-  const initMsg = request.message
-    ? `\n  ws.send(${JSON.stringify(request.message)});`
-    : "";
+  const initMsg = request.message ? `\n  ws.send(${JSON.stringify(request.message)});` : "";
   return `const ws = new WebSocket(${JSON.stringify(request.url)}${protocols});
 
 ws.onopen = () => {
@@ -1002,11 +940,8 @@ function generateWsNodeWs(request: WebSocketRequestConfig): string {
           .filter(Boolean),
       )},`
     : "";
-  const initMsg = request.message
-    ? `\n  ws.send(${JSON.stringify(request.message)});`
-    : "";
-  const options =
-    protocols || headersObj ? `, {${protocols}${headersObj}\n}` : "";
+  const initMsg = request.message ? `\n  ws.send(${JSON.stringify(request.message)});` : "";
+  const options = protocols || headersObj ? `, {${protocols}${headersObj}\n}` : "";
   return `import WebSocket from "ws";
 
 const ws = new WebSocket(${JSON.stringify(request.url)}${options});
@@ -1100,8 +1035,7 @@ export function generateGrpcCodeSnippet(
   target: GrpcCodeExportTarget,
 ): GrpcCodeSnippet {
   const meta =
-    GRPC_CODE_EXPORT_TARGETS.find((t) => t.target === target) ??
-    GRPC_CODE_EXPORT_TARGETS[0];
+    GRPC_CODE_EXPORT_TARGETS.find((t) => t.target === target) ?? GRPC_CODE_EXPORT_TARGETS[0];
   const code = grpcGeneratorFor(target)(request);
   return { ...meta, code };
 }
@@ -1131,12 +1065,8 @@ function grpcFullMethod(request: GrpcRequestConfig): string {
   return `${request.service}/${request.method}`;
 }
 
-function grpcEnabledMetadata(
-  request: GrpcRequestConfig,
-): Array<{ key: string; value: string }> {
-  return (request.metadata ?? []).filter(
-    (m) => m.enabled !== false && m.key.trim(),
-  );
+function grpcEnabledMetadata(request: GrpcRequestConfig): Array<{ key: string; value: string }> {
+  return (request.metadata ?? []).filter((m) => m.enabled !== false && m.key.trim());
 }
 
 function generateGrpcurl(request: GrpcRequestConfig): string {
@@ -1145,18 +1075,11 @@ function generateGrpcurl(request: GrpcRequestConfig): string {
   for (const m of grpcEnabledMetadata(request)) {
     parts.push("-rpc-header", shellQuote(`${m.key}: ${m.value}`));
   }
-  if (
-    request.body &&
-    request.body.trim() !== "{}" &&
-    request.body.trim() !== ""
-  ) {
+  if (request.body && request.body.trim() !== "{}" && request.body.trim() !== "") {
     parts.push("-d", shellQuote(request.body));
   }
   parts.push(shellQuote(request.address), shellQuote(grpcFullMethod(request)));
-  return parts.reduce(
-    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
-    "",
-  );
+  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
 }
 
 export function generateGrpcBufCurl(request: GrpcRequestConfig): string {
@@ -1166,19 +1089,12 @@ export function generateGrpcBufCurl(request: GrpcRequestConfig): string {
   for (const m of grpcEnabledMetadata(request)) {
     parts.push("-H", shellQuote(`${m.key}: ${m.value}`));
   }
-  if (
-    request.body &&
-    request.body.trim() !== "{}" &&
-    request.body.trim() !== ""
-  ) {
+  if (request.body && request.body.trim() !== "{}" && request.body.trim() !== "") {
     parts.push("--data", shellQuote(request.body));
   }
   if (!request.tls) parts.push("--http2-prior-knowledge");
   parts.push(shellQuote(url));
-  return parts.reduce(
-    (acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`),
-    "",
-  );
+  return parts.reduce((acc, part, i) => (i === 0 ? part : `${acc} \\\n  ${part}`), "");
 }
 
 function generateGrpcGo(request: GrpcRequestConfig): string {
@@ -1235,9 +1151,7 @@ function generateGrpcNode(request: GrpcRequestConfig): string {
   const metaObj = meta.length
     ? `const metadata = new grpc.Metadata();\n${meta.map((m) => `metadata.add(${JSON.stringify(m.key)}, ${JSON.stringify(m.value)});`).join("\n")}\n`
     : "";
-  const creds = request.tls
-    ? "grpc.credentials.createSsl()"
-    : "grpc.credentials.createInsecure()";
+  const creds = request.tls ? "grpc.credentials.createSsl()" : "grpc.credentials.createInsecure()";
   return `const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 
@@ -1326,10 +1240,7 @@ function generateGrpcCSharp(request: GrpcRequestConfig): string {
   const meta = grpcEnabledMetadata(request);
   const serviceName = request.service.split(".").pop() ?? request.service;
   const metaLines = meta
-    .map(
-      (m) =>
-        `    headers.Add(${JSON.stringify(m.key)}, ${JSON.stringify(m.value)});`,
-    )
+    .map((m) => `    headers.Add(${JSON.stringify(m.key)}, ${JSON.stringify(m.value)});`)
     .join("\n");
   return `using Grpc.Net.Client;
 using Grpc.Core;

@@ -8,8 +8,7 @@ export function TLSTab() {
     (h) => h.key?.toLowerCase() === "x-invoke-http-version",
   )?.value;
 
-  if (!tls && !httpVersion)
-    return <p className="p-4 text-xs text-[var(--text-3)]">No TLS data</p>;
+  if (!tls && !httpVersion) return <p className="p-4 text-xs text-[var(--text-3)]">No TLS data</p>;
 
   return (
     <div className="p-4 flex flex-col gap-3">
@@ -34,9 +33,7 @@ export function TLSTab() {
                 <Row label="DNS names" value={cert.dnsNames.join(", ")} />
               )}
               <Row label="Serial" value={cert.serialNumber} />
-              {cert.sha256Fingerprint && (
-                <Row label="SHA-256" value={cert.sha256Fingerprint} />
-              )}
+              {cert.sha256Fingerprint && <Row label="SHA-256" value={cert.sha256Fingerprint} />}
             </div>
           ))}
         </>
@@ -48,12 +45,8 @@ export function TLSTab() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3">
-      <span className="text-xs text-[var(--text-3)] w-28 shrink-0">
-        {label}
-      </span>
-      <span className="text-xs font-mono text-[var(--text-1)] break-all">
-        {value}
-      </span>
+      <span className="text-xs text-[var(--text-3)] w-28 shrink-0">{label}</span>
+      <span className="text-xs font-mono text-[var(--text-1)] break-all">{value}</span>
     </div>
   );
 }

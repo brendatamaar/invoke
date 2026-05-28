@@ -45,9 +45,7 @@ export function FlowNode({
     >
       <div className="flex items-center gap-1.5">
         <div className={`w-2 h-2 rounded-full shrink-0 ${STEP_COLORS[step.type]}`} />
-        <span className="text-2xs text-[var(--text-3)] uppercase tracking-wide">
-          {step.type}
-        </span>
+        <span className="text-2xs text-[var(--text-3)] uppercase tracking-wide">{step.type}</span>
         {stepResult &&
           (stepResult.status === "passed" ? (
             <CheckCircle2 size={10} className="ml-auto text-[var(--ok)]" />
@@ -55,9 +53,7 @@ export function FlowNode({
             <XCircle size={10} className="ml-auto text-[var(--danger)]" />
           ))}
       </div>
-      <div className="text-xs font-medium text-[var(--text-1)] truncate">
-        {step.name}
-      </div>
+      <div className="text-xs font-medium text-[var(--text-1)] truncate">{step.name}</div>
       {step.type === "request" && (
         <div className="text-2xs text-[var(--text-3)] truncate">
           {step.request.method} {step.request.url || "-"}
@@ -69,8 +65,7 @@ export function FlowNode({
       {stepResult?.response?.status && (
         <div className="flex items-center gap-1 text-2xs text-[var(--text-3)]">
           <Clock size={9} />
-          {stepResult.completedAt - stepResult.startedAt}ms -{" "}
-          {stepResult.response.status}
+          {stepResult.completedAt - stepResult.startedAt}ms - {stepResult.response.status}
         </div>
       )}
     </div>

@@ -15,10 +15,7 @@ export function ProxyUrlTooltip({ url }: { url: string }) {
     if (!open) return;
     const handler = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (
-        !btnRef.current?.contains(target) &&
-        !panelRef.current?.contains(target)
-      ) {
+      if (!btnRef.current?.contains(target) && !panelRef.current?.contains(target)) {
         setOpen(false);
       }
     };
@@ -78,17 +75,15 @@ export function ProxyUrlTooltip({ url }: { url: string }) {
                 How proxy recording works
               </p>
               <p className="text-2xs text-[var(--text-3)] leading-relaxed">
-                Send a <code className="font-mono">POST</code> to this endpoint
-                with your real API URL in <code className="font-mono">targetUrl</code>.
-                Invoke forwards the request, records the exchange, and returns the
-                real response. You can then import recordings as mock routes.
+                Send a <code className="font-mono">POST</code> to this endpoint with your real API
+                URL in <code className="font-mono">targetUrl</code>. Invoke forwards the request,
+                records the exchange, and returns the real response. You can then import recordings
+                as mock routes.
               </p>
             </div>
 
             <div>
-              <p className="text-2xs font-semibold text-[var(--text-1)] mb-1">
-                Endpoint
-              </p>
+              <p className="text-2xs font-semibold text-[var(--text-1)] mb-1">Endpoint</p>
               <div className="flex items-center gap-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1">
                 <code className="flex-1 text-2xs font-mono text-[var(--text-1)] truncate">
                   {url}
@@ -104,9 +99,7 @@ export function ProxyUrlTooltip({ url }: { url: string }) {
             </div>
 
             <div>
-              <p className="text-2xs font-semibold text-[var(--text-1)] mb-1">
-                Example body
-              </p>
+              <p className="text-2xs font-semibold text-[var(--text-1)] mb-1">Example body</p>
               <pre className="text-2xs font-mono text-[var(--text-2)] bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1.5 leading-relaxed">
                 {exampleBody}
               </pre>

@@ -28,8 +28,7 @@ export function GRPCBar() {
       {bar.tlsLocalhostWarning && (
         <div className="px-3 pb-1 flex items-center gap-1 text-2xs text-[var(--warn)]">
           <AlertTriangle size={11} />
-          TLS is enabled but the address looks like localhost - most local
-          servers use plaintext.
+          TLS is enabled but the address looks like localhost - most local servers use plaintext.
         </div>
       )}
     </div>

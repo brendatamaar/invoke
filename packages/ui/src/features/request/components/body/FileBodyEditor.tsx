@@ -32,9 +32,7 @@ export function FileBodyEditor({
       {body ? (
         <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-2)] border border-[var(--border)] rounded text-xs">
           <Upload size={12} className="text-[var(--accent)]" />
-          <span className="font-mono text-[var(--text-1)]">
-            {fileName || "file selected"}
-          </span>
+          <span className="font-mono text-[var(--text-1)]">{fileName || "file selected"}</span>
           <button
             onClick={() => onChange("", "")}
             className="ml-1 text-[var(--text-3)] hover:text-[var(--danger)]"

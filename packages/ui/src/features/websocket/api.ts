@@ -50,9 +50,7 @@ export async function webSocketPoll(connectionId: string): Promise<{
   }>(response);
 }
 
-export async function webSocketClose(
-  connectionId: string,
-): Promise<{ error?: string }> {
+export async function webSocketClose(connectionId: string): Promise<{ error?: string }> {
   const response = await fetch("/api/websocket/close", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -77,12 +75,7 @@ function applyWsAuth(headers: KeyValue[], auth: AuthConfig): KeyValue[] {
       enabled: true,
     });
   }
-  if (
-    auth.type === "api-key" &&
-    auth.apiKeyName &&
-    auth.apiKeyValue &&
-    auth.apiKeyIn !== "query"
-  ) {
+  if (auth.type === "api-key" && auth.apiKeyName && auth.apiKeyValue && auth.apiKeyIn !== "query") {
     result.push({
       key: auth.apiKeyName,
       value: auth.apiKeyValue,

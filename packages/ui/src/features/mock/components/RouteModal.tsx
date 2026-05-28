@@ -64,11 +64,7 @@ export function RouteModal({
           onPathPatternChange={(pathPattern) => set("pathPattern", pathPattern)}
         />
 
-        <RouteTabs
-          tab={tab}
-          sequenceCount={sequences.length}
-          onTabChange={setTab}
-        />
+        <RouteTabs tab={tab} sequenceCount={sequences.length} onTabChange={setTab} />
 
         <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
           {tab === "response" && (

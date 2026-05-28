@@ -69,7 +69,8 @@ export function GrpcStreamComposer({ streamId }: { streamId: string }) {
               >
                 <span className="text-2xs font-medium text-[var(--text-1)]">{msg.name}</span>
                 <span className="text-2xs font-mono text-[var(--text-3)] truncate">
-                  {msg.body.slice(0, 60)}{msg.body.length > 60 ? "…" : ""}
+                  {msg.body.slice(0, 60)}
+                  {msg.body.length > 60 ? "…" : ""}
                 </span>
               </button>
             ))
@@ -91,14 +92,10 @@ export function GrpcStreamComposer({ streamId }: { streamId: string }) {
           title="Load saved message"
         >
           <BookOpen size={12} />
-          {saved.length > 0 && (
-            <span className="text-2xs">{saved.length}</span>
-          )}
+          {saved.length > 0 && <span className="text-2xs">{saved.length}</span>}
         </button>
 
-        <span className="ml-auto text-2xs text-[var(--text-3)] select-none mr-1">
-          Ctrl+Enter
-        </span>
+        <span className="ml-auto text-2xs text-[var(--text-3)] select-none mr-1">Ctrl+Enter</span>
         <button
           className="btn btn-primary text-2xs flex items-center gap-1 px-2 py-1 shrink-0"
           onClick={() => void send()}

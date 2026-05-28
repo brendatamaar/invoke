@@ -7,10 +7,7 @@ import { CollectionFolderNode } from "./CollectionFolderNode";
 import { CollectionRequestNode } from "./CollectionRequestNode";
 import { CollectionActionsMenu } from "./tree/CollectionActionsMenu";
 import { CollectionNodeModals } from "./tree/CollectionNodeModals";
-import {
-  exportCollectionToOpenApi,
-  exportCollectionToZip,
-} from "../utils/exportCollection";
+import { exportCollectionToOpenApi, exportCollectionToZip } from "../utils/exportCollection";
 import {
   emptyRequest,
   handleCollectionDragOver,
@@ -49,9 +46,7 @@ export function CollectionNode({ collection }: { collection: Collection }) {
   const colRequests = requests.filter(
     (request) => request.collectionId === collection.id && !request.folderId,
   );
-  const totalRequests = requests.filter(
-    (request) => request.collectionId === collection.id,
-  ).length;
+  const totalRequests = requests.filter((request) => request.collectionId === collection.id).length;
 
   const addFolder = async (name: string) => {
     setAddFolderModal(false);
@@ -107,26 +102,25 @@ export function CollectionNode({ collection }: { collection: Collection }) {
         <div
           className={`group flex items-center gap-1.5 px-3 py-1.5 cursor-pointer rounded mx-1 transition-colors ${isDragOver ? "bg-[var(--accent-subtle,var(--surface-2))] ring-1 ring-inset ring-[var(--accent,var(--border))]" : "hover:bg-[var(--surface-2)]"}`}
           onClick={() => toggleFolder(collection.id)}
-          onDragOver={(event) =>
-            handleCollectionDragOver(event, collection.id, setIsDragOver)
-          }
+          onDragOver={(event) => handleCollectionDragOver(event, collection.id, setIsDragOver)}
           onDragLeave={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget as Node)) {
               setIsDragOver(false);
             }
           }}
           onDrop={(event) =>
-            handleCollectionDrop(
-              event,
-              collection.id,
-              requests,
-              setIsDragOver,
-              addToast,
-            )
+            handleCollectionDrop(event, collection.id, requests, setIsDragOver, addToast)
           }
         >
-          {expanded ? <ChevronDown size={13} className="text-[var(--text-3)]" /> : <ChevronRight size={13} className="text-[var(--text-3)]" />}
-          <span className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate" title={collection.description || undefined}>
+          {expanded ? (
+            <ChevronDown size={13} className="text-[var(--text-3)]" />
+          ) : (
+            <ChevronRight size={13} className="text-[var(--text-3)]" />
+          )}
+          <span
+            className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate"
+            title={collection.description || undefined}
+          >
             {collection.name}
           </span>
           {collection.description && (
@@ -156,7 +150,11 @@ export function CollectionNode({ collection }: { collection: Collection }) {
               <CollectionFolderNode key={folder.id} folder={folder} collectionId={collection.id} />
             ))}
             {colRequests.map((request) => (
-              <CollectionRequestNode key={request.id} request={request} collectionId={collection.id} />
+              <CollectionRequestNode
+                key={request.id}
+                request={request}
+                collectionId={collection.id}
+              />
             ))}
           </div>
         )}

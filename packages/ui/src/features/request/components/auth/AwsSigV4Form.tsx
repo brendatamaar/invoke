@@ -15,9 +15,7 @@ export function AwsSigV4Form({ auth, setAuth }: AuthFormProps) {
         <AuthTextInput
           type="password"
           value={auth.awsSecretAccessKey ?? ""}
-          onChange={(awsSecretAccessKey) =>
-            setAuth({ ...auth, awsSecretAccessKey })
-          }
+          onChange={(awsSecretAccessKey) => setAuth({ ...auth, awsSecretAccessKey })}
         />
       </Field>
       <Field label="Region">

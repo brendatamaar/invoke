@@ -26,8 +26,7 @@ export function ExtractPanel() {
       {extractRules.length > 0 && <ExtractHeader />}
       {extractRules.map((rule, index) => {
         const source = rule.source ?? "body";
-        const exprPlaceholder =
-          source === "header" ? "Header-Name" : "$.path.to.value";
+        const exprPlaceholder = source === "header" ? "Header-Name" : "$.path.to.value";
         return (
           <div
             key={index}
@@ -63,9 +62,7 @@ export function ExtractPanel() {
                   className="input py-0.5 text-2xs font-mono"
                 />
               ) : (
-                <span className="text-2xs text-[var(--text-3)] px-2">
-                  no expression needed
-                </span>
+                <span className="text-2xs text-[var(--text-3)] px-2">no expression needed</span>
               )}
             </div>
             <button
@@ -87,12 +84,8 @@ export function ExtractPanel() {
 function ExtractHeader() {
   return (
     <div className="flex items-center gap-2 px-2">
-      <span className="w-32 shrink-0 text-2xs text-[var(--text-3)]">
-        Variable
-      </span>
-      <span className="w-24 shrink-0 text-2xs text-[var(--text-3)]">
-        Source
-      </span>
+      <span className="w-32 shrink-0 text-2xs text-[var(--text-3)]">Variable</span>
+      <span className="w-24 shrink-0 text-2xs text-[var(--text-3)]">Source</span>
       <span className="flex-1 text-2xs text-[var(--text-3)]">Expression</span>
     </div>
   );

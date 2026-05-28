@@ -34,10 +34,7 @@ export function registerOAuth2Routes(app: Hono) {
     });
     const text = await tokenResponse.text();
     if (!tokenResponse.ok) {
-      return c.json(
-        { error: text || tokenResponse.statusText },
-        tokenResponse.status as any,
-      );
+      return c.json({ error: text || tokenResponse.statusText }, tokenResponse.status as any);
     }
     const payload = JSON.parse(text) as {
       access_token?: string;
@@ -68,10 +65,7 @@ export function registerOAuth2Routes(app: Hono) {
     if (input.scope) url.searchParams.set("scope", input.scope);
     if (input.pkce && input.codeChallenge) {
       url.searchParams.set("code_challenge", input.codeChallenge);
-      url.searchParams.set(
-        "code_challenge_method",
-        input.codeChallengeMethod || "S256",
-      );
+      url.searchParams.set("code_challenge_method", input.codeChallengeMethod || "S256");
     }
 
     oauth2Pending.set(state, {
@@ -91,9 +85,7 @@ export function registerOAuth2Routes(app: Hono) {
 
     if (!state) return c.html("<h3>Error: missing state parameter</h3>", 400);
 
-    const pending = oauth2Pending.get(state) as
-      | OAuth2AuthCodePending
-      | undefined;
+    const pending = oauth2Pending.get(state) as OAuth2AuthCodePending | undefined;
     if (!pending) return c.html("<h3>Error: unknown state</h3>", 400);
 
     if (error) {
@@ -102,9 +94,7 @@ export function registerOAuth2Routes(app: Hono) {
         error,
         timestamp: Date.now(),
       });
-      return c.html(
-        `<h3>Authorization failed: ${error}</h3><p>You can close this window.</p>`,
-      );
+      return c.html(`<h3>Authorization failed: ${error}</h3><p>You can close this window.</p>`);
     }
 
     if (!code) {
@@ -124,8 +114,7 @@ export function registerOAuth2Routes(app: Hono) {
         client_id: pending.clientId ?? "",
       });
       if (pending.clientSecret) body.set("client_secret", pending.clientSecret);
-      if (pending.pkce && pending.codeVerifier)
-        body.set("code_verifier", pending.codeVerifier);
+      if (pending.pkce && pending.codeVerifier) body.set("code_verifier", pending.codeVerifier);
 
       const tokenRes = await fetch(pending.tokenUrl, {
         method: "POST",
@@ -210,10 +199,7 @@ export function registerOAuth2Routes(app: Hono) {
     });
     const text = await tokenResponse.text();
     if (!tokenResponse.ok) {
-      return c.json(
-        { error: text || tokenResponse.statusText },
-        tokenResponse.status as any,
-      );
+      return c.json({ error: text || tokenResponse.statusText }, tokenResponse.status as any);
     }
     const payload = JSON.parse(text) as {
       access_token?: string;

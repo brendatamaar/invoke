@@ -58,9 +58,14 @@ export function GrpcEndpointControls({
         onClick={onReflect}
         disabled={isReflecting || isProtosetLoaded}
         className="btn text-xs gap-1"
-        title={isProtosetLoaded ? "Protoset active — server reflection disabled" : "Reflect (Ctrl+Shift+R)"}
+        title={
+          isProtosetLoaded
+            ? "Protoset active — server reflection disabled"
+            : "Reflect (Ctrl+Shift+R)"
+        }
       >
-        {isReflecting ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Reflect
+        {isReflecting ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}{" "}
+        Reflect
       </button>
       <button
         onClick={onHealthCheck}

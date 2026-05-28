@@ -59,9 +59,7 @@ export function GraphQLSchemaModalHeader({
 
       <div className="ml-auto flex items-center gap-2 shrink-0">
         {lastFetched > 0 && (
-          <span className="text-xs text-[var(--text-3)]">
-            {fmtAge(lastFetched)}
-          </span>
+          <span className="text-xs text-[var(--text-3)]">{fmtAge(lastFetched)}</span>
         )}
         <button
           onClick={onRefresh}

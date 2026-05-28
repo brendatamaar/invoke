@@ -48,9 +48,7 @@ export function useWebSocketEventStream({
         const frame = JSON.parse(message.body) as { type?: string };
         const connectionId = findWsSession(sessionId)?.connectionId;
         if (frame.type === "ping" && connectionId) {
-          webSocketSend(connectionId, JSON.stringify({ type: "pong" })).catch(
-            () => {},
-          );
+          webSocketSend(connectionId, JSON.stringify({ type: "pong" })).catch(() => {});
         }
       } catch {
         /* not valid JSON */
@@ -58,10 +56,7 @@ export function useWebSocketEventStream({
     }
 
     const sessionUpdate: Parameters<typeof setWsSession>[1] = {
-      log: [
-        ...currentLog,
-        ...makeWsLogEntries(message, websocketRequest.ndjsonMode ?? false),
-      ],
+      log: [...currentLog, ...makeWsLogEntries(message, websocketRequest.ndjsonMode ?? false)],
       lastActivityAt: Date.now(),
     };
     const pingStart = pingTimestampRef.current.get(sessionId);

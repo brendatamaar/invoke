@@ -25,9 +25,20 @@ import { checkAndUnlockOnStartup } from "./features/settings/useCrypto";
 import { useStore } from "./store";
 
 const COMPARE_FIELDS = [
-  "method", "url", "params", "headers", "bodyMode", "body", "auth",
-  "timeoutMs", "variables", "assertions", "extractionRules", "options",
-  "scripts", "retryPolicy",
+  "method",
+  "url",
+  "params",
+  "headers",
+  "bodyMode",
+  "body",
+  "auth",
+  "timeoutMs",
+  "variables",
+  "assertions",
+  "extractionRules",
+  "options",
+  "scripts",
+  "retryPolicy",
 ] as const;
 
 function pickComparableFields(obj: unknown) {
@@ -37,8 +48,12 @@ function pickComparableFields(obj: unknown) {
 
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { size: requestHeight, onMouseDown: onResizeMouseDown } =
-    useResizablePane(380, "vertical", containerRef, 300);
+  const { size: requestHeight, onMouseDown: onResizeMouseDown } = useResizablePane(
+    380,
+    "vertical",
+    containerRef,
+    300,
+  );
   const { handleSend } = useRequestExecution();
   const { set, request, requests, saveDialog } = useStore();
 

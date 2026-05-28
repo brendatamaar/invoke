@@ -21,10 +21,7 @@ export function registerWebSocketRoutes(app: Hono) {
     const input = parsed.data as unknown as WebSocketConnectInput;
     const ssrfError = checkSsrf(input.url);
     if (ssrfError) return c.json({ error: ssrfError }, 403);
-    const response = await grpcCall<any>(
-      "WebSocketConnect",
-      websocketConnectPayload(input),
-    );
+    const response = await grpcCall<any>("WebSocketConnect", websocketConnectPayload(input));
     return c.json(response);
   });
 
@@ -77,17 +74,14 @@ export function registerWebSocketRoutes(app: Hono) {
           if (done) return;
           try {
             controller.enqueue(
-              encoder.encode(
-                `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
-              ),
+              encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
             );
           } catch {
             /* stream closed */
           }
         };
 
-        const sleep = (ms: number) =>
-          new Promise<void>((resolve) => setTimeout(resolve, ms));
+        const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
         while (!done) {
           try {

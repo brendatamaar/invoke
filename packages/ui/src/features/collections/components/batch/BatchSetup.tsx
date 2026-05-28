@@ -31,9 +31,7 @@ export function BatchSetup({
         value={concurrency}
         min={1}
         max={50}
-        onChange={(value) =>
-          onConcurrencyChange(Math.max(1, Math.min(50, value)))
-        }
+        onChange={(value) => onConcurrencyChange(Math.max(1, Math.min(50, value)))}
       />
       <NumberField
         label="Delay between batches (ms)"

@@ -47,12 +47,8 @@ export function TopBar() {
           cursor: "pointer",
           transition: "border-color var(--dur-fast)",
         }}
-        onMouseEnter={(e) =>
-          ((e.currentTarget as HTMLElement).style.borderColor = "var(--line-3)")
-        }
-        onMouseLeave={(e) =>
-          ((e.currentTarget as HTMLElement).style.borderColor = "var(--line-2)")
-        }
+        onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "var(--line-3)")}
+        onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "var(--line-2)")}
       >
         <span style={{ color: "var(--fg-3)", display: "flex" }}>
           <svg
@@ -87,9 +83,7 @@ export function TopBar() {
         {/* Environment switcher */}
         <Select
           value={activeEnvironmentId ?? ""}
-          onChange={(e) =>
-            set({ activeEnvironmentId: e.target.value || undefined })
-          }
+          onChange={(e) => set({ activeEnvironmentId: e.target.value || undefined })}
           size="2xs"
           className="bg-[var(--bg-2)]"
         >
@@ -115,12 +109,8 @@ export function TopBar() {
             display: "flex",
             alignItems: "center",
           }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLElement).style.color = "var(--fg-2)")
-          }
+          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-2)")}
         >
           <Cookie size={14} />
           {cookies.length > 0 && (
@@ -137,9 +127,7 @@ export function TopBar() {
         </button>
 
         <button
-          onClick={() =>
-            set({ showSettings: !showSettings, settingsTab: undefined })
-          }
+          onClick={() => set({ showSettings: !showSettings, settingsTab: undefined })}
           title="Settings · ⌘,"
           style={{
             padding: "4px 6px",
@@ -152,12 +140,10 @@ export function TopBar() {
             alignItems: "center",
           }}
           onMouseEnter={(e) => {
-            if (!showSettings)
-              (e.currentTarget as HTMLElement).style.color = "var(--fg-0)";
+            if (!showSettings) (e.currentTarget as HTMLElement).style.color = "var(--fg-0)";
           }}
           onMouseLeave={(e) => {
-            if (!showSettings)
-              (e.currentTarget as HTMLElement).style.color = "var(--fg-2)";
+            if (!showSettings) (e.currentTarget as HTMLElement).style.color = "var(--fg-2)";
           }}
         >
           <Settings size={14} />
@@ -176,12 +162,8 @@ export function TopBar() {
             display: "flex",
             alignItems: "center",
           }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLElement).style.color = "var(--fg-2)")
-          }
+          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-2)")}
         >
           <HelpCircle size={14} />
         </button>

@@ -1,4 +1,14 @@
-import { ArrowRight, Cookie, Eye, EyeOff, KeyRound, LockKeyhole, Route, ShieldCheck, ShieldOff } from "lucide-react";
+import {
+  ArrowRight,
+  Cookie,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LockKeyhole,
+  Route,
+  ShieldCheck,
+  ShieldOff,
+} from "lucide-react";
 import { CertificateExpiry } from "./auth-debug/CertificateExpiry";
 import { Badge, EmptyState, Row, Section } from "./AuthDebugShared";
 
@@ -21,9 +31,7 @@ export function AuthenticationSection({
       icon={<KeyRound size={13} />}
       meta={
         sentAuthHeader ? (
-          <Badge tone={tokenExpired ? "danger" : "ok"}>
-            {tokenExpired ? "Expired" : "Sent"}
-          </Badge>
+          <Badge tone={tokenExpired ? "danger" : "ok"}>{tokenExpired ? "Expired" : "Sent"}</Badge>
         ) : (
           <Badge>No header</Badge>
         )
@@ -132,17 +140,11 @@ export function RedirectsSection({ redirects }: { redirects: any[] }) {
             key={i}
             className="grid grid-cols-[2.5rem_auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-[var(--border)] px-3 py-2.5 last:border-0"
           >
-            <span className="font-mono text-2xs text-[var(--text-3)]">
-              {r.status}
-            </span>
+            <span className="font-mono text-2xs text-[var(--text-3)]">{r.status}</span>
             <ArrowRight size={12} className="text-[var(--text-3)]" />
-            <span className="min-w-0 truncate font-mono text-xs text-[var(--text-1)]">
-              {r.url}
-            </span>
+            <span className="min-w-0 truncate font-mono text-xs text-[var(--text-1)]">{r.url}</span>
             {r.timing && (
-              <span className="text-2xs text-[var(--text-3)]">
-                {r.timing.totalMs}ms
-              </span>
+              <span className="text-2xs text-[var(--text-3)]">{r.timing.totalMs}ms</span>
             )}
           </div>
         ))}
@@ -151,13 +153,7 @@ export function RedirectsSection({ redirects }: { redirects: any[] }) {
   );
 }
 
-export function TlsSection({
-  tls,
-  firstCertificate,
-}: {
-  tls: any;
-  firstCertificate: any;
-}) {
+export function TlsSection({ tls, firstCertificate }: { tls: any; firstCertificate: any }) {
   if (!tls) return null;
   return (
     <Section
@@ -183,9 +179,7 @@ export function TlsSection({
             <Row label="Issuer" value={firstCertificate.issuer} mono={false} />
             <Row
               label="Expires"
-              value={
-                <CertificateExpiry notAfter={firstCertificate.notAfter} />
-              }
+              value={<CertificateExpiry notAfter={firstCertificate.notAfter} />}
               mono={false}
             />
           </>

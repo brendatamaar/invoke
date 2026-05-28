@@ -17,7 +17,13 @@ const mockHeaderSchema = Schema.Struct({
 });
 
 const matcherSchema = Schema.Literal(
-  "equals", "notEquals", "exists", "gt", "lt", "contains", "matches",
+  "equals",
+  "notEquals",
+  "exists",
+  "gt",
+  "lt",
+  "contains",
+  "matches",
 );
 
 const mockConditionSchema = Schema.Struct({
@@ -125,14 +131,8 @@ export function registerMockRoutes(app: Hono) {
     const activeItem = nextMockResponseItem(matched);
 
     if (activeItem.latencyMs)
-      await new Promise((resolveDelay) =>
-        setTimeout(resolveDelay, activeItem.latencyMs),
-      );
-    const responseBody = renderMockTemplate(
-      activeItem.body,
-      match.params,
-      url.searchParams,
-    );
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, activeItem.latencyMs));
+    const responseBody = renderMockTemplate(activeItem.body, match.params, url.searchParams);
     const responseHeaders = Object.fromEntries(
       (activeItem.headers ?? [])
         .filter((header) => header.enabled !== false && header.key.trim())
@@ -164,15 +164,7 @@ export function proxyRecordsToMockRoutes(
     responseBody: string;
   }[],
 ) {
-  const validMethods = new Set([
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "HEAD",
-    "OPTIONS",
-  ]);
+  const validMethods = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
   const newRoutes: MockRoute[] = records.map((r) => ({
     id: crypto.randomUUID(),
     enabled: true,
@@ -250,9 +242,7 @@ function mockConditionActual(
 ) {
   if (condition.source === "header") {
     const name = condition.expression.trim().toLowerCase();
-    return request.headers.find(
-      (header) => header.key.trim().toLowerCase() === name,
-    )?.value;
+    return request.headers.find((header) => header.key.trim().toLowerCase() === name)?.value;
   }
   if (condition.source === "query") {
     return request.query.get(condition.expression.trim()) ?? undefined;
@@ -293,10 +283,8 @@ function readSimpleJsonPath(json: unknown, expression: string) {
     .filter(Boolean);
   return tokens.reduce<unknown>((value, token) => {
     if (value == null) return undefined;
-    if (Array.isArray(value) && /^\d+$/.test(token))
-      return value[Number(token)];
-    if (typeof value === "object")
-      return (value as Record<string, unknown>)[token];
+    if (Array.isArray(value) && /^\d+$/.test(token)) return value[Number(token)];
+    if (typeof value === "object") return (value as Record<string, unknown>)[token];
     return undefined;
   }, json);
 }
@@ -305,8 +293,7 @@ function matchPath(pattern: string, path: string): MockPathMatch {
   const patternParts = normalizePath(pattern).split("/");
   const pathParts = normalizePath(path).split("/");
   const params: Record<string, string> = {};
-  if (patternParts.length !== pathParts.length)
-    return { matched: false, params };
+  if (patternParts.length !== pathParts.length) return { matched: false, params };
   for (let index = 0; index < patternParts.length; index += 1) {
     const expected = patternParts[index];
     const actual = pathParts[index];
@@ -331,11 +318,7 @@ function safeDecodeURIComponent(value: string) {
   }
 }
 
-function renderMockTemplate(
-  body: string,
-  params: Record<string, string>,
-  query: URLSearchParams,
-) {
+function renderMockTemplate(body: string, params: Record<string, string>, query: URLSearchParams) {
   return body.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_match, rawName: string) => {
     const name = rawName.trim();
     if (name.startsWith("param.")) return params[name.slice(6)] ?? "";

@@ -14,11 +14,7 @@ export function listCollections(db: InvokeDB) {
   return db.collections.orderBy("updatedAt").reverse().toArray();
 }
 
-export async function createCollection(
-  db: InvokeDB,
-  name: string,
-  data: Partial<Collection> = {},
-) {
+export async function createCollection(db: InvokeDB, name: string, data: Partial<Collection> = {}) {
   const now = Date.now();
   const collection: Collection = {
     ...data,
@@ -44,17 +40,11 @@ export async function updateCollection(db: InvokeDB, collection: Collection) {
 }
 
 export async function deleteCollection(db: InvokeDB, collectionId: string) {
-  await db.transaction(
-    "rw",
-    db.collections,
-    db.folders,
-    db.requests,
-    async () => {
-      await db.folders.where("collectionId").equals(collectionId).delete();
-      await db.requests.where("collectionId").equals(collectionId).delete();
-      await db.collections.delete(collectionId);
-    },
-  );
+  await db.transaction("rw", db.collections, db.folders, db.requests, async () => {
+    await db.folders.where("collectionId").equals(collectionId).delete();
+    await db.requests.where("collectionId").equals(collectionId).delete();
+    await db.collections.delete(collectionId);
+  });
 }
 
 export function listRequests(db: InvokeDB, collectionId?: string) {
@@ -73,8 +63,7 @@ export async function reorderRequests(db: InvokeDB, ids: string[]) {
 }
 
 export function listFolders(db: InvokeDB, collectionId?: string) {
-  if (collectionId)
-    return db.folders.where("collectionId").equals(collectionId).toArray();
+  if (collectionId) return db.folders.where("collectionId").equals(collectionId).toArray();
   return db.folders.orderBy("sortOrder").toArray();
 }
 
@@ -121,11 +110,7 @@ export async function deleteFolder(db: InvokeDB, folderId: string) {
   });
 }
 
-export async function moveRequest(
-  db: InvokeDB,
-  requestId: string,
-  folderId: string | null,
-) {
+export async function moveRequest(db: InvokeDB, requestId: string, folderId: string | null) {
   const request = await db.requests.get(requestId);
   if (!request) return undefined;
   const updated = { ...request, folderId, updatedAt: Date.now() };
@@ -148,8 +133,7 @@ export async function saveRequest(
 ) {
   const now = Date.now();
   const draft = request as RequestDraft;
-  const protocol =
-    options.protocol ?? inferProtocol(request, draft.protocol ?? "rest");
+  const protocol = options.protocol ?? inferProtocol(request, draft.protocol ?? "rest");
   const saved: SavedRequest = {
     id: options.id ?? draft.id ?? id(),
     collectionId,
@@ -158,8 +142,7 @@ export async function saveRequest(
     protocol,
     request: clonePlain(normalizeSavedRequest(request)),
     sortOrder: options.sortOrder ?? draft.sortOrder ?? now,
-    createdAt:
-      options.createdAt ?? (request as Partial<SavedRequest>).createdAt ?? now,
+    createdAt: options.createdAt ?? (request as Partial<SavedRequest>).createdAt ?? now,
     updatedAt: now,
   };
   await db.requests.put(clonePlain(saved));

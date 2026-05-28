@@ -33,11 +33,7 @@ export function RawBodyEditor({
         </button>
       </div>
       <div className="flex-1 overflow-auto">
-        <CodeEditor
-          value={body}
-          onChange={onChange}
-          lang={mode === "json" ? "json" : "text"}
-        />
+        <CodeEditor value={body} onChange={onChange} lang={mode === "json" ? "json" : "text"} />
       </div>
     </div>
   );

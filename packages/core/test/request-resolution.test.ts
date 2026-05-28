@@ -55,12 +55,8 @@ describe("request resolution", () => {
         apiKeyIn: "query" as const,
       },
     };
-    const resolved = resolveRequest(request, [
-      { variables: { apiKey: "secret value" } },
-    ]);
-    expect(new URL(resolved.request.url).searchParams.get("api_key")).toBe(
-      "secret value",
-    );
+    const resolved = resolveRequest(request, [{ variables: { apiKey: "secret value" } }]);
+    expect(new URL(resolved.request.url).searchParams.get("api_key")).toBe("secret value");
   });
 
   it("resolves ordinary query param variables before URL encoding", () => {
@@ -72,9 +68,7 @@ describe("request resolution", () => {
     const resolved = resolveRequest(request, [
       { variables: { queryKey: "q", queryValue: "hello world" } },
     ]);
-    expect(new URL(resolved.request.url).searchParams.get("q")).toBe(
-      "hello world",
-    );
+    expect(new URL(resolved.request.url).searchParams.get("q")).toBe("hello world");
   });
 
   it("resolves environment, collection, folder, and request scopes in order", () => {
@@ -99,9 +93,7 @@ describe("request resolution", () => {
       { name: "request", variables: request.variables ?? [] },
     ]);
 
-    expect(resolved.request.url).toBe(
-      "https://env.example.com/v1/folder-token/request",
-    );
+    expect(resolved.request.url).toBe("https://env.example.com/v1/folder-token/request");
   });
 
   it("formats GraphQL requests as JSON POST requests", () => {
@@ -145,8 +137,7 @@ describe("request resolution", () => {
     );
 
     const authorization =
-      signed.headers.find((header) => header.key === "Authorization")?.value ??
-      "";
+      signed.headers.find((header) => header.key === "Authorization")?.value ?? "";
     expect(signed.headers).toContainEqual({
       key: "X-Amz-Date",
       value: "20150830T123600Z",
@@ -163,9 +154,7 @@ describe("request resolution", () => {
     const resolved = resolveGraphQLRequest(
       {
         url: "{{base_url}}/graphql",
-        headers: [
-          { key: "Authorization", value: "Bearer {{token}}", enabled: true },
-        ],
+        headers: [{ key: "Authorization", value: "Bearer {{token}}", enabled: true }],
         auth: { type: "none" },
         query: 'query { user(id: "{{user_id}}") { name } }',
         variables: '{ "id": "{{user_id}}" }',

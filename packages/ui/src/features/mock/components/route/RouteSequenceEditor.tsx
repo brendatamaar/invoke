@@ -15,8 +15,8 @@ export function RouteSequenceEditor({
   return (
     <>
       <p className="text-xs text-[var(--text-3)]">
-        When sequences are set, each call to this route returns the next item in
-        order, wrapping around. Overrides the default response.
+        When sequences are set, each call to this route returns the next item in order, wrapping
+        around. Overrides the default response.
       </p>
       {sequences.map((sequence, index) => (
         <div
@@ -24,9 +24,7 @@ export function RouteSequenceEditor({
           className="border border-[var(--border)] rounded-md p-3 flex flex-col gap-3"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[var(--text-2)]">
-              Response {index + 1}
-            </span>
+            <span className="text-xs font-medium text-[var(--text-2)]">Response {index + 1}</span>
             <button
               onClick={() => onRemove(index)}
               className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
@@ -43,9 +41,7 @@ export function RouteSequenceEditor({
                 min={100}
                 max={599}
                 value={sequence.status}
-                onChange={(event) =>
-                  onUpdate(index, { status: Number(event.target.value) })
-                }
+                onChange={(event) => onUpdate(index, { status: Number(event.target.value) })}
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -59,9 +55,7 @@ export function RouteSequenceEditor({
                   value={sequence.latencyMs ?? ""}
                   onChange={(event) =>
                     onUpdate(index, {
-                      latencyMs: event.target.value
-                        ? Number(event.target.value)
-                        : undefined,
+                      latencyMs: event.target.value ? Number(event.target.value) : undefined,
                     })
                   }
                 />

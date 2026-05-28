@@ -36,8 +36,7 @@ export function ClearHistoryModal() {
 
         <div className="p-4">
           <p className="text-sm text-[var(--text-2)]">
-            This will permanently delete all request history. This action cannot
-            be undone.
+            This will permanently delete all request history. This action cannot be undone.
           </p>
         </div>
 

@@ -43,9 +43,7 @@ export function importHarFile(doc: any): {
   const requests: SavedRequest[] = entries.map((entry: any, i: number) => {
     const req = entry?.request ?? {};
     const rawUrl: string = req.url ?? "";
-    const method = (
-      (req.method ?? "GET") as string
-    ).toUpperCase() as HttpMethod;
+    const method = ((req.method ?? "GET") as string).toUpperCase() as HttpMethod;
     const parsedUrl = safeUrl(rawUrl);
     const cleanUrl = parsedUrl
       ? `${parsedUrl.origin}${parsedUrl.pathname}`
@@ -114,14 +112,10 @@ function safeUrl(rawUrl: string) {
 }
 
 function harPathName(rawUrl: string) {
-  const parsed = safeUrl(
-    rawUrl.startsWith("http") ? rawUrl : `http://invoke.local${rawUrl}`,
-  );
+  const parsed = safeUrl(rawUrl.startsWith("http") ? rawUrl : `http://invoke.local${rawUrl}`);
   if (parsed) return parsed.pathname || "/";
   const withoutQuery = rawUrl.split("?")[0] ?? rawUrl;
-  return withoutQuery.startsWith("/")
-    ? withoutQuery || "/"
-    : `/${withoutQuery || ""}`;
+  return withoutQuery.startsWith("/") ? withoutQuery || "/" : `/${withoutQuery || ""}`;
 }
 
 function harQueryParams(rawUrl: string) {
@@ -143,22 +137,17 @@ function harPostData(postData: any): { mode: BodyMode; content: string } {
     enabled: true,
   }));
 
-  if (mime.includes("json"))
-    return { mode: "json", content: postData.text ?? "" };
+  if (mime.includes("json")) return { mode: "json", content: postData.text ?? "" };
   if (mime.includes("x-www-form-urlencoded")) {
     return {
       mode: "urlencoded",
-      content: paramRows.length
-        ? JSON.stringify(paramRows)
-        : (postData.text ?? ""),
+      content: paramRows.length ? JSON.stringify(paramRows) : (postData.text ?? ""),
     };
   }
   if (mime.includes("multipart/form-data")) {
     return {
       mode: "form-data",
-      content: paramRows.length
-        ? JSON.stringify(paramRows)
-        : (postData.text ?? ""),
+      content: paramRows.length ? JSON.stringify(paramRows) : (postData.text ?? ""),
     };
   }
 

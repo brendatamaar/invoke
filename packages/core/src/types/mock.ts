@@ -1,9 +1,4 @@
-import type {
-  AssertionMatcher,
-  HttpMethod,
-  KeyValue,
-  MockConditionSource,
-} from "./common";
+import type { AssertionMatcher, HttpMethod, KeyValue, MockConditionSource } from "./common";
 
 export interface MockCondition {
   source: MockConditionSource;

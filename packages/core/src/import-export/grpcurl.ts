@@ -1,11 +1,8 @@
 import { emptyGrpcRequest } from "../request";
 import type { GrpcRequestConfig } from "../types";
 
-export function parseGrpcurl(
-  command: string,
-): Partial<GrpcRequestConfig> | null {
-  const tokens =
-    command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map(stripQuotes) ?? [];
+export function parseGrpcurl(command: string): Partial<GrpcRequestConfig> | null {
+  const tokens = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map(stripQuotes) ?? [];
   if (!tokens.length || tokens[0] !== "grpcurl") return null;
 
   const request = emptyGrpcRequest();
@@ -41,11 +38,7 @@ export function parseGrpcurl(
     } else if (token === "-max-time") {
       const secs = parseFloat(tokens[++i] ?? "30");
       request.timeoutMs = Math.round(secs * 1000);
-    } else if (
-      token === "-import-path" ||
-      token === "-proto" ||
-      token === "-protoset"
-    ) {
+    } else if (token === "-import-path" || token === "-proto" || token === "-protoset") {
       i += 1; // skip the path value, not applicable to in-app config
     } else if (!token.startsWith("-")) {
       // Positional args: first is address, second is full method
@@ -62,9 +55,7 @@ export function parseGrpcurl(
   request.tls = !plaintext;
 
   // Extract auth from metadata
-  const authMeta = request.metadata.find(
-    (m) => m.key.toLowerCase() === "authorization",
-  );
+  const authMeta = request.metadata.find((m) => m.key.toLowerCase() === "authorization");
   if (authMeta?.value.toLowerCase().startsWith("bearer ")) {
     request.auth = { type: "bearer", token: authMeta.value.slice(7) };
     request.metadata = request.metadata.filter((m) => m !== authMeta);

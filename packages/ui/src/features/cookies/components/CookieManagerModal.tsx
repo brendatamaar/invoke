@@ -96,24 +96,15 @@ export function CookieManagerModal() {
         {confirmClear && (
           <div className="flex items-center gap-3 px-4 py-2 bg-[var(--surface-2)] border-b border-[var(--border)]">
             <span className="text-xs text-[var(--text-1)] flex-1">
-              Clear{" "}
-              {confirmClear === "all"
-                ? "all cookies"
-                : `cookies for ${confirmClear}`}
-              ?
+              Clear {confirmClear === "all" ? "all cookies" : `cookies for ${confirmClear}`}?
             </span>
             <button
-              onClick={() =>
-                confirmClear === "all" ? clearAll() : clearDomain(confirmClear)
-              }
+              onClick={() => (confirmClear === "all" ? clearAll() : clearDomain(confirmClear))}
               className="btn btn-danger text-2xs py-0.5 px-2"
             >
               Clear
             </button>
-            <button
-              onClick={() => setConfirmClear(null)}
-              className="btn text-2xs py-0.5 px-2"
-            >
+            <button onClick={() => setConfirmClear(null)} className="btn text-2xs py-0.5 px-2">
               Cancel
             </button>
           </div>

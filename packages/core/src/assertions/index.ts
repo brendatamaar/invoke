@@ -28,10 +28,7 @@ export function runAssertionsEffect(
   return Effect.succeed(runAssertions(response, assertions));
 }
 
-function runAssertion(
-  response: ExecuteResponse,
-  assertion: Assertion,
-): AssertionResult {
+function runAssertion(response: ExecuteResponse, assertion: Assertion): AssertionResult {
   try {
     const evaluation = evaluateAssertion(response, assertion);
     const passed =
@@ -45,12 +42,7 @@ function runAssertion(
       expected: evaluation.expected,
       message: passed
         ? "passed"
-        : failureMessage(
-            assertion,
-            evaluation.actual,
-            evaluation.expected,
-            evaluation.details,
-          ),
+        : failureMessage(assertion, evaluation.actual, evaluation.expected, evaluation.details),
     };
   } catch (error) {
     return {
@@ -63,10 +55,7 @@ function runAssertion(
   }
 }
 
-function evaluateAssertion(
-  response: ExecuteResponse,
-  assertion: Assertion,
-): AssertionEvaluation {
+function evaluateAssertion(response: ExecuteResponse, assertion: Assertion): AssertionEvaluation {
   switch (assertion.type) {
     case "status":
       return {
@@ -99,10 +88,7 @@ function evaluateAssertion(
   }
 }
 
-function evaluateSchemaAssertion(
-  response: ExecuteResponse,
-  assertion: Assertion,
-) {
+function evaluateSchemaAssertion(response: ExecuteResponse, assertion: Assertion) {
   const schemaText = assertion.expected.trim() || assertion.expression.trim();
   if (!schemaText) throw new Error("bodySchema assertion needs a JSON Schema");
 
@@ -150,8 +136,7 @@ function failureMessage(
   if (assertion.type === "bodySchema" && Array.isArray(details)) {
     return `schema mismatch: ${formatAjvErrors(details as ErrorObject[])}`;
   }
-  if (assertion.matcher === "exists")
-    return `expected ${label(assertion)} to exist`;
+  if (assertion.matcher === "exists") return `expected ${label(assertion)} to exist`;
   return `expected ${label(assertion)} ${assertion.matcher} ${stringify(expected)}, got ${stringify(actual)}`;
 }
 
@@ -163,9 +148,7 @@ function label(assertion: Assertion) {
 
 function headerValue(headers: KeyValue[], name: string) {
   const normalized = name.trim().toLowerCase();
-  return headers.find(
-    (header) => header.key.trim().toLowerCase() === normalized,
-  )?.value;
+  return headers.find((header) => header.key.trim().toLowerCase() === normalized)?.value;
 }
 
 function jsonPath(body: string, path: string) {
@@ -227,9 +210,6 @@ function stringify(value: unknown) {
 
 function formatAjvErrors(errors: ErrorObject[]) {
   return errors
-    .map(
-      (error) =>
-        `${error.instancePath || "/"} ${error.message ?? "is invalid"}`,
-    )
+    .map((error) => `${error.instancePath || "/"} ${error.message ?? "is invalid"}`)
     .join("; ");
 }

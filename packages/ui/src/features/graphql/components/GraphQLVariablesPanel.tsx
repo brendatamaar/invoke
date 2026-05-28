@@ -5,8 +5,7 @@ import { useStore } from "../../../store";
 import type { GraphQLFileUpload } from "../../../types";
 
 export function GraphQLVariablesPanel() {
-  const { graphqlRequest, setGraphqlRequest, graphqlFileUploads, set } =
-    useStore();
+  const { graphqlRequest, setGraphqlRequest, graphqlFileUploads, set } = useStore();
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [filesExpanded, setFilesExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -66,11 +65,7 @@ export function GraphQLVariablesPanel() {
         </div>
       )}
       <div className="flex-1 overflow-auto">
-        <CodeEditor
-          value={graphqlRequest.variables ?? "{}"}
-          onChange={handleChange}
-          lang="json"
-        />
+        <CodeEditor value={graphqlRequest.variables ?? "{}"} onChange={handleChange} lang="json" />
       </div>
       <GraphQLFileUploads
         expanded={filesExpanded}
@@ -132,7 +127,10 @@ function GraphQLFileUploads({
                 placeholder="variable path"
                 className="input text-2xs py-0.5 px-1.5 font-mono flex-1 min-w-0"
               />
-              <span className="text-2xs text-[var(--text-3)] truncate max-w-[120px]" title={file.filename}>
+              <span
+                className="text-2xs text-[var(--text-3)] truncate max-w-[120px]"
+                title={file.filename}
+              >
                 {file.filename}
               </span>
               <button
@@ -160,13 +158,16 @@ function GraphQLFileUploads({
                 if (fileInputRef.current) fileInputRef.current.value = "";
               }}
             />
-            <button onClick={() => fileInputRef.current?.click()} className="btn text-2xs py-0.5 px-2 gap-1 shrink-0">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="btn text-2xs py-0.5 px-2 gap-1 shrink-0"
+            >
               <Plus size={11} /> Add file
             </button>
           </div>
           <p className="text-2xs text-[var(--text-3)]">
-            Set variable values to <code className="font-mono">null</code> in
-            the JSON above for file fields.
+            Set variable values to <code className="font-mono">null</code> in the JSON above for
+            file fields.
           </p>
         </div>
       )}

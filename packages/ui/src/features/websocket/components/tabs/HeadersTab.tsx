@@ -14,8 +14,8 @@ export function HeadersTab() {
         <div className="flex items-start gap-2 px-3 py-2 bg-[var(--warn-bg)] border-b border-[var(--border)] text-2xs text-[var(--warn)] shrink-0">
           <AlertTriangle size={11} className="mt-0.5 shrink-0" />
           <span>
-            Sensitive headers (Authorization, Cookie) are sent as plaintext
-            handshake headers. Use the Auth tab for credentials instead.
+            Sensitive headers (Authorization, Cookie) are sent as plaintext handshake headers. Use
+            the Auth tab for credentials instead.
           </span>
         </div>
       )}

@@ -39,14 +39,10 @@ export async function grpcServerStream(
     const events = buffer.split("\n\n");
     buffer = events.pop() ?? "";
     for (const event of events) {
-      const dataLine = event
-        .split("\n")
-        .find((line) => line.startsWith("data:"));
+      const dataLine = event.split("\n").find((line) => line.startsWith("data:"));
       if (!dataLine) continue;
       try {
-        const message = JSON.parse(
-          dataLine.slice(5).trimStart(),
-        ) as GrpcStreamMessage;
+        const message = JSON.parse(dataLine.slice(5).trimStart()) as GrpcStreamMessage;
         if (message.done) {
           handlers.onDone(message);
         } else {
@@ -154,12 +150,9 @@ export function grpcStreamEvents(
     signal?: AbortSignal;
   },
 ): Promise<void> {
-  return fetch(
-    `/api/grpc/stream/events?streamId=${encodeURIComponent(streamId)}`,
-    {
-      signal: handlers.signal,
-    },
-  ).then(async (response) => {
+  return fetch(`/api/grpc/stream/events?streamId=${encodeURIComponent(streamId)}`, {
+    signal: handlers.signal,
+  }).then(async (response) => {
     if (!response.ok || !response.body) throw new Error(await response.text());
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -174,9 +167,7 @@ export function grpcStreamEvents(
         const dataLine = event.split("\n").find((l) => l.startsWith("data:"));
         if (!dataLine) continue;
         try {
-          const message = JSON.parse(
-            dataLine.slice(5).trimStart(),
-          ) as GrpcStreamMessage;
+          const message = JSON.parse(dataLine.slice(5).trimStart()) as GrpcStreamMessage;
           if (message.done) handlers.onDone(message);
           else handlers.onMessage(message);
         } catch {

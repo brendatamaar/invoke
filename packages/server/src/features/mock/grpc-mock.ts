@@ -89,9 +89,7 @@ export function registerMockGrpcRoutes(app: Hono) {
     if (!parsed.ok) return parsed.response;
     {
       const { fullMethod, bodyJson } = parsed.data;
-      const route = grpcMockRoutes.find(
-        (r) => r.enabled !== false && r.fullMethod === fullMethod,
-      );
+      const route = grpcMockRoutes.find((r) => r.enabled !== false && r.fullMethod === fullMethod);
 
       if (!route) {
         const log: MockGrpcLog = {
@@ -149,8 +147,7 @@ export function registerMockGrpcRoutes(app: Hono) {
 }
 
 function trimLogs() {
-  if (grpcMockLogs.length > 1000)
-    grpcMockLogs.splice(0, grpcMockLogs.length - 1000);
+  if (grpcMockLogs.length > 1000) grpcMockLogs.splice(0, grpcMockLogs.length - 1000);
 }
 
 /** Reset state (for testing). */

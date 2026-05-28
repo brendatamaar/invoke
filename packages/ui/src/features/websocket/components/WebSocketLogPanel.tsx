@@ -8,8 +8,7 @@ import { WsLogDiffModal } from "./WsLogDiffModal";
 
 export function WebSocketLogPanel() {
   const { wsSessions, activeWsSessionId, setWsSession } = useStore();
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
 
   const [search, setSearch] = useState("");
   const [dirFilter, setDirFilter] = useState<DirectionFilter>("all");
@@ -56,19 +55,18 @@ export function WebSocketLogPanel() {
 
   const copyAll = () => {
     const text = (activeSession?.log ?? [])
-      .map(
-        (e) =>
-          `[${new Date(e.createdAt).toISOString()}] [${e.direction}] ${e.body}`,
-      )
+      .map((e) => `[${new Date(e.createdAt).toISOString()}] [${e.direction}] ${e.body}`)
       .join("\n");
-    navigator.clipboard.writeText(text).catch((error: unknown) =>
-      useStore
-        .getState()
-        .addToast(
-          "error",
-          `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
-        ),
-    );
+    navigator.clipboard
+      .writeText(text)
+      .catch((error: unknown) =>
+        useStore
+          .getState()
+          .addToast(
+            "error",
+            `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+      );
   };
 
   const toggleExpanded = (id: string) => {

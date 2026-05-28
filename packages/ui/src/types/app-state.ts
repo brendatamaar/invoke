@@ -183,9 +183,7 @@ export interface AppState {
   commandPaletteOpen: boolean;
   commandQuery: string;
   toasts: Toast[];
-  set: (
-    partial: Partial<AppState> | ((s: AppState) => Partial<AppState>),
-  ) => void;
+  set: (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
   setRequest: (partial: Partial<RequestDraft>) => void;
   setGraphqlRequest: (partial: Partial<GraphQLRequestConfig>) => void;
   setWebsocketRequest: (partial: Partial<WebSocketRequestConfig>) => void;

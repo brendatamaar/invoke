@@ -15,16 +15,11 @@ export function HeadersTab({
   return (
     <div className="divide-y divide-[var(--border)]">
       {headers.map((h, i) => (
-        <div
-          key={i}
-          className="group flex items-start gap-2 px-3 py-2 hover:bg-[var(--surface-2)]"
-        >
+        <div key={i} className="group flex items-start gap-2 px-3 py-2 hover:bg-[var(--surface-2)]">
           <span className="text-xs font-mono font-medium text-[var(--text-1)] w-56 shrink-0 truncate">
             {h.key}
           </span>
-          <span className="text-xs font-mono text-[var(--text-2)] break-all flex-1">
-            {h.value}
-          </span>
+          <span className="text-xs font-mono text-[var(--text-2)] break-all flex-1">{h.value}</span>
           <button
             onClick={() =>
               onQuickAssert({
@@ -55,9 +50,7 @@ export function HeadersTab({
           </button>
         </div>
       ))}
-      {!headers.length && (
-        <p className="p-4 text-xs text-[var(--text-3)]">No headers</p>
-      )}
+      {!headers.length && <p className="p-4 text-xs text-[var(--text-3)]">No headers</p>}
     </div>
   );
 }

@@ -29,8 +29,7 @@ export function FlowRunLog({
         <div
           className={`mt-1 p-1.5 rounded text-xs font-sans ${flowResult.status === "passed" ? "bg-[var(--ok-bg)] text-[var(--ok)]" : "bg-[var(--danger-bg)] text-[var(--danger)]"}`}
         >
-          Flow {flowResult.status} in{" "}
-          {flowResult.completedAt - flowResult.startedAt}ms
+          Flow {flowResult.status} in {flowResult.completedAt - flowResult.startedAt}ms
         </div>
       )}
     </div>

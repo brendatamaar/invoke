@@ -14,9 +14,7 @@ export function HistoryPanel() {
     ? history.filter((entry) => matchesHistoryQuery(entry, historyQuery))
     : history;
   const pinned = filtered.filter((entry) => entry.pinned);
-  const grouped = groupHistoryByDate(
-    filtered.filter((entry) => !entry.pinned),
-  );
+  const grouped = groupHistoryByDate(filtered.filter((entry) => !entry.pinned));
 
   const restore = (entry: HistoryEntry) => {
     const request = entry.request as Parameters<typeof setRequest>[0] | undefined;
@@ -134,9 +132,7 @@ export function HistoryPanel() {
       </div>
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 && (
-          <p className="p-4 text-xs text-[var(--text-3)] text-center">
-            No history
-          </p>
+          <p className="p-4 text-xs text-[var(--text-3)] text-center">No history</p>
         )}
         {pinned.length > 0 && (
           <HistoryGroup

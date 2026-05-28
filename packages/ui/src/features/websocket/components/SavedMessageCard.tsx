@@ -26,8 +26,7 @@ export function SavedMessageCard({
   onDiscard: () => void;
   onSave: () => void;
 }) {
-  const preview =
-    msg.label || msg.body.slice(0, 52) + (msg.body.length > 52 ? "\u2026" : "");
+  const preview = msg.label || msg.body.slice(0, 52) + (msg.body.length > 52 ? "\u2026" : "");
 
   return (
     <div
@@ -54,9 +53,7 @@ export function SavedMessageCard({
           <span className="text-[10px] text-[var(--text-3)] shrink-0">bin</span>
         )}
         {msg.autoSend && (
-          <span className="text-[10px] text-[var(--accent)] shrink-0">
-            auto-send
-          </span>
+          <span className="text-[10px] text-[var(--accent)] shrink-0">auto-send</span>
         )}
         <button
           onClick={(e) => {
@@ -104,9 +101,7 @@ export function SavedMessageCard({
               <input
                 type="checkbox"
                 checked={editDraft.autoSend}
-                onChange={(e) =>
-                  onEditDraft({ ...editDraft, autoSend: e.target.checked })
-                }
+                onChange={(e) => onEditDraft({ ...editDraft, autoSend: e.target.checked })}
               />
               Auto-send on connect
             </label>

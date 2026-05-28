@@ -26,11 +26,8 @@ export function AuthDebugTab() {
     : [];
   const firstCertificate = response?.tls?.certificates[0];
   const tokenExpiresAt =
-    auth?.type === "oauth2" && auth.flow === "authorization_code"
-      ? auth.tokenExpiresAt
-      : undefined;
-  const tokenExpired =
-    typeof tokenExpiresAt === "number" ? tokenExpiresAt < Date.now() : false;
+    auth?.type === "oauth2" && auth.flow === "authorization_code" ? auth.tokenExpiresAt : undefined;
+  const tokenExpired = typeof tokenExpiresAt === "number" ? tokenExpiresAt < Date.now() : false;
 
   if (!resolvedRequest && !response) {
     return <AuthDebugEmptyState />;
@@ -52,10 +49,7 @@ export function AuthDebugTab() {
   );
 }
 
-function findHeader(
-  headers: { key: string; value: string }[] | undefined,
-  key: string,
-) {
+function findHeader(headers: { key: string; value: string }[] | undefined, key: string) {
   return headers?.find((h) => h.key.toLowerCase() === key)?.value ?? null;
 }
 
@@ -65,12 +59,9 @@ function AuthDebugEmptyState() {
       <div className="flex h-10 w-10 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)]">
         <KeyRound size={18} className="text-[var(--text-3)]" />
       </div>
-      <p className="text-sm font-medium text-[var(--text-2)]">
-        Send a request to inspect auth
-      </p>
+      <p className="text-sm font-medium text-[var(--text-2)]">Send a request to inspect auth</p>
       <p className="max-w-sm text-xs text-[var(--text-3)]">
-        Authorization headers, cookies, redirects, and TLS details appear here
-        after execution.
+        Authorization headers, cookies, redirects, and TLS details appear here after execution.
       </p>
     </div>
   );

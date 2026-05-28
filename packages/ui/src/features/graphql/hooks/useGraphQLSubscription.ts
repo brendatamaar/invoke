@@ -1,10 +1,5 @@
 import { useRef, useState } from "react";
-import {
-  webSocketClose,
-  webSocketConnect,
-  webSocketPoll,
-  webSocketSend,
-} from "../../websocket";
+import { webSocketClose, webSocketConnect, webSocketPoll, webSocketSend } from "../../websocket";
 import type { KeyValue } from "@invoke/core";
 
 export interface GQLSubMessage {
@@ -14,12 +9,7 @@ export interface GQLSubMessage {
   createdAt: number;
 }
 
-export type GQLSubState =
-  | "idle"
-  | "connecting"
-  | "subscribed"
-  | "complete"
-  | "error";
+export type GQLSubState = "idle" | "connecting" | "subscribed" | "complete" | "error";
 
 export interface SubscribeOptions {
   url: string;
@@ -78,9 +68,7 @@ export function useGraphQLSubscription() {
     try {
       const { connectionId, error: connErr } = await webSocketConnect({
         url: wsUrl,
-        headers: (opts.headers ?? []).filter(
-          (h) => h.enabled !== false && h.key.trim(),
-        ),
+        headers: (opts.headers ?? []).filter((h) => h.enabled !== false && h.key.trim()),
         auth: { type: "none" },
         protocols: "graphql-transport-ws",
         messageMode: "text",
@@ -91,10 +79,7 @@ export function useGraphQLSubscription() {
       if (connErr) throw new Error(connErr);
       connIdRef.current = connectionId;
       addMessage("system", "Connected");
-      await webSocketSend(
-        connectionId,
-        JSON.stringify({ type: "connection_init" }),
-      );
+      await webSocketSend(connectionId, JSON.stringify({ type: "connection_init" }));
       pollRef.current = setInterval(() => poll(opts), 500);
     } catch (e) {
       addMessage("error", e instanceof Error ? e.message : String(e));
@@ -158,19 +143,15 @@ export function useGraphQLSubscription() {
       variables: vars,
     };
     if (opts.operationName) payload.operationName = opts.operationName;
-    await webSocketSend(
-      id,
-      JSON.stringify({ type: "subscribe", id: subIdRef.current, payload }),
-    );
+    await webSocketSend(id, JSON.stringify({ type: "subscribe", id: subIdRef.current, payload }));
   }
 
   async function unsubscribe() {
     const id = connIdRef.current;
     if (id) {
-      await webSocketSend(
-        id,
-        JSON.stringify({ type: "complete", id: subIdRef.current }),
-      ).catch(() => {});
+      await webSocketSend(id, JSON.stringify({ type: "complete", id: subIdRef.current })).catch(
+        () => {},
+      );
     }
     addMessage("system", "Unsubscribed");
     terminate(id, "idle");

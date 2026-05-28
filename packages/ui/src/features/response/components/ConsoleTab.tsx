@@ -1,15 +1,7 @@
 import { AlertCircle, Terminal } from "lucide-react";
 import { useStore } from "../../../store";
 
-function LogSection({
-  label,
-  logs,
-  error,
-}: {
-  label: string;
-  logs: string[];
-  error?: string;
-}) {
+function LogSection({ label, logs, error }: { label: string; logs: string[]; error?: string }) {
   if (!logs.length && !error) return null;
   return (
     <div className="flex flex-col gap-1.5">

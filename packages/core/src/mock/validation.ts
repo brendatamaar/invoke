@@ -1,9 +1,4 @@
-import type {
-  KeyValue,
-  MockRoute,
-  MockValidationIssue,
-  MockValidationResult,
-} from "../types";
+import type { KeyValue, MockRoute, MockValidationIssue, MockValidationResult } from "../types";
 
 /*
  * Mock route validation is shared by the UI and server so the client can give
@@ -308,8 +303,7 @@ function validateBody(
   validateTemplates(route, routeIndex, route.body, templateNames, add);
 
   const contentType = enabledHeader(route.headers ?? [], "content-type");
-  if (!contentType?.toLowerCase().includes("json") || !route.body.trim())
-    return;
+  if (!contentType?.toLowerCase().includes("json") || !route.body.trim()) return;
   if (templateNames.length > 0) {
     add({
       routeIndex,
@@ -462,11 +456,7 @@ function validateConditions(
         level: "error",
         message: `${prefix}: expression is required`,
       });
-    if (
-      condition.source === "header" &&
-      expression &&
-      !HTTP_TOKEN_RE.test(expression)
-    )
+    if (condition.source === "header" && expression && !HTTP_TOKEN_RE.test(expression))
       add({
         routeIndex,
         routeId: route.id,
@@ -480,21 +470,14 @@ function validateConditions(
         level: "error",
         message: `${prefix}: query expression must be a parameter name`,
       });
-    if (
-      condition.source === "bodyJsonPath" &&
-      expression &&
-      !isSimpleJsonPath(expression)
-    )
+    if (condition.source === "bodyJsonPath" && expression && !isSimpleJsonPath(expression))
       add({
         routeIndex,
         routeId: route.id,
         level: "error",
         message: `${prefix}: invalid JSON path`,
       });
-    if (
-      condition.source === "bodyJsonPath" &&
-      ["GET", "HEAD"].includes(route.method)
-    )
+    if (condition.source === "bodyJsonPath" && ["GET", "HEAD"].includes(route.method))
       add({
         routeIndex,
         routeId: route.id,
@@ -537,15 +520,12 @@ function validateConditions(
 
 function enabledHeader(headers: KeyValue[], name: string) {
   return headers.find(
-    (header) =>
-      header.enabled !== false && header.key.trim().toLowerCase() === name,
+    (header) => header.enabled !== false && header.key.trim().toLowerCase() === name,
   )?.value;
 }
 
 function templatePlaceholders(body: string) {
-  return [...body.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)].map((match) =>
-    match[1].trim(),
-  );
+  return [...body.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)].map((match) => match[1].trim());
 }
 
 function conditionSignature(conditions: NonNullable<MockRoute["conditions"]>) {

@@ -39,8 +39,7 @@ export async function executeWithRetry(
       const response = await execute(request, signal);
       const shouldRetry =
         (policy.retryOn5xx && response.status >= 500) ||
-        (policy.retryOnTimeout &&
-          !!response.error?.toLowerCase().includes("timeout"));
+        (policy.retryOnTimeout && !!response.error?.toLowerCase().includes("timeout"));
       if (!shouldRetry || attempt === policy.maxRetries) {
         return { ...response, retryAttempts: attempt };
       }
@@ -48,9 +47,7 @@ export async function executeWithRetry(
       attempts = attempt + 1;
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
-      const isTimeout =
-        policy.retryOnTimeout &&
-        String(error).toLowerCase().includes("timeout");
+      const isTimeout = policy.retryOnTimeout && String(error).toLowerCase().includes("timeout");
       if (!isTimeout || attempt === policy.maxRetries) throw error;
       attempts = attempt + 1;
     }

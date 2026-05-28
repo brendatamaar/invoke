@@ -1,9 +1,5 @@
 import { Download, Play, StopCircle } from "lucide-react";
-import {
-  exportRunResultCsv,
-  exportRunResultJson,
-  type CollectionRunResult,
-} from "@invoke/core";
+import { exportRunResultCsv, exportRunResultJson, type CollectionRunResult } from "@invoke/core";
 import { downloadText } from "../../utils/download";
 
 export function RunnerFooter({
@@ -46,21 +42,14 @@ export function RunnerFooter({
           <ExportButton
             label="CSV"
             onClick={() =>
-              downloadText(
-                exportRunResultCsv(runResult),
-                `run-${Date.now()}.csv`,
-                "text/csv",
-              )
+              downloadText(exportRunResultCsv(runResult), `run-${Date.now()}.csv`, "text/csv")
             }
           />
         </div>
       )}
       {!runResult && <div className="mr-auto" />}
       {running ? (
-        <button
-          onClick={onCancel}
-          className="btn btn-danger text-xs flex items-center gap-1.5"
-        >
+        <button onClick={onCancel} className="btn btn-danger text-xs flex items-center gap-1.5">
           <StopCircle size={13} /> Cancel
         </button>
       ) : (
@@ -78,10 +67,7 @@ export function RunnerFooter({
 
 function ExportButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
-    >
+    <button onClick={onClick} className="btn text-2xs py-0.5 px-2 flex items-center gap-1">
       <Download size={11} /> {label}
     </button>
   );

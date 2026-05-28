@@ -23,10 +23,7 @@ export function WebhookModalTabs({
             fontSize: "var(--t-xs)",
             fontWeight: 500,
             color: activeTab === tab ? "var(--fg-0)" : "var(--fg-3)",
-            borderBottom:
-              activeTab === tab
-                ? "2px solid var(--accent)"
-                : "2px solid transparent",
+            borderBottom: activeTab === tab ? "2px solid var(--accent)" : "2px solid transparent",
             marginBottom: -1,
             textTransform: "capitalize",
             transition: "color var(--dur-fast)",

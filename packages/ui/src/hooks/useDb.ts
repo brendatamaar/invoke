@@ -23,10 +23,8 @@ export function useFlows() {
 
 export function useHistory(limit = 200) {
   return (
-    useLiveQuery(
-      () => db.history.orderBy("createdAt").reverse().limit(limit).toArray(),
-      [limit],
-    ) ?? []
+    useLiveQuery(() => db.history.orderBy("createdAt").reverse().limit(limit).toArray(), [limit]) ??
+    []
   );
 }
 
@@ -36,43 +34,32 @@ export function useCookies() {
 
 export function useMockRoutes() {
   return (
-    useLiveQuery(() =>
-      db.meta.get("mockRoutes").then((r) => (r?.value as MockRoute[]) ?? []),
-    ) ?? []
+    useLiveQuery(() => db.meta.get("mockRoutes").then((r) => (r?.value as MockRoute[]) ?? [])) ?? []
   );
 }
 
 export function useResponseExamples() {
   return (
     useLiveQuery(() =>
-      db.meta
-        .get("responseExamples")
-        .then((r) => (r?.value as ResponseExample[]) ?? []),
+      db.meta.get("responseExamples").then((r) => (r?.value as ResponseExample[]) ?? []),
     ) ?? []
   );
 }
 
 export function useRetentionSettings() {
   return useLiveQuery(() =>
-    db.meta
-      .get("retentionSettings")
-      .then((r) => r?.value as RetentionSettings | undefined),
+    db.meta.get("retentionSettings").then((r) => r?.value as RetentionSettings | undefined),
   );
 }
 
 export function useDiffIgnoreRules() {
   return (
     useLiveQuery(() =>
-      db.meta
-        .get("diffIgnoreRules")
-        .then((r) => (r?.value as DiffIgnoreRule[]) ?? []),
+      db.meta.get("diffIgnoreRules").then((r) => (r?.value as DiffIgnoreRule[]) ?? []),
     ) ?? []
   );
 }
 
 export function useProtocolDefaults(): DefaultProtocolOptions {
-  return (
-    useLiveQuery(() => coreStore.getDefaultProtocolOptions()) ??
-    INITIAL_PROTOCOL_DEFAULTS
-  );
+  return useLiveQuery(() => coreStore.getDefaultProtocolOptions()) ?? INITIAL_PROTOCOL_DEFAULTS;
 }

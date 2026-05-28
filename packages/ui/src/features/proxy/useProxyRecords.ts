@@ -24,12 +24,14 @@ export function useImportProxyToMocks() {
   return useMutation({
     mutationFn: (ids?: string[]) => proxyRecordsToMocks(ids),
     onSuccess: (result) => {
-      coreStore.setMeta("mockRoutes", result.routes).catch((error: unknown) =>
-        addToast(
-          "error",
-          `Failed to save imported routes: ${error instanceof Error ? error.message : String(error)}`,
-        ),
-      );
+      coreStore
+        .setMeta("mockRoutes", result.routes)
+        .catch((error: unknown) =>
+          addToast(
+            "error",
+            `Failed to save imported routes: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
     },
   });
 }

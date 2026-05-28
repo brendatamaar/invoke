@@ -4,10 +4,7 @@ import { useStore, coreStore } from "../../../store";
 import { useCollections } from "../../../hooks/useDb";
 import { PromptModal } from "../../../components/shared/PromptModal";
 import { CollectionNode } from "./CollectionNode";
-import {
-  COLLECTION_IMPORT_OPTIONS,
-  useCollectionImport,
-} from "../useCollectionImport";
+import { COLLECTION_IMPORT_OPTIONS, useCollectionImport } from "../useCollectionImport";
 
 export function CollectionTree() {
   const { addToast } = useStore();
@@ -15,14 +12,8 @@ export function CollectionTree() {
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newColModal, setNewColModal] = useState(false);
-  const {
-    accept,
-    curlModal,
-    handleFileImport,
-    importCurl,
-    setCurlModal,
-    triggerImport,
-  } = useCollectionImport(fileInputRef);
+  const { accept, curlModal, handleFileImport, importCurl, setCurlModal, triggerImport } =
+    useCollectionImport(fileInputRef);
 
   const newCollection = async (name: string) => {
     setNewColModal(false);

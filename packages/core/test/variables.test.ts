@@ -50,9 +50,7 @@ describe("variables", () => {
       },
     ]);
     expect(isSensitiveVariableName("CLIENT_SECRET")).toBe(true);
-    expect(exportEnvText(variables)).toBe(
-      "API_URL=https://api.example.com\nPUBLIC_NAME=Ada",
-    );
+    expect(exportEnvText(variables)).toBe("API_URL=https://api.example.com\nPUBLIC_NAME=Ada");
     expect(exportEnvText(variables, { includeSensitive: true })).toContain(
       'API_TOKEN="secret\\nline"',
     );

@@ -21,9 +21,7 @@ export function ProxyRecordingList({
 }) {
   if (records.length === 0) {
     return (
-      <p className="p-4 text-xs text-[var(--text-3)] text-center">
-        No recorded requests yet.
-      </p>
+      <p className="p-4 text-xs text-[var(--text-3)] text-center">No recorded requests yet.</p>
     );
   }
 

@@ -15,9 +15,7 @@ export function DeferredTab() {
   return (
     <div className="p-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <span className="text-2xs font-semibold text-[var(--text-2)]">
-          @defer / @stream
-        </span>
+        <span className="text-2xs font-semibold text-[var(--text-2)]">@defer / @stream</span>
         <span className="text-2xs text-[var(--text-3)]">
           {graphqlDeferredParts.length} part
           {graphqlDeferredParts.length !== 1 ? "s" : ""}
@@ -28,9 +26,7 @@ export function DeferredTab() {
       {initialPart && (
         <div className="border border-[var(--border)] rounded-md p-3 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-2xs font-mono text-[var(--accent)]">
-              Part 0 — initial
-            </span>
+            <span className="text-2xs font-mono text-[var(--accent)]">Part 0 — initial</span>
             <span className="text-2xs text-[var(--text-3)]">
               hasNext: {String(initialPart.hasNext)}
             </span>
@@ -60,15 +56,10 @@ export function DeferredTab() {
               Part {part.partIndex}
               {part.label ? ` — ${part.label}` : ""}
             </span>
-            <span className="text-2xs text-[var(--text-3)]">
-              hasNext: {String(part.hasNext)}
-            </span>
+            <span className="text-2xs text-[var(--text-3)]">hasNext: {String(part.hasNext)}</span>
           </div>
           <p className="text-2xs text-[var(--text-3)]">
-            Path:{" "}
-            <span className="font-mono text-[var(--text-2)]">
-              {formatPath(part.path)}
-            </span>
+            Path: <span className="font-mono text-[var(--text-2)]">{formatPath(part.path)}</span>
           </p>
           {part.data !== undefined && (
             <pre className="text-2xs font-mono text-[var(--text-2)] whitespace-pre-wrap break-all mt-1 max-h-40 overflow-auto bg-[var(--surface-2)] rounded p-2">

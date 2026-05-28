@@ -17,9 +17,7 @@ describe("code export and history search", () => {
         url: "https://api.example.com/users",
         params: [{ key: "source", value: "test", enabled: true }],
         auth: { type: "bearer", token: "abc" },
-        headers: [
-          { key: "Content-Type", value: "application/json", enabled: true },
-        ],
+        headers: [{ key: "Content-Type", value: "application/json", enabled: true }],
         bodyMode: "json",
         body: '{ "email": "test@example.com" }',
       },
@@ -29,9 +27,7 @@ describe("code export and history search", () => {
     const snippet = await generateCodeSnippet(resolved, "curl");
 
     expect(snippet.code).toContain("curl");
-    expect(snippet.code).toContain(
-      "'https://api.example.com/users?source=test'",
-    );
+    expect(snippet.code).toContain("'https://api.example.com/users?source=test'");
     expect(snippet.code).toContain("'Authorization: Bearer abc'");
     expect(snippet.code).toContain("--data-raw");
     expect(snippet.code).toContain('\'{ "email": "test@example.com" }\'');
@@ -42,9 +38,7 @@ describe("code export and history search", () => {
       ...emptyRequest(),
       method: "POST" as const,
       url: "https://api.example.com/users",
-      headers: [
-        { key: "Content-Type", value: "application/json", enabled: true },
-      ],
+      headers: [{ key: "Content-Type", value: "application/json", enabled: true }],
       bodyMode: "json" as const,
       body: '{ "email": "test@example.com", "active": true }',
     };
@@ -67,9 +61,7 @@ describe("code export and history search", () => {
       ...emptyRequest(),
       method: "POST" as const,
       url: "https://api.example.com/users",
-      headers: [
-        { key: "Content-Type", value: "application/json", enabled: true },
-      ],
+      headers: [{ key: "Content-Type", value: "application/json", enabled: true }],
       bodyMode: "json" as const,
       body: '{ "name": "Ada" }',
     };
@@ -121,15 +113,8 @@ describe("code export and history search", () => {
       },
     ];
 
-    expect(searchHistory(entries, "users").map((entry) => entry.id)).toEqual([
-      "new",
-      "old",
-    ]);
-    expect(
-      searchHistory(entries, "test@example.com").map((entry) => entry.id),
-    ).toEqual(["body"]);
-    expect(
-      searchHistory(entries, "users-header").map((entry) => entry.id),
-    ).toEqual(["new"]);
+    expect(searchHistory(entries, "users").map((entry) => entry.id)).toEqual(["new", "old"]);
+    expect(searchHistory(entries, "test@example.com").map((entry) => entry.id)).toEqual(["body"]);
+    expect(searchHistory(entries, "users-header").map((entry) => entry.id)).toEqual(["new"]);
   });
 });

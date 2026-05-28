@@ -58,21 +58,17 @@ function ChangedPathStrip({
 }) {
   return (
     <div className="px-4 py-2 border-b border-[var(--border)] bg-[var(--surface-2)] flex flex-wrap gap-1 items-center">
-      <span className="text-2xs text-[var(--text-3)] shrink-0">
-        Changed paths:
-      </span>
-      {[...new Set(diff.changes.map((change) => change.path))]
-        .slice(0, 12)
-        .map((path) => (
-          <button
-            key={path}
-            onClick={() => onAddIgnorePath(path)}
-            className="text-2xs font-mono px-1.5 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            title="Click to ignore this path"
-          >
-            {path}
-          </button>
-        ))}
+      <span className="text-2xs text-[var(--text-3)] shrink-0">Changed paths:</span>
+      {[...new Set(diff.changes.map((change) => change.path))].slice(0, 12).map((path) => (
+        <button
+          key={path}
+          onClick={() => onAddIgnorePath(path)}
+          className="text-2xs font-mono px-1.5 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+          title="Click to ignore this path"
+        >
+          {path}
+        </button>
+      ))}
     </div>
   );
 }
@@ -123,9 +119,7 @@ function DiffSummary({
     <span className="ml-auto text-2xs flex items-center gap-2">
       <span className="text-[var(--ok)]">+{summary.additions}</span>
       <span className="text-[var(--danger)]">-{summary.deletions}</span>
-      {summary.changes > 0 && (
-        <span className="text-yellow-600">~{summary.changes}</span>
-      )}
+      {summary.changes > 0 && <span className="text-yellow-600">~{summary.changes}</span>}
       {responseTimeDeltaMs !== 0 && (
         <span
           className={`font-mono ${responseTimeDeltaMs > 0 ? "text-[var(--danger)]" : "text-[var(--ok)]"}`}

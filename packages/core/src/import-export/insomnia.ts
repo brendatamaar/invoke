@@ -1,9 +1,4 @@
-import {
-  emptyGrpcRequest,
-  emptyRequest,
-  id,
-  toRequestConfig,
-} from "../request";
+import { emptyGrpcRequest, emptyRequest, id, toRequestConfig } from "../request";
 import type {
   AuthConfig,
   BodyMode,
@@ -30,9 +25,7 @@ export function importInsomniaExport(doc: any) {
   };
 
   const folderMap = new Map<string, Folder>();
-  const groupResources = resources.filter(
-    (item: any) => item?._type === "request_group",
-  );
+  const groupResources = resources.filter((item: any) => item?._type === "request_group");
   for (const group of groupResources) {
     folderMap.set(group._id, {
       id: id(),
@@ -49,16 +42,11 @@ export function importInsomniaExport(doc: any) {
     const folder = folderMap.get(group._id);
     if (!folder) continue;
     folder.parentFolderId =
-      group.parentId && folderMap.has(group.parentId)
-        ? folderMap.get(group.parentId)!.id
-        : null;
+      group.parentId && folderMap.has(group.parentId) ? folderMap.get(group.parentId)!.id : null;
   }
 
   const requests: SavedRequest[] = resources
-    .filter(
-      (item: any) =>
-        item?._type === "request" || item?._type === "grpc_request",
-    )
+    .filter((item: any) => item?._type === "request" || item?._type === "grpc_request")
     .map((item: any, index: number) => {
       if (item._type === "grpc_request") {
         return insomniaGrpcRequest(item, collection.id, folderMap, now + index);
@@ -81,9 +69,7 @@ export function importInsomniaExport(doc: any) {
         id: id(),
         collectionId: collection.id,
         folderId:
-          item.parentId && folderMap.has(item.parentId)
-            ? folderMap.get(item.parentId)!.id
-            : null,
+          item.parentId && folderMap.has(item.parentId) ? folderMap.get(item.parentId)!.id : null,
         name: item.name ?? `${request.method} ${request.url}`,
         protocol: "rest",
         request,
@@ -183,9 +169,7 @@ function insomniaGrpcRequest(
     id: id(),
     collectionId,
     folderId:
-      item.parentId && folderMap.has(item.parentId)
-        ? folderMap.get(item.parentId)!.id
-        : null,
+      item.parentId && folderMap.has(item.parentId) ? folderMap.get(item.parentId)!.id : null,
     name: item.name ?? `${service}/${method}`,
     protocol: "grpc",
     request,

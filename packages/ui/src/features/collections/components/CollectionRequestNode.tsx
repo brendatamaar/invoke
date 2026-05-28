@@ -9,9 +9,20 @@ import { CollectionRequestModals } from "./tree/CollectionRequestModals";
 import { openSavedRequest } from "./tree/openSavedRequest";
 
 const COMPARE_FIELDS: (keyof RequestConfig)[] = [
-  "method", "url", "params", "headers", "bodyMode", "body", "auth",
-  "timeoutMs", "variables", "assertions", "extractionRules", "options",
-  "scripts", "retryPolicy",
+  "method",
+  "url",
+  "params",
+  "headers",
+  "bodyMode",
+  "body",
+  "auth",
+  "timeoutMs",
+  "variables",
+  "assertions",
+  "extractionRules",
+  "options",
+  "scripts",
+  "retryPolicy",
 ];
 
 export function CollectionRequestNode({
@@ -44,8 +55,7 @@ export function CollectionRequestNode({
   const isDirty = useMemo(
     () =>
       isActive &&
-      JSON.stringify(pickFields(store.request)) !==
-        JSON.stringify(pickFields(request.request)),
+      JSON.stringify(pickFields(store.request)) !== JSON.stringify(pickFields(request.request)),
     [isActive, store.request, request.request],
   );
 
@@ -58,7 +68,10 @@ export function CollectionRequestNode({
     const anyWs = store.wsSessions.some((session) =>
       ["connected", "connecting"].includes(session.state),
     );
-    if ((request.protocol === "websocket" && activeWs) || (request.protocol !== "websocket" && anyWs)) {
+    if (
+      (request.protocol === "websocket" && activeWs) ||
+      (request.protocol !== "websocket" && anyWs)
+    ) {
       pendingOpenRef.current = doOpen;
       setConfirmDisconnect(true);
       return;
@@ -99,9 +112,7 @@ export function CollectionRequestNode({
       (session) => session.id === store.activeWsSessionId,
     );
     const sessions =
-      request.protocol === "websocket" && activeSession
-        ? [activeSession]
-        : store.wsSessions;
+      request.protocol === "websocket" && activeSession ? [activeSession] : store.wsSessions;
     for (const session of sessions) {
       if (session.connectionId) webSocketClose(session.connectionId).catch(() => {});
       if (session.state !== "disconnected") {
@@ -121,12 +132,25 @@ export function CollectionRequestNode({
         className={`group relative flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 transition-opacity ${dragging ? "opacity-40" : ""}`}
         onClick={open}
       >
-        <GripVertical size={11} className="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--text-3)] cursor-grab" />
-        <MethodBadge method={protocolMethod(request.protocol, (request.request as { method?: string })?.method)} />
+        <GripVertical
+          size={11}
+          className="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--text-3)] cursor-grab"
+        />
+        <MethodBadge
+          method={protocolMethod(
+            request.protocol,
+            (request.request as { method?: string })?.method,
+          )}
+        />
         <span className="flex-1 text-xs text-[var(--text-1)] truncate">
           {request.name || (request.request as { url?: string })?.url || "Untitled"}
         </span>
-        {isDirty && <span title="Unsaved changes" className="shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--warn)]" />}
+        {isDirty && (
+          <span
+            title="Unsaved changes"
+            className="shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--warn)]"
+          />
+        )}
         <CollectionRequestMenu
           open={menuOpen}
           menuRef={menuRef}

@@ -47,11 +47,7 @@ export function registerProxyRoutes(app: Hono) {
 
     const responseHeaders: { key: string; value: string }[] = [];
     targetRes.headers.forEach((value, key) => {
-      if (
-        !["content-encoding", "transfer-encoding", "connection"].includes(
-          key.toLowerCase(),
-        )
-      ) {
+      if (!["content-encoding", "transfer-encoding", "connection"].includes(key.toLowerCase())) {
         responseHeaders.push({ key, value });
       }
     });
@@ -69,8 +65,7 @@ export function registerProxyRoutes(app: Hono) {
       createdAt: Date.now(),
     };
     proxyRecords.unshift(record);
-    if (proxyRecords.length > MAX_PROXY_RECORDS)
-      proxyRecords.splice(MAX_PROXY_RECORDS);
+    if (proxyRecords.length > MAX_PROXY_RECORDS) proxyRecords.splice(MAX_PROXY_RECORDS);
 
     return c.json({
       status: targetRes.status,
@@ -94,9 +89,7 @@ export function registerProxyRoutes(app: Hono) {
     const parsed = await parseJsonBody(c, proxyRecordsToMocksSchema);
     if (!parsed.ok) return parsed.response;
     const { ids } = parsed.data;
-    const selected = ids
-      ? proxyRecords.filter((r) => ids.includes(r.id))
-      : proxyRecords;
+    const selected = ids ? proxyRecords.filter((r) => ids.includes(r.id)) : proxyRecords;
 
     return c.json(proxyRecordsToMockRoutes(selected));
   });

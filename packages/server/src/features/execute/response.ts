@@ -1,13 +1,11 @@
 export function normalizeResponse(response: any) {
   const bodyBuffer = bytesFrom(response.body);
   const contentType =
-    (response.headers ?? []).find(
-      (header: any) => header.key?.toLowerCase() === "content-type",
-    )?.value ?? "";
+    (response.headers ?? []).find((header: any) => header.key?.toLowerCase() === "content-type")
+      ?.value ?? "";
   const isText =
-    /text\/|json|xml|html|javascript|css|yaml|csv|urlencoded/i.test(
-      contentType,
-    ) || contentType === "";
+    /text\/|json|xml|html|javascript|css|yaml|csv|urlencoded/i.test(contentType) ||
+    contentType === "";
   return {
     status: response.status,
     statusText: response.statusText,

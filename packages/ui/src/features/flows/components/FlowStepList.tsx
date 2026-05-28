@@ -1,12 +1,5 @@
 import type { MutableRefObject } from "react";
-import {
-  CheckCircle2,
-  Clock,
-  GripVertical,
-  Plus,
-  Trash2,
-  XCircle,
-} from "lucide-react";
+import { CheckCircle2, Clock, GripVertical, Plus, Trash2, XCircle } from "lucide-react";
 import type { FlowResult, FlowStep, FlowStepResult } from "@invoke/core";
 import { FLOW_STEP_TYPES, STEP_COLORS } from "../flowStepUtils";
 
@@ -38,10 +31,7 @@ export function FlowStepList({
   onRemoveStep: (index: number) => void;
 }) {
   return (
-    <div
-      className="flex flex-col border-r border-[var(--border)]"
-      style={{ width: 220 }}
-    >
+    <div className="flex flex-col border-r border-[var(--border)]" style={{ width: 220 }}>
       <div className="px-4 py-2.5 border-b border-[var(--border)] shrink-0">
         <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
           Steps {steps.length > 0 && `- ${steps.length}`}
@@ -50,9 +40,7 @@ export function FlowStepList({
 
       <div className="flex-1 overflow-y-auto py-3 px-3 flex flex-col">
         {steps.map((step, i) => {
-          const stepResult = flowResult?.steps.find(
-            (r: FlowStepResult) => r.stepId === step.id,
-          );
+          const stepResult = flowResult?.steps.find((r: FlowStepResult) => r.stepId === step.id);
           const isDragTarget = dragOver === i;
           return (
             <div
@@ -68,15 +56,12 @@ export function FlowStepList({
               }}
               onDragLeave={() => onSetDragOver(null)}
               onDrop={() => {
-                if (dragIndex.current !== null)
-                  onReorderStep(dragIndex.current, i);
+                if (dragIndex.current !== null) onReorderStep(dragIndex.current, i);
                 dragIndex.current = null;
                 onSetDragOver(null);
               }}
             >
-              {isDragTarget && (
-                <div className="h-0.5 bg-[var(--accent)] rounded mx-1 mb-1" />
-              )}
+              {isDragTarget && <div className="h-0.5 bg-[var(--accent)] rounded mx-1 mb-1" />}
               <div
                 className={`group flex items-start gap-1.5 px-2 py-2 rounded cursor-pointer hover:bg-[var(--surface-2)] ${selectedIndex === i ? "bg-[var(--accent-subtle)]" : ""}`}
                 onClick={() => onSelect(i)}
@@ -86,9 +71,7 @@ export function FlowStepList({
                   className="text-[var(--text-3)] opacity-0 group-hover:opacity-100 shrink-0 mt-1 cursor-grab"
                 />
                 <div className="relative flex flex-col items-center shrink-0 mt-1">
-                  <div
-                    className={`w-2 h-2 rounded-full ${STEP_COLORS[step.type]}`}
-                  />
+                  <div className={`w-2 h-2 rounded-full ${STEP_COLORS[step.type]}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-2xs text-[var(--text-3)] uppercase tracking-wide">
@@ -103,9 +86,7 @@ export function FlowStepList({
                     </div>
                   )}
                   {step.type === "delay" && (
-                    <div className="text-2xs text-[var(--text-3)]">
-                      {step.delayMs}ms
-                    </div>
+                    <div className="text-2xs text-[var(--text-3)]">{step.delayMs}ms</div>
                   )}
                   {stepResult && (
                     <div
@@ -120,9 +101,7 @@ export function FlowStepList({
                         <Clock size={9} />
                         {stepResult.completedAt - stepResult.startedAt}ms
                       </span>
-                      {stepResult.response?.status && (
-                        <span>{stepResult.response.status}</span>
-                      )}
+                      {stepResult.response?.status && <span>{stepResult.response.status}</span>}
                     </div>
                   )}
                 </div>
@@ -144,9 +123,7 @@ export function FlowStepList({
         })}
 
         {!steps.length && (
-          <p className="text-xs text-[var(--text-3)] text-center py-6">
-            No steps yet
-          </p>
+          <p className="text-xs text-[var(--text-3)] text-center py-6">No steps yet</p>
         )}
       </div>
 
@@ -159,9 +136,7 @@ export function FlowStepList({
                 onClick={() => onAddStep(t)}
                 className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--text-1)] text-left"
               >
-                <div
-                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${STEP_COLORS[t]}`}
-                />
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${STEP_COLORS[t]}`} />
                 {t}
               </button>
             ))}

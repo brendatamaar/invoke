@@ -1,11 +1,4 @@
-export type GrpcTab =
-  | "message"
-  | "metadata"
-  | "auth"
-  | "scripts"
-  | "saved"
-  | "stress"
-  | "options";
+export type GrpcTab = "message" | "metadata" | "auth" | "scripts" | "saved" | "stress" | "options";
 
 export const GRPC_TABS: { id: GrpcTab; label: string }[] = [
   { id: "message", label: "Message" },

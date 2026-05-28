@@ -31,16 +31,20 @@ export function ConfirmModal({
           <button className="btn" onClick={onClose}>
             Cancel
           </button>
-          <button
-            className={`btn ${danger ? "btn-danger" : "btn-primary"}`}
-            onClick={onConfirm}
-          >
+          <button className={`btn ${danger ? "btn-danger" : "btn-primary"}`} onClick={onConfirm}>
             {confirmLabel}
           </button>
         </>
       }
     >
-      <p style={{ fontSize: "var(--t-base)", color: "var(--fg-1)", margin: 0, overflowWrap: "break-word" }}>
+      <p
+        style={{
+          fontSize: "var(--t-base)",
+          color: "var(--fg-1)",
+          margin: 0,
+          overflowWrap: "break-word",
+        }}
+      >
         {message}
       </p>
     </Dialog>

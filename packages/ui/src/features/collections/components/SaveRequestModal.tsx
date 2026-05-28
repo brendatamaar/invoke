@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { FolderOpen, X } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
 import { useCollections, useFolders } from "../../../hooks/useDb";
-import {
-  NEW_COLLECTION_SENTINEL,
-  NEW_FOLDER_SENTINEL,
-} from "./save/DestinationPicker";
+import { NEW_COLLECTION_SENTINEL, NEW_FOLDER_SENTINEL } from "./save/DestinationPicker";
 import { SaveRequestForm } from "./save/SaveRequestForm";
 
 export function SaveRequestModal() {
@@ -53,17 +50,14 @@ export function SaveRequestModal() {
   const confirm = async () => {
     if (!canSave) return;
     try {
-      const targetCollectionId = await resolveCollectionId(
-        collectionId,
-        newCollectionName,
-      );
-      const targetFolderId = await resolveFolderId(
-        folderId,
-        newFolderName,
-        targetCollectionId,
-      );
-      const { id: _id, collectionId: _col, folderId: _folder, ...requestBody } =
-        request as unknown as Record<string, unknown>;
+      const targetCollectionId = await resolveCollectionId(collectionId, newCollectionName);
+      const targetFolderId = await resolveFolderId(folderId, newFolderName, targetCollectionId);
+      const {
+        id: _id,
+        collectionId: _col,
+        folderId: _folder,
+        ...requestBody
+      } = request as unknown as Record<string, unknown>;
       const saved = await coreStore.saveRequest(
         requestBody as unknown as Parameters<typeof coreStore.saveRequest>[0],
         name.trim(),
@@ -101,10 +95,11 @@ export function SaveRequestModal() {
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
           <FolderOpen size={15} className="text-[var(--accent)]" />
-          <span className="text-sm font-semibold text-[var(--text-1)]">
-            Save to Collection
-          </span>
-          <button onClick={close} className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]">
+          <span className="text-sm font-semibold text-[var(--text-1)]">Save to Collection</span>
+          <button
+            onClick={close}
+            className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
+          >
             <X size={15} />
           </button>
         </div>
@@ -129,7 +124,11 @@ export function SaveRequestModal() {
           <button onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
             Cancel
           </button>
-          <button onClick={confirm} disabled={!canSave} className="btn btn-primary text-xs px-3 py-1.5">
+          <button
+            onClick={confirm}
+            disabled={!canSave}
+            className="btn btn-primary text-xs px-3 py-1.5"
+          >
             Save
           </button>
         </div>

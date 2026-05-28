@@ -5,16 +5,13 @@ import { useStore } from "../../../store";
 export function GrpcAuthPanel() {
   const { grpcRequest, setGrpcRequest } = useStore();
   const auth: AuthConfig = grpcRequest.auth ?? { type: "none" };
-  const set = (patch: Partial<AuthConfig>) =>
-    setGrpcRequest({ auth: { ...auth, ...patch } });
+  const set = (patch: Partial<AuthConfig>) => setGrpcRequest({ auth: { ...auth, ...patch } });
   const inputCls = "input text-xs py-1 flex-1";
 
   return (
     <div className="p-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
-          Type
-        </label>
+        <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Type</label>
         <Select
           value={auth.type}
           onChange={(e) =>
@@ -32,9 +29,7 @@ export function GrpcAuthPanel() {
       </div>
       {auth.type === "bearer" && (
         <div className="flex items-center gap-2">
-          <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
-            Token
-          </label>
+          <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Token</label>
           <input
             className={inputCls}
             value={auth.token ?? ""}
@@ -46,9 +41,7 @@ export function GrpcAuthPanel() {
       {auth.type === "basic" && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
-              Username
-            </label>
+            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Username</label>
             <input
               className={inputCls}
               value={auth.username ?? ""}
@@ -56,9 +49,7 @@ export function GrpcAuthPanel() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
-              Password
-            </label>
+            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Password</label>
             <input
               className={inputCls}
               type="password"
@@ -71,9 +62,7 @@ export function GrpcAuthPanel() {
       {auth.type === "api-key" && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
-              Key name
-            </label>
+            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Key name</label>
             <input
               className={inputCls}
               value={auth.apiKeyName ?? ""}
@@ -82,9 +71,7 @@ export function GrpcAuthPanel() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
-              Key value
-            </label>
+            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Key value</label>
             <input
               className={inputCls}
               value={auth.apiKeyValue ?? ""}
@@ -96,23 +83,18 @@ export function GrpcAuthPanel() {
       )}
       {auth.type === "oauth2" && (
         <div className="flex items-center gap-2">
-          <label className="text-xs text-[var(--text-2)] w-20 shrink-0">
-            Access token
-          </label>
+          <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Access token</label>
           <input
             className={inputCls}
             value={auth.accessToken ?? auth.token ?? ""}
-            onChange={(e) =>
-              set({ accessToken: e.target.value, token: e.target.value })
-            }
+            onChange={(e) => set({ accessToken: e.target.value, token: e.target.value })}
             placeholder="{{access_token}}"
           />
         </div>
       )}
       {auth.type !== "none" && (
         <p className="text-2xs text-[var(--text-3)]">
-          Auth is injected as an <code>authorization</code> metadata header on
-          each call.
+          Auth is injected as an <code>authorization</code> metadata header on each call.
         </p>
       )}
     </div>

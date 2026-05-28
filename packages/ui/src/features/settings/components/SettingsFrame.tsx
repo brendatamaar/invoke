@@ -50,9 +50,7 @@ export function SettingsFrame({
             ))}
           </nav>
 
-          <div className="min-h-[430px] flex-1 overflow-y-auto p-5">
-            {children}
-          </div>
+          <div className="min-h-[430px] flex-1 overflow-y-auto p-5">{children}</div>
         </div>
 
         <div className="flex items-center gap-3 border-t border-[var(--border)] px-4 py-3">
@@ -67,10 +65,7 @@ export function SettingsFrame({
           <button onClick={onCancel} className="btn px-4 py-1.5 text-xs">
             Cancel
           </button>
-          <button
-            onClick={onSave}
-            className="btn btn-primary px-4 py-1.5 text-xs"
-          >
+          <button onClick={onSave} className="btn btn-primary px-4 py-1.5 text-xs">
             Save
           </button>
         </div>

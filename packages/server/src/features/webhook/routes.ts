@@ -68,8 +68,7 @@ export function registerWebhookRoutes(app: Hono) {
     };
     const existing = webhookLogs.get(webhookId) ?? [];
     existing.unshift(entry);
-    if (existing.length > MAX_WEBHOOK_ENTRIES)
-      existing.length = MAX_WEBHOOK_ENTRIES;
+    if (existing.length > MAX_WEBHOOK_ENTRIES) existing.length = MAX_WEBHOOK_ENTRIES;
     webhookLogs.set(webhookId, existing);
     return c.json({ ok: true, validationPassed: validation.passed });
   });
@@ -84,11 +83,8 @@ function validateWebhookRequest(
 
   if (config.type === "header") {
     if (!config.headerName || !config.headerValue) return { passed: true };
-    const found = headers.find(
-      (h) => h.key.toLowerCase() === config.headerName!.toLowerCase(),
-    );
-    if (!found)
-      return { passed: false, error: `Missing header: ${config.headerName}` };
+    const found = headers.find((h) => h.key.toLowerCase() === config.headerName!.toLowerCase());
+    if (!found) return { passed: false, error: `Missing header: ${config.headerName}` };
     if (found.value !== config.headerValue)
       return { passed: false, error: "Header token mismatch" };
     return { passed: true };
@@ -111,10 +107,7 @@ function validateWebhookRequest(
       };
     const rawSig = sigHeader.value;
     const prefix = config.signaturePrefix ?? "";
-    const receivedHex =
-      prefix && rawSig.startsWith(prefix)
-        ? rawSig.slice(prefix.length)
-        : rawSig;
+    const receivedHex = prefix && rawSig.startsWith(prefix) ? rawSig.slice(prefix.length) : rawSig;
     const expectedHex = nodeCrypto
       .createHmac(algorithm, config.secret)
       .update(body, "utf8")
@@ -124,9 +117,7 @@ function validateWebhookRequest(
         Buffer.from(receivedHex.padEnd(expectedHex.length, "0"), "hex"),
         Buffer.from(expectedHex, "hex"),
       );
-      return passed
-        ? { passed: true }
-        : { passed: false, error: "Signature mismatch" };
+      return passed ? { passed: true } : { passed: false, error: "Signature mismatch" };
     } catch {
       return { passed: false, error: "Invalid signature format" };
     }

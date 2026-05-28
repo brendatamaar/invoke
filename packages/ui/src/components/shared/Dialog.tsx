@@ -2,14 +2,7 @@ import { X } from "lucide-react";
 import { useEffect } from "react";
 import type { DialogProps } from "../../types";
 
-export function Dialog({
-  open,
-  onClose,
-  title,
-  children,
-  width = "480px",
-  footer,
-}: DialogProps) {
+export function Dialog({ open, onClose, title, children, width = "480px", footer }: DialogProps) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -69,12 +62,8 @@ export function Dialog({
               borderRadius: "var(--r-1)",
               transition: "color var(--dur-fast)",
             }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLElement).style.color = "var(--fg-3)")
-            }
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-3)")}
           >
             <X size={13} />
           </button>

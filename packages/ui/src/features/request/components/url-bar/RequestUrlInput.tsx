@@ -1,8 +1,4 @@
-import {
-  extractPathVariableNames,
-  parseCurl,
-  type KeyValue,
-} from "@invoke/core";
+import { extractPathVariableNames, parseCurl, type KeyValue } from "@invoke/core";
 import { VariableAutocompleteInput } from "../../../../components/shared/VariableAutocompleteInput";
 
 export function RequestUrlInput({
@@ -33,9 +29,7 @@ export function RequestUrlInput({
             if (parsed.url) onPatch(parsed as Record<string, unknown>);
           }
         }}
-        onChange={(nextUrl) =>
-          onPatch(buildUrlPatch(nextUrl, params, pathVariables))
-        }
+        onChange={(nextUrl) => onPatch(buildUrlPatch(nextUrl, params, pathVariables))}
         onKeyDown={(event) => {
           if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) onSend();
         }}
@@ -51,11 +45,7 @@ export function RequestUrlInput({
   );
 }
 
-function buildUrlPatch(
-  url: string,
-  params: KeyValue[],
-  pathVariables: KeyValue[],
-) {
+function buildUrlPatch(url: string, params: KeyValue[], pathVariables: KeyValue[]) {
   const names = extractPathVariableNames(url);
   const existingMap = new Map(pathVariables.map((variable) => [variable.key, variable]));
   const nextPathVariables: KeyValue[] = names.map(

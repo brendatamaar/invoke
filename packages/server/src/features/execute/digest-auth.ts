@@ -8,16 +8,13 @@ export async function executeDigest(input: ExecuteInput) {
     "Execute",
     executePayload({
       ...input,
-      headers: input.headers.filter(
-        (header) => header.key.toLowerCase() !== "authorization",
-      ),
+      headers: input.headers.filter((header) => header.key.toLowerCase() !== "authorization"),
     }),
   );
   const challenge = (first.headers ?? []).find(
     (header: any) => header.key?.toLowerCase() === "www-authenticate",
   )?.value as string | undefined;
-  if (first.status !== 401 || !challenge?.toLowerCase().startsWith("digest"))
-    return first;
+  if (first.status !== 401 || !challenge?.toLowerCase().startsWith("digest")) return first;
 
   const authorization = digestAuthorizationHeader(input, challenge);
   return grpcCall<any>(
@@ -25,9 +22,7 @@ export async function executeDigest(input: ExecuteInput) {
     executePayload({
       ...input,
       headers: [
-        ...input.headers.filter(
-          (header) => header.key.toLowerCase() !== "authorization",
-        ),
+        ...input.headers.filter((header) => header.key.toLowerCase() !== "authorization"),
         { key: "Authorization", value: authorization, enabled: true },
       ],
     }),

@@ -58,18 +58,12 @@ export function GrpcMessageDiffModal({
           <div className="flex items-center gap-2 ml-auto text-2xs">
             {hasChanges ? (
               <>
-                {additions > 0 && (
-                  <span className="text-[var(--ok)] font-mono">+{additions}</span>
-                )}
+                {additions > 0 && <span className="text-[var(--ok)] font-mono">+{additions}</span>}
                 {deletions > 0 && (
-                  <span className="text-[var(--danger)] font-mono">
-                    -{deletions}
-                  </span>
+                  <span className="text-[var(--danger)] font-mono">-{deletions}</span>
                 )}
                 {changes > 0 && (
-                  <span className="text-yellow-600 font-mono dark:text-yellow-400">
-                    ~{changes}
-                  </span>
+                  <span className="text-yellow-600 font-mono dark:text-yellow-400">~{changes}</span>
                 )}
               </>
             ) : (
@@ -87,9 +81,7 @@ export function GrpcMessageDiffModal({
         {/* Changed paths strip */}
         {changedPaths.length > 0 && (
           <div className="px-4 py-2 border-b border-[var(--border)] bg-[var(--surface-2)] flex flex-wrap gap-1 items-center shrink-0">
-            <span className="text-2xs text-[var(--text-3)] shrink-0">
-              Changed:
-            </span>
+            <span className="text-2xs text-[var(--text-3)] shrink-0">Changed:</span>
             {changedPaths.map((path) => (
               <span
                 key={path}
@@ -104,14 +96,10 @@ export function GrpcMessageDiffModal({
         {/* Panel labels */}
         <div className="flex border-b border-[var(--border)] shrink-0">
           <div className="flex-1 flex items-center gap-2 px-4 py-1.5 bg-[var(--surface-2)] border-r border-[var(--border)]">
-            <span className="text-2xs font-semibold text-[var(--text-2)]">
-              {leftLabel}
-            </span>
+            <span className="text-2xs font-semibold text-[var(--text-2)]">{leftLabel}</span>
           </div>
           <div className="flex-1 flex items-center gap-2 px-4 py-1.5 bg-[var(--surface-2)]">
-            <span className="text-2xs font-semibold text-[var(--text-2)]">
-              {rightLabel}
-            </span>
+            <span className="text-2xs font-semibold text-[var(--text-2)]">{rightLabel}</span>
           </div>
         </div>
 

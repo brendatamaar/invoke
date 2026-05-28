@@ -41,17 +41,10 @@ export function ProxyRecordingSection() {
             `Added ${result.added} mock route${result.added !== 1 ? "s" : ""} (${skipped} already existed)`,
           );
         } else {
-          addToast(
-            "success",
-            `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`,
-          );
+          addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`);
         }
-        const selectedRecords = ids
-          ? records.filter((record) => ids.includes(record.id))
-          : records;
-        const withQuery = selectedRecords.filter((record) =>
-          record.path.includes("?"),
-        );
+        const selectedRecords = ids ? records.filter((record) => ids.includes(record.id)) : records;
+        const withQuery = selectedRecords.filter((record) => record.path.includes("?"));
         if (withQuery.length > 0) {
           addToast(
             "success",

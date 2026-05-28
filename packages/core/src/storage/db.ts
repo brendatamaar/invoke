@@ -34,8 +34,7 @@ export class InvokeDB extends Dexie {
       .stores({
         collections: "id, name, updatedAt, sortOrder",
         folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
-        requests:
-          "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+        requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
         environments: "id, name, updatedAt",
         history: "id, createdAt, requestId, collectionId, protocol",
         flows: "id, name, updatedAt",
@@ -102,8 +101,7 @@ export class InvokeDB extends Dexie {
     this.version(3).stores({
       collections: "id, name, updatedAt, sortOrder",
       folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
-      requests:
-        "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+      requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
       environments: "id, name, updatedAt",
       history: "id, createdAt, requestId, collectionId, protocol",
       flows: "id, name, updatedAt",
@@ -113,8 +111,7 @@ export class InvokeDB extends Dexie {
     this.version(4).stores({
       collections: "id, name, updatedAt, sortOrder",
       folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
-      requests:
-        "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+      requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
       environments: "id, name, updatedAt",
       history: "id, createdAt, requestId, collectionId, protocol, pinned",
       flows: "id, name, updatedAt",
@@ -124,8 +121,7 @@ export class InvokeDB extends Dexie {
     this.version(5).stores({
       collections: "id, name, updatedAt, sortOrder",
       folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
-      requests:
-        "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+      requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
       environments: "id, name, updatedAt",
       history: "id, createdAt, requestId, collectionId, protocol, pinned",
       flows: "id, name, updatedAt",
@@ -137,8 +133,7 @@ export class InvokeDB extends Dexie {
       .stores({
         collections: "id, name, updatedAt, sortOrder",
         folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
-        requests:
-          "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+        requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
         environments: "id, name, updatedAt",
         history: "id, createdAt, requestId, collectionId, protocol, pinned",
         flows: "id, name, updatedAt",

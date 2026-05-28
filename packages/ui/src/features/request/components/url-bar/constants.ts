@@ -1,14 +1,6 @@
 import type { HttpMethod } from "@invoke/core";
 
-export const METHODS: HttpMethod[] = [
-  "GET",
-  "POST",
-  "PUT",
-  "PATCH",
-  "DELETE",
-  "HEAD",
-  "OPTIONS",
-];
+export const METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 
 export const METHOD_COLORS: Record<string, string> = {
   GET: "text-[var(--method-get)]",

@@ -38,26 +38,19 @@ export function useWebSocketBar() {
     );
 
     try {
-      const { connectionId, error } = await webSocketConnect(
-        resolved,
-        controller.signal,
-      );
+      const { connectionId, error } = await webSocketConnect(resolved, controller.signal);
       if (error) throw new Error(error);
       setWsSession(sessionId, { state: "connected", connectionId });
       eventStream.startEventStream(sessionId, connectionId);
       addToast("success", "WebSocket connected");
       const wsRequest = useStore.getState().websocketRequest;
       if (wsRequest.preset === "graphql-transport-ws") {
-        webSocketSend(connectionId, JSON.stringify({ type: "connection_init" })).catch(
-          () => {},
-        );
+        webSocketSend(connectionId, JSON.stringify({ type: "connection_init" })).catch(() => {});
         eventStream.appendSystemLog(sessionId, "connection_init sent");
       }
       for (const message of wsRequest.savedMessages ?? []) {
         if (message.autoSend) {
-          webSocketSend(connectionId, message.body, message.type === "binary").catch(
-            () => {},
-          );
+          webSocketSend(connectionId, message.body, message.type === "binary").catch(() => {});
         }
       }
     } catch (error) {
@@ -113,8 +106,7 @@ export function useWebSocketBar() {
       event.preventDefault();
       const state = useStore.getState();
       const session =
-        state.wsSessions.find((item) => item.id === state.activeWsSessionId) ??
-        state.wsSessions[0];
+        state.wsSessions.find((item) => item.id === state.activeWsSessionId) ?? state.wsSessions[0];
       if (session?.state === "disconnected") connect(session.id);
       else if (session?.state === "connected") disconnect(session.id);
     };

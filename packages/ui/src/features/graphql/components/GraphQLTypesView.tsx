@@ -1,8 +1,5 @@
 import { Layers } from "lucide-react";
-import type {
-  GraphQLIntrospectionSchema,
-  GraphQLIntrospectionType,
-} from "@invoke/core";
+import type { GraphQLIntrospectionSchema, GraphQLIntrospectionType } from "@invoke/core";
 import { kindBadge } from "../utils/badges";
 import { TypeDetail } from "./TypeDetail";
 
@@ -25,18 +22,14 @@ export function GraphQLTypesView({
     <>
       <div className="w-60 border-r border-[var(--border)] overflow-y-auto shrink-0 bg-[var(--surface-2)]">
         {filteredTypes.length === 0 && (
-          <p className="text-xs text-[var(--text-3)] px-4 py-6 text-center">
-            No types match
-          </p>
+          <p className="text-xs text-[var(--text-3)] px-4 py-6 text-center">No types match</p>
         )}
         {filteredTypes.map((type) => (
           <GraphQLTypeListItem
             key={type.name}
             type={type}
             selected={selectedType === type.name}
-            onSelect={() =>
-              onSelectType(selectedType === type.name ? null : type.name)
-            }
+            onSelect={() => onSelectType(selectedType === type.name ? null : type.name)}
           />
         ))}
       </div>
@@ -91,25 +84,15 @@ function GraphQLTypeListItem({
   );
 }
 
-function GraphQLActiveTypeHeader({
-  type,
-}: {
-  type: GraphQLIntrospectionType;
-}) {
+function GraphQLActiveTypeHeader({ type }: { type: GraphQLIntrospectionType }) {
   const badge = kindBadge(type.kind);
   return (
     <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[var(--border)]">
       <span className={`text-xs px-2 py-0.5 rounded-md font-mono font-medium ${badge.cls}`}>
         {badge.label}
       </span>
-      <span className="text-base font-mono font-semibold text-[var(--accent)]">
-        {type.name}
-      </span>
-      {type.description && (
-        <span className="text-xs text-[var(--text-3)]">
-          {type.description}
-        </span>
-      )}
+      <span className="text-base font-mono font-semibold text-[var(--accent)]">{type.name}</span>
+      {type.description && <span className="text-xs text-[var(--text-3)]">{type.description}</span>}
     </div>
   );
 }

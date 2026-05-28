@@ -1,10 +1,7 @@
 import type { StoredCookie } from "../types";
 import { id } from "../request";
 
-export function parseCookieHeaders(
-  setCookieHeaders: string[],
-  requestUrl: string,
-): StoredCookie[] {
+export function parseCookieHeaders(setCookieHeaders: string[], requestUrl: string): StoredCookie[] {
   let host = "";
   try {
     host = new URL(requestUrl).hostname;
@@ -32,9 +29,7 @@ export function parseCookieHeaders(
 
     for (const attr of attrs) {
       const eqPos = attr.indexOf("=");
-      const attrKey = (eqPos >= 0 ? attr.slice(0, eqPos) : attr)
-        .trim()
-        .toLowerCase();
+      const attrKey = (eqPos >= 0 ? attr.slice(0, eqPos) : attr).trim().toLowerCase();
       const attrVal = eqPos >= 0 ? attr.slice(eqPos + 1).trim() : "";
 
       if (attrKey === "domain" && attrVal) {
@@ -46,8 +41,7 @@ export function parseCookieHeaders(
       } else if (attrKey === "httponly") {
         httpOnly = true;
       } else if (attrKey === "samesite" && attrVal) {
-        const ss =
-          attrVal.charAt(0).toUpperCase() + attrVal.slice(1).toLowerCase();
+        const ss = attrVal.charAt(0).toUpperCase() + attrVal.slice(1).toLowerCase();
         if (ss === "Strict" || ss === "Lax" || ss === "None")
           sameSite = ss as StoredCookie["sameSite"];
       } else if (attrKey === "expires" && attrVal) {
@@ -77,10 +71,7 @@ export function parseCookieHeaders(
   return results;
 }
 
-export function matchCookies(
-  cookies: StoredCookie[],
-  url: string,
-): StoredCookie[] {
+export function matchCookies(cookies: StoredCookie[], url: string): StoredCookie[] {
   let urlObj: URL;
   try {
     urlObj = new URL(url);

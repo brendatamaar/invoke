@@ -1,14 +1,7 @@
 import { useEffect, useState } from "react";
 import { useStore } from "../../../../store";
-import type {
-  WebhookEndpoint,
-  WebhookValidationConfig,
-} from "../../../../types";
-import {
-  setWebhookConfig,
-  useClearWebhookLogs,
-  useWebhookLogs,
-} from "../../../webhook";
+import type { WebhookEndpoint, WebhookValidationConfig } from "../../../../types";
+import { setWebhookConfig, useClearWebhookLogs, useWebhookLogs } from "../../../webhook";
 import { HistoryLog } from "./HistoryLog";
 import { WebhookConfigTab } from "./WebhookConfigTab";
 import { WebhookModalHeader } from "./WebhookModalHeader";
@@ -23,24 +16,19 @@ export function WebhookModal({
 }: {
   endpoint: WebhookEndpoint;
   onClose: () => void;
-  onUpdate: (
-    id: string,
-    label: string,
-    validation: WebhookValidationConfig,
-  ) => void;
+  onUpdate: (id: string, label: string, validation: WebhookValidationConfig) => void;
 }) {
   const { addToast } = useStore();
   const [tab, setTab] = useState<WebhookModalTab>("config");
   const [label, setLabel] = useState(endpoint.label);
-  const [validation, setValidation] = useState<WebhookValidationConfig>(
-    endpoint.validation,
-  );
+  const [validation, setValidation] = useState<WebhookValidationConfig>(endpoint.validation);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { data: entries = [], isFetching, refetch } = useWebhookLogs(
-    endpoint.id,
-    tab === "history",
-  );
+  const {
+    data: entries = [],
+    isFetching,
+    refetch,
+  } = useWebhookLogs(endpoint.id, tab === "history");
   const clearLogsMutation = useClearWebhookLogs(endpoint.id);
   const url = `${window.location.protocol}//${window.location.hostname}:4000/webhook/${endpoint.id}`;
 
@@ -98,14 +86,8 @@ export function WebhookModal({
       >
         <WebhookModalHeader label={label} onClose={onClose} />
         <WebhookUrlStrip url={url} copied={copied} onCopy={copyUrl} />
-        <WebhookModalTabs
-          activeTab={tab}
-          historyCount={entries.length}
-          onSelect={setTab}
-        />
-        <div
-          className={`flex-1 p-4 ${tab === "history" ? "overflow-auto" : "overflow-visible"}`}
-        >
+        <WebhookModalTabs activeTab={tab} historyCount={entries.length} onSelect={setTab} />
+        <div className={`flex-1 p-4 ${tab === "history" ? "overflow-auto" : "overflow-visible"}`}>
           {tab === "config" && (
             <WebhookConfigTab
               label={label}

@@ -41,9 +41,7 @@ export function ScriptsPanel() {
             setRequest({
               scripts: {
                 ...(request.scripts ?? {}),
-                ...(activeScript === "pre"
-                  ? { preRequest: value }
-                  : { postResponse: value }),
+                ...(activeScript === "pre" ? { preRequest: value } : { postResponse: value }),
               },
             })
           }

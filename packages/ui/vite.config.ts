@@ -14,9 +14,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "@invoke/core": fileURLToPath(
-        new URL("../core/src/index.ts", import.meta.url),
-      ),
+      "@invoke/core": fileURLToPath(new URL("../core/src/index.ts", import.meta.url)),
     },
   },
   server: {

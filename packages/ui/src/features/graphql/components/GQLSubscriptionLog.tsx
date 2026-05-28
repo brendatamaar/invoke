@@ -1,8 +1,5 @@
 import { ArrowDown } from "lucide-react";
-import type {
-  GQLSubMessage,
-  GQLSubState,
-} from "../hooks/useGraphQLSubscription";
+import type { GQLSubMessage, GQLSubState } from "../hooks/useGraphQLSubscription";
 
 export function GQLSubscriptionLog({
   state,

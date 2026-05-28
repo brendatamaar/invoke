@@ -34,8 +34,7 @@ export function GrpcResponseViewer() {
 
   const selectedMethod = selectedGrpcMethod(grpcMethods, grpcRequest);
   const { isServerStreaming, isClientStream } = grpcMethodFlags(selectedMethod);
-  const isBidiStream =
-    isClientStream && (selectedMethod?.serverStreaming ?? false);
+  const isBidiStream = isClientStream && (selectedMethod?.serverStreaming ?? false);
   const hasClientStreamLog =
     isBidiStream ||
     (isClientStream && grpcStreaming) ||
@@ -43,15 +42,9 @@ export function GrpcResponseViewer() {
     grpcStreamSentMessages.length > 0 ||
     grpcStreamReceivedMessages.length > 0;
   const hasServerStreamLog =
-    isServerStreaming ||
-    (!isClientStream && grpcStreaming) ||
-    grpcStreamMessages.length > 0;
+    isServerStreaming || (!isClientStream && grpcStreaming) || grpcStreamMessages.length > 0;
   const hasClosedClientStreamResponse =
-    isClientStream &&
-    !isBidiStream &&
-    !grpcStreamId &&
-    !grpcStreaming &&
-    !!grpcResponse;
+    isClientStream && !isBidiStream && !grpcStreamId && !grpcStreaming && !!grpcResponse;
 
   const toggleStreamDiff = (i: number) => {
     setStreamDiffSelected((prev) => {
@@ -83,8 +76,15 @@ export function GrpcResponseViewer() {
   }, [hasServerStreamLog]);
 
   const selectForDiff = (body: string) => {
-    if (!diffLeft) { setDiffLeft(body); return; }
-    if (!diffRight) { setDiffRight(body); setShowTranscriptDiff(true); return; }
+    if (!diffLeft) {
+      setDiffLeft(body);
+      return;
+    }
+    if (!diffRight) {
+      setDiffRight(body);
+      setShowTranscriptDiff(true);
+      return;
+    }
     setDiffLeft(body);
     setDiffRight(null);
   };
@@ -100,10 +100,7 @@ export function GrpcResponseViewer() {
   };
 
   const isPlaceholder =
-    !hasClosedClientStreamResponse &&
-    !hasClientStreamLog &&
-    !hasServerStreamLog &&
-    !grpcResponse;
+    !hasClosedClientStreamResponse && !hasClientStreamLog && !hasServerStreamLog && !grpcResponse;
 
   const firstArrival = grpcStreamMessages.find((m) => m.receivedAt)?.receivedAt;
   const streamDiffLabel = (i: number) => {
@@ -187,9 +184,7 @@ function GrpcResponsePlaceholder({ active }: { active: boolean }) {
       <div className="w-10 h-10 rounded bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center mb-2">
         <Code2 size={18} className="text-[var(--text-3)]" />
       </div>
-      <p className="text-sm text-[var(--text-2)] font-medium">
-        No gRPC response yet
-      </p>
+      <p className="text-sm text-[var(--text-2)] font-medium">No gRPC response yet</p>
       {active && (
         <div className="flex items-center gap-2 text-2xs text-[var(--text-3)]">
           <span className="text-[var(--accent)] animate-pulse">Working...</span>

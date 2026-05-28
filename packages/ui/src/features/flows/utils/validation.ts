@@ -9,19 +9,13 @@ export function showFlowValidation(
   if (!validation.valid) {
     const [firstError] = validation.errors;
     const remaining = validation.errors.length - 1;
-    addToast(
-      "error",
-      `${firstError.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`,
-    );
+    addToast("error", `${firstError.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`);
     return false;
   }
   if (validation.warnings.length > 0) {
     const [firstWarning] = validation.warnings;
     const remaining = validation.warnings.length - 1;
-    addToast(
-      "warn",
-      `${firstWarning.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`,
-    );
+    addToast("warn", `${firstWarning.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`);
   }
   return true;
 }

@@ -15,12 +15,7 @@ export type PaletteKind =
   | "flow"
   | "mock";
 
-export type SidebarSection =
-  | "collections"
-  | "history"
-  | "environments"
-  | "flows"
-  | "mocks";
+export type SidebarSection = "collections" | "history" | "environments" | "flows" | "mocks";
 
 export interface PaletteItem {
   id: string;

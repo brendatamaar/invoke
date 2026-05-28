@@ -8,11 +8,7 @@ import {
 } from "@invoke/core";
 import { useStore } from "../../../store";
 import { cacheSchema } from "../utils/cache";
-import {
-  extractFragmentDefs,
-  loadFragments,
-  saveFragments,
-} from "../utils/fragments";
+import { extractFragmentDefs, loadFragments, saveFragments } from "../utils/fragments";
 import { schemaToSDL } from "../utils/sdl";
 import { mergeFragments, refreshMessage } from "../utils/schemaModal";
 import { FragmentsPanel } from "./FragmentsPanel";
@@ -64,10 +60,7 @@ export function GraphQLSchemaModal({
     );
   }, [allTypes, search]);
   const activeType = selectedType ? typeByName(schema, selectedType) : undefined;
-  const sdlText = useMemo(
-    () => (view === "sdl" ? schemaToSDL(schema) : ""),
-    [view, schema],
-  );
+  const sdlText = useMemo(() => (view === "sdl" ? schemaToSDL(schema) : ""), [view, schema]);
 
   const handleRefresh = async () => {
     const endpoint = graphqlSchemaEndpoint || request.url.trim();
@@ -107,10 +100,7 @@ export function GraphQLSchemaModal({
       addToast("success", refreshMessage(schema, newSchema));
     } catch (e) {
       if (!(e instanceof Error && e.name === "AbortError")) {
-        addToast(
-          "error",
-          `Refresh failed: ${e instanceof Error ? e.message : String(e)}`,
-        );
+        addToast("error", `Refresh failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     } finally {
       setRefreshing(false);

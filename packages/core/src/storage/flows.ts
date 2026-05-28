@@ -6,10 +6,7 @@ export function listFlows(db: InvokeDB) {
   return db.flows.orderBy("updatedAt").reverse().toArray();
 }
 
-export async function saveFlow(
-  db: InvokeDB,
-  flow: Partial<Flow> & Pick<Flow, "name" | "steps">,
-) {
+export async function saveFlow(db: InvokeDB, flow: Partial<Flow> & Pick<Flow, "name" | "steps">) {
   const now = Date.now();
   const saved: Flow = {
     id: flow.id || id(),

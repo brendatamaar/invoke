@@ -16,9 +16,7 @@ export function DelayStepEditor({
           className="input text-sm py-1.5 w-32"
           min={0}
           value={step.delayMs}
-          onChange={(event) =>
-            onChange({ ...step, delayMs: Number(event.target.value) })
-          }
+          onChange={(event) => onChange({ ...step, delayMs: Number(event.target.value) })}
         />
         <span className="text-sm text-[var(--text-3)]">ms</span>
       </div>

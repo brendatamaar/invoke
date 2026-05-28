@@ -16,8 +16,7 @@ export function MessagesTab() {
     websocketRequest,
     setWebsocketRequest,
   } = useStore();
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
   const [showTemplates, setShowTemplates] = useState(false);
   const [showSavedModal, setShowSavedModal] = useState(false);
   const [selectedSaved, setSelectedSaved] = useState<string | null>(null);
@@ -126,9 +125,7 @@ export function MessagesTab() {
 
   const updateSavedMessage = (id: string, partial: Partial<WsSavedMessage>) => {
     setWebsocketRequest({
-      savedMessages: savedMessages.map((m) =>
-        m.id === id ? { ...m, ...partial } : m,
-      ),
+      savedMessages: savedMessages.map((m) => (m.id === id ? { ...m, ...partial } : m)),
     });
   };
 

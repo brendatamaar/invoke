@@ -1,13 +1,6 @@
 import type { BodyMode, KeyValue, RequestDraft } from "@invoke/core";
 
-export const BODY_MODES: BodyMode[] = [
-  "none",
-  "json",
-  "form-data",
-  "urlencoded",
-  "raw",
-  "file",
-];
+export const BODY_MODES: BodyMode[] = ["none", "json", "form-data", "urlencoded", "raw", "file"];
 
 export function buildBodyModePatch(
   request: RequestDraft,

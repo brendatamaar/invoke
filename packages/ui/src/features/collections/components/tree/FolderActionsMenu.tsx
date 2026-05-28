@@ -33,9 +33,22 @@ export function FolderActionsMenu({
       {open && (
         <div className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] py-1 min-w-[140px]">
           <CollectionMenuItem icon={<Play size={12} />} label="Run" onClick={onRun} />
-          <CollectionMenuItem icon={<Variable size={12} />} label="Variables" onClick={onVariables} />
-          <CollectionMenuItem icon={<FileText size={12} />} label="Description" onClick={onDescription} />
-          <CollectionMenuItem icon={<Trash2 size={12} />} label="Delete" danger onClick={onDelete} />
+          <CollectionMenuItem
+            icon={<Variable size={12} />}
+            label="Variables"
+            onClick={onVariables}
+          />
+          <CollectionMenuItem
+            icon={<FileText size={12} />}
+            label="Description"
+            onClick={onDescription}
+          />
+          <CollectionMenuItem
+            icon={<Trash2 size={12} />}
+            label="Delete"
+            danger
+            onClick={onDelete}
+          />
         </div>
       )}
     </div>

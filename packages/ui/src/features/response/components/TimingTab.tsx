@@ -13,10 +13,7 @@ const PHASE_DEFS: { name: TimingPhaseName; label: string; color: string }[] = [
 ];
 
 function syntheticPhases(timing: Timing) {
-  const phases = new Map<
-    TimingPhaseName,
-    { startMs: number; durationMs: number }
-  >();
+  const phases = new Map<TimingPhaseName, { startMs: number; durationMs: number }>();
   let cursor = 0;
   for (const { name } of PHASE_DEFS) {
     const key = `${name}Ms` as keyof Timing;
@@ -31,13 +28,11 @@ function buildAttemptBars(attempt: TimingAttempt): PhaseBar[] {
   const byName = new Map((attempt.phases ?? []).map((p) => [p.name, p]));
   const synthetic = syntheticPhases(attempt.timing);
   const total = Math.max(attempt.timing?.totalMs ?? 0, 1);
-  const clamp = (v: number) =>
-    Math.min(100, Math.max(0, Number.isFinite(v) ? v : 0));
+  const clamp = (v: number) => Math.min(100, Math.max(0, Number.isFinite(v) ? v : 0));
 
   let cursor = 0;
   return PHASE_DEFS.map(({ name, label, color }) => {
-    const durationMs =
-      byName.get(name)?.durationMs ?? synthetic.get(name)?.durationMs ?? 0;
+    const durationMs = byName.get(name)?.durationMs ?? synthetic.get(name)?.durationMs ?? 0;
     const startMs = cursor;
     cursor += durationMs;
     return {
@@ -54,8 +49,7 @@ function buildAttemptBars(attempt: TimingAttempt): PhaseBar[] {
 
 export function TimingTab() {
   const { response } = useStore();
-  if (!response?.timing)
-    return <p className="p-4 text-xs text-[var(--text-3)]">No timing data</p>;
+  if (!response?.timing) return <p className="p-4 text-xs text-[var(--text-3)]">No timing data</p>;
 
   const attempts: TimingAttempt[] = response.attempts?.length
     ? response.attempts
@@ -83,9 +77,7 @@ export function TimingTab() {
   return (
     <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-[var(--text-1)]">
-          Timing waterfall
-        </span>
+        <span className="text-xs font-semibold text-[var(--text-1)]">Timing waterfall</span>
         <span className="text-xs text-[var(--text-3)]">
           {attempts.length > 1 ? `${attempts.length} hops` : "Single request"}
         </span>
@@ -106,9 +98,7 @@ export function TimingTab() {
               className="flex flex-col gap-2.5 p-3 rounded border border-[var(--border)] bg-[var(--surface-2)]"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-semibold text-[var(--text-1)] shrink-0">
-                  {label}
-                </span>
+                <span className="text-xs font-semibold text-[var(--text-1)] shrink-0">{label}</span>
                 {attempt.status && <StatusBadge status={attempt.status} />}
                 {attempt.url && (
                   <span className="text-2xs font-mono text-[var(--text-3)] truncate min-w-0">
@@ -166,9 +156,7 @@ export function TimingTab() {
                       style={{ backgroundColor: bar.color }}
                     />
                     {bar.label}
-                    <strong className="text-[var(--text-3)]">
-                      {fmtMs(bar.durationMs)}
-                    </strong>
+                    <strong className="text-[var(--text-3)]">{fmtMs(bar.durationMs)}</strong>
                   </span>
                 ))}
               </div>
@@ -187,9 +175,7 @@ export function TimingTab() {
             className="flex flex-col gap-0.5 p-2.5 rounded border border-[var(--border)] bg-[var(--surface-2)]"
           >
             <span className="text-2xs text-[var(--text-3)]">{row.label}</span>
-            <span className="text-xs text-[var(--text-1)]">
-              {fmtMs(row.value ?? 0)}
-            </span>
+            <span className="text-xs text-[var(--text-1)]">{fmtMs(row.value ?? 0)}</span>
           </div>
         ))}
       </div>

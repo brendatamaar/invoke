@@ -21,8 +21,7 @@ export function useProtocolDefaultDrafts({
   const [drafts, setDrafts] = useState<DefaultProtocolOptions>(() =>
     cloneProtocolDefaults(protocolDefaults),
   );
-  const [editingProtocol, setEditingProtocol] =
-    useState<RequestProtocol>(activeProtocol);
+  const [editingProtocol, setEditingProtocol] = useState<RequestProtocol>(activeProtocol);
 
   useEffect(() => {
     if (!showSettings) return;
@@ -80,9 +79,7 @@ export function useProtocolDefaultDrafts({
         ...(draft.options.tlsClientConfig ?? {}),
         ...patch,
       };
-      for (const key of Object.keys(tlsClientConfig) as Array<
-        keyof TlsClientConfig
-      >) {
+      for (const key of Object.keys(tlsClientConfig) as Array<keyof TlsClientConfig>) {
         if (!tlsClientConfig[key]) delete tlsClientConfig[key];
       }
       return { ...draft, options: { ...draft.options, tlsClientConfig } };

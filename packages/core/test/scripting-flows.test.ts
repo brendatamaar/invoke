@@ -60,9 +60,7 @@ describe("scripting and flows", () => {
             ...emptyRequest(),
             method: "POST",
             url: "https://api.example.com/login",
-            extractionRules: [
-              { variableName: "token", source: "body", expression: "$.token" },
-            ],
+            extractionRules: [{ variableName: "token", source: "body", expression: "$.token" }],
           },
         },
         {
@@ -88,14 +86,11 @@ describe("scripting and flows", () => {
     const result = await runner.run(flow, {
       execute: async (request) => {
         seen.push(
-          request.headers.find((header) => header.key === "Authorization")
-            ?.value ?? request.url,
+          request.headers.find((header) => header.key === "Authorization")?.value ?? request.url,
         );
         return {
           ...responseFixture(),
-          body: request.url.endsWith("/login")
-            ? JSON.stringify({ token: "abc" })
-            : "{}",
+          body: request.url.endsWith("/login") ? JSON.stringify({ token: "abc" }) : "{}",
         };
       },
     });

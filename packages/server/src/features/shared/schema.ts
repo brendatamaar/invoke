@@ -1,10 +1,10 @@
-import { Schema } from "effect"
+import { Schema } from "effect";
 
 export const headerSchema = Schema.Struct({
   key: Schema.String,
   value: Schema.String,
   enabled: Schema.optional(Schema.Boolean),
-})
+});
 
 export const tlsClientConfigSchema = Schema.optional(
   Schema.Struct({
@@ -13,4 +13,4 @@ export const tlsClientConfigSchema = Schema.optional(
     caCertPem: Schema.optionalWith(Schema.String, { default: () => "" }),
     serverName: Schema.optionalWith(Schema.String, { default: () => "" }),
   }),
-)
+);

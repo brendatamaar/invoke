@@ -6,9 +6,7 @@ import App from "./App";
 
 function resolveTheme(mode: string | null): "light" | "dark" {
   if (mode === "system") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
   return mode === "light" ? "light" : "dark";
 }
@@ -20,10 +18,7 @@ document.documentElement.style.fontSize = `${localStorage.getItem("uiFontSize") 
 const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 mediaQuery.addEventListener("change", () => {
   if (localStorage.getItem("theme") === "system") {
-    document.documentElement.setAttribute(
-      "data-theme",
-      mediaQuery.matches ? "dark" : "light",
-    );
+    document.documentElement.setAttribute("data-theme", mediaQuery.matches ? "dark" : "light");
   }
 });
 

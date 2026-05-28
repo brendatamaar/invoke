@@ -91,16 +91,11 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
                 const base = request.url.split("?")[0];
                 const enabled = kv.filter((r) => r.enabled !== false && r.key);
                 const qs = enabled
-                  .map(
-                    (r) =>
-                      `${encodeURIComponent(r.key)}=${encodeURIComponent(r.value ?? "")}`,
-                  )
+                  .map((r) => `${encodeURIComponent(r.key)}=${encodeURIComponent(r.value ?? "")}`)
                   .join("&");
                 setRequest({ params: kv, url: qs ? `${base}?${qs}` : base });
               }}
-              onPathVariablesChange={(pathVariables) =>
-                setRequest({ pathVariables })
-              }
+              onPathVariablesChange={(pathVariables) => setRequest({ pathVariables })}
             />
           )}
           {requestTab === "headers" && (

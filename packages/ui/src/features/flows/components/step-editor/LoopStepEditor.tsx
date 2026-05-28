@@ -45,9 +45,7 @@ function NumberField({
         min={1}
         placeholder={placeholder}
         value={value ?? ""}
-        onChange={(event) =>
-          onChange(event.target.value ? Number(event.target.value) : undefined)
-        }
+        onChange={(event) => onChange(event.target.value ? Number(event.target.value) : undefined)}
       />
     </div>
   );

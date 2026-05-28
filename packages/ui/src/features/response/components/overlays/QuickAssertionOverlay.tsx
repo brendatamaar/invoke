@@ -14,15 +14,11 @@ export function QuickAssertionOverlay({
 }) {
   const [current, setCurrent] = useState(draft);
   const needsExpression =
-    current.type === "header" ||
-    current.type === "bodyJsonPath" ||
-    current.type === "regex";
+    current.type === "header" || current.type === "bodyJsonPath" || current.type === "regex";
 
   return (
     <div className="absolute z-20 right-3 top-12 bg-[var(--bg-2)] border border-[var(--line-2)] rounded-md shadow-[var(--shadow-2)] p-3 flex flex-col gap-2 w-72">
-      <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">
-        Quick assertion
-      </span>
+      <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">Quick assertion</span>
       <div className="flex gap-1.5">
         <Select
           size="2xs"
@@ -52,13 +48,11 @@ export function QuickAssertionOverlay({
             }))
           }
         >
-          {["equals", "notEquals", "contains", "exists", "gt", "lt", "matches"].map(
-            (matcher) => (
-              <option key={matcher} value={matcher}>
-                {matcher}
-              </option>
-            ),
-          )}
+          {["equals", "notEquals", "contains", "exists", "gt", "lt", "matches"].map((matcher) => (
+            <option key={matcher} value={matcher}>
+              {matcher}
+            </option>
+          ))}
         </Select>
       </div>
       {needsExpression && (
@@ -73,9 +67,7 @@ export function QuickAssertionOverlay({
       )}
       <input
         value={current.expected}
-        onChange={(event) =>
-          setCurrent((draft) => ({ ...draft, expected: event.target.value }))
-        }
+        onChange={(event) => setCurrent((draft) => ({ ...draft, expected: event.target.value }))}
         placeholder="expected"
         className="input text-2xs py-0.5 font-mono"
       />
@@ -83,10 +75,7 @@ export function QuickAssertionOverlay({
         <button onClick={onClose} className="btn text-2xs py-0.5 px-2">
           Cancel
         </button>
-        <button
-          onClick={() => onConfirm(current)}
-          className="btn btn-primary text-2xs py-0.5 px-2"
-        >
+        <button onClick={() => onConfirm(current)} className="btn btn-primary text-2xs py-0.5 px-2">
           Add assertion
         </button>
       </div>

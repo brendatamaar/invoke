@@ -61,9 +61,7 @@ describe("execution cookies", () => {
   });
 
   it("leaves requests unchanged when no cookies match", () => {
-    const updated = injectCookies(request, [
-      { ...cookies[0], domain: "other.example.com" },
-    ]);
+    const updated = injectCookies(request, [{ ...cookies[0], domain: "other.example.com" }]);
 
     expect(updated).toBe(request);
   });

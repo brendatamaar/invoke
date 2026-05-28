@@ -149,9 +149,7 @@ export function MockRoutesSection({
           </div>
         ))}
         {!routes.length && (
-          <p className="p-4 text-xs text-[var(--text-3)] text-center">
-            No routes yet
-          </p>
+          <p className="p-4 text-xs text-[var(--text-3)] text-center">No routes yet</p>
         )}
       </div>
     </div>

@@ -12,10 +12,7 @@ import { fixtureCollection } from "./fixtures";
 
 describe("invoke YAML", () => {
   it("loads YAML with JSON schema instead of JavaScript tags", async () => {
-    const file = new File(
-      ["type: !!js/function 'function () { return 1 }'"],
-      "bad.invoke.yaml",
-    );
+    const file = new File(["type: !!js/function 'function () { return 1 }'"], "bad.invoke.yaml");
     await expect(importYamlFiles([file])).rejects.toThrow();
   });
 
@@ -120,22 +117,12 @@ describe("invoke YAML", () => {
       },
     ];
 
-    const blob = await exportCollectionZip(
-      collection,
-      duplicateRequests,
-      duplicateFolders,
-    );
+    const blob = await exportCollectionZip(collection, duplicateRequests, duplicateFolders);
     const zip = await JSZip.loadAsync(await blob.arrayBuffer());
     const names = Object.keys(zip.files);
 
-    expect(
-      names.some((name) => name.includes("users/create-user.invoke.yaml")),
-    ).toBe(true);
-    expect(
-      names.some((name) => name.includes("users/create-user-2.invoke.yaml")),
-    ).toBe(true);
-    expect(
-      names.some((name) => name.includes("users-2/create-user.invoke.yaml")),
-    ).toBe(true);
+    expect(names.some((name) => name.includes("users/create-user.invoke.yaml"))).toBe(true);
+    expect(names.some((name) => name.includes("users/create-user-2.invoke.yaml"))).toBe(true);
+    expect(names.some((name) => name.includes("users-2/create-user.invoke.yaml"))).toBe(true);
   });
 });

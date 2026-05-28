@@ -97,9 +97,7 @@ export function EnvironmentVariableTable({
       ))}
 
       <button
-        onClick={() =>
-          onSetVariables([...variables, { key: "", value: "", enabled: true }])
-        }
+        onClick={() => onSetVariables([...variables, { key: "", value: "", enabled: true }])}
         className="flex items-center gap-1.5 px-3 py-2 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] w-full"
       >
         <Plus size={12} /> Add variable

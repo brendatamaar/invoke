@@ -1,5 +1,14 @@
 import { useMemo, useState } from "react";
-import { AlertCircle, ArrowLeftRight, CheckCircle2, Circle, Copy, Indent, Trash2, X } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeftRight,
+  CheckCircle2,
+  Circle,
+  Copy,
+  Indent,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useAutoScroll, CollapsibleBody, ScrollToBottomBtn } from "./GrpcStreamShared";
 import type { Assertion, GrpcExecuteResponse, GrpcStreamMessage } from "@invoke/core";
 import { useStore } from "../../../store";
@@ -37,16 +46,12 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
   const isUnary = props.mode === "unary";
 
   const doneMsg = !isUnary ? props.messages.find((m) => m.done) : undefined;
-  const isOk = isUnary
-    ? !props.res.error && props.res.statusCode === 0
-    : !doneMsg?.error;
+  const isOk = isUnary ? !props.res.error && props.res.statusCode === 0 : !doneMsg?.error;
 
   const metadataEntries = isUnary
     ? [...(props.res.metadata ?? []), ...grpcSentMetadata]
     : [...grpcSentMetadata];
-  const trailerEntries = isUnary
-    ? (props.res.trailers ?? [])
-    : (doneMsg?.trailers ?? []);
+  const trailerEntries = isUnary ? (props.res.trailers ?? []) : (doneMsg?.trailers ?? []);
   const metadataCount = metadataEntries.length + trailerEntries.length;
   const hasMetadata = metadataCount > 0;
 
@@ -56,8 +61,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
   const hasAssertions = totalCount > 0;
 
   const effectiveTab =
-    (activeTab === "metadata" && !hasMetadata) ||
-      (activeTab === "assertions" && !hasAssertions)
+    (activeTab === "metadata" && !hasMetadata) || (activeTab === "assertions" && !hasAssertions)
       ? "body"
       : activeTab;
 
@@ -77,10 +81,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
     navigator.clipboard
       .writeText(bodyJson)
       .catch((e: unknown) =>
-        addToast(
-          "error",
-          `Copy failed: ${e instanceof Error ? e.message : String(e)}`,
-        ),
+        addToast("error", `Copy failed: ${e instanceof Error ? e.message : String(e)}`),
       );
   };
 
@@ -103,9 +104,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
             </span>
             {props.res.durationMs != null && (
               <>
-                <span className="text-[var(--text-3)] text-2xs select-none">
-                  ·
-                </span>
+                <span className="text-[var(--text-3)] text-2xs select-none">·</span>
                 <span className="text-2xs font-mono text-[var(--text-3)]">
                   {props.res.durationMs.toFixed(0)}ms
                 </span>
@@ -121,9 +120,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
           </>
         ) : (
           <>
-            <span className="text-2xs text-[var(--text-3)]">
-              Stream messages
-            </span>
+            <span className="text-2xs text-[var(--text-3)]">Stream messages</span>
             {props.grpcStreaming && (
               <span className="flex items-center gap-1 text-[var(--accent)] text-2xs">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
@@ -205,20 +202,13 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
           <div className="flex-1 min-h-0 overflow-auto">
             {bodyJson && <CodeEditor value={displayBody} lang="json" readOnly />}
             {props.res.error && !bodyJson && (
-              <p className="p-3 text-2xs text-[var(--danger)]">
-                {props.res.error}
-              </p>
+              <p className="p-3 text-2xs text-[var(--danger)]">{props.res.error}</p>
             )}
             {(props.res as GrpcExecuteResponseWithDetails).statusDetailsJson && (
               <div className="m-3 rounded border border-[var(--danger-bg)] bg-[var(--danger-bg)] p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle
-                    size={12}
-                    className="text-[var(--danger)] shrink-0"
-                  />
-                  <span className="text-2xs font-semibold text-[var(--danger)]">
-                    Error Details
-                  </span>
+                  <AlertCircle size={12} className="text-[var(--danger)] shrink-0" />
+                  <span className="text-2xs font-semibold text-[var(--danger)]">Error Details</span>
                 </div>
                 <pre className="text-2xs font-mono text-[var(--danger)] whitespace-pre-wrap break-all opacity-80">
                   {(props.res as GrpcExecuteResponseWithDetails).statusDetailsJson}
@@ -301,9 +291,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
                         <code className="px-1 py-0.5 rounded bg-[var(--surface-2)] text-2xs font-mono text-[var(--text-2)]">
                           {rule.type}
                         </code>
-                        <span className="text-2xs text-[var(--text-3)]">
-                          {rule.matcher}
-                        </span>
+                        <span className="text-2xs text-[var(--text-3)]">{rule.matcher}</span>
                         <code className="px-1 py-0.5 rounded bg-[var(--surface-2)] text-2xs font-mono text-[var(--text-1)]">
                           {rule.expected}
                         </code>
@@ -313,10 +301,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
                     )}
                     {!r.passed && r.actual !== undefined && (
                       <p className="text-2xs font-mono text-[var(--text-3)] mt-1.5">
-                        got:{" "}
-                        <span className="text-[var(--danger)]">
-                          {String(r.actual)}
-                        </span>
+                        got: <span className="text-[var(--danger)]">{String(r.actual)}</span>
                       </p>
                     )}
                   </div>
@@ -346,7 +331,10 @@ function StreamMessageList({
   onOpenDiff: () => void;
 }) {
   const { addToast } = useStore();
-  const { scrollRef, showScrollBtn, handleScroll, scrollToBottom } = useAutoScroll(messages.length, grpcStreaming);
+  const { scrollRef, showScrollBtn, handleScroll, scrollToBottom } = useAutoScroll(
+    messages.length,
+    grpcStreaming,
+  );
 
   const copyMessage = (body: string) => {
     navigator.clipboard
@@ -360,11 +348,7 @@ function StreamMessageList({
 
   return (
     <div className="flex-1 min-h-0 relative overflow-hidden">
-      <div
-        ref={scrollRef}
-        className="h-full overflow-y-auto"
-        onScroll={handleScroll}
-      >
+      <div ref={scrollRef} className="h-full overflow-y-auto" onScroll={handleScroll}>
         {messages.length === 0 && !grpcStreaming && (
           <p className="p-3 text-2xs text-[var(--text-3)]">No messages yet.</p>
         )}
@@ -450,7 +434,10 @@ function StreamMessageList({
               Open diff
             </button>
           )}
-          <button onClick={onClearDiff} className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]">
+          <button
+            onClick={onClearDiff}
+            className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
+          >
             <X size={11} />
           </button>
         </div>

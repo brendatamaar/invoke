@@ -66,10 +66,7 @@ export function QuickExtractionOverlay({
         <button onClick={onClose} className="btn text-2xs py-0.5 px-2">
           Cancel
         </button>
-        <button
-          onClick={() => onConfirm(current)}
-          className="btn btn-primary text-2xs py-0.5 px-2"
-        >
+        <button onClick={() => onConfirm(current)} className="btn btn-primary text-2xs py-0.5 px-2">
           Add rule
         </button>
       </div>

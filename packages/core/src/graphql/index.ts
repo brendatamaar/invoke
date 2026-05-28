@@ -53,15 +53,11 @@ export const GRAPHQL_INTROSPECTION_QUERY = `query IntrospectionQuery {
   }
 }`;
 
-export function parseGraphQLIntrospection(
-  body: string,
-): GraphQLIntrospectionSchema {
+export function parseGraphQLIntrospection(body: string): GraphQLIntrospectionSchema {
   const parsed = JSON.parse(body) as any;
   const schema = parsed?.data?.__schema ?? parsed?.__schema;
   if (!schema?.types)
-    throw new Error(
-      "GraphQL introspection response did not include data.__schema",
-    );
+    throw new Error("GraphQL introspection response did not include data.__schema");
   return schema as GraphQLIntrospectionSchema;
 }
 
@@ -83,10 +79,7 @@ export function rootGraphQLTypes(schema?: GraphQLIntrospectionSchema) {
           type: typeByName(schema, schema.subscriptionType.name),
         }
       : undefined,
-  ].filter(
-    (item): item is { label: string; type: GraphQLIntrospectionType } =>
-      !!item?.type,
-  );
+  ].filter((item): item is { label: string; type: GraphQLIntrospectionType } => !!item?.type);
 }
 
 export function publicGraphQLTypes(schema?: GraphQLIntrospectionSchema) {
@@ -99,19 +92,13 @@ export function typeByName(schema: GraphQLIntrospectionSchema, name: string) {
   return schema.types.find((type) => type.name === name);
 }
 
-export function formatGraphQLTypeRef(
-  type: GraphQLIntrospectionTypeRef,
-): string {
-  if (type.kind === "NON_NULL" && type.ofType)
-    return `${formatGraphQLTypeRef(type.ofType)}!`;
-  if (type.kind === "LIST" && type.ofType)
-    return `[${formatGraphQLTypeRef(type.ofType)}]`;
+export function formatGraphQLTypeRef(type: GraphQLIntrospectionTypeRef): string {
+  if (type.kind === "NON_NULL" && type.ofType) return `${formatGraphQLTypeRef(type.ofType)}!`;
+  if (type.kind === "LIST" && type.ofType) return `[${formatGraphQLTypeRef(type.ofType)}]`;
   return type.name ?? type.kind;
 }
 
-export function namedGraphQLType(
-  type: GraphQLIntrospectionTypeRef,
-): string | undefined {
+export function namedGraphQLType(type: GraphQLIntrospectionTypeRef): string | undefined {
   if (type.name) return type.name;
   return type.ofType ? namedGraphQLType(type.ofType) : undefined;
 }

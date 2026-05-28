@@ -19,10 +19,7 @@ export function FolderRequestList({
   return (
     <div className="ml-3" onDragLeave={onListDragLeave} onDrop={onListDrop}>
       {requests.map((request, index) => (
-        <div
-          key={request.id}
-          onDragOver={(event) => onItemDragOver(event, index)}
-        >
+        <div key={request.id} onDragOver={(event) => onItemDragOver(event, index)}>
           {dragOverIndex === index && <DropIndicator />}
           <CollectionRequestNode request={request} collectionId={collectionId} />
         </div>

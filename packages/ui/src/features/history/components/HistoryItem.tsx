@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  Cpu,
-  MoreHorizontal,
-  Pin,
-  PinOff,
-  Tag,
-  Trash2,
-} from "lucide-react";
+import { Cpu, MoreHorizontal, Pin, PinOff, Tag, Trash2 } from "lucide-react";
 import type { HistoryEntry } from "@invoke/core";
 import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
@@ -67,15 +60,11 @@ export function HistoryItem({
             className="input text-xs py-0 px-1 w-32 mt-0.5"
           />
         ) : entry.label ? (
-          <span className="text-2xs text-[var(--accent)] truncate">
-            {entry.label}
-          </span>
+          <span className="text-2xs text-[var(--accent)] truncate">{entry.label}</span>
         ) : null}
       </div>
       <StatusBadge status={entry.response?.status ?? 0} />
-      {entry.pinned && (
-        <Pin size={11} className="text-[var(--accent)] shrink-0" />
-      )}
+      {entry.pinned && <Pin size={11} className="text-[var(--accent)] shrink-0" />}
       <HistoryItemMenu
         entry={entry}
         open={menuOpen}

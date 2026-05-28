@@ -10,9 +10,7 @@ import {
 
 describe("third-party imports", () => {
   it("parses a basic curl command", () => {
-    const parsed = parseCurl(
-      `curl -H "Authorization: Bearer xyz" https://api.example.com/me`,
-    );
+    const parsed = parseCurl(`curl -H "Authorization: Bearer xyz" https://api.example.com/me`);
     expect(parsed.url).toBe("https://api.example.com/me");
     expect(parsed.auth?.type).toBe("bearer");
   });
@@ -85,9 +83,7 @@ describe("third-party imports", () => {
     expect(imported.collection.name).toBe("Hoppscotch API");
     expect(imported.folders[0].name).toBe("users");
     expect(imported.requests[0].folderId).toBe(imported.folders[0].id);
-    expect((imported.requests[0].request as RequestConfig).url).toBe(
-      "{{base_url}}/users",
-    );
+    expect((imported.requests[0].request as RequestConfig).url).toBe("{{base_url}}/users");
   });
 
   it("imports HAR entries as REST requests", () => {

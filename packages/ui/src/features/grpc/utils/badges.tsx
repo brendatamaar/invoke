@@ -1,7 +1,4 @@
-export function streamBadge(method: {
-  serverStreaming?: boolean;
-  clientStreaming?: boolean;
-}) {
+export function streamBadge(method: { serverStreaming?: boolean; clientStreaming?: boolean }) {
   if (method.serverStreaming && method.clientStreaming) {
     return (
       <span className="text-2xs px-1 rounded bg-[rgba(200,156,214,0.1)] text-[var(--method-patch)]">

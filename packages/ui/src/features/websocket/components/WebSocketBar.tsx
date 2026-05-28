@@ -17,9 +17,7 @@ export function WebSocketBar() {
       />
       <Select
         value={bar.websocketRequest.preset ?? "none"}
-        onChange={(event) =>
-          bar.setWebsocketRequest({ preset: event.target.value as WsPreset })
-        }
+        onChange={(event) => bar.setWebsocketRequest({ preset: event.target.value as WsPreset })}
         disabled={bar.state !== "disconnected"}
         size="xs"
         wrapperClassName="shrink-0"

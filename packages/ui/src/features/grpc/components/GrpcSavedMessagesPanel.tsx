@@ -49,8 +49,7 @@ export function GrpcSavedMessagesPanel() {
       </div>
       {saved.length === 0 && (
         <p className="p-3 text-2xs text-[var(--text-3)]">
-          No saved messages. Compose a body and click "Save current" to create
-          one.
+          No saved messages. Compose a body and click "Save current" to create one.
         </p>
       )}
       {saved.map((msg) => (

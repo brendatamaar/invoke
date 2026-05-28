@@ -67,11 +67,7 @@ export function GraphQLQueryToolbar({
         className="p-1.5 rounded hover:bg-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-1)] disabled:opacity-30 disabled:pointer-events-none transition-colors"
         title={curlCopied ? "Copied!" : "Copy as cURL"}
       >
-        {curlCopied ? (
-          <Check size={13} className="text-[var(--ok)]" />
-        ) : (
-          <Copy size={13} />
-        )}
+        {curlCopied ? <Check size={13} className="text-[var(--ok)]" /> : <Copy size={13} />}
       </button>
       <div className="flex-1" />
       {operations.length > 1 && (
@@ -82,7 +78,9 @@ export function GraphQLQueryToolbar({
             onChange={(e) => onOperationName(e.target.value)}
             size="2xs"
           >
-            <option value="">{"\u2014"} pick {"\u2014"}</option>
+            <option value="">
+              {"\u2014"} pick {"\u2014"}
+            </option>
             {operations.map((op, i) => (
               <option key={i} value={op.name ?? ""}>
                 {op.name ?? `(anonymous ${op.kind})`}
@@ -93,10 +91,7 @@ export function GraphQLQueryToolbar({
       )}
       {isSubscription &&
         (subState === "subscribed" || subState === "connecting" ? (
-          <button
-            onClick={onUnsubscribe}
-            className="btn btn-danger text-2xs py-0.5 px-2 gap-1"
-          >
+          <button onClick={onUnsubscribe} className="btn btn-danger text-2xs py-0.5 px-2 gap-1">
             <StopCircle size={12} />
             {subState === "connecting" ? "Connecting\u2026" : "Stop"}
           </button>

@@ -46,9 +46,7 @@ export function WebSocketComposer({
           />
           <textarea
             value={websocketRequest.presetVariables ?? "{}"}
-            onChange={(e) =>
-              onRequestChange({ presetVariables: e.target.value })
-            }
+            onChange={(e) => onRequestChange({ presetVariables: e.target.value })}
             placeholder="{}"
             rows={2}
             className="input text-xs font-mono resize-none py-1.5"

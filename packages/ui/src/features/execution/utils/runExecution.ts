@@ -1,10 +1,7 @@
 import type { RequestConfig, RequestDraft } from "@invoke/core";
 import type { AppState } from "../../../types";
 import { executeStream, executeWithAPQ, executeWithRetry } from "../../execute";
-import {
-  finalizeResponseExecution,
-  finalizeStreamExecution,
-} from "./finalize";
+import { finalizeResponseExecution, finalizeStreamExecution } from "./finalize";
 import { buildGraphQLExecutionRequest } from "./graphqlRequest";
 import type { resolveWithPreRequestScript } from "./preRequest";
 
@@ -19,9 +16,7 @@ export function buildActiveRequest({
   protocol: RequestDraft["protocol"];
   request: RequestDraft;
   graphqlRequest: Parameters<typeof buildGraphQLExecutionRequest>[0]["graphqlRequest"];
-  graphqlFileUploads: Parameters<
-    typeof buildGraphQLExecutionRequest
-  >[0]["graphqlFileUploads"];
+  graphqlFileUploads: Parameters<typeof buildGraphQLExecutionRequest>[0]["graphqlFileUploads"];
   set: AppState["set"];
   addToast: AppState["addToast"];
 }) {
@@ -76,8 +71,7 @@ export async function runStreamingRequest({
   });
   try {
     await executeStream(resolved, {
-      onChunk: (chunk) =>
-        set((state) => ({ streamBytes: state.streamBytes + chunk.length })),
+      onChunk: (chunk) => set((state) => ({ streamBytes: state.streamBytes + chunk.length })),
       onFinal: async (rawResponse) => {
         await finalizeStreamExecution({
           rawResponse,

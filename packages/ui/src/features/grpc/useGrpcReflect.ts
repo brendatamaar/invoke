@@ -4,10 +4,7 @@ import type { GrpcRequestConfig } from "@invoke/core";
 import { grpcReflect } from "./api";
 import { useStore } from "../../store";
 
-export function useGrpcReflect(
-  request: GrpcRequestConfig | null,
-  address: string,
-) {
+export function useGrpcReflect(request: GrpcRequestConfig | null, address: string) {
   const set = useStore((s) => s.set);
   const queryClient = useQueryClient();
 

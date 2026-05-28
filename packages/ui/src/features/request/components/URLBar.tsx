@@ -123,9 +123,11 @@ function scopedVariables(scopes: VariableScope[]) {
     const scope = scopes[i];
     const variables = Array.isArray(scope.variables)
       ? scope.variables.filter((variable) => variable.enabled !== false && variable.key.trim())
-      : Object.entries(scope.variables as Record<string, string>).map(
-          ([key, value]) => ({ key, value, enabled: true }),
-        );
+      : Object.entries(scope.variables as Record<string, string>).map(([key, value]) => ({
+          key,
+          value,
+          enabled: true,
+        }));
     for (const variable of variables) {
       if (!seen.has(variable.key)) {
         seen.add(variable.key);

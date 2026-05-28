@@ -23,7 +23,10 @@ export function GrpcStreamTranscript({
 }) {
   const { addToast } = useStore();
   const triggerCount = sentMessages.length + receivedMessages.length;
-  const { scrollRef, showScrollBtn, handleScroll, scrollToBottom } = useAutoScroll(triggerCount, grpcStreaming);
+  const { scrollRef, showScrollBtn, handleScroll, scrollToBottom } = useAutoScroll(
+    triggerCount,
+    grpcStreaming,
+  );
 
   const sentCount = sentMessages.length;
   const receivedCount = receivedMessages.filter((m) => !m.done).length;
@@ -66,11 +69,7 @@ export function GrpcStreamTranscript({
       </div>
 
       <div className="flex-1 min-h-0 relative overflow-hidden">
-        <div
-          ref={scrollRef}
-          className="h-full overflow-y-auto"
-          onScroll={handleScroll}
-        >
+        <div ref={scrollRef} className="h-full overflow-y-auto" onScroll={handleScroll}>
           {sentMessages.length === 0 && receivedMessages.length === 0 && !grpcStreaming && (
             <p className="p-3 text-2xs text-[var(--text-3)]">No stream messages yet.</p>
           )}
@@ -141,7 +140,13 @@ export function GrpcStreamTranscript({
               >
                 <button
                   onClick={() => msg.bodyJson && onSelectForDiff(msg.bodyJson)}
-                  title={isSelected ? "Deselect" : hasDiffSelection ? "Select as 2nd message" : "Select for diff"}
+                  title={
+                    isSelected
+                      ? "Deselect"
+                      : hasDiffSelection
+                        ? "Select as 2nd message"
+                        : "Select for diff"
+                  }
                   className={`mt-0.5 shrink-0 transition-opacity ${showCheckbox ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isSelected ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
                 >
                   {isSelected ? <CheckCircle2 size={13} /> : <Circle size={13} />}
@@ -175,9 +180,7 @@ export function GrpcStreamTranscript({
         {hasDiffSelection && (
           <div className="absolute bottom-0 left-0 right-0 border-t border-[var(--border)] px-3 py-1.5 flex items-center gap-2 bg-[var(--surface-2)] shrink-0">
             <ArrowLeftRight size={11} className="text-[var(--accent)] shrink-0" />
-            <span className="text-2xs text-[var(--text-2)] flex-1">
-              Select one more to diff
-            </span>
+            <span className="text-2xs text-[var(--text-2)] flex-1">Select one more to diff</span>
             <button
               onClick={onResetDiff}
               className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"

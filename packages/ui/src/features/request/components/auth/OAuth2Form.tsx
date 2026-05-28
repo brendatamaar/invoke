@@ -98,10 +98,7 @@ function OAuth2ClientFields({ auth, setAuth }: AuthFormProps) {
         />
       </Field>
       <Field label="Scope">
-        <AuthTextInput
-          value={auth.scope ?? ""}
-          onChange={(scope) => setAuth({ ...auth, scope })}
-        />
+        <AuthTextInput value={auth.scope ?? ""} onChange={(scope) => setAuth({ ...auth, scope })} />
       </Field>
     </>
   );
@@ -151,4 +148,3 @@ function OAuth2AuthorizeRow({
     </div>
   );
 }
-

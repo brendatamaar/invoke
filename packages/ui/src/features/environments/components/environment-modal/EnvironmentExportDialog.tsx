@@ -36,8 +36,8 @@ export function EnvironmentExportDialog({
         }
       >
         <p className="text-sm text-[var(--text-2)]">
-          This environment contains sensitive variables. Choose whether to exclude
-          sensitive values or include every value in the exported .env file.
+          This environment contains sensitive variables. Choose whether to exclude sensitive values
+          or include every value in the exported .env file.
         </p>
       </Dialog>
     </div>

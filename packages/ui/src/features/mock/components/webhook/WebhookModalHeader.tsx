@@ -1,12 +1,6 @@
 import { X } from "lucide-react";
 
-export function WebhookModalHeader({
-  label,
-  onClose,
-}: {
-  label: string;
-  onClose: () => void;
-}) {
+export function WebhookModalHeader({ label, onClose }: { label: string; onClose: () => void }) {
   return (
     <div
       className="flex items-center justify-between px-4 py-2.5 shrink-0"

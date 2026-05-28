@@ -21,7 +21,12 @@ export function WsLogDiffModal({ left, right, onClose }: Props) {
   const rightBody = right ? tryPrettyJson(right.body) : "";
 
   const isJson = (s: string) => {
-    try { JSON.parse(s); return true; } catch { return false; }
+    try {
+      JSON.parse(s);
+      return true;
+    } catch {
+      return false;
+    }
   };
   const lang = isJson(leftBody) || isJson(rightBody) ? "json" : "text";
 

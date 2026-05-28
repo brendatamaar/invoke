@@ -48,11 +48,13 @@ export function AssertionsPanel() {
               value={rule.type}
               onChange={(e) => update(index, { type: e.target.value })}
             >
-              {["status", "responseTime", "header", "bodyJsonPath", "bodySchema", "regex"].map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              {["status", "responseTime", "header", "bodyJsonPath", "bodySchema", "regex"].map(
+                (type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ),
+              )}
             </Select>
           </div>
           <div className="w-48 shrink-0">
@@ -73,11 +75,13 @@ export function AssertionsPanel() {
               value={rule.matcher}
               onChange={(e) => update(index, { matcher: e.target.value })}
             >
-              {["equals", "notEquals", "contains", "exists", "gt", "lt", "matches"].map((matcher) => (
-                <option key={matcher} value={matcher}>
-                  {matcher}
-                </option>
-              ))}
+              {["equals", "notEquals", "contains", "exists", "gt", "lt", "matches"].map(
+                (matcher) => (
+                  <option key={matcher} value={matcher}>
+                    {matcher}
+                  </option>
+                ),
+              )}
             </Select>
           </div>
           <div className="flex-1 min-w-0">

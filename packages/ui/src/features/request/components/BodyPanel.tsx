@@ -15,9 +15,7 @@ export function BodyPanel() {
     <div className="flex flex-col h-full">
       <BodyModeTabs
         mode={mode}
-        onSelect={(bodyMode) =>
-          setRequest(buildBodyModePatch(request, mode, bodyMode))
-        }
+        onSelect={(bodyMode) => setRequest(buildBodyModePatch(request, mode, bodyMode))}
       />
       <div className="flex-1 overflow-auto">
         {mode === "none" && (

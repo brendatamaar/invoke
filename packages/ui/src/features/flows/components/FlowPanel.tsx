@@ -35,10 +35,7 @@ export function FlowPanel() {
         <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
           Flows
         </span>
-        <button
-          onClick={openNew}
-          className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
-        >
+        <button onClick={openNew} className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5">
           <Plus size={13} />
         </button>
       </div>
@@ -50,12 +47,8 @@ export function FlowPanel() {
             className="group flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[var(--surface-2)]"
             onClick={() => setEditingFlow(flow)}
           >
-            <span className="flex-1 text-xs text-[var(--text-1)] truncate">
-              {flow.name}
-            </span>
-            <span className="text-2xs text-[var(--text-3)]">
-              {flow.steps?.length ?? 0} steps
-            </span>
+            <span className="flex-1 text-xs text-[var(--text-1)] truncate">{flow.name}</span>
+            <span className="text-2xs text-[var(--text-3)]">{flow.steps?.length ?? 0} steps</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -68,15 +61,11 @@ export function FlowPanel() {
           </div>
         ))}
         {!flows.length && (
-          <p className="p-4 text-xs text-[var(--text-3)] text-center">
-            No flows yet
-          </p>
+          <p className="p-4 text-xs text-[var(--text-3)] text-center">No flows yet</p>
         )}
       </div>
 
-      {editingFlow && (
-        <FlowModal flow={editingFlow} onClose={() => setEditingFlow(null)} />
-      )}
+      {editingFlow && <FlowModal flow={editingFlow} onClose={() => setEditingFlow(null)} />}
 
       <ConfirmModal
         open={confirmDeleteId !== null}

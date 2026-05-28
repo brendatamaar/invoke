@@ -47,9 +47,7 @@ export function RequestStepEditor({
         <input
           type="checkbox"
           checked={step.continueOnFailure ?? false}
-          onChange={(event) =>
-            onChange({ ...step, continueOnFailure: event.target.checked })
-          }
+          onChange={(event) => onChange({ ...step, continueOnFailure: event.target.checked })}
         />
         Continue on failure
       </label>

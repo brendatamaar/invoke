@@ -15,13 +15,7 @@ import { FlowModalHeader } from "./flow-modal/FlowModalHeader";
 import { FlowRunLog } from "./FlowRunLog";
 import { makeStep } from "../flowStepUtils";
 
-export function FlowModal({
-  flow,
-  onClose,
-}: {
-  flow: Flow;
-  onClose: () => void;
-}) {
+export function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
   const {
     set,
     addToast,
@@ -96,8 +90,7 @@ export function FlowModal({
     set({ flowRunning: true, flowResult: undefined, flowLog: [] });
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const scopes: VariableScope[] = [];
-    if (env?.variables?.length)
-      scopes.push({ name: "environment", variables: env.variables });
+    if (env?.variables?.length) scopes.push({ name: "environment", variables: env.variables });
     if (Object.keys(sessionVariables).length)
       scopes.push({ name: "session", variables: sessionVariables });
     try {

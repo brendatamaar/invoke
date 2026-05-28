@@ -1,8 +1,4 @@
-import type {
-  DefaultProtocolOptions,
-  ProtocolNetworkDefaults,
-  RequestOptions,
-} from "@invoke/core";
+import type { DefaultProtocolOptions, ProtocolNetworkDefaults, RequestOptions } from "@invoke/core";
 import type { GeneralDraft } from "../../../types";
 import { getStoredTheme } from "./theme";
 
@@ -33,10 +29,7 @@ export function buildStatItems({
   ];
 }
 
-export function buildGeneralDraft(
-  uiFontSize: number,
-  editorWordWrap: boolean,
-): GeneralDraft {
+export function buildGeneralDraft(uiFontSize: number, editorWordWrap: boolean): GeneralDraft {
   return {
     theme: getStoredTheme(),
     uiFontSize,
@@ -53,17 +46,13 @@ export function cloneOptions(options?: RequestOptions): RequestOptions {
   return next;
 }
 
-export function buildProtocolDraft(source: {
-  options?: RequestOptions;
-}): ProtocolNetworkDefaults {
+export function buildProtocolDraft(source: { options?: RequestOptions }): ProtocolNetworkDefaults {
   return {
     options: cloneOptions(source.options),
   };
 }
 
-export function cloneProtocolDefaults(
-  defaults: DefaultProtocolOptions,
-): DefaultProtocolOptions {
+export function cloneProtocolDefaults(defaults: DefaultProtocolOptions): DefaultProtocolOptions {
   return {
     rest: buildProtocolDraft(defaults.rest),
     graphql: buildProtocolDraft(defaults.graphql),

@@ -42,9 +42,7 @@ export function WebhookUrlStrip({
         onMouseLeave={(event) => (event.currentTarget.style.color = "var(--fg-3)")}
       >
         {copied ? (
-          <span style={{ color: "var(--ok)", fontSize: "var(--t-xs)" }}>
-            copied
-          </span>
+          <span style={{ color: "var(--ok)", fontSize: "var(--t-xs)" }}>copied</span>
         ) : (
           <Copy size={11} />
         )}

@@ -1,10 +1,5 @@
 import { useRef, useState } from "react";
-import {
-  exportEnvText,
-  parseEnvText,
-  type Environment,
-  type KeyValue,
-} from "@invoke/core";
+import { exportEnvText, parseEnvText, type Environment, type KeyValue } from "@invoke/core";
 import { useStore } from "../../../store";
 import { EnvironmentExportDialog } from "./environment-modal/EnvironmentExportDialog";
 import { EnvironmentModalHeader } from "./environment-modal/EnvironmentModalHeader";
@@ -25,8 +20,7 @@ export function EnvironmentModal({
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [exportChoiceOpen, setExportChoiceOpen] = useState(false);
 
-  const setDraft = (patch: Partial<Environment>) =>
-    set({ envDraft: { ...draft, ...patch } });
+  const setDraft = (patch: Partial<Environment>) => set({ envDraft: { ...draft, ...patch } });
 
   const setVar = (index: number, field: keyof KeyValue, value: string | boolean) =>
     setVariables(

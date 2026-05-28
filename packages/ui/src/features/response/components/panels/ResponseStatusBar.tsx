@@ -1,4 +1,15 @@
-import { BookmarkPlus, CheckCircle, Clock, Cpu, GitCompare, HardDrive, Indent, PlusCircle, RefreshCw, Wand2 } from "lucide-react";
+import {
+  BookmarkPlus,
+  CheckCircle,
+  Clock,
+  Cpu,
+  GitCompare,
+  HardDrive,
+  Indent,
+  PlusCircle,
+  RefreshCw,
+  Wand2,
+} from "lucide-react";
 import { StatusBadge } from "../../../../components/shared/StatusBadge";
 import type { AssertionDraft, ExtractionDraft } from "../../../../types";
 import { fmt, fmtSize } from "../../responseFormatting";
@@ -175,10 +186,11 @@ function JsonPathControls({
       <button
         onClick={() =>
           onExtraction({
-            variableName: jsonPathInput
-              .replace(/^\$\.?/, "")
-              .replace(/[^a-zA-Z0-9_]/g, "_")
-              .replace(/^_+|_+$/g, "") || "extracted",
+            variableName:
+              jsonPathInput
+                .replace(/^\$\.?/, "")
+                .replace(/[^a-zA-Z0-9_]/g, "_")
+                .replace(/^_+|_+$/g, "") || "extracted",
             source: "body",
             expression: jsonPathInput,
           })

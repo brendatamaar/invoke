@@ -1,10 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { isSensitiveVariableName, maskedValue } from "@invoke/core";
 import { useStore } from "../../store";
-import type {
-  VariableAutocompleteInputProps,
-  VariableSuggestion,
-} from "../../types";
+import type { VariableAutocompleteInputProps, VariableSuggestion } from "../../types";
 import { SuggestionList } from "./variable-autocomplete/SuggestionList";
 
 const DYNAMIC_VARS = [
@@ -69,17 +66,13 @@ export function VariableAutocompleteInput({
       String(match[1]).trim(),
     );
     if (!names.length) return undefined;
-    const byName = new Map(
-      allVars.map((variable) => [variable.name, variable]),
-    );
+    const byName = new Map(allVars.map((variable) => [variable.name, variable]));
     return [...new Set(names)]
       .map((name) => {
         const found = byName.get(name);
         if (!found) return `${name}: unresolved`;
         if (found.source === "dynamic") return `${name}: dynamic`;
-        const preview = found.sensitive
-          ? maskedValue(found.value ?? "")
-          : (found.value ?? "");
+        const preview = found.sensitive ? maskedValue(found.value ?? "") : (found.value ?? "");
         return `${name}: ${preview || "(empty)"} (${found.source})`;
       })
       .join("\n");
@@ -90,8 +83,7 @@ export function VariableAutocompleteInput({
     const lastOpen = before.lastIndexOf("{{");
     if (lastOpen === -1) return { active: false, start: -1, partial: "" };
     const afterOpen = before.slice(lastOpen + 2);
-    if (afterOpen.includes("}}"))
-      return { active: false, start: -1, partial: "" };
+    if (afterOpen.includes("}}")) return { active: false, start: -1, partial: "" };
     return { active: true, start: lastOpen, partial: afterOpen };
   };
 
@@ -138,9 +130,7 @@ export function VariableAutocompleteInput({
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedIdx(
-          (i) => (i - 1 + suggestions.length) % suggestions.length,
-        );
+        setSelectedIdx((i) => (i - 1 + suggestions.length) % suggestions.length);
         return;
       }
       if (e.key === "Enter" || e.key === "Tab") {

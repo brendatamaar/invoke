@@ -7,13 +7,7 @@ import { SdlImportFields } from "./SdlImportFields";
 
 type ImportModel = ReturnType<typeof useGraphQLSchemaImport>;
 
-export function GraphQLSchemaImportBody({
-  model,
-  status,
-}: {
-  model: ImportModel;
-  status: string;
-}) {
+export function GraphQLSchemaImportBody({ model, status }: { model: ImportModel; status: string }) {
   return (
     <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center gap-1">
@@ -55,7 +49,9 @@ export function GraphQLSchemaImportBody({
       {model.source === "sdl" && <SdlImportFields model={model} />}
 
       {status && (
-        <p className={`px-1 text-2xs whitespace-pre-wrap break-words ${graphQLSchemaStatusClass(status)}`}>
+        <p
+          className={`px-1 text-2xs whitespace-pre-wrap break-words ${graphQLSchemaStatusClass(status)}`}
+        >
           {status}
         </p>
       )}

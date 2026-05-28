@@ -65,13 +65,8 @@ export function StorageTab({
         <SectionTitle title="Stats" />
         <div className="grid grid-cols-3 gap-2">
           {statItems.map(({ label, value }) => (
-            <div
-              key={label}
-              className="rounded-md bg-[var(--bg-2)] px-3 py-3 text-center"
-            >
-              <div className="font-mono text-sm font-semibold text-[var(--text-1)]">
-                {value}
-              </div>
+            <div key={label} className="rounded-md bg-[var(--bg-2)] px-3 py-3 text-center">
+              <div className="font-mono text-sm font-semibold text-[var(--text-1)]">{value}</div>
               <div className="mt-1 text-2xs text-[var(--text-3)]">{label}</div>
             </div>
           ))}
@@ -99,9 +94,7 @@ export function StorageTab({
         </div>
         {confirmClearCookies && (
           <div className="flex items-center gap-3 bg-[var(--danger-bg)] px-3 py-2 text-xs text-[var(--text-2)]">
-            <span className="flex-1">
-              Clear all stored cookies from this workspace?
-            </span>
+            <span className="flex-1">Clear all stored cookies from this workspace?</span>
             <button onClick={onCancelClearCookies} className="btn text-2xs">
               Cancel
             </button>

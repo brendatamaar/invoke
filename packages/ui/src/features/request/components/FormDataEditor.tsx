@@ -21,8 +21,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
 
   const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i));
 
-  const add = () =>
-    onChange([...rows, { key: "", value: "", enabled: true, type: "text" }]);
+  const add = () => onChange([...rows, { key: "", value: "", enabled: true, type: "text" }]);
 
   const openFilePicker = (i: number) => {
     pendingIndexRef.current = i;
@@ -44,12 +43,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
 
   return (
     <div className="flex flex-col">
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
       {rows.length > 0 && (
         <div
           className={`grid ${COL_TEMPLATE} items-center text-2xs text-[var(--text-3)] py-1 border-b border-[var(--border)]`}

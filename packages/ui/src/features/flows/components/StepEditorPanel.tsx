@@ -39,15 +39,9 @@ export function StepEditorPanel({
           onChange={(event) => onChange({ ...step, name: event.target.value })}
         />
       </div>
-      {step.type === "request" && (
-        <RequestStepEditor step={step} onChange={onChange} />
-      )}
-      {step.type === "delay" && (
-        <DelayStepEditor step={step} onChange={onChange} />
-      )}
-      {step.type === "condition" && (
-        <ConditionalStepEditor step={step} onChange={onChange} />
-      )}
+      {step.type === "request" && <RequestStepEditor step={step} onChange={onChange} />}
+      {step.type === "delay" && <DelayStepEditor step={step} onChange={onChange} />}
+      {step.type === "condition" && <ConditionalStepEditor step={step} onChange={onChange} />}
       {step.type === "loop" && <LoopStepEditor step={step} onChange={onChange} />}
     </div>
   );

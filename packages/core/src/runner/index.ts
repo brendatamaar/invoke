@@ -81,8 +81,7 @@ export class CollectionRunner {
         variables = { ...variables, ...extracted };
 
         const assertionFailed = assertions.some((a) => !a.passed);
-        runResult.status =
-          response.error || assertionFailed ? "failed" : "passed";
+        runResult.status = response.error || assertionFailed ? "failed" : "passed";
       } catch (e) {
         runResult.status = "error";
         runResult.error = String(e);
@@ -101,9 +100,7 @@ export class CollectionRunner {
 
     const completedAt = Date.now();
     const passedCount = results.filter((r) => r.status === "passed").length;
-    const failedCount = results.filter(
-      (r) => r.status === "failed" || r.status === "error",
-    ).length;
+    const failedCount = results.filter((r) => r.status === "failed" || r.status === "error").length;
     const overallStatus: CollectionRunResult["status"] = this.cancelled
       ? "cancelled"
       : failedCount > 0
@@ -127,8 +124,7 @@ export function exportRunResultJson(result: CollectionRunResult): string {
 }
 
 export function exportRunResultCsv(result: CollectionRunResult): string {
-  const header =
-    "Name,Method,URL,Status,Duration(ms),Assertions Passed,Assertions Failed,Error";
+  const header = "Name,Method,URL,Status,Duration(ms),Assertions Passed,Assertions Failed,Error";
   const rows = result.results.map((r) => {
     const assertPassed = r.assertions?.filter((a) => a.passed).length ?? 0;
     const assertFailed = r.assertions?.filter((a) => !a.passed).length ?? 0;

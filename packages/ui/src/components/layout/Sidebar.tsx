@@ -68,12 +68,10 @@ export function Sidebar() {
                 position: "relative",
               }}
               onMouseEnter={(e) => {
-                if (!active)
-                  (e.currentTarget as HTMLElement).style.color = "var(--fg-1)";
+                if (!active) (e.currentTarget as HTMLElement).style.color = "var(--fg-1)";
               }}
               onMouseLeave={(e) => {
-                if (!active)
-                  (e.currentTarget as HTMLElement).style.color = "var(--fg-3)";
+                if (!active) (e.currentTarget as HTMLElement).style.color = "var(--fg-3)";
               }}
             >
               {active && (

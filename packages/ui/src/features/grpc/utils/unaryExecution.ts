@@ -61,10 +61,7 @@ export async function runGrpcUnary(
     const assertionResults = isClientSideError
       ? []
       : runAssertions(execResponse, request.assertions ?? []);
-    const extracted = extractVariables(
-      execResponse,
-      request.extractionRules ?? [],
-    );
+    const extracted = extractVariables(execResponse, request.extractionRules ?? []);
     set({
       grpcStatus: grpcResponse.error
         ? `Error: ${grpcResponse.statusMessage}`

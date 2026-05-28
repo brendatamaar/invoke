@@ -6,9 +6,7 @@ export function OptionsTab() {
   return (
     <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-28 shrink-0">
-          Sub-protocols
-        </label>
+        <label className="text-xs text-[var(--text-2)] w-28 shrink-0">Sub-protocols</label>
         <input
           value={websocketRequest.protocols ?? ""}
           onChange={(e) => setWebsocketRequest({ protocols: e.target.value })}
@@ -17,9 +15,7 @@ export function OptionsTab() {
         />
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-28 shrink-0">
-          Origin header
-        </label>
+        <label className="text-xs text-[var(--text-2)] w-28 shrink-0">Origin header</label>
         <input
           value={websocketRequest.origin ?? ""}
           onChange={(e) => setWebsocketRequest({ origin: e.target.value })}
@@ -28,15 +24,11 @@ export function OptionsTab() {
         />
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-28 shrink-0">
-          Timeout (ms)
-        </label>
+        <label className="text-xs text-[var(--text-2)] w-28 shrink-0">Timeout (ms)</label>
         <input
           type="number"
           value={websocketRequest.timeoutMs ?? 30000}
-          onChange={(e) =>
-            setWebsocketRequest({ timeoutMs: Number(e.target.value) })
-          }
+          onChange={(e) => setWebsocketRequest({ timeoutMs: Number(e.target.value) })}
           min={0}
           className="input text-xs w-28"
         />
@@ -45,13 +37,9 @@ export function OptionsTab() {
         <input
           type="checkbox"
           checked={websocketRequest.autoReconnect ?? false}
-          onChange={(e) =>
-            setWebsocketRequest({ autoReconnect: e.target.checked })
-          }
+          onChange={(e) => setWebsocketRequest({ autoReconnect: e.target.checked })}
         />
-        <span className="text-xs text-[var(--text-2)]">
-          Auto-reconnect on disconnect
-        </span>
+        <span className="text-xs text-[var(--text-2)]">Auto-reconnect on disconnect</span>
       </label>
       <label className="flex items-center gap-2 cursor-pointer">
         <input
@@ -59,9 +47,7 @@ export function OptionsTab() {
           checked={websocketRequest.ndjsonMode ?? false}
           onChange={(e) => setWebsocketRequest({ ndjsonMode: e.target.checked })}
         />
-        <span className="text-xs text-[var(--text-2)]">
-          NDJSON mode (split frames on newlines)
-        </span>
+        <span className="text-xs text-[var(--text-2)]">NDJSON mode (split frames on newlines)</span>
       </label>
       <button
         type="button"

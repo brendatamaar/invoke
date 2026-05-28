@@ -19,9 +19,7 @@ export function RouteEndpointEditor({
       <div className="flex gap-2">
         <Select
           value={method}
-          onChange={(event) =>
-            onMethodChange(event.target.value as MockRoute["method"])
-          }
+          onChange={(event) => onMethodChange(event.target.value as MockRoute["method"])}
           size="sm"
         >
           {HTTP_METHODS.map((item) => (

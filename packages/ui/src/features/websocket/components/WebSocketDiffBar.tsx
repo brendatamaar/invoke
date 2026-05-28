@@ -22,10 +22,7 @@ export function WebSocketDiffBar({
           Open diff
         </button>
       )}
-      <button
-        onClick={onClear}
-        className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
-      >
+      <button onClick={onClear} className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]">
         <X size={11} />
       </button>
     </div>

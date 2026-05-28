@@ -15,9 +15,7 @@ function promptPassphrase(
 }
 
 /** Ensure the crypto key is loaded, prompting for passphrase if needed. */
-export async function ensureCryptoKey(
-  set: (partial: any) => void,
-): Promise<boolean> {
+export async function ensureCryptoKey(set: (partial: any) => void): Promise<boolean> {
   if (coreStore.hasCryptoKey()) return true;
 
   const saltBase64 = await coreStore.getCryptoSalt();
@@ -44,9 +42,7 @@ export async function ensureCryptoKey(
 }
 
 /** Call on app load to auto-unlock if encrypted entries exist. */
-export async function checkAndUnlockOnStartup(
-  set: (partial: any) => void,
-): Promise<void> {
+export async function checkAndUnlockOnStartup(set: (partial: any) => void): Promise<void> {
   const hasSalt = await coreStore.hasSalt();
   if (!hasSalt) return;
   await ensureCryptoKey(set);

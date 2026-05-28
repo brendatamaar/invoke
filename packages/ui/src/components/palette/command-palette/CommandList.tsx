@@ -15,9 +15,7 @@ export function CommandList({
   return (
     <div className="max-h-80 overflow-y-auto py-1">
       {items.length === 0 && (
-        <p className="px-4 py-6 text-sm text-[var(--text-3)] text-center">
-          No results
-        </p>
+        <p className="px-4 py-6 text-sm text-[var(--text-3)] text-center">No results</p>
       )}
       {items.map((item, index) => (
         <CommandItem

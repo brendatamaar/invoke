@@ -40,9 +40,7 @@ export function DiffSelectors({
         onChange={onRightChange}
       />
       <div className="flex-1">
-        <label className="text-2xs text-[var(--text-3)] block mb-1">
-          Ignore paths
-        </label>
+        <label className="text-2xs text-[var(--text-3)] block mb-1">Ignore paths</label>
         <div className="flex flex-wrap gap-1 mb-1">
           {ignoreRules.map((rule) => (
             <span
@@ -94,9 +92,7 @@ function HistorySelect({
 }) {
   return (
     <div className="flex-1">
-      <label className="text-2xs text-[var(--text-3)] block mb-1">
-        {label}
-      </label>
+      <label className="text-2xs text-[var(--text-3)] block mb-1">{label}</label>
       <Select value={value} onChange={(event) => onChange(event.target.value)}>
         <option value="">Select response...</option>
         {history.map((entry) => (

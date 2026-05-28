@@ -29,9 +29,7 @@ export function JsonImportButton({
         <FileUp size={13} />
         {label}
       </button>
-      <span className="text-2xs text-[var(--text-3)]">
-        Introspection result JSON
-      </span>
+      <span className="text-2xs text-[var(--text-3)]">Introspection result JSON</span>
     </div>
   );
 }

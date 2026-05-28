@@ -70,10 +70,7 @@ export function registerGrpcRoutes(app: Hono) {
           }
         };
         const send = (data: unknown) => {
-          if (!closed)
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
-            );
+          if (!closed) controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
         };
 
         c.req.raw.signal.addEventListener("abort", () => {
@@ -158,10 +155,7 @@ export function registerGrpcRoutes(app: Hono) {
           }
         };
         const send = (data: unknown) => {
-          if (!closed)
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
-            );
+          if (!closed) controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
         };
 
         c.req.raw.signal.addEventListener("abort", close);

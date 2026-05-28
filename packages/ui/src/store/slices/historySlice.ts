@@ -2,10 +2,7 @@ import type { AppState } from "../../types";
 
 export type HistorySlice = Pick<
   AppState,
-  | "historyQuery"
-  | "diffLeftId"
-  | "diffRightId"
-  | "showDiffModal"
+  "historyQuery" | "diffLeftId" | "diffRightId" | "showDiffModal"
 >;
 
 export function createHistorySlice(): HistorySlice {

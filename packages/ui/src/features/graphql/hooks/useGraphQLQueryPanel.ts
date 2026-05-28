@@ -91,10 +91,7 @@ export function useGraphQLQueryPanel() {
         ...graphqlRequest,
         url: request.url,
       });
-      const snippet = await generateCodeSnippet(
-        applyProtocolDefaults(config, "graphql"),
-        "curl",
-      );
+      const snippet = await generateCodeSnippet(applyProtocolDefaults(config, "graphql"), "curl");
       await navigator.clipboard.writeText(snippet.code);
       setCurlCopied(true);
       if (curlTimeoutRef.current) clearTimeout(curlTimeoutRef.current);
@@ -122,22 +119,12 @@ export function useGraphQLQueryPanel() {
         graphqlSchemaLastFetched: cached.lastFetched,
       });
     }
-  }, [
-    activeEnvironmentId,
-    environments,
-    graphqlSchema,
-    request.url,
-    sessionVariables,
-    set,
-  ]);
+  }, [activeEnvironmentId, environments, graphqlSchema, request.url, sessionVariables, set]);
 
   useEffect(() => {
     const varNames = extractQueryVarDefs(graphqlRequest.query ?? "");
     if (varNames.length === 0) return;
-    const scaffolded = scaffoldVariables(
-      graphqlRequest.variables ?? "{}",
-      varNames,
-    );
+    const scaffolded = scaffoldVariables(graphqlRequest.variables ?? "{}", varNames);
     if (scaffolded !== graphqlRequest.variables) {
       setGraphqlRequest({ variables: scaffolded });
     }

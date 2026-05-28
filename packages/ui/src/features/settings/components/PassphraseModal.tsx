@@ -4,8 +4,7 @@ import { Dialog } from "../../../components/shared/Dialog";
 import { useStore } from "../../../store";
 
 export function PassphraseModal() {
-  const { showPassphraseModal, passphraseMode, passphraseCallback, set } =
-    useStore();
+  const { showPassphraseModal, passphraseMode, passphraseCallback, set } = useStore();
   const [value, setValue] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -91,9 +90,7 @@ export function PassphraseModal() {
         </div>
         {isSetup && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-[var(--text-2)]">
-              Confirm passphrase
-            </label>
+            <label className="text-xs text-[var(--text-2)]">Confirm passphrase</label>
             <input
               type="password"
               value={confirm}

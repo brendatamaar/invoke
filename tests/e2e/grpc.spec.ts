@@ -121,9 +121,7 @@ test("mock gRPC server serves canned responses", async ({ page }) => {
   expect(body.statusCode).toBe(0);
 });
 
-test("mock gRPC server returns UNIMPLEMENTED for unknown methods", async ({
-  page,
-}) => {
+test("mock gRPC server returns UNIMPLEMENTED for unknown methods", async ({ page }) => {
   const response = await page.request.post("/api/mock-grpc/invoke", {
     data: { fullMethod: "unknown.Service/Method", bodyJson: "{}" },
   });

@@ -1,11 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  Folder,
-  FolderOpen,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen } from "lucide-react";
 import type { Folder as FolderType } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
 import { FolderActionsMenu } from "./tree/FolderActionsMenu";
@@ -93,22 +87,14 @@ export function CollectionFolderNode({
         <div
           className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer rounded mx-1 text-[var(--text-2)] transition-colors ${isDragOver ? "bg-[var(--accent-subtle,var(--surface-2))] ring-1 ring-inset ring-[var(--accent,var(--border))]" : "hover:bg-[var(--surface-2)]"}`}
           onClick={() => toggleFolder(folder.id)}
-          onDragOver={(event) =>
-            handleFolderDragOver(event, collectionId, setIsDragOver)
-          }
+          onDragOver={(event) => handleFolderDragOver(event, collectionId, setIsDragOver)}
           onDragLeave={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget as Node)) {
               setIsDragOver(false);
             }
           }}
           onDrop={(event) =>
-            handleFolderDrop(
-              event,
-              collectionId,
-              setIsDragOver,
-              moveToFolder,
-              addToast,
-            )
+            handleFolderDrop(event, collectionId, setIsDragOver, moveToFolder, addToast)
           }
         >
           {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
@@ -149,12 +135,7 @@ export function CollectionFolderNode({
             collectionId={collectionId}
             dragOverIndex={dragOverIndex}
             onItemDragOver={(event, index) =>
-              handleFolderItemDragOver(
-                event,
-                index,
-                collectionId,
-                setDragOverIndex,
-              )
+              handleFolderItemDragOver(event, index, collectionId, setDragOverIndex)
             }
             onListDragLeave={(event) => {
               if (!event.currentTarget.contains(event.relatedTarget as Node)) {

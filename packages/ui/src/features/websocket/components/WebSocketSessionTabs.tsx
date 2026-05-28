@@ -3,13 +3,8 @@ import { useStore } from "../../../store";
 import { webSocketClose } from "../api";
 
 export function WebSocketSessionTabs() {
-  const {
-    wsSessions,
-    activeWsSessionId,
-    addWsSession,
-    closeWsSession,
-    setActiveWsSession,
-  } = useStore();
+  const { wsSessions, activeWsSessionId, addWsSession, closeWsSession, setActiveWsSession } =
+    useStore();
 
   return (
     <div className="flex items-center gap-0.5 px-2 pt-1.5 border-b border-[var(--border)] overflow-x-auto shrink-0">

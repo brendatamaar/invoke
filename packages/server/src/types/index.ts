@@ -82,14 +82,7 @@ export interface ExecuteInput {
   url: string;
   headers: ServerHeaderInput[];
   body: string;
-  bodyMode?:
-    | "none"
-    | "json"
-    | "form-data"
-    | "urlencoded"
-    | "raw"
-    | "file"
-    | "graphql-multipart";
+  bodyMode?: "none" | "json" | "form-data" | "urlencoded" | "raw" | "file" | "graphql-multipart";
   auth?: {
     type: string;
     username?: string;

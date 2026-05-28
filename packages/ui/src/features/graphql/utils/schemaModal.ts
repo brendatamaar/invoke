@@ -19,14 +19,8 @@ export function refreshMessage(
     : "Schema refreshed \u2014 no changes";
 }
 
-export function mergeFragments(
-  current: SavedFragment[],
-  incoming: SavedFragment[],
-) {
+export function mergeFragments(current: SavedFragment[], incoming: SavedFragment[]) {
   if (incoming.length === 0) return current;
   const existing = new Set(current.map((f) => f.name));
-  return [
-    ...current,
-    ...incoming.filter((fragment) => !existing.has(fragment.name)),
-  ];
+  return [...current, ...incoming.filter((fragment) => !existing.has(fragment.name))];
 }

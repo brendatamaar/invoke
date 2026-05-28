@@ -56,13 +56,9 @@ export function MockRequestLog({
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const toggle = (id: string) =>
-    setExpandedId((prev) => (prev === id ? null : id));
+  const toggle = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
 
-  const countLabel =
-    totalLogs > logs.length
-      ? `${logs.length} of ${totalLogs}`
-      : String(totalLogs);
+  const countLabel = totalLogs > logs.length ? `${logs.length} of ${totalLogs}` : String(totalLogs);
 
   return (
     <>
@@ -87,19 +83,11 @@ export function MockRequestLog({
               onClick={() => toggle(log.id)}
             >
               <span className="text-[var(--text-3)] shrink-0">
-                {expandedId === log.id ? (
-                  <ChevronDown size={10} />
-                ) : (
-                  <ChevronRight size={10} />
-                )}
+                {expandedId === log.id ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
               </span>
-              <span className="text-[var(--text-3)] shrink-0">
-                {formatTime(log.createdAt)}
-              </span>
+              <span className="text-[var(--text-3)] shrink-0">{formatTime(log.createdAt)}</span>
               <MethodBadge method={log.method} />
-              <span className="flex-1 text-[var(--text-1)] truncate">
-                {log.path}
-              </span>
+              <span className="flex-1 text-[var(--text-1)] truncate">{log.path}</span>
               <span className={`shrink-0 font-semibold ${statusColor(log.status)}`}>
                 {log.status}
               </span>
@@ -108,9 +96,7 @@ export function MockRequestLog({
           </div>
         ))}
         {!logs.length && (
-          <p className="p-4 text-xs text-[var(--text-3)] text-center">
-            No requests yet
-          </p>
+          <p className="p-4 text-xs text-[var(--text-3)] text-center">No requests yet</p>
         )}
       </div>
     </>

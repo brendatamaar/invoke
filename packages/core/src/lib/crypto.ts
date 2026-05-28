@@ -18,10 +18,7 @@ function fromBase64(b64: string): Uint8Array {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 }
 
-export async function deriveKey(
-  passphrase: string,
-  salt: Uint8Array,
-): Promise<CryptoKey> {
+export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(passphrase),
@@ -58,17 +55,10 @@ export async function deriveKeyFromPassphrase(
   return deriveKey(passphrase, fromBase64(saltBase64));
 }
 
-export async function encryptJson(
-  data: unknown,
-  key: CryptoKey,
-): Promise<string> {
+export async function encryptJson(data: unknown, key: CryptoKey): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
   const plaintext = new TextEncoder().encode(JSON.stringify(data));
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    key,
-    plaintext,
-  );
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
   // pack: iv(12) | ciphertext
   const packed = new Uint8Array(IV_BYTES + ciphertext.byteLength);
   packed.set(iv, 0);
@@ -76,18 +66,10 @@ export async function encryptJson(
   return toBase64(packed);
 }
 
-export async function decryptJson<T>(
-  encrypted: string,
-  key: CryptoKey,
-): Promise<T> {
+export async function decryptJson<T>(encrypted: string, key: CryptoKey): Promise<T> {
   const packed = fromBase64(encrypted);
   const iv = packed.slice(0, IV_BYTES);
   const ciphertext = packed.slice(IV_BYTES);
-  const plaintext = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
-    key,
-    ciphertext,
-  );
+  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
   return JSON.parse(new TextDecoder().decode(plaintext)) as T;
 }
-

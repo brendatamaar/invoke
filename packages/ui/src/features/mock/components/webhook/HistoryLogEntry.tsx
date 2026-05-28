@@ -37,10 +37,7 @@ export function HistoryLogEntry({
         <span style={{ color: "var(--fg-3)", flexShrink: 0 }}>
           {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
         </span>
-        <span
-          className="font-mono shrink-0"
-          style={{ fontSize: 10, color: "var(--fg-3)" }}
-        >
+        <span className="font-mono shrink-0" style={{ fontSize: 10, color: "var(--fg-3)" }}>
           {formatTime(entry.createdAt)}
         </span>
         <MethodBadge method={entry.method} />

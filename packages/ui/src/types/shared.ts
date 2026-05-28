@@ -2,13 +2,7 @@ import type React from "react";
 import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
 import type { KeyValue } from "@invoke/core";
 
-export type CodeEditorLang =
-  | "json"
-  | "javascript"
-  | "xml"
-  | "python"
-  | "text"
-  | "graphql";
+export type CodeEditorLang = "json" | "javascript" | "xml" | "python" | "text" | "graphql";
 
 export interface CodeEditorProps {
   value: string;

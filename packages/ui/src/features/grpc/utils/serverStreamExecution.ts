@@ -24,17 +24,12 @@ export async function runGrpcServerStream(request: GrpcRequestConfig) {
     await grpcServerStream(request, {
       onMessage: (message) => {
         set((state) => ({
-          grpcStreamMessages: [
-            ...state.grpcStreamMessages,
-            { ...message, receivedAt: Date.now() },
-          ],
+          grpcStreamMessages: [...state.grpcStreamMessages, { ...message, receivedAt: Date.now() }],
         }));
       },
       onDone: async (message) => {
         clearTimeout(deadlineTimer);
-        const msgCount = useStore
-          .getState()
-          .grpcStreamMessages.filter((item) => !item.done).length;
+        const msgCount = useStore.getState().grpcStreamMessages.filter((item) => !item.done).length;
         const response = {
           status: message.error ? 500 : 200,
           statusText: message.statusMessage ?? "OK",

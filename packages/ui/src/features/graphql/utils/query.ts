@@ -29,9 +29,7 @@ export function extractQueryVarDefs(query: string): string[] {
     return ast.definitions
       .filter((d) => d.kind === "OperationDefinition")
       .flatMap((d) =>
-        ((d as any).variableDefinitions ?? []).map(
-          (v: any) => v.variable.name.value as string,
-        ),
+        ((d as any).variableDefinitions ?? []).map((v: any) => v.variable.name.value as string),
       );
   } catch {
     return [];

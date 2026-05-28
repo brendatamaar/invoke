@@ -1,9 +1,6 @@
 import type { AppState } from "../../types";
 
-export type FlowSlice = Pick<
-  AppState,
-  "flowDraft" | "flowResult" | "flowRunning" | "flowLog"
->;
+export type FlowSlice = Pick<AppState, "flowDraft" | "flowResult" | "flowRunning" | "flowLog">;
 
 export function createFlowSlice(): FlowSlice {
   return {

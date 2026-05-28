@@ -16,10 +16,7 @@ import { WebSocketLogPanel } from "../../websocket";
 import { GrpcResponseViewer } from "../../grpc";
 import { useResponseViewerModel } from "../hooks/useResponseViewerModel";
 import { ResponseBodyPanel } from "./panels/ResponseBodyPanel";
-import {
-  EmptyResponseState,
-  FailedResponseState,
-} from "./panels/ResponseEmptyStates";
+import { EmptyResponseState, FailedResponseState } from "./panels/ResponseEmptyStates";
 import { ResponseStatusBar } from "./panels/ResponseStatusBar";
 import { ResponseTabs } from "./panels/ResponseTabs";
 
@@ -64,9 +61,7 @@ export function ResponseViewer() {
           onPretty={() => set({ responsePretty: !responsePretty })}
           onJsonPathInput={model.setJsonPath}
           onAssertion={(draft) => model.setOverlay({ kind: "assertion", draft })}
-          onExtraction={(draft) =>
-            model.setOverlay({ kind: "extraction", draft })
-          }
+          onExtraction={(draft) => model.setOverlay({ kind: "extraction", draft })}
           onSaveExample={() => {
             model.setExampleName("");
             model.setOverlay({ kind: "saveExample" });
@@ -85,12 +80,8 @@ export function ResponseViewer() {
 
       {streaming && !response && (
         <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] bg-[var(--accent-subtle)]">
-          <span className="text-xs text-[var(--accent)] animate-pulse">
-            Streaming...
-          </span>
-          <span className="text-2xs text-[var(--text-3)]">
-            {fmtSize(streamBytes)}
-          </span>
+          <span className="text-xs text-[var(--accent)] animate-pulse">Streaming...</span>
+          <span className="text-2xs text-[var(--text-3)]">{fmtSize(streamBytes)}</span>
         </div>
       )}
 
@@ -104,9 +95,7 @@ export function ResponseViewer() {
         hasGraphQLTab={model.hasGraphQLTab}
         hasGraphQLErrors={model.graphqlErrors.length > 0}
         graphqlErrorCount={model.graphqlErrors.length}
-        deferredCount={
-          graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0
-        }
+        deferredCount={graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0}
         onSelect={(tab) => set({ responseTab: tab })}
       />
 
@@ -121,21 +110,14 @@ export function ResponseViewer() {
         )}
         {responseTab === "headers" && (
           <HeadersTab
-            onQuickAssert={(draft) =>
-              model.setOverlay({ kind: "assertion", draft })
-            }
-            onQuickExtract={(draft) =>
-              model.setOverlay({ kind: "extraction", draft })
-            }
+            onQuickAssert={(draft) => model.setOverlay({ kind: "assertion", draft })}
+            onQuickExtract={(draft) => model.setOverlay({ kind: "extraction", draft })}
           />
         )}
         {responseTab === "timing" && <TimingTab />}
         {responseTab === "tls" && <TLSTab />}
         {responseTab === "assertions" && (
-          <AssertionsTab
-            assertionRules={assertionRules}
-            assertionResults={assertionResults}
-          />
+          <AssertionsTab assertionRules={assertionRules} assertionResults={assertionResults} />
         )}
         {responseTab === "auth" && <AuthDebugTab />}
         {responseTab === "code" && <CodeTab />}
