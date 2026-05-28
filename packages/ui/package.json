@@ -1,7 +1,18 @@
 {
   "name": "@invoke/ui",
-  "version": "1.0.0-local",
+  "version": "1.0.0",
   "private": true,
+  "homepage": "https://runinvoke.com",
+  "bugs": {
+    "url": "https://github.com/brendatamaar/invoke/issues"
+  },
+  "license": "BUSL-1.1",
+  "author": "brendatamaar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brendatamaar/invoke.git",
+    "directory": "packages/ui"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",

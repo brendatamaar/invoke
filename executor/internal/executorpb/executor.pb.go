@@ -2806,7 +2806,7 @@ const file_executor_proto_rawDesc = "" +
 	"\x0eGrpcStreamOpen\x12#.invoke.executor.GrpcExecuteRequest\x1a'.invoke.executor.GrpcStreamOpenResponse\x12a\n" +
 	"\x0eGrpcStreamSend\x12&.invoke.executor.GrpcStreamSendRequest\x1a'.invoke.executor.GrpcStreamSendResponse\x12d\n" +
 	"\x0fGrpcStreamClose\x12'.invoke.executor.GrpcStreamCloseRequest\x1a(.invoke.executor.GrpcStreamCloseResponse\x12a\n" +
-	"\x0eGrpcStreamPoll\x12&.invoke.executor.GrpcStreamPollRequest\x1a'.invoke.executor.GrpcStreamPollResponseB;Z9github.com/brendatama/invoke/executor/internal/executorpbb\x06proto3"
+	"\x0eGrpcStreamPoll\x12&.invoke.executor.GrpcStreamPollRequest\x1a'.invoke.executor.GrpcStreamPollResponseB=Z;github.com/brendatamaar/invoke/executor/internal/executorpbb\x06proto3"
 
 var (
 	file_executor_proto_rawDescOnce sync.Once

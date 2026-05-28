@@ -1,7 +1,18 @@
 {
   "name": "@invoke/server",
-  "version": "1.0.0-local",
+  "version": "1.0.0",
   "private": true,
+  "homepage": "https://runinvoke.com",
+  "bugs": {
+    "url": "https://github.com/brendatamaar/invoke/issues"
+  },
+  "license": "BUSL-1.1",
+  "author": "brendatamaar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brendatamaar/invoke.git",
+    "directory": "packages/server"
+  },
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -12,17 +23,17 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@effect/schema": "^0.75.5",
+    "@effect/platform": "^0.96.1",
+    "@effect/platform-bun": "0.89.0",
     "@grpc/grpc-js": "^1.14.0",
     "@grpc/proto-loader": "^0.8.0",
     "@invoke/core": "workspace:*",
-"effect": "^3.21.2",
-    "hono": "^4.10.7",
+    "effect": "^3.21.2",
     "pino": "^9.14.0"
   },
   "devDependencies": {
+    "@effect/vitest": "^0.29.0",
     "@types/bun": "^1.3.14",
-    "supertest": "^7.1.4",
     "vitest": "^3.2.4"
   }
 }

@@ -1,4 +1,4 @@
-module github.com/brendatama/invoke/executor
+module github.com/brendatamaar/invoke/executor
 
 go 1.24
 

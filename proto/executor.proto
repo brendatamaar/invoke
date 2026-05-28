@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package invoke.executor;
 
-option go_package = "github.com/brendatama/invoke/executor/internal/executorpb";
+option go_package = "github.com/brendatamaar/invoke/executor/internal/executorpb";
 
 service HttpExecutor {
   rpc Ping(PingRequest) returns (PingResponse);

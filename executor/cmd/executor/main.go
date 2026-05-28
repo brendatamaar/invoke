@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	invoke "github.com/brendatama/invoke/executor/internal/executor"
-	"github.com/brendatama/invoke/executor/internal/executorpb"
+	invoke "github.com/brendatamaar/invoke/executor/internal/executor"
+	"github.com/brendatamaar/invoke/executor/internal/executorpb"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
