@@ -51,11 +51,11 @@
     "@types/node": "^20.19.25",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.5.2",
+    "@vitejs/plugin-react": "^5.2.0",
     "postcss": "8.5.10",
     "tailwindcss": "^4",
     "typescript": "^5.9.3",
-    "vite": "^5.4.21",
+    "vite": "^7.3.3",
     "vite-plugin-node-polyfills": "^0.26.0",
     "vitest": "^3.2.4"
   }

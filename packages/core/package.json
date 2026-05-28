@@ -33,7 +33,6 @@
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",
-    "@effect/schema": "^0.75.5",
     "ajv": "8.20.0",
     "dexie": "^4.2.1",
     "effect": "^3.21.2",
