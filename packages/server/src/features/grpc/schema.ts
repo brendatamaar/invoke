@@ -32,3 +32,16 @@ export const grpcExecuteSchema = Schema.Struct({
   bodyJson: Schema.optionalWith(Schema.String, { default: () => "{}" }),
   compression: Schema.optional(Schema.Literal("none", "gzip")),
 });
+
+export const grpcStreamSendSchema = Schema.Struct({
+  streamId: Schema.String.pipe(Schema.minLength(1)),
+  bodyJson: Schema.optionalWith(Schema.String, { default: () => "{}" }),
+});
+
+export const grpcStreamCloseSchema = Schema.Struct({
+  streamId: Schema.String.pipe(Schema.minLength(1)),
+});
+
+export const grpcStreamEventsUrlParamsSchema = Schema.Struct({
+  streamId: Schema.String.pipe(Schema.minLength(1)),
+});
