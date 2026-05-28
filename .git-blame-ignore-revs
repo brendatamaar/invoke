@@ -1,9 +1,0 @@
-# Revisions intentionally ignored by `git blame`.
-#
-# Enable locally:
-#   git config blame.ignoreRevsFile .git-blame-ignore-revs
-#
-# GitHub honors this file automatically in its blame UI.
-
-# chore(format): apply oxfmt baseline reformat
-ab037cc
