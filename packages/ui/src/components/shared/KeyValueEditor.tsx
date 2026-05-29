@@ -31,7 +31,7 @@ export function KeyValueEditor({
       {keyDatalist && (
         <datalist id={datalistId}>
           {keyDatalist.map((h) => (
-            <option key={h} value={h} />
+            <option key={h} value={h}>{h}</option>
           ))}
         </datalist>
       )}
@@ -50,7 +50,7 @@ export function KeyValueEditor({
       )}
       {rows.map((row, i) => (
         <div
-          key={i}
+          key={row.key ? `row-${row.key}-${i}` : `row-${i}`}
           className={`group grid ${COL_TEMPLATE} items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]`}
         >
           <span />
@@ -58,8 +58,9 @@ export function KeyValueEditor({
             type="checkbox"
             checked={row.enabled !== false}
             onChange={(e) => update(i, "enabled", e.target.checked)}
-            className="w-3.5 h-3.5"
+            className="size-3.5"
             disabled={disabled}
+            aria-label="Enable row"
           />
           <span />
           <input
@@ -69,6 +70,7 @@ export function KeyValueEditor({
             placeholder={keyPlaceholder}
             disabled={disabled}
             list={datalistId}
+            aria-label={keyPlaceholder}
             className="w-full bg-transparent border-0 outline-none py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
           />
           <span className="h-4 bg-[var(--border)]" />
@@ -87,12 +89,15 @@ export function KeyValueEditor({
               onChange={(e) => update(i, "value", e.target.value)}
               placeholder={valuePlaceholder}
               disabled={disabled}
+              aria-label={valuePlaceholder}
               className="w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
             />
           )}
           <button
+            type="button"
             onClick={() => remove(i)}
             disabled={disabled}
+            aria-label="Remove row"
             className="flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100"
           >
             <Trash2 size={12} />
@@ -100,6 +105,7 @@ export function KeyValueEditor({
         </div>
       ))}
       <button
+        type="button"
         onClick={add}
         disabled={disabled}
         className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-2)] w-full text-left"

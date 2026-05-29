@@ -34,23 +34,11 @@ export function TopBar() {
 
       {/* Command palette trigger */}
       <button
+        type="button"
         onClick={() => set({ commandPaletteOpen: true })}
-        className="flex items-center gap-2 flex-1 max-w-xs"
-        style={{
-          padding: "4px 8px",
-          borderRadius: "var(--r-2)",
-          border: "1px solid var(--line-2)",
-          background: "var(--bg-2)",
-          color: "var(--fg-3)",
-          fontSize: "var(--t-sm)",
-          fontFamily: "var(--font-mono)",
-          cursor: "pointer",
-          transition: "border-color var(--dur-fast)",
-        }}
-        onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "var(--line-3)")}
-        onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "var(--line-2)")}
+        className="flex items-center gap-2 flex-1 max-w-xs px-2 py-1 rounded-[var(--r-2)] border border-[var(--line-2)] bg-[var(--bg-2)] text-[var(--fg-3)] text-[var(--t-sm)] font-mono cursor-pointer transition-colors hover:border-[var(--line-3)]"
       >
-        <span style={{ color: "var(--fg-3)", display: "flex" }}>
+        <span className="flex text-[var(--fg-3)]">
           <svg
             width={11}
             height={11}
@@ -63,18 +51,8 @@ export function TopBar() {
             <line x1="21" y1="21" x2="16" y2="16" />
           </svg>
         </span>
-        <span style={{ flex: 1, textAlign: "left" }}>search or jump to…</span>
-        <kbd
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            padding: "1px 4px",
-            background: "var(--bg-3)",
-            border: "1px solid var(--line-2)",
-            borderRadius: "var(--r-1)",
-            color: "var(--fg-2)",
-          }}
-        >
+        <span className="flex-1 text-left">search or jump to…</span>
+        <kbd className="font-mono text-xs px-1 py-0.5 bg-[var(--bg-3)] border border-[var(--line-2)] rounded-[var(--r-1)] text-[var(--fg-2)]">
           ⌘K
         </kbd>
       </button>
@@ -96,21 +74,10 @@ export function TopBar() {
         </Select>
 
         <button
+          type="button"
           onClick={() => set({ showCookieManager: true })}
-          className="relative"
+          className="relative flex items-center px-1.5 py-1 rounded-[var(--r-2)] bg-transparent border-0 text-[var(--fg-2)] cursor-pointer hover:text-[var(--fg-0)]"
           title="Cookie manager"
-          style={{
-            padding: "4px 6px",
-            borderRadius: "var(--r-2)",
-            background: "transparent",
-            border: "none",
-            color: "var(--fg-2)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-          }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-2)")}
         >
           <Cookie size={14} />
           {cookies.length > 0 && (
@@ -127,43 +94,19 @@ export function TopBar() {
         </button>
 
         <button
+          type="button"
           onClick={() => set({ showSettings: !showSettings, settingsTab: undefined })}
           title="Settings · ⌘,"
-          style={{
-            padding: "4px 6px",
-            borderRadius: "var(--r-2)",
-            background: "transparent",
-            border: "none",
-            color: showSettings ? "var(--accent)" : "var(--fg-2)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-          }}
-          onMouseEnter={(e) => {
-            if (!showSettings) (e.currentTarget as HTMLElement).style.color = "var(--fg-0)";
-          }}
-          onMouseLeave={(e) => {
-            if (!showSettings) (e.currentTarget as HTMLElement).style.color = "var(--fg-2)";
-          }}
+          className={`flex items-center px-1.5 py-1 rounded-[var(--r-2)] bg-transparent border-0 cursor-pointer hover:text-[var(--fg-0)] ${showSettings ? "text-[var(--accent)]" : "text-[var(--fg-2)]"}`}
         >
           <Settings size={14} />
         </button>
 
         <button
+          type="button"
           onClick={() => set({ showHelp: true })}
           title="Help"
-          style={{
-            padding: "4px 6px",
-            borderRadius: "var(--r-2)",
-            background: "transparent",
-            border: "none",
-            color: "var(--fg-2)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-          }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--fg-2)")}
+          className="flex items-center px-1.5 py-1 rounded-[var(--r-2)] bg-transparent border-0 text-[var(--fg-2)] cursor-pointer hover:text-[var(--fg-0)]"
         >
           <HelpCircle size={14} />
         </button>

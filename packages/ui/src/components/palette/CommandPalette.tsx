@@ -15,8 +15,9 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (commandPaletteOpen) {
-      setTimeout(() => inputRef.current?.focus(), 50);
+      const id = setTimeout(() => inputRef.current?.focus(), 50);
       setSelectedIndex(0);
+      return () => clearTimeout(id);
     }
   }, [commandPaletteOpen]);
 
@@ -55,6 +56,7 @@ export function CommandPalette() {
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/20 backdrop-blur-[1px]"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) close();

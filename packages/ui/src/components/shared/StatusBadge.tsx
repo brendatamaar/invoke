@@ -91,18 +91,8 @@ export function StatusBadge({ status, showLabel = false }: StatusBadgeProps) {
 
   return (
     <span
-      style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: 11,
-        fontWeight: 600,
-        padding: "2px 7px",
-        borderRadius: "var(--r-2)",
-        color,
-        background: bg,
-        border: `1px solid ${border}`,
-        display: "inline-block",
-        lineHeight: "16px",
-      }}
+      className="font-mono text-xs font-semibold px-1.5 py-0.5 rounded-[var(--r-2)] inline-block leading-4 border"
+      style={{ color, background: bg, borderColor: border }}
     >
       {status === 0 ? "ERR" : [status, label].filter(Boolean).join(" ")}
     </span>

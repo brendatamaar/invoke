@@ -1,10 +1,10 @@
 import { Layers, History, Globe, GitBranch, Server } from "lucide-react";
 import { useStore } from "../../store";
-import { CollectionTree } from "../../features/collections";
-import { HistoryPanel } from "../../features/history";
-import { EnvironmentPanel } from "../../features/environments";
-import { FlowPanel } from "../../features/flows";
-import { MockPanel } from "../../features/mock";
+import { CollectionTree } from "../../features/collections/components/CollectionTree";
+import { HistoryPanel } from "../../features/history/components/HistoryPanel";
+import { EnvironmentPanel } from "../../features/environments/components/EnvironmentPanel";
+import { FlowPanel } from "../../features/flows/components/FlowPanel";
+import { MockPanel } from "../../features/mock/components/MockPanel";
 import type { SidebarSection } from "../../types/navigation";
 
 const NAV: { id: SidebarSection; icon: React.ReactNode; label: string }[] = [
@@ -46,6 +46,7 @@ export function Sidebar() {
           return (
             <button
               key={id}
+              type="button"
               title={label}
               onClick={() => {
                 if (sidebarSection === id) {
@@ -54,25 +55,8 @@ export function Sidebar() {
                   set({ sidebarSection: id, sidebarCollapsed: false });
                 }
               }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: RAIL_WIDTH,
-                height: 32,
-                border: "none",
-                background: "transparent",
-                color: active ? "var(--accent)" : "var(--fg-3)",
-                cursor: "pointer",
-                transition: "color var(--dur-fast)",
-                position: "relative",
-              }}
-              onMouseEnter={(e) => {
-                if (!active) (e.currentTarget as HTMLElement).style.color = "var(--fg-1)";
-              }}
-              onMouseLeave={(e) => {
-                if (!active) (e.currentTarget as HTMLElement).style.color = "var(--fg-3)";
-              }}
+              className={`flex items-center justify-center border-0 bg-transparent cursor-pointer transition-colors relative hover:text-[var(--fg-1)] ${active ? "text-[var(--accent)]" : "text-[var(--fg-3)]"}`}
+              style={{ width: RAIL_WIDTH, height: 32 }}
             >
               {active && (
                 <span

@@ -31,6 +31,7 @@ const sizeMap: Record<SelectSize, SelectSizeClasses> = {
 };
 
 export function Select({
+  id,
   value,
   onChange,
   size = "xs",
@@ -84,6 +85,7 @@ export function Select({
     <div ref={wrapRef} className={`relative ${wrapperClassName}`}>
       <button
         type="button"
+        id={id}
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={onKeyDown}
@@ -98,7 +100,7 @@ export function Select({
         }}
       >
         <span className="flex-1 truncate">
-          {selected?.label ?? <span style={{ color: "var(--fg-3)" }}>—</span>}
+          {selected?.label ?? <span style={{ color: "var(--fg-3)" }}>(none)</span>}
         </span>
         <ChevronDown
           size={s.chevron}

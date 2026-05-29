@@ -12,6 +12,7 @@ export function SuggestionItem({
 }) {
   return (
     <button
+      type="button"
       className={`w-full text-left px-3 py-1.5 text-xs ${selected ? "bg-[var(--accent-subtle)] text-[var(--accent)]" : "text-[var(--text-1)] hover:bg-[var(--surface-2)]"}`}
       onMouseDown={(event) => {
         event.preventDefault();

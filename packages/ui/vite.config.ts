@@ -11,6 +11,11 @@ export default defineConfig({
       globals: { Buffer: true, global: true, process: true },
     }),
   ],
+  build: {
+    rollupOptions: {
+      input: { main: "src/main.tsx" },
+    },
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

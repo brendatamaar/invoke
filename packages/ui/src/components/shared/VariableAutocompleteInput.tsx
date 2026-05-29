@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useCallback } from "react";
 import { isSensitiveVariableName, maskedValue } from "@invoke/core";
 import { useStore } from "../../store";
 import type { VariableAutocompleteInputProps, VariableSuggestion } from "../../types";
@@ -18,6 +18,7 @@ const DYNAMIC_VARS = [
 ];
 
 export function VariableAutocompleteInput({
+  id,
   value,
   onChange,
   onKeyDown,
@@ -31,32 +32,32 @@ export function VariableAutocompleteInput({
   const { environments, activeEnvironmentId, sessionVariables } = useStore();
   const [suggestions, setSuggestions] = useState<VariableSuggestion[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [triggerStart, setTriggerStart] = useState(-1);
+  const triggerStart = useRef(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const allVars = useMemo(() => {
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const vars = new Map<string, VariableSuggestion>();
-    (env?.variables ?? [])
-      .filter((v) => v.enabled !== false && v.key.trim())
-      .forEach((v) =>
+    for (const v of (env?.variables ?? [])) {
+      if (v.enabled !== false && v.key.trim()) {
         vars.set(v.key.trim(), {
           name: v.key.trim(),
           source: "environment",
           value: v.value,
           sensitive: v.sensitive || isSensitiveVariableName(v.key),
-        }),
-      );
-    Object.entries(sessionVariables)
-      .filter(([key]) => key.trim())
-      .forEach(([key, value]) =>
+        });
+      }
+    }
+    for (const [key, val] of Object.entries(sessionVariables)) {
+      if (key.trim()) {
         vars.set(key.trim(), {
           name: key.trim(),
           source: "session",
-          value,
+          value: val,
           sensitive: isSensitiveVariableName(key),
-        }),
-      );
+        });
+      }
+    }
     DYNAMIC_VARS.forEach((name) => vars.set(name, { name, source: "dynamic" }));
     return [...vars.values()];
   }, [environments, activeEnvironmentId, sessionVariables]);
@@ -87,7 +88,7 @@ export function VariableAutocompleteInput({
     return { active: true, start: lastOpen, partial: afterOpen };
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const updateInputValue = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     onChange(val);
     const cursor = e.target.selectionStart ?? val.length;
@@ -97,29 +98,29 @@ export function VariableAutocompleteInput({
         v.name.toLowerCase().startsWith(partial.toLowerCase()),
       );
       setSuggestions(filtered);
-      setTriggerStart(start);
+      triggerStart.current = start;
       setSelectedIdx(0);
     } else {
       setSuggestions([]);
-      setTriggerStart(-1);
+      triggerStart.current = -1;
     }
   };
 
-  const applySuggestion = (varName: string) => {
+  const applySuggestion = useCallback((varName: string) => {
     const input = inputRef.current;
-    if (!input || triggerStart === -1) return;
-    const before = value.slice(0, triggerStart);
+    if (!input || triggerStart.current === -1) return;
+    const before = value.slice(0, triggerStart.current);
     const after = value.slice(input.selectionStart ?? value.length);
     const newVal = `${before}{{${varName}}}${after}`;
     onChange(newVal);
     setSuggestions([]);
-    setTriggerStart(-1);
+    triggerStart.current = -1;
     requestAnimationFrame(() => {
       const pos = before.length + varName.length + 4;
       input.setSelectionRange(pos, pos);
       input.focus();
     });
-  };
+  }, [value, onChange]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (suggestions.length > 0) {
@@ -140,7 +141,7 @@ export function VariableAutocompleteInput({
       }
       if (e.key === "Escape") {
         setSuggestions([]);
-        setTriggerStart(-1);
+        triggerStart.current = -1;
         return;
       }
     }
@@ -151,13 +152,15 @@ export function VariableAutocompleteInput({
     <div className="relative flex-1 min-w-0">
       <input
         ref={inputRef}
+        id={id}
         type={type}
         value={value}
-        onChange={handleChange}
+        onChange={updateInputValue}
         onKeyDown={handleKeyDown}
         onPaste={onPaste}
         onBlur={() => setTimeout(() => setSuggestions([]), 150)}
         placeholder={placeholder}
+        aria-label={placeholder ?? "Value"}
         className={className}
         spellCheck={spellCheck}
         disabled={disabled}
