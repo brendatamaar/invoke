@@ -39,6 +39,7 @@ export function GraphQLQueryToolbar({
   return (
     <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-[var(--border)]">
       <button
+        type="button"
         onClick={onOpenImport}
         className="p-1.5 rounded hover:bg-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors"
         title="Import Schema"
@@ -46,6 +47,7 @@ export function GraphQLQueryToolbar({
         <FileUp size={13} />
       </button>
       <button
+        type="button"
         onClick={onToggleExplorer}
         disabled={!hasSchema}
         className={`p-1.5 rounded transition-colors disabled:opacity-30 disabled:pointer-events-none ${schemaExplorerOpen ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "hover:bg-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-1)]"}`}
@@ -55,6 +57,7 @@ export function GraphQLQueryToolbar({
       </button>
       <div className="w-px h-4 bg-[var(--border)] mx-1" />
       <button
+        type="button"
         onClick={onPrettify}
         className="p-1.5 rounded hover:bg-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors"
         title="Prettify query"
@@ -62,6 +65,7 @@ export function GraphQLQueryToolbar({
         <Wand2 size={13} />
       </button>
       <button
+        type="button"
         onClick={onCopyCurl}
         disabled={!requestUrl.trim()}
         className="p-1.5 rounded hover:bg-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-1)] disabled:opacity-30 disabled:pointer-events-none transition-colors"
@@ -82,7 +86,7 @@ export function GraphQLQueryToolbar({
               {"\u2014"} pick {"\u2014"}
             </option>
             {operations.map((op, i) => (
-              <option key={i} value={op.name ?? ""}>
+              <option key={op.name ?? `op-${i}`} value={op.name ?? ""}>
                 {op.name ?? `(anonymous ${op.kind})`}
               </option>
             ))}
@@ -91,12 +95,13 @@ export function GraphQLQueryToolbar({
       )}
       {isSubscription &&
         (subState === "subscribed" || subState === "connecting" ? (
-          <button onClick={onUnsubscribe} className="btn btn-danger text-2xs py-0.5 px-2 gap-1">
+          <button type="button" onClick={onUnsubscribe} className="btn btn-danger text-2xs py-0.5 px-2 gap-1">
             <StopCircle size={12} />
-            {subState === "connecting" ? "Connecting\u2026" : "Stop"}
+            {subState === "connecting" ? "Connecting…" : "Stop"}
           </button>
         ) : (
           <button
+            type="button"
             onClick={onSubscribe}
             disabled={!requestUrl.trim()}
             className="btn btn-primary text-2xs py-0.5 px-2 gap-1"

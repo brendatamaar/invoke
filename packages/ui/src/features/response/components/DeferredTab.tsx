@@ -26,7 +26,7 @@ export function DeferredTab() {
       {initialPart && (
         <div className="border border-[var(--border)] rounded-md p-3 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-2xs font-mono text-[var(--accent)]">Part 0 — initial</span>
+            <span className="text-2xs font-mono text-[var(--accent)]">Part 0 (initial)</span>
             <span className="text-2xs text-[var(--text-3)]">
               hasNext: {String(initialPart.hasNext)}
             </span>
@@ -54,7 +54,7 @@ export function DeferredTab() {
           <div className="flex items-center justify-between">
             <span className="text-2xs font-mono text-[var(--text-2)]">
               Part {part.partIndex}
-              {part.label ? ` — ${part.label}` : ""}
+              {part.label ? `: ${part.label}` : ""}
             </span>
             <span className="text-2xs text-[var(--text-3)]">hasNext: {String(part.hasNext)}</span>
           </div>

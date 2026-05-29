@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   GRAPHQL_INTROSPECTION_QUERY,
   parseGraphQLIntrospection,
@@ -23,20 +23,13 @@ export function useGraphQLSchemaImport(open: boolean, onClose: () => void) {
     sessionVariables,
   } = useStore();
   const [source, setSource] = useState<GraphQLSchemaImportSource>("url");
-  const [schemaUrl, setSchemaUrl] = useState("");
+  const [schemaUrl, setSchemaUrl] = useState(graphqlSchemaEndpoint ?? "");
   const [sdlText, setSdlText] = useState("");
   const [working, setWorking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const sdlFileInputRef = useRef<HTMLInputElement | null>(null);
   const schemaUrlRef = useRef(schemaUrl);
   schemaUrlRef.current = schemaUrl;
-
-  useEffect(() => {
-    if (!open) return;
-    setSource("url");
-    setWorking(false);
-    if (graphqlSchemaEndpoint && !schemaUrlRef.current) setSchemaUrl(graphqlSchemaEndpoint);
-  }, [open, graphqlSchemaEndpoint, setSchemaUrl]);
 
   const close = () => {
     if (!working) onClose();

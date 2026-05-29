@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import {
   ArrowRight,
   Cookie,
@@ -12,6 +13,21 @@ import {
 import { CertificateExpiry } from "./auth-debug/CertificateExpiry";
 import { Badge, EmptyState, Row, Section } from "./AuthDebugShared";
 
+const AUTH_ICON = <KeyRound size={13} />;
+const COOKIE_ICON = <Cookie size={13} />;
+const ROUTE_ICON = <Route size={13} />;
+const LOCK_ICON = <LockKeyhole size={13} />;
+
+function TokenExpiryRow({ tokenExpiresAt }: { tokenExpiresAt?: number }) {
+  if (!tokenExpiresAt) return <Row label="Token expires" value="Unknown" mono={false} />;
+  const now = Date.now();
+  const expired = tokenExpiresAt < now;
+  const value = expired
+    ? <span className="text-[var(--danger)]">Expired ({new Date(tokenExpiresAt).toLocaleString()})</span>
+    : new Date(tokenExpiresAt).toLocaleString();
+  return <Row label="Token expires" value={value} mono={false} />;
+}
+
 export function AuthenticationSection({
   auth,
   sentAuthHeader,
@@ -25,17 +41,16 @@ export function AuthenticationSection({
   tokenExpired: boolean;
   onToggleToken: () => void;
 }) {
+  const authMeta = useMemo(() => sentAuthHeader ? (
+    <Badge tone={tokenExpired ? "danger" : "ok"}>{tokenExpired ? "Expired" : "Sent"}</Badge>
+  ) : (
+    <Badge>No header</Badge>
+  ), [sentAuthHeader, tokenExpired]);
   return (
     <Section
       title="Authentication"
-      icon={<KeyRound size={13} />}
-      meta={
-        sentAuthHeader ? (
-          <Badge tone={tokenExpired ? "danger" : "ok"}>{tokenExpired ? "Expired" : "Sent"}</Badge>
-        ) : (
-          <Badge>No header</Badge>
-        )
-      }
+      icon={AUTH_ICON}
+      meta={authMeta}
     >
       <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-2)]">
         {sentAuthHeader ? (
@@ -65,23 +80,7 @@ export function AuthenticationSection({
           <>
             <Row label="OAuth2 flow" value="authorization_code" />
             {auth.accessToken && (
-              <Row
-                label="Token expires"
-                value={
-                  auth.tokenExpiresAt ? (
-                    auth.tokenExpiresAt < Date.now() ? (
-                      <span className="text-[var(--danger)]">
-                        Expired ({new Date(auth.tokenExpiresAt).toLocaleString()})
-                      </span>
-                    ) : (
-                      new Date(auth.tokenExpiresAt).toLocaleString()
-                    )
-                  ) : (
-                    "Unknown"
-                  )
-                }
-                mono={false}
-              />
+              <TokenExpiryRow tokenExpiresAt={auth.tokenExpiresAt} />
             )}
           </>
         )}
@@ -97,24 +96,23 @@ export function CookiesSection({
   sentCookies: string[];
   storedCount: number;
 }) {
+  const cookiesMeta = useMemo(() => (
+    <div className="flex items-center gap-1.5">
+      <Badge tone={sentCookies.length > 0 ? "accent" : "neutral"}>{sentCookies.length} sent</Badge>
+      <Badge>{storedCount} stored</Badge>
+    </div>
+  ), [sentCookies.length, storedCount]);
   return (
     <Section
       title="Cookies"
-      icon={<Cookie size={13} />}
-      meta={
-        <div className="flex items-center gap-1.5">
-          <Badge tone={sentCookies.length > 0 ? "accent" : "neutral"}>
-            {sentCookies.length} sent
-          </Badge>
-          <Badge>{storedCount} stored</Badge>
-        </div>
-      }
+      icon={COOKIE_ICON}
+      meta={cookiesMeta}
     >
       <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-2)]">
         {sentCookies.length > 0 ? (
-          sentCookies.map((pair, i) => {
+          sentCookies.map((pair) => {
             const [name, ...rest] = pair.split("=");
-            return <Row key={i} label={name?.trim() ?? "?"} value={rest.join("=") ?? ""} />;
+            return <Row key={pair} label={name?.trim() ?? "?"} value={rest.join("=") ?? ""} />;
           })
         ) : (
           <EmptyState icon={<Cookie size={14} />}>
@@ -126,18 +124,22 @@ export function CookiesSection({
   );
 }
 
+const RedirectsMeta = memo(function RedirectsMeta({ count }: { count: number }) {
+  return <Badge tone="accent">{count} hops</Badge>;
+});
+
 export function RedirectsSection({ redirects }: { redirects: any[] }) {
-  if (redirects.length === 0) return null;
-  return (
+  const redirectsMeta = useMemo(() => <RedirectsMeta count={redirects.length} />, [redirects.length]);
+  return redirects.length === 0 ? null : (
     <Section
       title="Redirects"
-      icon={<Route size={13} />}
-      meta={<Badge tone="accent">{redirects.length} hops</Badge>}
+      icon={ROUTE_ICON}
+      meta={redirectsMeta}
     >
       <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-2)]">
-        {redirects.map((r, i) => (
+        {redirects.map((r) => (
           <div
-            key={i}
+            key={`${r.status}-${r.url}`}
             className="grid grid-cols-[2.5rem_auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-[var(--border)] px-3 py-2.5 last:border-0"
           >
             <span className="font-mono text-2xs text-[var(--text-3)]">{r.status}</span>
@@ -154,21 +156,17 @@ export function RedirectsSection({ redirects }: { redirects: any[] }) {
 }
 
 export function TlsSection({ tls, firstCertificate }: { tls: any; firstCertificate: any }) {
+  const tlsMeta = useMemo(() => firstCertificate ? (
+    <Badge tone="ok"><ShieldCheck size={10} />Certificate</Badge>
+  ) : (
+    <Badge>Session</Badge>
+  ), [firstCertificate]);
   if (!tls) return null;
   return (
     <Section
       title="TLS"
-      icon={<LockKeyhole size={13} />}
-      meta={
-        firstCertificate ? (
-          <Badge tone="ok">
-            <ShieldCheck size={10} />
-            Certificate
-          </Badge>
-        ) : (
-          <Badge>Session</Badge>
-        )
-      }
+      icon={LOCK_ICON}
+      meta={tlsMeta}
     >
       <div className="overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface-2)]">
         <Row label="Version" value={tls.version} />

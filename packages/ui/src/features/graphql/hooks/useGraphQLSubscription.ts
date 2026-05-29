@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { webSocketClose, webSocketConnect, webSocketPoll, webSocketSend } from "../../websocket";
+import { webSocketClose, webSocketConnect, webSocketPoll, webSocketSend } from "../../websocket/api";
 import type { KeyValue } from "@invoke/core";
 
 export interface GQLSubMessage {
@@ -100,7 +100,7 @@ export function useGraphQLSubscription() {
         terminate(null, "complete");
         return;
       }
-      for (const msg of raw) await handleFrame(id, msg.body, opts);
+      await raw.reduce((p, msg) => p.then(() => handleFrame(id, msg.body, opts)), Promise.resolve());
     } catch {
       /* connection may be gone */
     }

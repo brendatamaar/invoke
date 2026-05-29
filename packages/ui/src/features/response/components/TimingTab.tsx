@@ -94,7 +94,7 @@ export function TimingTab() {
               : "Request";
           return (
             <div
-              key={idx}
+              key={`${attempt.url || "req"}-${attempt.status ?? 0}-${attempt.redirect ? "r" : "f"}`}
               className="flex flex-col gap-2.5 p-3 rounded border border-[var(--border)] bg-[var(--surface-2)]"
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -152,7 +152,7 @@ export function TimingTab() {
                     title={`${bar.label}: ${fmtMs(bar.durationMs)} (starts ${fmtMs(bar.startMs)})`}
                   >
                     <span
-                      className="w-2 h-2 rounded-sm shrink-0"
+                      className="size-2 rounded-sm shrink-0"
                       style={{ backgroundColor: bar.color }}
                     />
                     {bar.label}

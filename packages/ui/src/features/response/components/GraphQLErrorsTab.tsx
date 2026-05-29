@@ -1,49 +1,6 @@
 import { AlertCircle, Zap } from "lucide-react";
 import { useStore } from "../../../store";
-
-interface GraphQLError {
-  message: string;
-  path?: (string | number)[];
-  locations?: { line: number; column: number }[];
-  extensions?: { code?: string; [key: string]: unknown };
-}
-
-interface GraphQLCost {
-  requestedQueryCost?: number;
-  actualQueryCost?: number;
-  maximumAvailable?: number;
-  throttleStatus?: unknown;
-  [key: string]: unknown;
-}
-
-export function parseGraphQLErrors(body: string): GraphQLError[] {
-  try {
-    const parsed = JSON.parse(body) as { errors?: GraphQLError[] } | { errors?: GraphQLError[] }[];
-    if (Array.isArray(parsed)) {
-      // batched response — collect errors from all items
-      return parsed.flatMap((item) => (Array.isArray(item.errors) ? item.errors : []));
-    }
-    return Array.isArray(parsed.errors) ? parsed.errors : [];
-  } catch {
-    return [];
-  }
-}
-
-export function parseGraphQLCost(body: string): {
-  cost: GraphQLCost | number | null;
-  complexity: number | null;
-} {
-  try {
-    const parsed = JSON.parse(body) as { extensions?: Record<string, unknown> };
-    const ext = parsed.extensions;
-    if (!ext) return { cost: null, complexity: null };
-    const cost = ext.cost != null ? (ext.cost as GraphQLCost | number) : null;
-    const complexity = typeof ext.complexity === "number" ? ext.complexity : null;
-    return { cost, complexity };
-  } catch {
-    return { cost: null, complexity: null };
-  }
-}
+import { parseGraphQLErrors, parseGraphQLCost } from "../utils/graphqlErrors";
 
 function CostRow({ label, value }: { label: string; value: unknown }) {
   return (
@@ -75,7 +32,7 @@ export function GraphQLErrorsTab() {
     <div className="p-3 flex flex-col gap-3">
       {errors.map((err, i) => (
         <div
-          key={i}
+          key={`${err.message}-${i}`}
           className="border border-[var(--danger)] rounded-md p-3 bg-[var(--danger-bg)] flex flex-col gap-1"
         >
           <div className="flex items-start gap-2">
@@ -122,18 +79,11 @@ export function GraphQLErrorsTab() {
                 <CostRow label="Max available" value={cost.maximumAvailable} />
               )}
               {Object.entries(cost)
-                .filter(
-                  ([k]) =>
-                    ![
-                      "requestedQueryCost",
-                      "actualQueryCost",
-                      "maximumAvailable",
-                      "throttleStatus",
-                    ].includes(k),
-                )
-                .map(([k, v]) => (
-                  <CostRow key={k} label={k} value={v} />
-                ))}
+                .flatMap(([k, v]) =>
+                  ["requestedQueryCost", "actualQueryCost", "maximumAvailable", "throttleStatus"].includes(k)
+                    ? []
+                    : [<CostRow key={k} label={k} value={v} />],
+                )}
             </>
           )}
         </div>

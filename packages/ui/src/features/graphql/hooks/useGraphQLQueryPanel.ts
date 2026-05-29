@@ -42,8 +42,9 @@ export function useGraphQLQueryPanel() {
   const subscription = useGraphQLSubscription();
 
   useEffect(() => {
+    const timeoutRef = curlTimeoutRef;
     return () => {
-      if (curlTimeoutRef.current) clearTimeout(curlTimeoutRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 

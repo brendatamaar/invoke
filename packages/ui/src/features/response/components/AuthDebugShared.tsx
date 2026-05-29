@@ -14,7 +14,7 @@ export function Section({
   return (
     <section className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)]">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)]">
           {icon}
         </span>
         <span className="text-xs font-semibold text-[var(--text-1)]">{title}</span>
@@ -51,7 +51,7 @@ export function Badge({
 
 export function EmptyState({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2 rounded border border-dashed border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 text-xs text-[var(--text-3)]">
+    <div className="flex items-center gap-2 rounded border border-dashed border-[var(--border)] bg-[var(--surface-2)] p-3 text-xs text-[var(--text-3)]">
       <span className="text-[var(--text-3)]">{icon}</span>
       {children}
     </div>

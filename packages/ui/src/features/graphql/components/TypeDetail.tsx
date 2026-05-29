@@ -28,6 +28,7 @@ export function TypeDetail({
       <>
         {type.enumValues?.map((val) => (
           <button
+            type="button"
             key={val.name}
             onClick={() => onInsertField(val.name)}
             className={`w-full flex items-center gap-1 ${indent} pr-2 py-0.5 hover:bg-[var(--border)] text-left`}
@@ -50,6 +51,7 @@ export function TypeDetail({
       <>
         {type.possibleTypes?.map((pt) => (
           <button
+            type="button"
             key={pt.name}
             onClick={() => pt.name && onNavigate(pt.name)}
             className={`w-full flex items-center gap-1 ${indent} pr-2 py-0.5 hover:bg-[var(--border)] text-left`}
@@ -84,6 +86,7 @@ export function TypeDetail({
         const isNavigable = namedType && typeByName(schema, namedType);
         return (
           <button
+            type="button"
             key={field.name}
             onClick={() => onInsertField(graphQLFieldSnippet(field))}
             className={`w-full flex items-center gap-1 ${indent} pr-2 py-0.5 hover:bg-[var(--border)] text-left`}
@@ -160,6 +163,7 @@ function TypeRefButton({
 
   return (
     <button
+      type="button"
       onClick={(e) => {
         e.stopPropagation();
         onNavigate(namedType);

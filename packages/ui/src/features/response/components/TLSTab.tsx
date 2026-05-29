@@ -19,7 +19,7 @@ export function TLSTab() {
           <Row label="Cipher suite" value={tls.cipherSuite ?? "-"} />
           {tls.certificates?.map((cert, i) => (
             <div
-              key={i}
+              key={cert.serialNumber}
               className="border border-[var(--border)] rounded p-3 flex flex-col gap-1.5"
             >
               <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">

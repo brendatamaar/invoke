@@ -4,7 +4,7 @@ import type { HttpMethod } from "@invoke/core";
 import { coreStore, useStore } from "../../../store";
 import { useHistory, useMockRoutes, useResponseExamples } from "../../../hooks/useDb";
 import type { AssertionDraft, ExtractionDraft } from "../../../types";
-import { parseGraphQLErrors, parseGraphQLCost } from "../components/GraphQLErrorsTab";
+import { parseGraphQLErrors, parseGraphQLCost } from "../utils/graphqlErrors";
 import { getBodyInfo, responsePath } from "../utils/body";
 
 export function useResponseViewerModel() {

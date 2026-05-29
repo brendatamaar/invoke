@@ -68,6 +68,7 @@ function GraphQLTypeListItem({
   const badge = kindBadge(type.kind);
   return (
     <button
+      type="button"
       onClick={onSelect}
       className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${selected ? "bg-[var(--accent)]/10 border-r-2 border-[var(--accent)]" : "hover:bg-[var(--border)]"}`}
       title={type.description ?? undefined}

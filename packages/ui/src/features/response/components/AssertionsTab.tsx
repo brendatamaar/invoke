@@ -15,7 +15,7 @@ export function AssertionsTab({
         const rule = assertionRules[i];
         return (
           <div
-            key={i}
+            key={`${rule?.type ?? "assertion"}-${rule?.matcher ?? ""}-${rule?.expected ?? ""}`}
             className={`flex items-start gap-3 px-3 py-3 ${result.passed ? "" : "bg-[var(--danger-bg)]"}`}
           >
             <span

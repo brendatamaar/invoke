@@ -21,8 +21,7 @@ export function AuthDebugTab() {
   const sentCookies = sentCookieHeader
     ? sentCookieHeader
         .split(";")
-        .map((pair) => pair.trim())
-        .filter(Boolean)
+        .flatMap((pair) => { const trimmed = pair.trim(); return trimmed ? [trimmed] : []; })
     : [];
   const firstCertificate = response?.tls?.certificates[0];
   const tokenExpiresAt =
@@ -56,7 +55,7 @@ function findHeader(headers: { key: string; value: string }[] | undefined, key: 
 function AuthDebugEmptyState() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 px-8 py-12 text-center">
-      <div className="flex h-10 w-10 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)]">
+      <div className="flex size-10 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)]">
         <KeyRound size={18} className="text-[var(--text-3)]" />
       </div>
       <p className="text-sm font-medium text-[var(--text-2)]">Send a request to inspect auth</p>

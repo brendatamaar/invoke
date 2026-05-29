@@ -12,7 +12,8 @@ export function QuickAssertionOverlay({
   onConfirm: (draft: AssertionDraft) => void;
   onClose: () => void;
 }) {
-  const [current, setCurrent] = useState(draft);
+  const [edits, setEdits] = useState<Partial<AssertionDraft>>({});
+  const current = { ...draft, ...edits };
   const needsExpression =
     current.type === "header" || current.type === "bodyJsonPath" || current.type === "regex";
 
@@ -24,8 +25,8 @@ export function QuickAssertionOverlay({
           size="2xs"
           value={current.type}
           onChange={(event) =>
-            setCurrent((draft) => ({
-              ...draft,
+            setEdits((prev) => ({
+              ...prev,
               type: event.target.value as AssertionType,
             }))
           }
@@ -42,8 +43,8 @@ export function QuickAssertionOverlay({
           size="2xs"
           value={current.matcher}
           onChange={(event) =>
-            setCurrent((draft) => ({
-              ...draft,
+            setEdits((prev) => ({
+              ...prev,
               matcher: event.target.value as AssertionMatcher,
             }))
           }
@@ -57,25 +58,27 @@ export function QuickAssertionOverlay({
       </div>
       {needsExpression && (
         <input
+          aria-label="Assertion expression"
           value={current.expression}
           onChange={(event) =>
-            setCurrent((draft) => ({ ...draft, expression: event.target.value }))
+            setEdits((prev) => ({ ...prev, expression: event.target.value }))
           }
           placeholder={current.type === "header" ? "Header-Name" : "$.path"}
           className="input text-2xs py-0.5 font-mono"
         />
       )}
       <input
+        aria-label="Expected value"
         value={current.expected}
-        onChange={(event) => setCurrent((draft) => ({ ...draft, expected: event.target.value }))}
+        onChange={(event) => setEdits((prev) => ({ ...prev, expected: event.target.value }))}
         placeholder="expected"
         className="input text-2xs py-0.5 font-mono"
       />
       <div className="flex gap-1.5 justify-end">
-        <button onClick={onClose} className="btn text-2xs py-0.5 px-2">
+        <button type="button" onClick={onClose} className="btn text-2xs py-0.5 px-2">
           Cancel
         </button>
-        <button onClick={() => onConfirm(current)} className="btn btn-primary text-2xs py-0.5 px-2">
+        <button type="button" onClick={() => onConfirm(current)} className="btn btn-primary text-2xs py-0.5 px-2">
           Add assertion
         </button>
       </div>

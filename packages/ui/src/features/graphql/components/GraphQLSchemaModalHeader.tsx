@@ -28,6 +28,7 @@ export function GraphQLSchemaModalHeader({
       <div className="flex items-center gap-0.5 ml-2">
         {(["types", "sdl", "frags"] as const).map((v) => (
           <button
+            type="button"
             key={v}
             onClick={() => onViewChange(v)}
             className={`tab-btn text-xs py-0.5 px-2 ${view === v ? "active" : ""}`}
@@ -41,13 +42,15 @@ export function GraphQLSchemaModalHeader({
         <div className="flex items-center gap-1.5 bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--accent)] rounded-md px-2 py-1 w-52 ml-2 transition-colors">
           <Search size={11} className="text-[var(--text-3)] shrink-0" />
           <input
+            aria-label="Search types and fields"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search types and fields\u2026"
+            placeholder="Search types and fields…"
             className="bg-transparent text-xs outline-none border-0 focus:ring-0 focus:border-0 flex-1 min-w-0 text-[var(--text-1)] placeholder-[var(--text-3)]"
           />
           {search && (
             <button
+              type="button"
               onClick={() => onSearchChange("")}
               className="text-[var(--text-3)] hover:text-[var(--text-1)]"
             >
@@ -62,6 +65,7 @@ export function GraphQLSchemaModalHeader({
           <span className="text-xs text-[var(--text-3)]">{fmtAge(lastFetched)}</span>
         )}
         <button
+          type="button"
           onClick={onRefresh}
           disabled={refreshing}
           className="p-1 rounded hover:bg-[var(--border)] text-[var(--text-3)] disabled:opacity-50 transition-colors"
@@ -70,6 +74,7 @@ export function GraphQLSchemaModalHeader({
           <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
         </button>
         <button
+          type="button"
           onClick={onClose}
           className="p-1 rounded hover:bg-[var(--border)] text-[var(--text-3)] transition-colors"
           title="Close"

@@ -86,9 +86,10 @@ export function CodeTab() {
           </Select>
         )}
         {codeLoading && !isGrpc && (
-          <span className="text-2xs text-[var(--text-3)]">Generating...</span>
+          <span className="text-2xs text-[var(--text-3)]">Generating{"\u2026"}</span>
         )}
         <button
+          type="button"
           onClick={copy}
           disabled={!displayCode}
           className="ml-auto p-1 text-[var(--text-3)] hover:text-[var(--text-1)] disabled:opacity-40"

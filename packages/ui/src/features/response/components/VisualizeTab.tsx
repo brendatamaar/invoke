@@ -30,7 +30,7 @@ export function VisualizeTab() {
       <iframe
         key={url}
         src={url}
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts"
         className="w-full h-full border-none"
         onLoad={() => URL.revokeObjectURL(url)}
         title="Response preview"

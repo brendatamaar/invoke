@@ -16,6 +16,7 @@ export function FragmentsPanel({
     <div className="flex flex-col flex-1 overflow-hidden">
       <div className="px-2 py-1 border-b border-[var(--border)] shrink-0 flex items-center gap-1">
         <button
+          type="button"
           onClick={onSaveFromQuery}
           className="flex items-center gap-1 text-2xs text-[var(--accent)] hover:underline"
           title="Save fragment definitions from current query"
@@ -39,6 +40,7 @@ export function FragmentsPanel({
                   <p className="text-2xs text-[var(--text-3)] truncate">on {frag.onType}</p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => onInsert(frag)}
                   className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)] hover:text-[var(--accent)] shrink-0"
                   title="Insert into query"
@@ -46,6 +48,7 @@ export function FragmentsPanel({
                   <Copy size={10} />
                 </button>
                 <button
+                  type="button"
                   onClick={() => onDelete(frag.id)}
                   className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
                   title="Delete fragment"

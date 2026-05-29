@@ -13,6 +13,7 @@ export function GraphQLSchemaImportBody({ model, status }: { model: ImportModel;
       <div className="flex items-center gap-1">
         {(["url", "file", "sdl"] as GraphQLSchemaImportSource[]).map((option) => (
           <button
+            type="button"
             key={option}
             onClick={() => model.setSource(option)}
             className={`tab-btn text-2xs ${model.source === option ? "active" : ""}`}
@@ -24,8 +25,9 @@ export function GraphQLSchemaImportBody({ model, status }: { model: ImportModel;
 
       {model.source === "url" && (
         <div className="flex flex-col gap-2">
-          <label className="text-2xs text-[var(--text-3)]">GraphQL endpoint</label>
+          <label htmlFor="graphql-schema-url" className="text-2xs text-[var(--text-3)]">GraphQL endpoint</label>
           <VariableAutocompleteInput
+            id="graphql-schema-url"
             value={model.schemaUrl}
             onChange={model.setSchemaUrl}
             onKeyDown={(e) => {

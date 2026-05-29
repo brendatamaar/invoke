@@ -18,10 +18,12 @@ export function JsonImportButton({
         ref={inputRef}
         type="file"
         accept=".json,application/json"
+        aria-label="Import JSON file"
         className="hidden"
         onChange={(e) => onImport(e.target.files?.[0])}
       />
       <button
+        type="button"
         onClick={() => inputRef.current?.click()}
         disabled={working}
         className="btn text-xs gap-1.5"

@@ -12,8 +12,8 @@ import { VisualizeTab } from "./VisualizeTab";
 import { QuickAssertionOverlay } from "./overlays/QuickAssertionOverlay";
 import { QuickExtractionOverlay } from "./overlays/QuickExtractionOverlay";
 import { SaveExampleOverlay } from "./overlays/SaveExampleOverlay";
-import { WebSocketLogPanel } from "../../websocket";
-import { GrpcResponseViewer } from "../../grpc";
+import { WebSocketLogPanel } from "../../websocket/components/WebSocketLogPanel";
+import { GrpcResponseViewer } from "../../grpc/components/GrpcResponseViewer";
 import { useResponseViewerModel } from "../hooks/useResponseViewerModel";
 import { ResponseBodyPanel } from "./panels/ResponseBodyPanel";
 import { EmptyResponseState, FailedResponseState } from "./panels/ResponseEmptyStates";
@@ -80,7 +80,7 @@ export function ResponseViewer() {
 
       {streaming && !response && (
         <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] bg-[var(--accent-subtle)]">
-          <span className="text-xs text-[var(--accent)] animate-pulse">Streaming...</span>
+          <span className="text-xs text-[var(--accent)] animate-pulse">Streaming{"\u2026"}</span>
           <span className="text-2xs text-[var(--text-3)]">{fmtSize(streamBytes)}</span>
         </div>
       )}
@@ -89,13 +89,8 @@ export function ResponseViewer() {
         responseTab={responseTab}
         passedCount={model.passedCount}
         totalCount={model.totalCount}
-        hasConsoleLogs={model.hasConsoleLogs}
-        hasConsoleError={model.hasConsoleError}
-        consoleCount={consoleLogs.preRequest.length + consoleLogs.postResponse.length}
-        hasGraphQLTab={model.hasGraphQLTab}
-        hasGraphQLErrors={model.graphqlErrors.length > 0}
-        graphqlErrorCount={model.graphqlErrors.length}
-        deferredCount={graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0}
+        consoleLogs={model.hasConsoleLogs ? { count: consoleLogs.preRequest.length + consoleLogs.postResponse.length, hasError: model.hasConsoleError } : undefined}
+        graphql={model.hasGraphQLTab ? { hasErrors: model.graphqlErrors.length > 0, errorCount: model.graphqlErrors.length, deferredCount: graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0 } : undefined}
         onSelect={(tab) => set({ responseTab: tab })}
       />
 
