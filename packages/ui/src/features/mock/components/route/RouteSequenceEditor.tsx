@@ -20,12 +20,13 @@ export function RouteSequenceEditor({
       </p>
       {sequences.map((sequence, index) => (
         <div
-          key={index}
+          key={`seq-${sequence.status}-${index}`}
           className="border border-[var(--border)] rounded-md p-3 flex flex-col gap-3"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-[var(--text-2)]">Response {index + 1}</span>
             <button
+              type="button"
               onClick={() => onRemove(index)}
               className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
             >
@@ -34,25 +35,29 @@ export function RouteSequenceEditor({
           </div>
           <div className="flex gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-2xs text-[var(--text-3)]">Status</label>
+              <label htmlFor={`seq-status-${index}`} className="text-2xs text-[var(--text-3)]">Status</label>
               <input
+                id={`seq-status-${index}`}
                 type="number"
                 className="input text-xs py-1 w-20"
                 min={100}
                 max={599}
                 value={sequence.status}
+                aria-label={`Response ${index + 1} status code`}
                 onChange={(event) => onUpdate(index, { status: Number(event.target.value) })}
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-2xs text-[var(--text-3)]">Latency</label>
+              <label htmlFor={`seq-latency-${index}`} className="text-2xs text-[var(--text-3)]">Latency</label>
               <div className="flex items-center gap-1">
                 <input
+                  id={`seq-latency-${index}`}
                   type="number"
                   className="input text-xs py-1 w-20"
                   min={0}
                   placeholder="0"
                   value={sequence.latencyMs ?? ""}
+                  aria-label={`Response ${index + 1} latency in milliseconds`}
                   onChange={(event) =>
                     onUpdate(index, {
                       latencyMs: event.target.value ? Number(event.target.value) : undefined,
@@ -69,10 +74,12 @@ export function RouteSequenceEditor({
             placeholder='{"message": "ok"}'
             value={sequence.body}
             onChange={(event) => onUpdate(index, { body: event.target.value })}
+            aria-label={`Response ${index + 1} body`}
           />
         </div>
       ))}
       <button
+        type="button"
         onClick={onAdd}
         className="flex items-center gap-1.5 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] self-start"
       >

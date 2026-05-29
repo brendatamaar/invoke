@@ -35,7 +35,7 @@ export function FlowPanel() {
         <span className="text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider">
           Flows
         </span>
-        <button onClick={openNew} className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5">
+        <button type="button" onClick={openNew} className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5">
           <Plus size={13} />
         </button>
       </div>
@@ -44,17 +44,15 @@ export function FlowPanel() {
         {flows.map((flow) => (
           <div
             key={flow.id}
-            className="group flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[var(--surface-2)]"
-            onClick={() => setEditingFlow(flow)}
+            className="relative group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)]"
           >
+            <button type="button" className="absolute inset-0" onClick={() => setEditingFlow(flow)} aria-label={`Edit ${flow.name}`} />
             <span className="flex-1 text-xs text-[var(--text-1)] truncate">{flow.name}</span>
             <span className="text-2xs text-[var(--text-3)]">{flow.steps?.length ?? 0} steps</span>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirmDeleteId(flow.id);
-              }}
-              className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)]"
+              type="button"
+              onClick={() => setConfirmDeleteId(flow.id)}
+              className="relative opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)]"
             >
               <Trash2 size={11} />
             </button>

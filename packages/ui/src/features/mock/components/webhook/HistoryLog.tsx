@@ -25,6 +25,7 @@ export function HistoryLog({
         </span>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={onRefresh}
             className={`text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 transition-colors ${loadingLogs ? "animate-spin" : ""}`}
             title="Refresh"
@@ -33,6 +34,7 @@ export function HistoryLog({
           </button>
           {entries.length > 0 && (
             <button
+              type="button"
               onClick={onClear}
               className="text-2xs text-[var(--text-3)] hover:text-[var(--danger)]"
             >
@@ -42,7 +44,7 @@ export function HistoryLog({
         </div>
       </div>
       {entries.length === 0 ? (
-        <p className="text-xs text-[var(--text-3)] text-center py-6">Waiting for requests...</p>
+        <p className="text-xs text-[var(--text-3)] text-center py-6">Waiting for requests…</p>
       ) : (
         <div className="flex flex-col gap-1">
           {entries.map((entry) => (

@@ -19,6 +19,8 @@ export function EnvironmentModalHeader({
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)] shrink-0">
       <input
+        id="env-modal-name"
+        aria-label="Environment name"
         value={name}
         onChange={(event) => onNameChange(event.target.value)}
         className="flex-1 bg-transparent outline-none text-sm font-semibold text-[var(--text-1)] placeholder-[var(--text-3)]"
@@ -30,9 +32,11 @@ export function EnvironmentModalHeader({
           type="file"
           accept=".env,text/plain"
           className="hidden"
+          aria-label="Import .env file"
           onChange={(event) => onImportFile(event.target.files?.[0])}
         />
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
           title="Import .env"
@@ -40,6 +44,7 @@ export function EnvironmentModalHeader({
           <Upload size={11} /> Import
         </button>
         <button
+          type="button"
           onClick={onRequestExport}
           className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
           title="Export .env"
@@ -48,6 +53,7 @@ export function EnvironmentModalHeader({
         </button>
       </div>
       <button
+        type="button"
         onClick={onClose}
         className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] ml-1"
       >

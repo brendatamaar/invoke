@@ -9,13 +9,19 @@ export function PassphraseModal() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const prevOpenRef = useRef(showPassphraseModal);
+
+  if (showPassphraseModal && !prevOpenRef.current) {
+    setValue("");
+    setConfirm("");
+    setError("");
+  }
+  prevOpenRef.current = showPassphraseModal;
 
   useEffect(() => {
     if (showPassphraseModal) {
-      setValue("");
-      setConfirm("");
-      setError("");
-      setTimeout(() => inputRef.current?.focus(), 30);
+      const id = setTimeout(() => inputRef.current?.focus(), 30);
+      return () => clearTimeout(id);
     }
   }, [showPassphraseModal]);
 
@@ -49,10 +55,11 @@ export function PassphraseModal() {
       width="400px"
       footer={
         <>
-          <button className="btn text-xs" onClick={() => close(null)}>
+          <button type="button" className="btn text-xs" onClick={() => close(null)}>
             Cancel
           </button>
           <button
+            type="button"
             className="btn btn-primary text-xs"
             onClick={submit}
             disabled={!value.trim() || (isSetup && !confirm.trim())}
@@ -72,8 +79,9 @@ export function PassphraseModal() {
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-[var(--text-2)]">Passphrase</label>
+          <label htmlFor="passphrase-input" className="text-xs text-[var(--text-2)]">Passphrase</label>
           <input
+            id="passphrase-input"
             ref={inputRef}
             type="password"
             value={value}
@@ -90,8 +98,9 @@ export function PassphraseModal() {
         </div>
         {isSetup && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-[var(--text-2)]">Confirm passphrase</label>
+            <label htmlFor="passphrase-confirm" className="text-xs text-[var(--text-2)]">Confirm passphrase</label>
             <input
+              id="passphrase-confirm"
               type="password"
               value={confirm}
               onChange={(e) => {

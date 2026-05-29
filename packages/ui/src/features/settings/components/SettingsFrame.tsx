@@ -19,17 +19,15 @@ export function SettingsFrame({
   onSave: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onCancel}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <button type="button" className="absolute inset-0 bg-black/40" onClick={onCancel} aria-label="Close" />
       <div
-        className="flex max-h-[80vh] w-[760px] max-w-[calc(100vw-32px)] flex-col rounded-md border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-pop)]"
-        onClick={(e) => e.stopPropagation()}
+        className="relative flex max-h-[80vh] w-[760px] max-w-[calc(100vw-32px)] flex-col rounded-md border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-pop)]"
       >
         <div className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-3">
           <span className="text-sm font-semibold">Settings</span>
           <button
+            type="button"
             onClick={onCancel}
             className="ml-auto rounded p-1 text-[var(--text-3)] hover:bg-[var(--surface-2)]"
             title="Close settings"
@@ -57,15 +55,15 @@ export function SettingsFrame({
           <div className="mr-auto flex items-center gap-2 text-2xs text-[var(--text-3)]">
             {dirty && (
               <>
-                <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+                <span className="size-2 rounded-full bg-[var(--accent)]" />
                 <span>Unsaved changes</span>
               </>
             )}
           </div>
-          <button onClick={onCancel} className="btn px-4 py-1.5 text-xs">
+          <button type="button" onClick={onCancel} className="btn px-4 py-1.5 text-xs">
             Cancel
           </button>
-          <button onClick={onSave} className="btn btn-primary px-4 py-1.5 text-xs">
+          <button type="button" onClick={onSave} className="btn btn-primary px-4 py-1.5 text-xs">
             Save
           </button>
         </div>
@@ -87,6 +85,7 @@ function NavItem({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`flex w-full items-center gap-2 border-l-2 px-3 py-2 text-left text-xs transition-colors ${
         active

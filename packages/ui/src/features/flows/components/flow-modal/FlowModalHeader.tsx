@@ -17,6 +17,7 @@ export function FlowModalHeader({
   return (
     <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[var(--border)] shrink-0">
       <input
+        aria-label="Flow name"
         className="input text-sm py-1 flex-1 font-medium"
         placeholder="Flow name"
         value={name}
@@ -37,6 +38,7 @@ export function FlowModalHeader({
         />
       </div>
       <button
+        type="button"
         onClick={onClose}
         className="text-[var(--text-3)] hover:text-[var(--text-1)] p-1 rounded hover:bg-[var(--surface-2)]"
       >
@@ -59,6 +61,7 @@ function ViewButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`px-2 py-1 text-2xs flex items-center gap-1 ${active ? "bg-[var(--accent)] text-white" : "text-[var(--text-3)] hover:bg-[var(--surface-2)]"}`}
       title={`${label} view`}

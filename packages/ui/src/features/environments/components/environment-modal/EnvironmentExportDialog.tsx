@@ -23,13 +23,13 @@ export function EnvironmentExportDialog({
         width="420px"
         footer={
           <>
-            <button className="btn text-xs" onClick={onClose}>
+            <button type="button" className="btn text-xs" onClick={onClose}>
               Cancel
             </button>
-            <button className="btn btn-primary text-xs" onClick={onExportNonSensitive}>
+            <button type="button" className="btn btn-primary text-xs" onClick={onExportNonSensitive}>
               Export non-sensitive
             </button>
-            <button className="btn btn-danger text-xs" onClick={onExportAll}>
+            <button type="button" className="btn btn-danger text-xs" onClick={onExportAll}>
               Export all
             </button>
           </>

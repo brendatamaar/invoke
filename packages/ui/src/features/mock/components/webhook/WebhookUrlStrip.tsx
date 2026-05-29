@@ -31,6 +31,7 @@ export function WebhookUrlStrip({
         {url}
       </span>
       <button
+        type="button"
         onClick={onCopy}
         className="shrink-0 flex items-center gap-1"
         style={{

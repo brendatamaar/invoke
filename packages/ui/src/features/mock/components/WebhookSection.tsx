@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import type { WebhookEndpoint, WebhookValidationConfig } from "../../../types";
 import { useStore } from "../../../store";
-import { deleteWebhookEndpoint } from "../../webhook";
+import { deleteWebhookEndpoint } from "../../webhook/api";
 import { DEFAULT_VALIDATION } from "./webhook/constants";
 import { WebhookEndpointRow } from "./webhook/WebhookEndpointRow";
 import { WebhookModal } from "./webhook/WebhookModal";
@@ -57,6 +57,7 @@ export function WebhookSection() {
           Webhooks {endpoints.length > 0 && `- ${endpoints.length}`}
         </span>
         <button
+          type="button"
           onClick={addEndpoint}
           className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
           title="New webhook endpoint"

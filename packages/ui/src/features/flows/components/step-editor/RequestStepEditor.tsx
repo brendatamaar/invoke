@@ -12,7 +12,7 @@ export function RequestStepEditor({
   return (
     <>
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-[var(--text-2)]">Request</label>
+        <label htmlFor="request-url" className="text-xs font-medium text-[var(--text-2)]">Request</label>
         <div className="flex gap-2">
           <Select
             value={step.request.method}
@@ -31,6 +31,8 @@ export function RequestStepEditor({
             ))}
           </Select>
           <input
+            id="request-url"
+            aria-label="Request URL"
             className="input text-sm py-1.5 flex-1"
             placeholder="https://..."
             value={step.request.url}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef } from "react";
 import { useEscapeKey } from "../hooks/useEscapeKey";
 import type { RequestProtocol, RetentionSettings } from "@invoke/core";
 import { coreStore, useStore } from "../../../store";
@@ -41,21 +41,39 @@ export function SettingsPanel() {
   const retentionSettings = useRetentionSettings();
   const activeProtocol = (request.protocol ?? "rest") as RequestProtocol;
 
-  const [tab, setTab] = useState<SettingsTab>("general");
-  const [general, setGeneral] = useState<GeneralDraft>(() =>
-    buildGeneralDraft(uiFontSize, editorWordWrap),
+  type PanelState = { tab: SettingsTab; general: GeneralDraft; retentionDraft: RetentionSettings; storageStats: Record<string, number>; confirmClearCookies: boolean };
+  const [panelState, panelDispatch] = useReducer(
+    (prev: PanelState, patch: Partial<PanelState>) => ({ ...prev, ...patch }),
+    {
+      tab: "general" as SettingsTab,
+      general: buildGeneralDraft(uiFontSize, editorWordWrap),
+      retentionDraft: retentionSettings ?? DEFAULT_RETENTION,
+      storageStats: {} as Record<string, number>,
+      confirmClearCookies: false,
+    },
   );
-  const [retentionDraft, setRetentionDraft] = useState<RetentionSettings>(
-    retentionSettings ?? DEFAULT_RETENTION,
-  );
-  const [storageStats, setStorageStats] = useState<Record<string, number>>({});
-  const [confirmClearCookies, setConfirmClearCookies] = useState(false);
+  const { tab, general, retentionDraft, storageStats, confirmClearCookies } = panelState;
+  const setTab = (v: SettingsTab) => panelDispatch({ tab: v });
+  const setGeneral = (v: GeneralDraft | ((prev: GeneralDraft) => GeneralDraft)) =>
+    panelDispatch({ general: typeof v === "function" ? v(panelState.general) : v });
+  const setRetentionDraft = (v: RetentionSettings) => panelDispatch({ retentionDraft: v });
+  const setStorageStats = (v: Record<string, number>) => panelDispatch({ storageStats: v });
+  const setConfirmClearCookies = (v: boolean) => panelDispatch({ confirmClearCookies: v });
   const backupInputRef = useRef<HTMLInputElement>(null);
+  const prevShowRef = useRef(showSettings);
   const protocolDrafts = useProtocolDefaultDrafts({
     showSettings,
     protocolDefaults,
     activeProtocol,
   });
+
+  if (showSettings && !prevShowRef.current) {
+    setTab(settingsTab ?? "general");
+    setGeneral(buildGeneralDraft(uiFontSize, editorWordWrap));
+    setRetentionDraft(retentionSettings ?? DEFAULT_RETENTION);
+    setConfirmClearCookies(false);
+  }
+  prevShowRef.current = showSettings;
 
   const persistedGeneral = useMemo(
     () => buildGeneralDraft(uiFontSize, editorWordWrap),
@@ -85,15 +103,11 @@ export function SettingsPanel() {
 
   useEffect(() => {
     if (!showSettings) return;
-    setTab(settingsTab ?? "general");
-    setGeneral(buildGeneralDraft(uiFontSize, editorWordWrap));
-    setRetentionDraft(retentionSettings ?? DEFAULT_RETENTION);
-    setConfirmClearCookies(false);
     coreStore
       .getStorageStats()
       .then(setStorageStats)
       .catch(() => {});
-  }, [editorWordWrap, retentionSettings, showSettings, settingsTab, uiFontSize]);
+  }, [showSettings]);
 
   useEscapeKey(showSettings, () => set({ showSettings: false, settingsTab: undefined }));
 

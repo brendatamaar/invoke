@@ -72,14 +72,11 @@ export function EnvironmentModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Close" />
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
+        className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 640, maxHeight: "80vh" }}
-        onClick={(event) => event.stopPropagation()}
       >
         <EnvironmentModalHeader
           name={draft.name}
@@ -105,10 +102,10 @@ export function EnvironmentModal({
         />
 
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)] shrink-0">
-          <button onClick={onClose} className="btn text-xs">
+          <button type="button" onClick={onClose} className="btn text-xs">
             Cancel
           </button>
-          <button onClick={onSave} className="btn btn-primary text-xs">
+          <button type="button" onClick={onSave} className="btn btn-primary text-xs">
             Save
           </button>
         </div>

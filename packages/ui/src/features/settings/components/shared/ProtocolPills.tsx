@@ -14,6 +14,7 @@ export function ProtocolPills({
         const active = protocol === editingProtocol;
         return (
           <button
+            type="button"
             key={protocol}
             onClick={() => onChange(protocol)}
             className={`rounded border px-3 py-1.5 text-xs transition-colors ${

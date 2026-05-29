@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { INITIAL_PROTOCOL_DEFAULTS } from "@invoke/core";
 import type {
   DefaultProtocolOptions,
@@ -22,12 +22,13 @@ export function useProtocolDefaultDrafts({
     cloneProtocolDefaults(protocolDefaults),
   );
   const [editingProtocol, setEditingProtocol] = useState<RequestProtocol>(activeProtocol);
+  const prevShowRef = useRef(showSettings);
 
-  useEffect(() => {
-    if (!showSettings) return;
+  if (showSettings && !prevShowRef.current) {
     setDrafts(cloneProtocolDefaults(protocolDefaults));
     setEditingProtocol(activeProtocol);
-  }, [activeProtocol, protocolDefaults, showSettings]);
+  }
+  prevShowRef.current = showSettings;
 
   const activeDraft = drafts[editingProtocol];
   const activeOptions = activeDraft.options;

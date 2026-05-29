@@ -38,7 +38,7 @@ export function FlowStepList({
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-3 px-3 flex flex-col">
+      <div className="flex-1 overflow-y-auto p-3 flex flex-col">
         {steps.map((step, i) => {
           const stepResult = flowResult?.steps.find((r: FlowStepResult) => r.stepId === step.id);
           const isDragTarget = dragOver === i;
@@ -63,9 +63,9 @@ export function FlowStepList({
             >
               {isDragTarget && <div className="h-0.5 bg-[var(--accent)] rounded mx-1 mb-1" />}
               <div
-                className={`group flex items-start gap-1.5 px-2 py-2 rounded cursor-pointer hover:bg-[var(--surface-2)] ${selectedIndex === i ? "bg-[var(--accent-subtle)]" : ""}`}
-                onClick={() => onSelect(i)}
+                className={`relative group flex items-start gap-1.5 px-2 py-2 rounded hover:bg-[var(--surface-2)] ${selectedIndex === i ? "bg-[var(--accent-subtle)]" : ""}`}
               >
+                <button type="button" className="absolute inset-0" onClick={() => onSelect(i)} aria-label={`Select step ${step.name}`} />
                 <GripVertical
                   size={11}
                   className="text-[var(--text-3)] opacity-0 group-hover:opacity-100 shrink-0 mt-1 cursor-grab"
@@ -106,11 +106,9 @@ export function FlowStepList({
                   )}
                 </div>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveStep(i);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0 mt-0.5"
+                  type="button"
+                  onClick={() => onRemoveStep(i)}
+                  className="relative opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0 mt-0.5"
                 >
                   <Trash2 size={10} />
                 </button>
@@ -132,6 +130,7 @@ export function FlowStepList({
           <div className="flex flex-col gap-0.5">
             {FLOW_STEP_TYPES.map((t) => (
               <button
+                type="button"
                 key={t}
                 onClick={() => onAddStep(t)}
                 className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--text-1)] text-left"
@@ -141,6 +140,7 @@ export function FlowStepList({
               </button>
             ))}
             <button
+              type="button"
               onClick={() => onSetAddingStep(false)}
               className="text-2xs text-[var(--text-3)] hover:text-[var(--text-1)] px-2 py-1 text-left mt-0.5"
             >
@@ -149,6 +149,7 @@ export function FlowStepList({
           </div>
         ) : (
           <button
+            type="button"
             onClick={() => onSetAddingStep(true)}
             className="flex items-center gap-1.5 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] w-full"
           >

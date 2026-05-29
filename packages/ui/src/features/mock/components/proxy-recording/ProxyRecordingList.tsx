@@ -29,6 +29,7 @@ export function ProxyRecordingList({
     <>
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)]">
         <button
+          type="button"
           onClick={onToggleAll}
           className="text-[var(--text-3)] hover:text-[var(--accent)] shrink-0"
         >
@@ -48,15 +49,13 @@ export function ProxyRecordingList({
       {records.map((record) => (
         <div
           key={record.id}
-          onClick={() => onToggleSelect(record.id)}
-          className={`flex items-center gap-2.5 px-3 py-2 border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors ${selected.has(record.id) ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--surface-2)]"}`}
+          className={`relative flex items-center gap-2.5 px-3 py-2 border-b border-[var(--border)] last:border-0 transition-colors ${selected.has(record.id) ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--surface-2)]"}`}
         >
+          <button type="button" className="absolute inset-0" onClick={() => onToggleSelect(record.id)} aria-label="Toggle selection" />
           <button
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleSelect(record.id);
-            }}
-            className="shrink-0 text-[var(--text-3)]"
+            type="button"
+            onClick={() => onToggleSelect(record.id)}
+            className="relative shrink-0 text-[var(--text-3)]"
           >
             {selected.has(record.id) ? (
               <CheckSquare size={11} className="text-[var(--accent)]" />

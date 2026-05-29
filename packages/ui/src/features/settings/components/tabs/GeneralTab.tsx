@@ -28,6 +28,7 @@ export function GeneralTab({
             const selected = general.theme === value;
             return (
               <button
+                type="button"
                 key={value}
                 onClick={() => setGeneral((draft) => ({ ...draft, theme: value }))}
                 className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs transition-colors ${
@@ -46,6 +47,7 @@ export function GeneralTab({
 
       <FieldRow label="UI font size" hint="Range: 11 to 16px.">
         <button
+          type="button"
           onClick={() =>
             setGeneral((draft) => ({
               ...draft,
@@ -62,6 +64,7 @@ export function GeneralTab({
           {general.uiFontSize}
         </span>
         <button
+          type="button"
           onClick={() =>
             setGeneral((draft) => ({
               ...draft,

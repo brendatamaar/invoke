@@ -29,7 +29,8 @@ export function FlowNode({
       ? "border-[var(--accent)]"
       : "border-[var(--border)]";
   return (
-    <div
+    <button
+      type="button"
       style={{
         position: "absolute",
         left: position.x,
@@ -39,7 +40,7 @@ export function FlowNode({
         cursor: "grab",
         userSelect: "none",
       }}
-      className={`bg-[var(--surface)] rounded-md border-2 shadow-sm flex flex-col px-3 py-2 gap-0.5 ${statusColor} ${selected ? "shadow-md" : ""}`}
+      className={`bg-[var(--surface)] rounded-md border-2 shadow-sm flex flex-col px-3 py-2 gap-0.5 text-left ${statusColor} ${selected ? "shadow-md" : ""}`}
       onMouseDown={(event) => onMouseDown(event, step.id)}
       onClick={() => onSelect(index)}
     >
@@ -68,6 +69,6 @@ export function FlowNode({
           {stepResult.completedAt - stepResult.startedAt}ms - {stepResult.response.status}
         </div>
       )}
-    </div>
+    </button>
   );
 }

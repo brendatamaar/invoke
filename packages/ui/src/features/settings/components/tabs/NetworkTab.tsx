@@ -67,6 +67,7 @@ export function NetworkTab({
 
         <div className="pt-1">
           <button
+            type="button"
             onClick={resetActiveProtocolDefaults}
             className="text-2xs text-[var(--text-3)] underline hover:text-[var(--text-1)]"
           >
@@ -101,6 +102,7 @@ function TimeoutFields({
             })
           }
           placeholder="default"
+          aria-label="Connect timeout in milliseconds"
           className="input w-32 text-xs"
         />
       </FieldRow>
@@ -119,6 +121,7 @@ function TimeoutFields({
             })
           }
           placeholder="default"
+          aria-label="Read timeout in milliseconds"
           className="input w-32 text-xs"
         />
       </FieldRow>
@@ -156,6 +159,7 @@ function RedirectFields({
                 maxRedirects: numericInputValue(e.currentTarget.value, 10, 0, 30),
               })
             }
+            aria-label="Max redirects"
             className="input w-20 text-xs"
           />
         </FieldRow>

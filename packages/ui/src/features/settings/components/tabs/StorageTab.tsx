@@ -42,6 +42,7 @@ export function StorageTab({
               const value = numericInputValue(e.currentTarget.value, 0, 0);
               setRetentionDraft((draft) => ({ ...draft, maxEntries: value }));
             }}
+            aria-label="Max entries"
             className="input w-24 text-xs"
           />
         </FieldRow>
@@ -56,6 +57,7 @@ export function StorageTab({
               const value = numericInputValue(e.currentTarget.value, 0, 0);
               setRetentionDraft((draft) => ({ ...draft, retentionDays: value }));
             }}
+            aria-label="Keep days"
             className="input w-24 text-xs"
           />
         </FieldRow>
@@ -65,7 +67,7 @@ export function StorageTab({
         <SectionTitle title="Stats" />
         <div className="grid grid-cols-3 gap-2">
           {statItems.map(({ label, value }) => (
-            <div key={label} className="rounded-md bg-[var(--bg-2)] px-3 py-3 text-center">
+            <div key={label} className="rounded-md bg-[var(--bg-2)] p-3 text-center">
               <div className="font-mono text-sm font-semibold text-[var(--text-1)]">{value}</div>
               <div className="mt-1 text-2xs text-[var(--text-3)]">{label}</div>
             </div>
@@ -77,6 +79,7 @@ export function StorageTab({
         <SectionTitle title="Data management" />
         <div className="grid grid-cols-2 gap-3">
           <button
+            type="button"
             onClick={onOpenClearHistory}
             className="btn flex items-center justify-center gap-2 text-xs"
           >
@@ -84,6 +87,7 @@ export function StorageTab({
             Clear History
           </button>
           <button
+            type="button"
             onClick={onClearCookies}
             disabled={cookiesCount === 0}
             className="btn flex items-center justify-center gap-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
@@ -95,7 +99,7 @@ export function StorageTab({
         {confirmClearCookies && (
           <div className="flex items-center gap-3 bg-[var(--danger-bg)] px-3 py-2 text-xs text-[var(--text-2)]">
             <span className="flex-1">Clear all stored cookies from this workspace?</span>
-            <button onClick={onCancelClearCookies} className="btn text-2xs">
+            <button type="button" onClick={onCancelClearCookies} className="btn text-2xs">
               Cancel
             </button>
           </div>

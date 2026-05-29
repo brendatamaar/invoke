@@ -57,6 +57,7 @@ export function MockRoutesSection({
         </span>
         <div className="flex items-center gap-1.5">
           <button
+            type="button"
             onClick={onSync}
             className="text-[var(--text-3)] hover:text-[var(--ok)] p-0.5"
             title="Sync routes"
@@ -65,6 +66,7 @@ export function MockRoutesSection({
           </button>
           {status === "Active" && (
             <button
+              type="button"
               onClick={onStop}
               className="text-[var(--danger)] hover:text-[var(--danger)] p-0.5"
               title="Stop mock server"
@@ -78,9 +80,11 @@ export function MockRoutesSection({
             accept=".json"
             className="hidden"
             onChange={handleFileChange}
+            aria-label="Import routes file"
           />
           {routes.length > 0 && (
             <button
+              type="button"
               onClick={onDeleteAll}
               className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
               title="Delete all routes"
@@ -89,6 +93,7 @@ export function MockRoutesSection({
             </button>
           )}
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
             title="Import routes from JSON"
@@ -96,6 +101,7 @@ export function MockRoutesSection({
             <Upload size={13} />
           </button>
           <button
+            type="button"
             onClick={() => onAdd(makeRoute())}
             className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
             title="Add new route"
@@ -109,18 +115,15 @@ export function MockRoutesSection({
         {routes.map((route) => (
           <div
             key={route.id}
-            className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-t border-[var(--border)] cursor-pointer"
-            onClick={() => onEdit(route)}
+            className="relative group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-t border-[var(--border)]"
           >
+            <button type="button" className="absolute inset-0" onClick={() => onEdit(route)} aria-label={`Edit ${route.pathPattern}`} />
             <input
               type="checkbox"
               checked={route.enabled !== false}
-              onChange={(e) => {
-                e.stopPropagation();
-                onToggleEnabled(route.id);
-              }}
-              onClick={(e) => e.stopPropagation()}
-              className="shrink-0"
+              onChange={() => onToggleEnabled(route.id)}
+              className="relative shrink-0"
+              aria-label={`Enable ${route.pathPattern}`}
             />
             <MethodBadge method={route.method} />
             <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
@@ -138,11 +141,10 @@ export function MockRoutesSection({
               </span>
             )}
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(route.id);
-              }}
-              className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
+              type="button"
+              onClick={() => onDelete(route.id)}
+              className="relative opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
+              aria-label={`Delete ${route.pathPattern}`}
             >
               <Trash2 size={11} />
             </button>

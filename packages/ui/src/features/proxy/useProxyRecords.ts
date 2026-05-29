@@ -21,9 +21,11 @@ export function useClearProxyRecords() {
 
 export function useImportProxyToMocks() {
   const addToast = useStore((s) => s.addToast);
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (ids?: string[]) => proxyRecordsToMocks(ids),
     onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: PROXY_RECORDS_KEY });
       coreStore
         .setMeta("mockRoutes", result.routes)
         .catch((error: unknown) =>

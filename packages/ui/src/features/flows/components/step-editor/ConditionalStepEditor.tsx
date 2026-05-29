@@ -11,7 +11,7 @@ export function ConditionalStepEditor({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-[var(--text-2)]">Source</label>
+        <label htmlFor="condition-expression" className="text-xs font-medium text-[var(--text-2)]">Source</label>
         <div className="flex gap-2">
           <Select
             value={step.condition.source}
@@ -29,6 +29,8 @@ export function ConditionalStepEditor({
             <option value="header">Header</option>
           </Select>
           <input
+            id="condition-expression"
+            aria-label="Condition expression"
             className="input text-sm py-1.5 flex-1"
             placeholder="Expression"
             value={step.condition.expression}
@@ -42,7 +44,7 @@ export function ConditionalStepEditor({
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-[var(--text-2)]">Matcher</label>
+        <label htmlFor="condition-expected" className="text-xs font-medium text-[var(--text-2)]">Matcher</label>
         <div className="flex gap-2">
           <Select
             value={step.condition.matcher}
@@ -61,6 +63,8 @@ export function ConditionalStepEditor({
             ))}
           </Select>
           <input
+            id="condition-expected"
+            aria-label="Expected value"
             className="input text-sm py-1.5 flex-1"
             placeholder="Expected value"
             value={step.condition.expected}

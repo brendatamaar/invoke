@@ -16,6 +16,7 @@ export function WebhookModalHeader({ label, onClose }: { label: string; onClose:
         {label}
       </span>
       <button
+        type="button"
         onClick={onClose}
         className="p-0.5 rounded"
         style={{ color: "var(--fg-3)", transition: "color var(--dur-fast)" }}

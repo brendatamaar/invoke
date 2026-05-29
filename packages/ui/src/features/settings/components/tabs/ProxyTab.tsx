@@ -29,7 +29,7 @@ export function ProxyTab({
           title={`${PROTOCOL_LABELS[editingProtocol]} proxy`}
           description="Proxy policy for all requests in this protocol."
         />
-        <button onClick={activeProxy ? removeProxy : ensureProxy} className="btn text-xs">
+        <button type="button" onClick={activeProxy ? removeProxy : ensureProxy} className="btn text-xs">
           {activeProxy ? "Remove" : "Configure"}
         </button>
       </div>
@@ -55,6 +55,7 @@ export function ProxyTab({
               value={activeProxy.url}
               onChange={(e) => patchProxy({ url: e.currentTarget.value })}
               placeholder="http://127.0.0.1:8080"
+              aria-label="Proxy URL"
               className="input min-w-0 flex-1 text-xs"
             />
           </FieldRow>
@@ -63,6 +64,7 @@ export function ProxyTab({
               type="text"
               value={activeProxy.username ?? ""}
               onChange={(e) => patchProxy({ username: e.currentTarget.value })}
+              aria-label="Proxy username"
               className="input min-w-0 flex-1 text-xs"
             />
           </FieldRow>
@@ -71,6 +73,7 @@ export function ProxyTab({
               type="password"
               value={activeProxy.password ?? ""}
               onChange={(e) => patchProxy({ password: e.currentTarget.value })}
+              aria-label="Proxy password"
               className="input min-w-0 flex-1 text-xs"
             />
           </FieldRow>

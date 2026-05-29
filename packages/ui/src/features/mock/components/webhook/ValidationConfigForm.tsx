@@ -17,7 +17,7 @@ export function ValidationConfigForm({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Type</label>
+        <span className="text-2xs text-[var(--text-3)] w-20 shrink-0">Type</span>
         <Select
           value={config.type}
           onChange={(event) =>
@@ -34,7 +34,7 @@ export function ValidationConfigForm({
       {config.type === "hmac" && <HmacFields config={config} onPatch={patch} />}
       {config.type === "header" && <HeaderFields config={config} onPatch={patch} />}
       <div className="flex justify-end">
-        <button onClick={onSave} disabled={saving} className="btn text-2xs py-0.5 px-3">
+        <button type="button" onClick={onSave} disabled={saving} className="btn text-2xs py-0.5 px-3">
           {saving ? "Saving..." : "Apply"}
         </button>
       </div>
@@ -52,7 +52,7 @@ function HmacFields({
   return (
     <>
       <div className="flex items-center gap-2">
-        <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">Algorithm</label>
+        <span className="text-2xs text-[var(--text-3)] w-20 shrink-0">Algorithm</span>
         <Select
           value={config.algorithm ?? "sha256"}
           onChange={(event) => onPatch({ algorithm: event.target.value as HmacAlgorithm })}
@@ -126,10 +126,12 @@ function ValidationInput({
   placeholder: string;
   type?: "text" | "password";
 }) {
+  const id = `validation-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
   return (
     <div className="flex items-center gap-2">
-      <label className="text-2xs text-[var(--text-3)] w-20 shrink-0">{label}</label>
+      <label htmlFor={id} className="text-2xs text-[var(--text-3)] w-20 shrink-0">{label}</label>
       <input
+        id={id}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}

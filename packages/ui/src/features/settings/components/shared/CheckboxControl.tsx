@@ -13,7 +13,7 @@ export function CheckboxControl({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.currentTarget.checked)}
-        className="h-4 w-4"
+        className="size-4"
       />
       {label}
     </label>

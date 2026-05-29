@@ -62,6 +62,7 @@ function ChangedPathStrip({
       {[...new Set(diff.changes.map((change) => change.path))].slice(0, 12).map((path) => (
         <button
           key={path}
+          type="button"
           onClick={() => onAddIgnorePath(path)}
           className="text-2xs font-mono px-1.5 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
           title="Click to ignore this path"

@@ -23,6 +23,7 @@ export function WebhookEndpointRow({
         </span>
       )}
       <button
+        type="button"
         onClick={onCopy}
         title="Copy URL"
         className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 shrink-0"
@@ -30,6 +31,7 @@ export function WebhookEndpointRow({
         {copied ? <span className="text-2xs text-[var(--ok)]">Copied</span> : <Copy size={11} />}
       </button>
       <button
+        type="button"
         onClick={onConfigure}
         title="Configure"
         className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 shrink-0"
@@ -37,6 +39,7 @@ export function WebhookEndpointRow({
         <Settings size={11} />
       </button>
       <button
+        type="button"
         onClick={onDelete}
         title="Delete Webhook"
         className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5 shrink-0"

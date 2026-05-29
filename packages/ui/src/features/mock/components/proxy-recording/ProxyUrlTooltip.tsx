@@ -56,6 +56,7 @@ export function ProxyUrlTooltip({ url }: { url: string }) {
   return (
     <>
       <button
+        type="button"
         ref={btnRef}
         onClick={toggle}
         className="p-0.5 text-[var(--text-3)] hover:text-[var(--accent)]"
@@ -89,6 +90,7 @@ export function ProxyUrlTooltip({ url }: { url: string }) {
                   {url}
                 </code>
                 <button
+                  type="button"
                   onClick={copy}
                   className="p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] shrink-0"
                   title="Copy URL"

@@ -21,6 +21,7 @@ export function TlsClientFields({
           value={tls.caCertPem ?? ""}
           onChange={(e) => patchTlsClientConfig({ caCertPem: e.currentTarget.value })}
           placeholder="-----BEGIN CERTIFICATE-----"
+          aria-label="CA certificate"
           className="input min-w-0 flex-1 resize-y font-mono text-2xs"
         />
       </FieldRow>
@@ -30,6 +31,7 @@ export function TlsClientFields({
           value={tls.clientCertPem ?? ""}
           onChange={(e) => patchTlsClientConfig({ clientCertPem: e.currentTarget.value })}
           placeholder="-----BEGIN CERTIFICATE-----"
+          aria-label="Client certificate"
           className="input min-w-0 flex-1 resize-y font-mono text-2xs"
         />
       </FieldRow>
@@ -39,6 +41,7 @@ export function TlsClientFields({
           value={tls.clientKeyPem ?? ""}
           onChange={(e) => patchTlsClientConfig({ clientKeyPem: e.currentTarget.value })}
           placeholder="-----BEGIN PRIVATE KEY-----"
+          aria-label="Client key"
           className="input min-w-0 flex-1 resize-y font-mono text-2xs"
         />
       </FieldRow>
@@ -48,6 +51,7 @@ export function TlsClientFields({
           value={tls.serverName ?? ""}
           onChange={(e) => patchTlsClientConfig({ serverName: e.currentTarget.value })}
           placeholder="override.example.com"
+          aria-label="Server name"
           className="input min-w-0 flex-1 text-xs"
         />
       </FieldRow>

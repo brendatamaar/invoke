@@ -19,8 +19,9 @@ export function RouteResponseEditor({
     <>
       <div className="flex gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-[var(--text-2)]">Status code</label>
+          <label htmlFor="route-status-code" className="text-xs font-medium text-[var(--text-2)]">Status code</label>
           <input
+            id="route-status-code"
             type="number"
             className="input text-sm py-1.5 w-28"
             min={100}
@@ -30,9 +31,10 @@ export function RouteResponseEditor({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-[var(--text-2)]">Latency</label>
+          <label htmlFor="route-latency" className="text-xs font-medium text-[var(--text-2)]">Latency</label>
           <div className="flex items-center gap-2">
             <input
+              id="route-latency"
               type="number"
               className="input text-sm py-1.5 w-28"
               min={0}
@@ -47,8 +49,9 @@ export function RouteResponseEditor({
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-[var(--text-2)]">Response body</label>
+        <label htmlFor="route-response-body" className="text-xs font-medium text-[var(--text-2)]">Response body</label>
         <textarea
+          id="route-response-body"
           className="input text-sm py-2 font-mono resize-none"
           rows={8}
           placeholder='{"message": "ok"}'

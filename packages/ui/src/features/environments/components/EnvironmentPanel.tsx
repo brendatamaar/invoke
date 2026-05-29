@@ -59,6 +59,7 @@ export function EnvironmentPanel() {
           Environments
         </span>
         <button
+          type="button"
           onClick={() => openDraft()}
           className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
           title="New environment"

@@ -28,7 +28,7 @@ export function EnvironmentVariableTable({
 
       {variables.map((variable, index) => (
         <div
-          key={index}
+          key={variable.key || `var-${index}`}
           className="grid grid-cols-[8px_14px_8px_1fr_1px_1fr_32px] items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
         >
           <span />
@@ -36,7 +36,8 @@ export function EnvironmentVariableTable({
             type="checkbox"
             checked={variable.enabled !== false}
             onChange={(event) => onSetVar(index, "enabled", event.target.checked)}
-            className="w-3.5 h-3.5"
+            aria-label={`Enable variable ${variable.key || index}`}
+            className="size-3.5"
           />
           <span />
           <input
@@ -56,6 +57,7 @@ export function EnvironmentVariableTable({
               );
             }}
             placeholder="KEY"
+            aria-label={`Variable key ${index}`}
             className="w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono min-w-0"
           />
           <span className="h-4 bg-[var(--border)]" />
@@ -65,9 +67,11 @@ export function EnvironmentVariableTable({
               value={variable.value}
               onChange={(event) => onSetVar(index, "value", event.target.value)}
               placeholder="value"
+              aria-label={`Variable value ${index}`}
               className="flex-1 bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono min-w-0"
             />
             <button
+              type="button"
               onClick={() => onToggleReveal(index)}
               disabled={!variable.sensitive}
               className="px-1.5 text-[var(--text-3)] disabled:opacity-25 shrink-0"
@@ -80,6 +84,7 @@ export function EnvironmentVariableTable({
               )}
             </button>
             <button
+              type="button"
               onClick={() => onSetVar(index, "sensitive", !variable.sensitive)}
               className={`px-1.5 shrink-0 ${variable.sensitive ? "text-[var(--warn)]" : "text-[var(--text-3)]"}`}
               title={variable.sensitive ? "Mark public" : "Mark sensitive"}
@@ -88,6 +93,7 @@ export function EnvironmentVariableTable({
             </button>
           </div>
           <button
+            type="button"
             onClick={() => onSetVariables(variables.filter((_, i) => i !== index))}
             className="flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)]"
           >
@@ -97,6 +103,7 @@ export function EnvironmentVariableTable({
       ))}
 
       <button
+        type="button"
         onClick={() => onSetVariables([...variables, { key: "", value: "", enabled: true }])}
         className="flex items-center gap-1.5 px-3 py-2 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] w-full"
       >

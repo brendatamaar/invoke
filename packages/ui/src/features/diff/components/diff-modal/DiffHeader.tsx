@@ -6,6 +6,7 @@ export function DiffHeader({ onClose }: { onClose: () => void }) {
       <ArrowLeftRight size={15} className="text-[var(--accent)]" />
       <span className="text-sm font-semibold">Compare Responses</span>
       <button
+        type="button"
         onClick={onClose}
         className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
       >
