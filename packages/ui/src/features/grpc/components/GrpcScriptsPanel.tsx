@@ -10,6 +10,7 @@ export function GrpcScriptsPanel() {
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-1 px-3 py-1.5 border-b border-[var(--border)]">
         <button
+          type="button"
           onClick={() => setActive("pre")}
           className={`tab-btn text-2xs flex items-center gap-1 ${active === "pre" ? "active" : ""}`}
         >
@@ -21,6 +22,7 @@ export function GrpcScriptsPanel() {
           )}
         </button>
         <button
+          type="button"
           onClick={() => setActive("post")}
           className={`tab-btn text-2xs flex items-center gap-1 ${active === "post" ? "active" : ""}`}
         >

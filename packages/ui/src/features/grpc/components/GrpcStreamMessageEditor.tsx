@@ -18,6 +18,8 @@ export function GrpcStreamMessageEditor({
     <div className="border-t border-[var(--border)] flex items-center gap-2 px-2 py-1.5">
       <div
         className="flex-1 min-h-[56px]"
+        role="application"
+        aria-label="Message body editor"
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
@@ -28,6 +30,7 @@ export function GrpcStreamMessageEditor({
         <CodeEditor value={body} onChange={onBodyChange} lang="json" minHeight="56px" />
       </div>
       <button
+        type="button"
         className="btn-primary text-2xs flex items-center gap-1 px-2 py-1.5 shrink-0"
         onClick={onSend}
         disabled={sending || !streamId}

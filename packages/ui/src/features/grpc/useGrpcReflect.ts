@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { GrpcRequestConfig } from "@invoke/core";
 import { grpcReflect } from "./api";
@@ -18,22 +17,20 @@ export function useGrpcReflect(request: GrpcRequestConfig | null, address: strin
     retry: false,
   });
 
-  useEffect(() => {
-    if (query.isFetching) {
-      set({ grpcStatus: "Reflecting..." });
-      return;
-    }
-    if (query.isError) {
+  const fetchReflect = async () => {
+    set({ grpcStatus: "Reflecting..." });
+    try {
+      const result = await queryClient.fetchQuery({
+        queryKey,
+        queryFn: () => grpcReflect(request!),
+        staleTime: 0,
+      });
+      return result;
+    } catch (error) {
       set({ grpcStatus: "Error" });
+      throw error;
     }
-  }, [query.isFetching, query.isError, set]);
-
-  const fetchReflect = () =>
-    queryClient.fetchQuery({
-      queryKey,
-      queryFn: () => grpcReflect(request!),
-      staleTime: 0,
-    });
+  };
 
   return { ...query, fetchReflect };
 }

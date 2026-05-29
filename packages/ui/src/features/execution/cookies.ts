@@ -38,9 +38,9 @@ export async function persistResponseCookies(
   response: { headers: { key: string; value: string }[] },
   url: string,
 ) {
-  const setCookieHeaders = response.headers
-    .filter((header) => header.key.toLowerCase() === "set-cookie")
-    .map((header) => header.value);
+  const setCookieHeaders = response.headers.flatMap((header) =>
+    header.key.toLowerCase() === "set-cookie" ? [header.value] : []
+  );
   if (setCookieHeaders.length === 0) return undefined;
 
   const parsed = parseCookieHeaders(setCookieHeaders, url);

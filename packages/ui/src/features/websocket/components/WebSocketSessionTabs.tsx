@@ -11,13 +11,13 @@ export function WebSocketSessionTabs() {
       {wsSessions.map((sess) => (
         <div
           key={sess.id}
-          onClick={() => setActiveWsSession(sess.id)}
-          className={`flex items-center gap-1 px-2 py-1 rounded-t text-2xs cursor-pointer select-none whitespace-nowrap ${
+          className={`relative flex items-center gap-1 px-2 py-1 rounded-t text-2xs select-none whitespace-nowrap ${
             sess.id === activeWsSessionId
               ? "bg-[var(--surface-2)] text-[var(--text-1)] border border-b-0 border-[var(--border)]"
               : "text-[var(--text-3)] hover:text-[var(--text-2)]"
           }`}
         >
+          <button type="button" className="absolute inset-0" onClick={() => setActiveWsSession(sess.id)} aria-label={`Session: ${sess.label}`} />
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
               sess.state === "connected"
@@ -30,14 +30,15 @@ export function WebSocketSessionTabs() {
           {sess.label}
           {wsSessions.length > 1 && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
+              type="button"
+              onClick={() => {
                 if (sess.connectionId) {
                   webSocketClose(sess.connectionId).catch(() => {});
                 }
                 closeWsSession(sess.id);
               }}
-              className="ml-0.5 opacity-50 hover:opacity-100 rounded"
+              aria-label="Close session"
+              className="relative ml-0.5 opacity-50 hover:opacity-100 rounded"
             >
               <X size={10} />
             </button>
@@ -45,6 +46,7 @@ export function WebSocketSessionTabs() {
         </div>
       ))}
       <button
+        type="button"
         onClick={addWsSession}
         className="p-1 text-[var(--text-3)] hover:text-[var(--text-1)] rounded"
         title="New session"

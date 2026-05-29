@@ -78,14 +78,16 @@ export async function executeStream(
   const decoder = new TextDecoder();
   let buffer = "";
   let done = false;
+  // Sequential stream reading — Promise.all is not applicable for streaming I/O
+  // eslint-disable-next-line react-doctor/async-await-in-loop
   while (!done) {
-    const { value, done: streamDone } = await reader.read();
+    const { value, done: streamDone } = await reader.read(); // eslint-disable-line react-doctor/async-await-in-loop
     done = streamDone;
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const events = buffer.split("\n\n");
     buffer = events.pop() ?? "";
-    for (const event of events) await handleSseEvent(event, handlers);
+    await events.reduce((p, event) => p.then(() => handleSseEvent(event, handlers)), Promise.resolve());
   }
   if (buffer.trim()) await handleSseEvent(buffer, handlers);
 }

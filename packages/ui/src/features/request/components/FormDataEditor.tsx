@@ -43,7 +43,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
 
   return (
     <div className="flex flex-col">
-      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} aria-label="Upload file" />
       {rows.length > 0 && (
         <div
           className={`grid ${COL_TEMPLATE} items-center text-2xs text-[var(--text-3)] py-1 border-b border-[var(--border)]`}
@@ -63,7 +63,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
         const isFile = row.type === "file";
         return (
           <div
-            key={i}
+            key={`${row.key}-${i}`}
             className={`group grid ${COL_TEMPLATE} items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]`}
           >
             <span className="flex items-center justify-center text-[var(--text-3)] opacity-0 group-hover:opacity-100 cursor-grab">
@@ -73,7 +73,8 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
               type="checkbox"
               checked={row.enabled !== false}
               onChange={(e) => update(i, { enabled: e.target.checked })}
-              className="w-3.5 h-3.5"
+              className="size-3.5"
+              aria-label="Enable row"
             />
             <span />
             <input
@@ -81,6 +82,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
               value={row.key}
               onChange={(e) => update(i, { key: e.target.value })}
               placeholder="key"
+              aria-label="Key"
               className="w-full bg-transparent border-0 outline-none py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
             />
             <span className="h-4 bg-[var(--border)]" />
@@ -106,6 +108,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
                       {row.fileName ?? "file selected"}
                     </span>
                     <button
+                      type="button"
                       onClick={() => update(i, { value: "", fileName: undefined })}
                       className="shrink-0 text-[var(--text-3)] hover:text-[var(--danger)]"
                     >
@@ -114,6 +117,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
                   </>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => openFilePicker(i)}
                     className="flex items-center gap-1 text-2xs text-[var(--text-3)] hover:text-[var(--text-1)]"
                   >
@@ -130,6 +134,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
               />
             )}
             <button
+              type="button"
               onClick={() => remove(i)}
               className="flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100"
             >
@@ -139,6 +144,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
         );
       })}
       <button
+        type="button"
         onClick={add}
         className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-2)] w-full text-left"
       >

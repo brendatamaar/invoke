@@ -53,6 +53,7 @@ export function OptionsPanel() {
           step={1000}
           value={timeoutMs}
           onChange={(e) => setRequest({ timeoutMs: Math.max(0, Number(e.target.value)) })}
+          aria-label="Timeout milliseconds"
           className="input w-28 py-1 text-xs"
         />
       </Field>
@@ -64,6 +65,7 @@ export function OptionsPanel() {
             type="checkbox"
             checked={retryEnabled}
             onChange={(e) => updateRetry({ maxRetries: e.target.checked ? 3 : 0 })}
+            aria-label="Enable retry"
           />
         </Field>
         {retryEnabled && (
@@ -79,6 +81,7 @@ export function OptionsPanel() {
                     maxRetries: Math.max(1, Number(e.target.value)),
                   })
                 }
+                aria-label="Max retries"
                 className="input w-20 py-1 text-xs"
               />
             </Field>
@@ -93,6 +96,7 @@ export function OptionsPanel() {
                     backoffMs: Math.max(0, Number(e.target.value)),
                   })
                 }
+                aria-label="Backoff milliseconds"
                 className="input w-24 py-1 text-xs"
               />
             </Field>

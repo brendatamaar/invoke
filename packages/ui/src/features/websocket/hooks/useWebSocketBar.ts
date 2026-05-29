@@ -114,7 +114,7 @@ export function useWebSocketBar() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  useEffect(() => () => eventStream.closeAllEventStreams(), []);
+  useEffect(() => () => eventStream.closeAllEventStreams(), [eventStream]);
 
   const state = activeSession?.state ?? "disconnected";
   return {

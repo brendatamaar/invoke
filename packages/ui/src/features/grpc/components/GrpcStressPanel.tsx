@@ -30,8 +30,11 @@ export function GrpcStressPanel({ streamId }: { streamId: string }) {
     const rtts: number[] = [];
     setStats({ sent: 0, received: 0, lost: 0, rtts: [], running: true });
 
+    // Rate-controlled stress test — sequential sends are intentional
+    // eslint-disable-next-line react-doctor/async-await-in-loop
     while (Date.now() < endAt && !stopRef.current) {
       const t0 = Date.now();
+      // eslint-disable-next-line react-doctor/async-await-in-loop
       const res = await grpcStreamSend(streamId, body).catch(() => ({
         error: "send failed",
       }));
@@ -58,7 +61,7 @@ export function GrpcStressPanel({ streamId }: { streamId: string }) {
       }
     }
 
-    const sorted = [...rtts].sort((a, b) => a - b);
+    const sorted = rtts.toSorted((a, b) => a - b);
     setStats({
       sent,
       received,
@@ -78,29 +81,34 @@ export function GrpcStressPanel({ streamId }: { streamId: string }) {
         Send messages at a fixed rate on the open stream and measure throughput.
       </p>
       <div className="flex items-center gap-3">
-        <label className="text-xs text-[var(--text-2)] w-24 shrink-0">Rate (msg/s)</label>
+        <label htmlFor="stress-rate" className="text-xs text-[var(--text-2)] w-24 shrink-0">Rate (msg/s)</label>
         <input
+          id="stress-rate"
           type="number"
           min={1}
           max={100}
           className="input text-xs py-1 w-20"
           value={rate}
+          aria-label="Rate in messages per second"
           onChange={(e) => setRate(Math.max(1, Number(e.target.value)))}
         />
       </div>
       <div className="flex items-center gap-3">
-        <label className="text-xs text-[var(--text-2)] w-24 shrink-0">Duration (s)</label>
+        <label htmlFor="stress-duration" className="text-xs text-[var(--text-2)] w-24 shrink-0">Duration (s)</label>
         <input
+          id="stress-duration"
           type="number"
           min={1}
           max={300}
           className="input text-xs py-1 w-20"
           value={duration}
+          aria-label="Duration in seconds"
           onChange={(e) => setDuration(Math.max(1, Number(e.target.value)))}
         />
       </div>
       <div className="flex gap-2">
         <button
+          type="button"
           className="btn btn-primary text-xs flex items-center gap-1"
           onClick={run}
           disabled={!streamId || (stats?.running ?? false)}
@@ -108,7 +116,7 @@ export function GrpcStressPanel({ streamId }: { streamId: string }) {
           <Gauge size={12} /> Start
         </button>
         {stats?.running && (
-          <button className="btn btn-danger text-xs" onClick={stop}>
+          <button type="button" className="btn btn-danger text-xs" onClick={stop}>
             Stop
           </button>
         )}
@@ -135,7 +143,7 @@ export function GrpcStressPanel({ streamId }: { streamId: string }) {
           )}
           {stats.running && (
             <span className="flex items-center gap-1 text-[var(--accent)]">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+              <span className="inline-block size-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
               running…
             </span>
           )}

@@ -10,14 +10,10 @@ export function GRPCBar() {
         address={bar.grpcRequest.address}
         tls={bar.grpcRequest.tls ?? false}
         latencyMs={bar.grpcLatencyMs}
-        grpcStreamId={bar.grpcStreamId}
-        grpcStreaming={bar.grpcStreaming}
-        isExecuting={bar.isExecuting}
-        isClientStream={bar.isClientStream}
+        execution={{ streaming: bar.grpcStreaming, executing: bar.isExecuting, clientStream: bar.isClientStream, streamId: bar.grpcStreamId }}
+        schema={{ reflecting: bar.isReflecting ?? false, protosetLoaded: bar.isProtosetLoaded ?? false }}
         onAddressChange={bar.setAddress}
         onTlsChange={bar.setTls}
-        isReflecting={bar.isReflecting}
-        isProtosetLoaded={bar.isProtosetLoaded}
         onReflect={bar.reflect}
         onHealthCheck={bar.healthCheck}
         onCloseStream={bar.closeStream}

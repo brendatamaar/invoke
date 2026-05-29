@@ -22,6 +22,7 @@ export function URLBarActions({
   return (
     <>
       <button
+        type="button"
         onClick={onBatch}
         title="Batch runner"
         className="p-1.5 rounded border border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors"
@@ -29,6 +30,7 @@ export function URLBarActions({
         <Layers size={13} />
       </button>
       <button
+        type="button"
         onClick={onToggleStream}
         title="Stream mode"
         className={`p-1.5 rounded border text-xs transition-colors ${streamMode ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]" : "border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)]"}`}
@@ -37,6 +39,7 @@ export function URLBarActions({
       </button>
       {loading && canCancel && (
         <button
+          type="button"
           onClick={onCancel}
           className="btn btn-danger px-3 gap-1 text-xs"
           title="Cancel request"
@@ -45,6 +48,7 @@ export function URLBarActions({
         </button>
       )}
       <button
+        type="button"
         onClick={onSend}
         disabled={loading || !canSend}
         className="btn btn-primary px-4 gap-1.5 text-xs"

@@ -29,11 +29,14 @@ export function WebSocketLogToolbar({
           value={search}
           onChange={(e) => onSearch(e.target.value)}
           placeholder="Search messages..."
+          aria-label="Search messages"
           className="bg-transparent text-2xs text-[var(--text-1)] placeholder-[var(--text-3)] outline-none w-full"
         />
         {search && (
           <button
+            type="button"
             onClick={() => onSearch("")}
+            aria-label="Clear search"
             className="text-[var(--text-3)] hover:text-[var(--text-1)]"
           >
             <X size={10} />
@@ -53,6 +56,7 @@ export function WebSocketLogToolbar({
       </Select>
 
       <button
+        type="button"
         onClick={onPrettyJson}
         title="Toggle JSON pretty-print"
         className={`p-1 rounded ${prettyJson ? "text-[var(--accent)] bg-[var(--accent-muted,#dbeafe)]" : "text-[var(--text-3)] hover:text-[var(--text-1)]"}`}
@@ -60,6 +64,7 @@ export function WebSocketLogToolbar({
         <FileText size={13} />
       </button>
       <button
+        type="button"
         onClick={onCopyAll}
         title="Copy all"
         className="p-1 text-[var(--text-3)] hover:text-[var(--text-1)] rounded"
@@ -67,6 +72,7 @@ export function WebSocketLogToolbar({
         <Copy size={13} />
       </button>
       <button
+        type="button"
         onClick={onClearLog}
         title="Clear log"
         className="p-1 text-[var(--text-3)] hover:text-[var(--text-1)] rounded"

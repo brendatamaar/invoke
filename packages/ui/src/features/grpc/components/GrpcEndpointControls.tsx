@@ -1,18 +1,17 @@
 import { Activity, Heart, Loader2, RefreshCw } from "lucide-react";
 import { GrpcCallControls } from "./GrpcCallControls";
 
+type ExecutionState = { streaming: boolean; executing: boolean; clientStream: boolean; streamId?: string };
+type SchemaState = { reflecting: boolean; protosetLoaded: boolean };
+
 export function GrpcEndpointControls({
   address,
   tls,
   latencyMs,
-  grpcStreamId,
-  grpcStreaming,
-  isExecuting,
-  isClientStream,
+  execution,
+  schema,
   onAddressChange,
   onTlsChange,
-  isReflecting,
-  isProtosetLoaded,
   onReflect,
   onHealthCheck,
   onCloseStream,
@@ -23,14 +22,10 @@ export function GrpcEndpointControls({
   address?: string;
   tls: boolean;
   latencyMs?: number;
-  grpcStreamId?: string;
-  grpcStreaming: boolean;
-  isExecuting: boolean;
-  isClientStream: boolean;
+  execution: ExecutionState;
+  schema?: SchemaState;
   onAddressChange: (address: string) => void;
   onTlsChange: (tls: boolean) => void;
-  isReflecting?: boolean;
-  isProtosetLoaded?: boolean;
   onReflect: () => void;
   onHealthCheck: () => void;
   onCloseStream: () => void;
@@ -44,6 +39,7 @@ export function GrpcEndpointControls({
         value={address}
         onChange={(event) => onAddressChange(event.target.value)}
         placeholder="grpc.example.com:443"
+        aria-label="gRPC server address"
         className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] transition-colors"
       />
       <label className="flex items-center gap-1 text-xs text-[var(--text-2)] shrink-0 cursor-pointer">
@@ -55,19 +51,21 @@ export function GrpcEndpointControls({
         TLS
       </label>
       <button
+        type="button"
         onClick={onReflect}
-        disabled={isReflecting || isProtosetLoaded}
+        disabled={schema?.reflecting || schema?.protosetLoaded}
         className="btn text-xs gap-1"
         title={
-          isProtosetLoaded
+          schema?.protosetLoaded
             ? "Protoset active — server reflection disabled"
             : "Reflect (Ctrl+Shift+R)"
         }
       >
-        {isReflecting ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}{" "}
+        {schema?.reflecting ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}{" "}
         Reflect
       </button>
       <button
+        type="button"
         onClick={onHealthCheck}
         className="btn text-xs gap-1"
         title="grpc.health.v1.Health/Check - measures RTT"
@@ -84,10 +82,10 @@ export function GrpcEndpointControls({
         </span>
       )}
       <GrpcCallControls
-        grpcStreamId={grpcStreamId}
-        grpcStreaming={grpcStreaming}
-        isExecuting={isExecuting}
-        isClientStream={isClientStream}
+        grpcStreamId={execution.streamId}
+        grpcStreaming={execution.streaming}
+        isExecuting={execution.executing}
+        isClientStream={execution.clientStream}
         onCloseStream={onCloseStream}
         onCancelStream={onCancelStream}
         onCancelExecute={onCancelExecute}

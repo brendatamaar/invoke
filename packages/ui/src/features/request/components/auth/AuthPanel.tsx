@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { AuthConfig } from "@invoke/core";
 import { Select } from "../../../../components/shared/Select";
 import { useStore } from "../../../../store";
-import { oauth2AuthCodeResult } from "../../../oauth2";
+import { oauth2AuthCodeResult } from "../../../oauth2/api";
 import { ApiKeyAuthForm } from "./ApiKeyAuthForm";
 import { AwsSigV4Form } from "./AwsSigV4Form";
 import { BasicAuthForm } from "./BasicAuthForm";
@@ -28,11 +28,11 @@ export function AuthPanel() {
   const { request, setRequest, addToast } = useStore();
   const auth = request.auth ?? { type: "none" };
   const [authorizing, setAuthorizing] = useState(false);
-  const [oauthState, setOauthState] = useState<string | null>(null);
+  const oauthStateRef = useRef<string | null>(null);
   const { data: oauthResult } = useQuery({
-    queryKey: ["oauth2Result", oauthState],
-    queryFn: () => oauth2AuthCodeResult(oauthState!),
-    enabled: !!oauthState,
+    queryKey: ["oauth2Result", oauthStateRef.current],
+    queryFn: () => oauth2AuthCodeResult(oauthStateRef.current!),
+    enabled: !!oauthStateRef.current,
     refetchInterval: (query) => {
       const status = (query.state.data as { status?: string } | undefined)?.status;
       return !status || status === "pending" ? 1500 : false;
@@ -43,8 +43,8 @@ export function AuthPanel() {
 
   useEffect(() => {
     if (!oauthResult || oauthResult.status === "pending") return;
+    oauthStateRef.current = null;
     setAuthorizing(false);
-    setOauthState(null);
     if (oauthResult.status === "done" && oauthResult.accessToken) {
       const currentAuth = useStore.getState().request.auth ?? { type: "oauth2" };
       setRequest({
@@ -62,6 +62,11 @@ export function AuthPanel() {
       addToast("error", `OAuth2 failed: ${oauthResult.error ?? "unknown"}`);
     }
   }, [addToast, oauthResult, setRequest]);
+
+  const _handleOauthState = (state: string) => {
+    oauthStateRef.current = state;
+    setAuthorizing(true);
+  };
 
   const setAuth = (nextAuth: AuthConfig) => setRequest({ auth: nextAuth });
 

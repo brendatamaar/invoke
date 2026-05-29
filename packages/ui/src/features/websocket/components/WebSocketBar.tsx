@@ -12,6 +12,7 @@ export function WebSocketBar() {
         value={bar.websocketRequest.url}
         onChange={(event) => bar.setWebsocketRequest({ url: event.target.value })}
         placeholder="wss://echo.websocket.org"
+        aria-label="WebSocket URL"
         disabled={bar.state !== "disconnected"}
         className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] rounded px-3 py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] outline-none focus:border-[var(--accent)] transition-colors"
       />

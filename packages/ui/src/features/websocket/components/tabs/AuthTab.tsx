@@ -9,8 +9,9 @@ export function AuthTab() {
   return (
     <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Type</label>
+        <label htmlFor="ws-auth-type" className="text-xs text-[var(--text-2)] w-20 shrink-0">Type</label>
         <Select
+          id="ws-auth-type"
           value={auth.type}
           onChange={(e) =>
             setWebsocketRequest({
@@ -28,8 +29,9 @@ export function AuthTab() {
 
       {auth.type === "bearer" && (
         <div className="flex items-center gap-2">
-          <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Token</label>
+          <label htmlFor="ws-auth-token" className="text-xs text-[var(--text-2)] w-20 shrink-0">Token</label>
           <VariableAutocompleteInput
+            id="ws-auth-token"
             value={auth.token ?? ""}
             onChange={(v) => setWebsocketRequest({ auth: { ...auth, token: v } })}
             placeholder="{{token}}"
@@ -41,16 +43,18 @@ export function AuthTab() {
       {auth.type === "basic" && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Username</label>
+            <label htmlFor="ws-auth-username" className="text-xs text-[var(--text-2)] w-20 shrink-0">Username</label>
             <VariableAutocompleteInput
+              id="ws-auth-username"
               value={auth.username ?? ""}
               onChange={(v) => setWebsocketRequest({ auth: { ...auth, username: v } })}
               className="input text-xs flex-1"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Password</label>
+            <label htmlFor="ws-auth-password" className="text-xs text-[var(--text-2)] w-20 shrink-0">Password</label>
             <input
+              id="ws-auth-password"
               type="password"
               value={auth.password ?? ""}
               onChange={(e) =>
@@ -67,16 +71,18 @@ export function AuthTab() {
       {auth.type === "api-key" && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Key</label>
+            <label htmlFor="ws-auth-apikey-name" className="text-xs text-[var(--text-2)] w-20 shrink-0">Key</label>
             <VariableAutocompleteInput
+              id="ws-auth-apikey-name"
               value={auth.apiKeyName ?? ""}
               onChange={(v) => setWebsocketRequest({ auth: { ...auth, apiKeyName: v } })}
               className="input text-xs flex-1"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-[var(--text-2)] w-20 shrink-0">Value</label>
+            <label htmlFor="ws-auth-apikey-value" className="text-xs text-[var(--text-2)] w-20 shrink-0">Value</label>
             <VariableAutocompleteInput
+              id="ws-auth-apikey-value"
               value={auth.apiKeyValue ?? ""}
               onChange={(v) => setWebsocketRequest({ auth: { ...auth, apiKeyValue: v } })}
               className="input text-xs flex-1"

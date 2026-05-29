@@ -17,6 +17,7 @@ export function FileBodyEditor({
         ref={fileInputRef}
         type="file"
         className="hidden"
+        aria-label="Select file"
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (!file) return;
@@ -34,6 +35,7 @@ export function FileBodyEditor({
           <Upload size={12} className="text-[var(--accent)]" />
           <span className="font-mono text-[var(--text-1)]">{fileName || "file selected"}</span>
           <button
+            type="button"
             onClick={() => onChange("", "")}
             className="ml-1 text-[var(--text-3)] hover:text-[var(--danger)]"
           >
@@ -42,6 +44,7 @@ export function FileBodyEditor({
         </div>
       ) : (
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           className="btn border-dashed border-2 px-6 py-3 flex items-center gap-2 text-xs text-[var(--text-2)] hover:text-[var(--text-1)]"
         >

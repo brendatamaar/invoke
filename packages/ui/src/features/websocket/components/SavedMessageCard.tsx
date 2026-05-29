@@ -36,15 +36,15 @@ export function SavedMessageCard({
       }}
     >
       <div
-        className="flex items-center gap-2 px-3 py-2 group cursor-pointer hover:bg-[var(--surface-2)]"
-        onClick={onSelect}
+        className="relative flex items-center gap-2 px-3 py-2 group hover:bg-[var(--surface-2)]"
       >
+        <button type="button" className="absolute inset-0" onClick={onSelect} aria-label="Select message" />
         <input
           type="checkbox"
           checked={selected}
           onChange={onSelect}
-          onClick={(e) => e.stopPropagation()}
-          className="w-3.5 h-3.5 shrink-0 cursor-pointer"
+          aria-label="Select message"
+          className="relative size-3.5 shrink-0 cursor-pointer"
         />
         <span className="flex-1 text-xs font-mono text-[var(--text-1)] truncate">
           {preview || <span className="text-[var(--text-3)]">Untitled</span>}
@@ -56,20 +56,18 @@ export function SavedMessageCard({
           <span className="text-[10px] text-[var(--accent)] shrink-0">auto-send</span>
         )}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onExpand();
-          }}
-          className={`p-0.5 rounded shrink-0 ${expanded ? "text-[var(--accent)]" : "text-[var(--text-3)] opacity-0 group-hover:opacity-100 hover:text-[var(--text-1)]"}`}
+          type="button"
+          onClick={onExpand}
+          aria-label="Edit message"
+          className={`relative p-0.5 rounded shrink-0 ${expanded ? "text-[var(--accent)]" : "text-[var(--text-3)] opacity-0 group-hover:opacity-100 hover:text-[var(--text-1)]"}`}
         >
           <Pencil size={11} />
         </button>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="p-0.5 rounded shrink-0 text-[var(--text-3)] opacity-0 group-hover:opacity-100 hover:text-[var(--danger)]"
+          type="button"
+          onClick={onDelete}
+          aria-label="Delete message"
+          className="relative p-0.5 rounded shrink-0 text-[var(--text-3)] opacity-0 group-hover:opacity-100 hover:text-[var(--danger)]"
         >
           <Trash2 size={11} />
         </button>
@@ -87,12 +85,14 @@ export function SavedMessageCard({
             value={editDraft.label}
             onChange={(e) => onEditDraft({ ...editDraft, label: e.target.value })}
             placeholder="Label (optional)"
+            aria-label="Message label"
             className="input text-xs"
           />
           <textarea
             value={editDraft.body}
             onChange={(e) => onEditDraft({ ...editDraft, body: e.target.value })}
             placeholder="Message body\u2026"
+            aria-label="Message body"
             rows={3}
             className="input text-xs font-mono resize-none py-1.5"
           />
@@ -120,10 +120,10 @@ export function SavedMessageCard({
             </Select>
           </div>
           <div className="flex justify-end gap-2">
-            <button className="btn text-xs px-3" onClick={onDiscard}>
+            <button type="button" className="btn text-xs px-3" onClick={onDiscard}>
               Discard
             </button>
-            <button className="btn btn-primary text-xs px-3" onClick={onSave}>
+            <button type="button" className="btn btn-primary text-xs px-3" onClick={onSave}>
               Save
             </button>
           </div>

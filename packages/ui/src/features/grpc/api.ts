@@ -32,14 +32,19 @@ export async function grpcServerStream(
   const decoder = new TextDecoder();
   let buffer = "";
 
+  // Sequential stream reading — Promise.all is not applicable for streaming I/O
+  // eslint-disable-next-line react-doctor/async-await-in-loop
   for (;;) {
-    const { value, done } = await reader.read();
+    const { value, done } = await reader.read(); // eslint-disable-line react-doctor/async-await-in-loop
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const events = buffer.split("\n\n");
     buffer = events.pop() ?? "";
     for (const event of events) {
-      const dataLine = event.split("\n").find((line) => line.startsWith("data:"));
+      let dataLine: string | undefined;
+      for (const line of event.split("\n")) {
+        if (line.startsWith("data:")) { dataLine = line; break; }
+      }
       if (!dataLine) continue;
       try {
         const message = JSON.parse(dataLine.slice(5).trimStart()) as GrpcStreamMessage;
@@ -157,14 +162,19 @@ export function grpcStreamEvents(
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    // Sequential stream reading — Promise.all is not applicable for streaming I/O
+    // eslint-disable-next-line react-doctor/async-await-in-loop
     for (;;) {
-      const { value, done } = await reader.read();
+      const { value, done } = await reader.read(); // eslint-disable-line react-doctor/async-await-in-loop
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       const events = buffer.split("\n\n");
       buffer = events.pop() ?? "";
       for (const event of events) {
-        const dataLine = event.split("\n").find((l) => l.startsWith("data:"));
+        let dataLine: string | undefined;
+        for (const line of event.split("\n")) {
+          if (line.startsWith("data:")) { dataLine = line; break; }
+        }
         if (!dataLine) continue;
         try {
           const message = JSON.parse(dataLine.slice(5).trimStart()) as GrpcStreamMessage;

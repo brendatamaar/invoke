@@ -47,7 +47,7 @@ export function GrpcStreamTranscript({
         <span className="text-2xs text-[var(--text-3)]">Stream transcript</span>
         {grpcStreaming && (
           <span className="flex items-center gap-1 text-[var(--accent)] text-2xs">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+            <span className="inline-block size-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
             live
           </span>
         )}
@@ -59,6 +59,7 @@ export function GrpcStreamTranscript({
         )}
         {(sentMessages.length > 0 || receivedMessages.length > 0) && (
           <button
+            type="button"
             className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
             title="Clear transcript (Ctrl+L)"
             onClick={onClear}
@@ -76,7 +77,7 @@ export function GrpcStreamTranscript({
 
           {sentMessages.map((body, i) => (
             <div
-              key={`s${i}`}
+              key={body}
               className="group flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
             >
               <span className="mt-0.5 text-2xs font-bold text-[var(--accent)] shrink-0">→</span>
@@ -86,6 +87,7 @@ export function GrpcStreamTranscript({
                     #{i}
                   </span>
                   <button
+                    type="button"
                     className="ml-auto p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Copy message"
                     onClick={() => copyText(body)}
@@ -109,7 +111,7 @@ export function GrpcStreamTranscript({
             if (msg.done) {
               return (
                 <div
-                  key={`r${i}`}
+                  key={`done-${msg.statusCode ?? ""}-${msg.receivedAt ?? msg.durationMs ?? ""}`}
                   className="px-3 py-2 border-b border-[var(--border)] last:border-0 bg-[var(--surface-2)]"
                 >
                   <div className="flex items-center gap-2">
@@ -135,10 +137,11 @@ export function GrpcStreamTranscript({
 
             return (
               <div
-                key={`r${i}`}
+                key={msg.bodyJson ?? `recv-${msg.receivedAt}`}
                 className={`group flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] last:border-0 transition-colors ${isSelected ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--surface-2)]"}`}
               >
                 <button
+                  type="button"
                   onClick={() => msg.bodyJson && onSelectForDiff(msg.bodyJson)}
                   title={
                     isSelected
@@ -163,6 +166,7 @@ export function GrpcStreamTranscript({
                       <span className="text-2xs text-[var(--text-3)]">+{relativeMs}ms</span>
                     )}
                     <button
+                      type="button"
                       className="ml-auto p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Copy message"
                       onClick={() => msg.bodyJson && copyText(msg.bodyJson)}
@@ -182,6 +186,7 @@ export function GrpcStreamTranscript({
             <ArrowLeftRight size={11} className="text-[var(--accent)] shrink-0" />
             <span className="text-2xs text-[var(--text-2)] flex-1">Select one more to diff</span>
             <button
+              type="button"
               onClick={onResetDiff}
               className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
             >

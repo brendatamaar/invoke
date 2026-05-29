@@ -10,6 +10,7 @@ export function ScriptsPanel() {
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-1 px-3 py-1.5 border-b border-[var(--border)]">
         <button
+          type="button"
           onClick={() => setActiveScript("pre")}
           className={`tab-btn text-2xs flex items-center gap-1 ${activeScript === "pre" ? "active" : ""}`}
         >
@@ -20,6 +21,7 @@ export function ScriptsPanel() {
           />
         </button>
         <button
+          type="button"
           onClick={() => setActiveScript("post")}
           className={`tab-btn text-2xs flex items-center gap-1 ${activeScript === "post" ? "active" : ""}`}
         >

@@ -1,6 +1,6 @@
 import { graphQLToRequestConfig, type GraphQLRequestConfig, type RequestDraft } from "@invoke/core";
 import type { AppState, GraphQLFileUpload } from "../../../types";
-import { extractRequiredVarNames } from "../../graphql";
+import { extractRequiredVarNames } from "../../graphql/utils/query";
 
 export function buildGraphQLExecutionRequest({
   request,

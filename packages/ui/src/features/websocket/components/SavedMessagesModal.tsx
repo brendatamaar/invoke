@@ -46,6 +46,7 @@ export function SavedMessagesModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.5)" }}
+      role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) close();
       }}
@@ -123,10 +124,11 @@ export function SavedMessagesModal({
             background: "var(--bg-1)",
           }}
         >
-          <button className="btn" onClick={close}>
+          <button type="button" className="btn" onClick={close}>
             Cancel
           </button>
           <button
+            type="button"
             className="btn btn-primary"
             disabled={!selectedSaved}
             onClick={() => {
@@ -170,11 +172,12 @@ function SavedMessagesHeader({
         Saved Messages
       </span>
       <div className="flex items-center gap-1">
-        <button onClick={onAdd} className="btn text-2xs px-2 gap-1">
+        <button type="button" onClick={onAdd} className="btn text-2xs px-2 gap-1">
           <Plus size={11} /> Add
         </button>
         <div className="relative">
           <button
+            type="button"
             onClick={() => onShowTemplates(!showTemplates)}
             className="btn text-2xs px-2 gap-1"
           >
@@ -183,7 +186,9 @@ function SavedMessagesHeader({
           {showTemplates && <TemplateMenu onSelect={onAddTemplate} />}
         </div>
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close"
           className="p-1 rounded ml-1 text-[var(--fg-3)] hover:text-[var(--fg-0)]"
         >
           <X size={13} />

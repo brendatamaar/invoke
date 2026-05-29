@@ -52,6 +52,7 @@ export function GrpcStreamComposer({ streamId }: { streamId: string }) {
           <div className="px-3 py-1.5 border-b border-[var(--border)] flex items-center justify-between sticky top-0 bg-[var(--surface-2)]">
             <span className="text-2xs font-medium text-[var(--text-2)]">Saved messages</span>
             <button
+              type="button"
               onClick={() => setShowSaved(false)}
               className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
             >
@@ -64,6 +65,7 @@ export function GrpcStreamComposer({ streamId }: { streamId: string }) {
             saved.map((msg) => (
               <button
                 key={msg.id}
+                type="button"
                 onClick={() => loadSaved(msg)}
                 className="w-full text-left px-3 py-2 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)] flex flex-col gap-0.5"
               >
@@ -80,6 +82,7 @@ export function GrpcStreamComposer({ streamId }: { streamId: string }) {
 
       <div className="flex items-center gap-1 px-2 py-1.5 border-b border-[var(--border)] bg-[var(--surface-2)]">
         <button
+          type="button"
           onClick={saveCurrentBody}
           className="p-0.5 text-[var(--text-3)] hover:text-[var(--accent)]"
           title="Save current body"
@@ -87,6 +90,7 @@ export function GrpcStreamComposer({ streamId }: { streamId: string }) {
           <BookmarkPlus size={12} />
         </button>
         <button
+          type="button"
           onClick={() => setShowSaved((v) => !v)}
           className={`flex items-center gap-0.5 p-0.5 ${showSaved ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
           title="Load saved message"
@@ -97,6 +101,7 @@ export function GrpcStreamComposer({ streamId }: { streamId: string }) {
 
         <span className="ml-auto text-2xs text-[var(--text-3)] select-none mr-1">Ctrl+Enter</span>
         <button
+          type="button"
           className="btn btn-primary text-2xs flex items-center gap-1 px-2 py-1 shrink-0"
           onClick={() => void send()}
           disabled={sending || !streamId}
@@ -109,6 +114,8 @@ export function GrpcStreamComposer({ streamId }: { streamId: string }) {
 
       <div
         className="flex-1 min-h-0"
+        role="application"
+        aria-label="Stream message composer"
         onKeyDown={(e) => {
           if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
             e.preventDefault();

@@ -123,7 +123,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
             <span className="text-2xs text-[var(--text-3)]">Stream messages</span>
             {props.grpcStreaming && (
               <span className="flex items-center gap-1 text-[var(--accent)] text-2xs">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+                <span className="inline-block size-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
                 live
               </span>
             )}
@@ -135,6 +135,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
             )}
             {props.messages.length > 0 && (
               <button
+                type="button"
                 className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
                 title="Clear messages (Ctrl+L)"
                 onClick={props.onClear}
@@ -148,6 +149,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
 
       <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)] shrink-0">
         <button
+          type="button"
           onClick={() => setActiveTab("body")}
           className={`tab-btn text-2xs ${effectiveTab === "body" ? "active" : ""}`}
         >
@@ -155,6 +157,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
         </button>
         {hasMetadata && (
           <button
+            type="button"
             onClick={() => setActiveTab("metadata")}
             className={`tab-btn text-2xs ${effectiveTab === "metadata" ? "active" : ""}`}
           >
@@ -166,6 +169,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
         )}
         {hasAssertions && (
           <button
+            type="button"
             onClick={() => setActiveTab("assertions")}
             className={`tab-btn text-2xs ${effectiveTab === "assertions" ? "active" : ""}`}
           >
@@ -180,6 +184,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
         {effectiveTab === "body" && isUnary && bodyJson && (
           <div className="ml-auto flex items-center gap-0.5 border-l border-[var(--border)] pl-2">
             <button
+              type="button"
               onClick={() => setPrettyBody((v) => !v)}
               className={`p-0.5 ${prettyBody ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
               title="Toggle pretty print"
@@ -187,6 +192,7 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
               <Indent size={11} />
             </button>
             <button
+              type="button"
               onClick={copyBody}
               className="p-0.5 text-[var(--text-3)] hover:text-[var(--accent)]"
               title="Copy response body"
@@ -273,11 +279,11 @@ export function GrpcResponsePanel(props: UnaryProps | StreamProps) {
 
         {effectiveTab === "assertions" && (
           <div className="flex-1 overflow-auto divide-y divide-[var(--border)]">
-            {grpcAssertionResults.map((r, i) => {
+            {grpcAssertionResults.map((r) => {
               const rule = assertionRules.find((a) => a.id === r.assertionId);
               return (
                 <div
-                  key={i}
+                  key={r.assertionId}
                   className={`flex items-start gap-3 px-3 py-3 ${r.passed ? "" : "bg-[var(--danger-bg)]"}`}
                 >
                   <span
@@ -363,7 +369,7 @@ function StreamMessageList({
           if (msg.done) {
             return (
               <div
-                key={i}
+                key={`done-${msg.statusCode ?? ""}-${msg.receivedAt ?? msg.durationMs ?? ""}`}
                 className="px-3 py-2 border-b border-[var(--border)] last:border-0 bg-[var(--surface-2)]"
               >
                 <div className="flex items-center gap-2">
@@ -389,10 +395,11 @@ function StreamMessageList({
 
           return (
             <div
-              key={i}
+              key={msg.bodyJson ?? `msg-${msg.receivedAt}`}
               className={`group flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] last:border-0 transition-colors ${isSelected ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--surface-2)]"}`}
             >
               <button
+                type="button"
                 onClick={() => onToggleDiff(i)}
                 title={isSelected ? "Deselect" : "Select for diff"}
                 className={`mt-0.5 shrink-0 transition-opacity ${showCheckbox ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isSelected ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
@@ -409,6 +416,7 @@ function StreamMessageList({
                     <span className="text-2xs text-[var(--text-3)]">+{relativeMs}ms</span>
                   )}
                   <button
+                    type="button"
                     className="ml-auto p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Copy message"
                     onClick={() => msg.bodyJson && copyMessage(msg.bodyJson)}
@@ -430,11 +438,12 @@ function StreamMessageList({
             {diffSelected.length === 1 ? "Select one more to diff" : "2 messages selected"}
           </span>
           {diffSelected.length === 2 && (
-            <button onClick={onOpenDiff} className="btn btn-primary text-2xs px-2">
+            <button type="button" onClick={onOpenDiff} className="btn btn-primary text-2xs px-2">
               Open diff
             </button>
           )}
           <button
+            type="button"
             onClick={onClearDiff}
             className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
           >
@@ -467,9 +476,9 @@ function MetadataSection({
         {label}
       </p>
       <div className="divide-y divide-[var(--border)]">
-        {entries.map((h, i) => (
+        {entries.map((h) => (
           <div
-            key={i}
+            key={h.key}
             className="group flex items-start gap-2 px-3 py-2 hover:bg-[var(--surface-2)]"
           >
             <span className="text-2xs font-mono font-medium text-[var(--text-2)] w-48 shrink-0 truncate">
@@ -479,6 +488,7 @@ function MetadataSection({
               {h.value}
             </span>
             <button
+              type="button"
               onClick={() => onCopy(h.value)}
               className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5 shrink-0"
               title="Copy value"

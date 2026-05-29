@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCollections, useCookies, useFolders } from "../../hooks/useDb";
 import { useStore } from "../../store";
-import { PROXY_RECORDS_KEY } from "../proxy";
+import { PROXY_RECORDS_KEY } from "../proxy/useProxyRecords";
 import { applyOAuth2Token } from "./oauth2";
 import { injectCookies } from "./cookies";
 import { resolveWithPreRequestScript } from "./utils/preRequest";

@@ -15,6 +15,7 @@ export function VariableInspector({
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={onToggle}
         title="Active variables"
         className={`p-1.5 rounded border text-xs transition-colors ${open ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]" : "border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)]"}`}
@@ -30,7 +31,7 @@ export function VariableInspector({
             Active variables
           </p>
           {scopedVars.length === 0 ? (
-            <p className="px-3 py-3 text-2xs text-[var(--text-3)]">No variables defined</p>
+            <p className="p-3 text-2xs text-[var(--text-3)]">No variables defined</p>
           ) : (
             scopedVars.map((variable) => <VariableRow key={variable.key} variable={variable} />)
           )}

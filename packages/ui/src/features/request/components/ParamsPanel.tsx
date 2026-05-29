@@ -85,6 +85,7 @@ function PathVariableRow({
           onPathVariablesChange(next);
         }}
         placeholder="value"
+        aria-label={`Value for :${name}`}
         className={`w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono placeholder-[var(--text-3)] min-w-0 ${filled ? "text-[var(--success,#22c55e)]" : "text-[var(--warn)]"}`}
       />
     </div>

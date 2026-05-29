@@ -63,7 +63,6 @@ export function GrpcMethodPicker({
         {open ? (
           <input
             ref={inputRef}
-            autoFocus
             className="w-full px-2 py-1 pr-6 text-xs outline-none"
             style={{
               fontFamily: "var(--font-mono)",
@@ -73,6 +72,7 @@ export function GrpcMethodPicker({
               color: "var(--fg-0)",
             }}
             placeholder="Filter methods..."
+            aria-label="Filter gRPC methods"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);

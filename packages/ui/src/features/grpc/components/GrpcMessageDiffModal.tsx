@@ -42,14 +42,11 @@ export function GrpcMessageDiffModal({
   const hasChanges = additions + deletions + changes > 0;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Close" />
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
+        className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: "90vw", maxHeight: "90vh", minHeight: "50vh" }}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)] shrink-0">
@@ -71,6 +68,7 @@ export function GrpcMessageDiffModal({
             )}
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="ml-2 p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
           >

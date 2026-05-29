@@ -1,6 +1,7 @@
 import type { RequestConfig, RequestDraft } from "@invoke/core";
 import type { AppState } from "../../../types";
-import { executeStream, executeWithAPQ, executeWithRetry } from "../../execute";
+import { executeStream, executeWithRetry } from "../../execute/api";
+import { executeWithAPQ } from "../../execute/apq";
 import { finalizeResponseExecution, finalizeStreamExecution } from "./finalize";
 import { buildGraphQLExecutionRequest } from "./graphqlRequest";
 import type { resolveWithPreRequestScript } from "./preRequest";

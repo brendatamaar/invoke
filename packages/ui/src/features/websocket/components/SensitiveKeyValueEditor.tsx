@@ -43,7 +43,7 @@ export function SensitiveKeyValueEditor({
         const isRevealed = revealed.has(i);
         return (
           <div
-            key={i}
+            key={`${row.key}-${i}`}
             className="group grid grid-cols-[4px_14px_8px_1fr_1px_1fr_24px_24px] items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
           >
             <span />
@@ -51,7 +51,8 @@ export function SensitiveKeyValueEditor({
               type="checkbox"
               checked={row.enabled !== false}
               onChange={(e) => update(i, "enabled", e.target.checked)}
-              className="w-3.5 h-3.5"
+              aria-label="Enable row"
+              className="size-3.5"
             />
             <span />
             <input
@@ -59,6 +60,7 @@ export function SensitiveKeyValueEditor({
               value={row.key}
               onChange={(e) => update(i, "key", e.target.value)}
               placeholder="Header"
+              aria-label="Header key"
               className="w-full bg-transparent border-0 outline-none py-1.5 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
             />
             <span className="h-4 bg-[var(--border)]" />
@@ -67,17 +69,22 @@ export function SensitiveKeyValueEditor({
               value={row.value}
               onChange={(e) => update(i, "value", e.target.value)}
               placeholder="Value"
+              aria-label="Header value"
               className="w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono text-[var(--text-1)] placeholder-[var(--text-3)] min-w-0"
             />
             <button
+              type="button"
               onClick={() => toggleReveal(i)}
               title={isRevealed ? "Hide value" : "Reveal value"}
+              aria-label={isRevealed ? "Hide value" : "Reveal value"}
               className={`w-6 flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text-1)] ${!isSensitive ? "invisible" : ""}`}
             >
               {isRevealed ? <EyeOff size={11} /> : <Eye size={11} />}
             </button>
             <button
+              type="button"
               onClick={() => remove(i)}
+              aria-label="Remove row"
               className="w-6 flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100"
             >
               <Trash2 size={11} />
@@ -86,6 +93,7 @@ export function SensitiveKeyValueEditor({
         );
       })}
       <button
+        type="button"
         onClick={add}
         className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-2)] w-full text-left"
       >

@@ -17,6 +17,7 @@ export function GrpcTabBar({
       {tabs.map((t) => (
         <button
           key={t.id}
+          type="button"
           onClick={() => onSelect(t.id)}
           className={`tab-btn text-2xs ${activeTab === t.id ? "active" : ""}`}
         >

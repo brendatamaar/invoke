@@ -1,4 +1,4 @@
-import { oauth2AuthCodeStart } from "../../../oauth2";
+import { oauth2AuthCodeStart } from "../../../oauth2/api";
 import type { AuthFormProps } from "./types";
 
 type ToastFn = (kind: "success" | "error" | "info" | "warn", message: string) => void;

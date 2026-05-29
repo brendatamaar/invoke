@@ -20,6 +20,7 @@ export function TemplateMenu({ onSelect }: { onSelect: (template: MsgTemplate) =
           </div>
           {templates.map((tpl) => (
             <button
+              type="button"
               key={tpl.label}
               onClick={() => onSelect(tpl)}
               className="w-full text-left px-3 py-1.5 text-xs text-[var(--text-1)] hover:bg-[var(--surface-2)] transition-colors"

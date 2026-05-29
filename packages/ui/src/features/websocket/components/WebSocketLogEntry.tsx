@@ -36,11 +36,14 @@ export function WebSocketLogEntry({
           checked={selectedForDiff}
           onChange={onToggleDiff}
           title="Select for diff"
+          aria-label="Select for diff"
           className="mt-0.5 shrink-0 accent-[var(--accent)] cursor-pointer"
           style={{ width: 11, height: 11 }}
         />
         <button
+          type="button"
           onClick={onToggleExpanded}
+          aria-label="Toggle details"
           className="mt-0.5 shrink-0 text-[var(--text-3)] hover:text-[var(--text-1)]"
         >
           {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
@@ -98,6 +101,7 @@ function WebSocketLogMetadata({ entry }: { entry: WebSocketLogItem }) {
         <span className="text-[var(--text-2)]">{new Date(entry.createdAt).toISOString()}</span>
       </span>
       <button
+        type="button"
         onClick={() =>
           navigator.clipboard
             .writeText(entry.body)
