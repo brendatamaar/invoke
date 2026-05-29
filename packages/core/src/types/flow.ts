@@ -12,11 +12,7 @@ export interface Flow {
   updatedAt: number;
 }
 
-export type FlowStep =
-  | FlowRequestStep
-  | FlowDelayStep
-  | FlowConditionStep
-  | FlowLoopStep;
+export type FlowStep = FlowRequestStep | FlowDelayStep | FlowConditionStep | FlowLoopStep;
 
 export interface FlowRequestStep {
   id: string;
@@ -90,11 +86,7 @@ export interface FlowRunnerOptions {
 export interface FlowHooks {
   onStepStart?: (step: FlowStep) => void | Promise<void>;
   onStepComplete?: (result: FlowStepResult) => void | Promise<void>;
-  onVariableExtracted?: (
-    name: string,
-    value: string,
-    step: FlowStep,
-  ) => void | Promise<void>;
+  onVariableExtracted?: (name: string, value: string, step: FlowStep) => void | Promise<void>;
   onError?: (error: Error, step: FlowStep) => void | Promise<void>;
   onFlowComplete?: (result: FlowResult) => void | Promise<void>;
 }

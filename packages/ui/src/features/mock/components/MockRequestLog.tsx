@@ -20,8 +20,8 @@ function LogDetail({ log }: { log: MockLogEntry }) {
             Request Headers
           </p>
           <div className="space-y-0.5">
-            {enabledHeaders.map((h, i) => (
-              <div key={i} className="flex gap-2">
+            {enabledHeaders.map((h) => (
+              <div key={h.key} className="flex gap-2">
                 <span className="text-[var(--text-3)] shrink-0">{h.key}:</span>
                 <span className="text-[var(--text-1)] break-all">{h.value}</span>
               </div>
@@ -56,13 +56,9 @@ export function MockRequestLog({
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const toggle = (id: string) =>
-    setExpandedId((prev) => (prev === id ? null : id));
+  const toggle = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
 
-  const countLabel =
-    totalLogs > logs.length
-      ? `${logs.length} of ${totalLogs}`
-      : String(totalLogs);
+  const countLabel = totalLogs > logs.length ? `${logs.length} of ${totalLogs}` : String(totalLogs);
 
   return (
     <>
@@ -72,6 +68,7 @@ export function MockRequestLog({
         </span>
         {totalLogs > 0 && (
           <button
+            type="button"
             onClick={onClear}
             className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
           >
@@ -82,35 +79,26 @@ export function MockRequestLog({
       <div className="text-2xs">
         {logs.map((log) => (
           <div key={log.id}>
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)] cursor-pointer"
+            <button
+              type="button"
+              className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)] cursor-pointer w-full text-left"
               onClick={() => toggle(log.id)}
             >
               <span className="text-[var(--text-3)] shrink-0">
-                {expandedId === log.id ? (
-                  <ChevronDown size={10} />
-                ) : (
-                  <ChevronRight size={10} />
-                )}
+                {expandedId === log.id ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
               </span>
-              <span className="text-[var(--text-3)] shrink-0">
-                {formatTime(log.createdAt)}
-              </span>
+              <span className="text-[var(--text-3)] shrink-0">{formatTime(log.createdAt)}</span>
               <MethodBadge method={log.method} />
-              <span className="flex-1 text-[var(--text-1)] truncate">
-                {log.path}
-              </span>
+              <span className="flex-1 text-[var(--text-1)] truncate">{log.path}</span>
               <span className={`shrink-0 font-semibold ${statusColor(log.status)}`}>
                 {log.status}
               </span>
-            </div>
+            </button>
             {expandedId === log.id && <LogDetail log={log} />}
           </div>
         ))}
         {!logs.length && (
-          <p className="p-4 text-xs text-[var(--text-3)] text-center">
-            No requests yet
-          </p>
+          <p className="p-4 text-xs text-[var(--text-3)] text-center">No requests yet</p>
         )}
       </div>
     </>

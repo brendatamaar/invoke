@@ -21,27 +21,31 @@ export function WsLogDiffModal({ left, right, onClose }: Props) {
   const rightBody = right ? tryPrettyJson(right.body) : "";
 
   const isJson = (s: string) => {
-    try { JSON.parse(s); return true; } catch { return false; }
+    try {
+      JSON.parse(s);
+      return true;
+    } catch {
+      return false;
+    }
   };
   const lang = isJson(leftBody) || isJson(rightBody) ? "json" : "text";
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Close" />
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
+        className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: "90vw", maxHeight: "90vh", minHeight: "50vh" }}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)] shrink-0">
           <ArrowLeftRight size={15} className="text-[var(--accent)]" />
           <span className="text-sm font-semibold">Compare Logs</span>
           <button
+            type="button"
             onClick={onClose}
             className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
+            aria-label="Close"
           >
             <X size={15} />
           </button>

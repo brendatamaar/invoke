@@ -1,17 +1,9 @@
 import type { ReactNode } from "react";
 
-export function GQLOptionField({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+export function GQLOptionField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-center gap-2">
-      <label className="w-36 shrink-0 text-xs text-[var(--text-2)]">
-        {label}
-      </label>
+      <label className="w-36 shrink-0 text-xs text-[var(--text-2)]">{label}</label>
       <div className="flex-1">{children}</div>
     </div>
   );

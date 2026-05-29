@@ -2,13 +2,7 @@ import type React from "react";
 import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
 import type { KeyValue } from "@invoke/core";
 
-export type CodeEditorLang =
-  | "json"
-  | "javascript"
-  | "xml"
-  | "python"
-  | "text"
-  | "graphql";
+export type CodeEditorLang = "json" | "javascript" | "xml" | "python" | "text" | "graphql";
 
 export interface CodeEditorProps {
   value: string;
@@ -81,6 +75,7 @@ export interface SelectSizeClasses {
 }
 
 export interface SelectProps {
+  id?: string;
   value?: string;
   onChange?: (e: ChangeEvent<HTMLSelectElement>) => void;
   size?: SelectSize;
@@ -96,6 +91,7 @@ export interface StatusBadgeProps {
 }
 
 export interface VariableAutocompleteInputProps {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;

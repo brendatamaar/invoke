@@ -1,21 +1,9 @@
 import { describe, expect, it } from "vitest";
-import {
-  HTTP_METHODS,
-  makeRoute,
-  makeSequenceItem,
-} from "../features/mock/mockRouteUtils";
+import { HTTP_METHODS, makeRoute, makeSequenceItem } from "../features/mock/mockRouteUtils";
 
 describe("mock route utils", () => {
   it("defines supported HTTP methods", () => {
-    expect(HTTP_METHODS).toEqual([
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "HEAD",
-      "OPTIONS",
-    ]);
+    expect(HTTP_METHODS).toEqual(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
   });
 
   it("creates a default route draft", () => {

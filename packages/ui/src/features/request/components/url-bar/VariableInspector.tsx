@@ -15,6 +15,7 @@ export function VariableInspector({
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={onToggle}
         title="Active variables"
         className={`p-1.5 rounded border text-xs transition-colors ${open ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]" : "border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)]"}`}
@@ -30,13 +31,9 @@ export function VariableInspector({
             Active variables
           </p>
           {scopedVars.length === 0 ? (
-            <p className="px-3 py-3 text-2xs text-[var(--text-3)]">
-              No variables defined
-            </p>
+            <p className="p-3 text-2xs text-[var(--text-3)]">No variables defined</p>
           ) : (
-            scopedVars.map((variable) => (
-              <VariableRow key={variable.key} variable={variable} />
-            ))
+            scopedVars.map((variable) => <VariableRow key={variable.key} variable={variable} />)
           )}
           {unresolved.length > 0 && (
             <>
@@ -45,9 +42,7 @@ export function VariableInspector({
               </p>
               {unresolved.map((name) => (
                 <div key={name} className="flex items-center gap-2 px-3 py-1">
-                  <span className="font-mono text-2xs text-[var(--warn)] flex-1">
-                    {name}
-                  </span>
+                  <span className="font-mono text-2xs text-[var(--warn)] flex-1">{name}</span>
                   <span className="text-2xs text-[var(--text-3)]">not defined</span>
                 </div>
               ))}
@@ -59,11 +54,7 @@ export function VariableInspector({
   );
 }
 
-function VariableRow({
-  variable,
-}: {
-  variable: { key: string; value: string; scope: string };
-}) {
+function VariableRow({ variable }: { variable: { key: string; value: string; scope: string } }) {
   return (
     <div className="flex items-center gap-2 px-3 py-1 hover:bg-[var(--surface-2)]">
       <span className="font-mono text-2xs text-[var(--text-1)] flex-1 truncate">

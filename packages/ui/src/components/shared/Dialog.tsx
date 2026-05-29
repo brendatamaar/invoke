@@ -1,30 +1,25 @@
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { DialogProps } from "../../types";
 
-export function Dialog({
-  open,
-  onClose,
-  title,
-  children,
-  width = "480px",
-  footer,
-}: DialogProps) {
+export function Dialog({ open, onClose, title, children, width = "480px", footer }: DialogProps) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.5)" }}
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/50"
+      role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -58,23 +53,9 @@ export function Dialog({
             {title}
           </span>
           <button
+            type="button"
             onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "var(--fg-3)",
-              cursor: "pointer",
-              padding: "2px",
-              display: "flex",
-              borderRadius: "var(--r-1)",
-              transition: "color var(--dur-fast)",
-            }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLElement).style.color = "var(--fg-0)")
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLElement).style.color = "var(--fg-3)")
-            }
+            className="flex p-0.5 bg-transparent border-0 cursor-pointer text-[var(--fg-3)] hover:text-[var(--fg-0)] rounded-[var(--r-1)] transition-colors"
           >
             <X size={13} />
           </button>

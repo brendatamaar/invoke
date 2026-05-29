@@ -1,11 +1,7 @@
 import type { MsgTemplate } from "../types";
 import { PROTOCOL_TEMPLATES } from "../utils/templates";
 
-export function TemplateMenu({
-  onSelect,
-}: {
-  onSelect: (template: MsgTemplate) => void;
-}) {
+export function TemplateMenu({ onSelect }: { onSelect: (template: MsgTemplate) => void }) {
   return (
     <div
       className="absolute right-0 top-full mt-1 z-50 min-w-48 overflow-y-auto"
@@ -24,6 +20,7 @@ export function TemplateMenu({
           </div>
           {templates.map((tpl) => (
             <button
+              type="button"
               key={tpl.label}
               onClick={() => onSelect(tpl)}
               className="w-full text-left px-3 py-1.5 text-xs text-[var(--text-1)] hover:bg-[var(--surface-2)] transition-colors"

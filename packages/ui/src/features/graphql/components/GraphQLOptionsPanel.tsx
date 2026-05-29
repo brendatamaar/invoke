@@ -28,24 +28,23 @@ export function GraphQLOptionsPanel() {
 
       {useGet && (
         <p className="text-2xs text-[var(--text-3)] pl-[calc(theme(spacing.36)+theme(spacing.2))]">
-          Query, variables, and operationName are sent as URL params. File
-          uploads and batch mode are unavailable with GET.
+          Query, variables, and operationName are sent as URL params. File uploads and batch mode
+          are unavailable with GET.
         </p>
       )}
 
       <GQLOptionField label="Content-Type">
         <div className="flex flex-col gap-1">
-          {([
-            { value: "application/json", label: "application/json" },
-            {
-              value: "application/graphql+json",
-              label: "application/graphql+json",
-            },
-          ] as const).map(({ value, label }) => (
-            <label
-              key={value}
-              className="flex items-center gap-2 cursor-pointer select-none"
-            >
+          {(
+            [
+              { value: "application/json", label: "application/json" },
+              {
+                value: "application/graphql+json",
+                label: "application/graphql+json",
+              },
+            ] as const
+          ).map(({ value, label }) => (
+            <label key={value} className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="radio"
                 name="gql-content-type"
@@ -74,9 +73,7 @@ export function GraphQLOptionsPanel() {
               onChange={(e) => setGraphqlRequest({ apq: e.target.checked })}
               disabled={graphqlRequest.batchMode}
             />
-            <span className="text-xs text-[var(--text-2)]">
-              Automated Persisted Queries
-            </span>
+            <span className="text-xs text-[var(--text-2)]">Automated Persisted Queries</span>
           </label>
         </GQLOptionField>
 
@@ -85,14 +82,10 @@ export function GraphQLOptionsPanel() {
             <input
               type="checkbox"
               checked={graphqlRequest.batchMode ?? false}
-              onChange={(e) =>
-                setGraphqlRequest({ batchMode: e.target.checked })
-              }
+              onChange={(e) => setGraphqlRequest({ batchMode: e.target.checked })}
               disabled={graphqlRequest.apq || useGet}
             />
-            <span className="text-xs text-[var(--text-2)]">
-              Send request as array body
-            </span>
+            <span className="text-xs text-[var(--text-2)]">Send request as array body</span>
           </label>
         </GQLOptionField>
       </div>

@@ -16,10 +16,7 @@ export function GeneralTab({
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <SectionTitle
-        title="Appearance"
-        description="Interface preferences for the workspace."
-      />
+      <SectionTitle title="Appearance" description="Interface preferences for the workspace." />
 
       <FieldRow label="Theme">
         <div className="inline-flex overflow-hidden rounded border border-[var(--border)] bg-[var(--bg-2)] p-0.5">
@@ -31,10 +28,9 @@ export function GeneralTab({
             const selected = general.theme === value;
             return (
               <button
+                type="button"
                 key={value}
-                onClick={() =>
-                  setGeneral((draft) => ({ ...draft, theme: value }))
-                }
+                onClick={() => setGeneral((draft) => ({ ...draft, theme: value }))}
                 className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs transition-colors ${
                   selected
                     ? "bg-[var(--accent-faint)] text-[var(--accent)]"
@@ -51,14 +47,11 @@ export function GeneralTab({
 
       <FieldRow label="UI font size" hint="Range: 11 to 16px.">
         <button
+          type="button"
           onClick={() =>
             setGeneral((draft) => ({
               ...draft,
-              uiFontSize: clampNumber(
-                draft.uiFontSize - 1,
-                FONT_SIZE_MIN,
-                FONT_SIZE_MAX,
-              ),
+              uiFontSize: clampNumber(draft.uiFontSize - 1, FONT_SIZE_MIN, FONT_SIZE_MAX),
             }))
           }
           disabled={general.uiFontSize <= FONT_SIZE_MIN}
@@ -71,14 +64,11 @@ export function GeneralTab({
           {general.uiFontSize}
         </span>
         <button
+          type="button"
           onClick={() =>
             setGeneral((draft) => ({
               ...draft,
-              uiFontSize: clampNumber(
-                draft.uiFontSize + 1,
-                FONT_SIZE_MIN,
-                FONT_SIZE_MAX,
-              ),
+              uiFontSize: clampNumber(draft.uiFontSize + 1, FONT_SIZE_MIN, FONT_SIZE_MAX),
             }))
           }
           disabled={general.uiFontSize >= FONT_SIZE_MAX}
@@ -92,9 +82,7 @@ export function GeneralTab({
       <FieldRow label="Editor word wrap">
         <CheckboxControl
           checked={general.editorWordWrap}
-          onChange={(checked) =>
-            setGeneral((draft) => ({ ...draft, editorWordWrap: checked }))
-          }
+          onChange={(checked) => setGeneral((draft) => ({ ...draft, editorWordWrap: checked }))}
           label="Wrap long lines in code editors"
         />
       </FieldRow>

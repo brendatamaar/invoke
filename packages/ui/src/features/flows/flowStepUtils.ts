@@ -14,22 +14,9 @@ export const STEP_LABEL_COLORS: Record<FlowStep["type"], string> = {
   loop: "text-emerald-600 bg-emerald-50",
 };
 
-export const FLOW_STEP_TYPES: FlowStep["type"][] = [
-  "request",
-  "delay",
-  "condition",
-  "loop",
-];
+export const FLOW_STEP_TYPES: FlowStep["type"][] = ["request", "delay", "condition", "loop"];
 
-export const HTTP_METHODS = [
-  "GET",
-  "POST",
-  "PUT",
-  "PATCH",
-  "DELETE",
-  "HEAD",
-  "OPTIONS",
-] as const;
+export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
 
 export function makeStep(type: FlowStep["type"]): FlowStep {
   const id = crypto.randomUUID();

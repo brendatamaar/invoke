@@ -11,8 +11,5 @@ export function resolveDynamicVars(text: string): string {
     .replace(/\{\{\$timestamp\}\}/g, String(Date.now()))
     .replace(/\{\{\$isoTimestamp\}\}/g, new Date().toISOString())
     .replace(/\{\{\$randomUUID\}\}/g, crypto.randomUUID())
-    .replace(
-      /\{\{\$randomInt\}\}/g,
-      String(Math.floor(Math.random() * 1_000_000)),
-    );
+    .replace(/\{\{\$randomInt\}\}/g, String(Math.floor(Math.random() * 1_000_000)));
 }

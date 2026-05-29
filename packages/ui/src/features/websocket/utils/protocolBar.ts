@@ -15,10 +15,7 @@ export function mapDirection(serverDirection: string): WsDirection {
   return "received";
 }
 
-export function makeWsLogEntries(
-  message: WsRelayEvent,
-  ndjsonMode: boolean,
-): WebSocketLogItem[] {
+export function makeWsLogEntries(message: WsRelayEvent, ndjsonMode: boolean): WebSocketLogItem[] {
   const inbound = message.direction !== "out";
   const lines =
     inbound && ndjsonMode && message.type !== "binary"

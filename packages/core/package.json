@@ -1,7 +1,18 @@
 {
   "name": "@invoke/core",
-  "version": "1.0.0-local",
+  "version": "1.0.0",
   "private": true,
+  "homepage": "https://runinvoke.com",
+  "bugs": {
+    "url": "https://github.com/brendatamaar/invoke/issues"
+  },
+  "license": "BUSL-1.1",
+  "author": "brendatamaar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brendatamaar/invoke.git",
+    "directory": "packages/core"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -18,11 +29,10 @@
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "dev": "tsup src/index.ts --format esm --dts --watch",
     "test": "vitest run",
-    "lint": "eslint src test --ext .ts"
+    "lint": "oxlint src test"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",
-    "@effect/schema": "^0.75.5",
     "ajv": "8.20.0",
     "dexie": "^4.2.1",
     "effect": "^3.21.2",

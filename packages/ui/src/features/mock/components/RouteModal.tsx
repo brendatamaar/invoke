@@ -41,6 +41,7 @@ export function RouteModal({
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-[1px]"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -64,11 +65,7 @@ export function RouteModal({
           onPathPatternChange={(pathPattern) => set("pathPattern", pathPattern)}
         />
 
-        <RouteTabs
-          tab={tab}
-          sequenceCount={sequences.length}
-          onTabChange={setTab}
-        />
+        <RouteTabs tab={tab} sequenceCount={sequences.length} onTabChange={setTab} />
 
         <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
           {tab === "response" && (
@@ -99,10 +96,11 @@ export function RouteModal({
         </div>
 
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--border)] bg-[var(--surface-2)] shrink-0">
-          <button onClick={onClose} className="btn text-xs">
+          <button type="button" onClick={onClose} className="btn text-xs">
             Cancel
           </button>
           <button
+            type="button"
             onClick={() => {
               onSave(draft);
               onClose();

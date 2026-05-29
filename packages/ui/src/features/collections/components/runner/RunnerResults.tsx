@@ -1,6 +1,7 @@
 import { CheckCircle2, SkipForward, XCircle } from "lucide-react";
 import type { RequestRunResult, SavedRequest } from "@invoke/core";
-import { MethodBadge, protocolMethod } from "../../../../components/shared/MethodBadge";
+import { MethodBadge } from "../../../../components/shared/MethodBadge";
+import { protocolMethod } from "../../../../components/shared/methodUtils";
 import { StatusBadge } from "../../../../components/shared/StatusBadge";
 
 export function RunnerResults({
@@ -15,9 +16,7 @@ export function RunnerResults({
   return (
     <div className="flex-1 overflow-y-auto divide-y divide-[var(--border)]">
       {runRequests.length === 0 && (
-        <p className="p-6 text-xs text-[var(--text-3)] text-center">
-          No requests in this target.
-        </p>
+        <p className="p-6 text-xs text-[var(--text-3)] text-center">No requests in this target.</p>
       )}
       {displayResults.map((result, index) => (
         <ResultRow key={result.requestId ?? index} result={result} />
@@ -25,10 +24,7 @@ export function RunnerResults({
       {running &&
         displayResults.length < runRequests.length &&
         runRequests.slice(displayResults.length).map((request) => (
-          <div
-            key={request.id}
-            className="flex items-center gap-3 px-4 py-2.5 opacity-40"
-          >
+          <div key={request.id} className="flex items-center gap-3 px-4 py-2.5 opacity-40">
             <SkipForward size={13} className="text-[var(--text-3)] shrink-0" />
             <MethodBadge
               method={protocolMethod(
@@ -61,8 +57,7 @@ function ResultRow({ result }: { result: RequestRunResult }) {
         <span
           className={`text-2xs ${result.assertions.every((item) => item.passed) ? "text-[var(--ok)]" : "text-[var(--danger)]"}`}
         >
-          {result.assertions.filter((item) => item.passed).length}/
-          {result.assertions.length}
+          {result.assertions.filter((item) => item.passed).length}/{result.assertions.length}
         </span>
       )}
     </div>

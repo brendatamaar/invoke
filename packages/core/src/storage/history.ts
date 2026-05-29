@@ -6,10 +6,7 @@ import type { InvokeDB } from "./db";
 import { HISTORY_LIMIT } from "./helpers";
 import { getRetentionSettings } from "./meta";
 
-export async function addHistory(
-  db: InvokeDB,
-  entry: Omit<HistoryEntry, "id" | "createdAt">,
-) {
+export async function addHistory(db: InvokeDB, entry: Omit<HistoryEntry, "id" | "createdAt">) {
   const request = entry.request as RequestDraft;
   const raw: HistoryEntry = {
     ...clonePlain(entry),
@@ -37,8 +34,7 @@ export async function applyRetention(db: InvokeDB) {
       .below(cutoff)
       .filter((e) => !e.pinned)
       .primaryKeys();
-    if (staleByAge.length > 0)
-      await db.history.bulkDelete(staleByAge as string[]);
+    if (staleByAge.length > 0) await db.history.bulkDelete(staleByAge as string[]);
   }
 
   const limit = maxEntries > 0 ? maxEntries : HISTORY_LIMIT;
@@ -53,19 +49,11 @@ export async function applyRetention(db: InvokeDB) {
   }
 }
 
-export async function pinHistoryEntry(
-  db: InvokeDB,
-  id: string,
-  pinned: boolean,
-) {
+export async function pinHistoryEntry(db: InvokeDB, id: string, pinned: boolean) {
   await db.history.where("id").equals(id).modify({ pinned });
 }
 
-export async function setHistoryEntryLabel(
-  db: InvokeDB,
-  id: string,
-  label: string,
-) {
+export async function setHistoryEntryLabel(db: InvokeDB, id: string, label: string) {
   await db.history
     .where("id")
     .equals(id)

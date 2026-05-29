@@ -4,10 +4,7 @@ import { useStore, coreStore } from "../../../store";
 import { useCollections } from "../../../hooks/useDb";
 import { PromptModal } from "../../../components/shared/PromptModal";
 import { CollectionNode } from "./CollectionNode";
-import {
-  COLLECTION_IMPORT_OPTIONS,
-  useCollectionImport,
-} from "../useCollectionImport";
+import { COLLECTION_IMPORT_OPTIONS, useCollectionImport } from "../useCollectionImport";
 
 export function CollectionTree() {
   const { addToast } = useStore();
@@ -15,14 +12,8 @@ export function CollectionTree() {
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newColModal, setNewColModal] = useState(false);
-  const {
-    accept,
-    curlModal,
-    handleFileImport,
-    importCurl,
-    setCurlModal,
-    triggerImport,
-  } = useCollectionImport(fileInputRef);
+  const { accept, curlModal, handleFileImport, importCurl, setCurlModal, triggerImport } =
+    useCollectionImport(fileInputRef);
 
   const newCollection = async (name: string) => {
     setNewColModal(false);
@@ -43,6 +34,7 @@ export function CollectionTree() {
           <div className="flex items-center gap-1">
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setImportMenuOpen((v) => !v)}
                 className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 rounded hover:bg-[var(--surface-2)]"
                 title="Import"
@@ -54,6 +46,7 @@ export function CollectionTree() {
                   {COLLECTION_IMPORT_OPTIONS.map((opt) => (
                     <button
                       key={opt.type}
+                      type="button"
                       onClick={() => {
                         setImportMenuOpen(false);
                         triggerImport(opt.type);
@@ -67,6 +60,7 @@ export function CollectionTree() {
               )}
             </div>
             <button
+              type="button"
               onClick={() => setNewColModal(true)}
               className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 rounded hover:bg-[var(--surface-2)]"
               title="New collection"
@@ -83,6 +77,7 @@ export function CollectionTree() {
           accept={accept}
           multiple={accept === ".yaml,.yml"}
           onChange={handleFileImport}
+          aria-label="Import collection file"
         />
 
         {!collections.length ? (

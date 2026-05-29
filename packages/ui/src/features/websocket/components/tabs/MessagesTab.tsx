@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useReducer, useRef } from "react";
 import type { WsSavedMessage } from "@invoke/core";
 import { useStore } from "../../../../store";
 import { webSocketSend } from "../../api";
@@ -16,15 +16,20 @@ export function MessagesTab() {
     websocketRequest,
     setWebsocketRequest,
   } = useStore();
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [showSavedModal, setShowSavedModal] = useState(false);
-  const [selectedSaved, setSelectedSaved] = useState<string | null>(null);
-  const [expandedSaved, setExpandedSaved] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<SavedMessageDraft | null>(null);
-  const [message, setMessage] = useState("");
-  const [binaryMode, setBinaryMode] = useState(false);
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  type TabState = { showTemplates: boolean; showSavedModal: boolean; selectedSaved: string | null; expandedSaved: string | null; editDraft: SavedMessageDraft | null; message: string; binaryMode: boolean };
+  const [tabState, tabDispatch] = useReducer(
+    (prev: TabState, patch: Partial<TabState>) => ({ ...prev, ...patch }),
+    { showTemplates: false, showSavedModal: false, selectedSaved: null, expandedSaved: null, editDraft: null, message: "", binaryMode: false },
+  );
+  const { showTemplates, showSavedModal, selectedSaved, expandedSaved, editDraft, message, binaryMode } = tabState;
+  const setShowTemplates = (v: boolean) => tabDispatch({ showTemplates: v });
+  const setShowSavedModal = (v: boolean) => tabDispatch({ showSavedModal: v });
+  const setSelectedSaved = (v: string | null) => tabDispatch({ selectedSaved: v });
+  const setExpandedSaved = (v: string | null) => tabDispatch({ expandedSaved: v });
+  const setEditDraft = (v: SavedMessageDraft | null) => tabDispatch({ editDraft: v });
+  const setMessage = (v: string) => tabDispatch({ message: v });
+  const setBinaryMode = (v: boolean) => tabDispatch({ binaryMode: v });
   const subIdRef = useRef(0);
 
   const websocketState = activeSession?.state ?? "disconnected";
@@ -126,9 +131,7 @@ export function MessagesTab() {
 
   const updateSavedMessage = (id: string, partial: Partial<WsSavedMessage>) => {
     setWebsocketRequest({
-      savedMessages: savedMessages.map((m) =>
-        m.id === id ? { ...m, ...partial } : m,
-      ),
+      savedMessages: savedMessages.map((m) => (m.id === id ? { ...m, ...partial } : m)),
     });
   };
 

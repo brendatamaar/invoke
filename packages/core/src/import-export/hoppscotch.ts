@@ -12,9 +12,7 @@ import { recordToKeyValues } from "./shared";
 
 export function importHoppscotchCollection(doc: any) {
   const now = Date.now();
-  const rootCollection = Array.isArray(doc?.collections)
-    ? doc.collections[0]
-    : doc;
+  const rootCollection = Array.isArray(doc?.collections) ? doc.collections[0] : doc;
   const collection: Collection = {
     id: id(),
     name: rootCollection?.name ?? doc?.name ?? "Hoppscotch import",
@@ -44,14 +42,11 @@ export function importHoppscotchCollection(doc: any) {
 
   const visitRequests = (items: any[], folderId: string | null) => {
     for (const item of items ?? [])
-      requests.push(
-        hoppscotchRequest(collection.id, folderId, item, now + requests.length),
-      );
+      requests.push(hoppscotchRequest(collection.id, folderId, item, now + requests.length));
   };
 
   visitRequests(rootCollection?.requests ?? doc?.requests ?? [], null);
-  for (const folder of rootCollection?.folders ?? doc?.folders ?? [])
-    visitFolder(folder, null);
+  for (const folder of rootCollection?.folders ?? doc?.folders ?? []) visitFolder(folder, null);
 
   const environments = (doc?.environments ?? doc?.envs ?? [])
     .filter((env: any) => env?.name)
@@ -110,13 +105,11 @@ function hoppscotchRequest(
 function hoppscotchBody(item: any): { mode: BodyMode; content: string } {
   const body = item.body ?? item.requestBody;
   if (!body) return { mode: "none", content: "" };
-  const content =
-    typeof body === "string" ? body : (body.body ?? body.content ?? "");
+  const content = typeof body === "string" ? body : (body.body ?? body.content ?? "");
   if (!content) return { mode: "none", content: "" };
   const contentType = String(body.contentType ?? item.contentType ?? "");
   if (contentType.includes("json")) return { mode: "json", content };
-  if (contentType.includes("x-www-form-urlencoded"))
-    return { mode: "urlencoded", content };
+  if (contentType.includes("x-www-form-urlencoded")) return { mode: "urlencoded", content };
   return { mode: "raw", content };
 }
 

@@ -14,18 +14,14 @@ export function HeadersTab({
   const headers = Array.isArray(response.headers) ? response.headers : [];
   return (
     <div className="divide-y divide-[var(--border)]">
-      {headers.map((h, i) => (
-        <div
-          key={i}
-          className="group flex items-start gap-2 px-3 py-2 hover:bg-[var(--surface-2)]"
-        >
+      {headers.map((h) => (
+        <div key={h.key} className="group flex items-start gap-2 px-3 py-2 hover:bg-[var(--surface-2)]">
           <span className="text-xs font-mono font-medium text-[var(--text-1)] w-56 shrink-0 truncate">
             {h.key}
           </span>
-          <span className="text-xs font-mono text-[var(--text-2)] break-all flex-1">
-            {h.value}
-          </span>
+          <span className="text-xs font-mono text-[var(--text-2)] break-all flex-1">{h.value}</span>
           <button
+            type="button"
             onClick={() =>
               onQuickAssert({
                 type: "header",
@@ -40,6 +36,7 @@ export function HeadersTab({
             <PlusCircle size={11} />
           </button>
           <button
+            type="button"
             onClick={() => {
               const varName = h.key.toLowerCase().replace(/[^a-z0-9]/g, "_");
               onQuickExtract({
@@ -55,9 +52,7 @@ export function HeadersTab({
           </button>
         </div>
       ))}
-      {!headers.length && (
-        <p className="p-4 text-xs text-[var(--text-3)]">No headers</p>
-      )}
+      {!headers.length && <p className="p-4 text-xs text-[var(--text-3)]">No headers</p>}
     </div>
   );
 }

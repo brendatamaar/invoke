@@ -29,9 +29,7 @@ export function buildExecutionScopeContext({
   sessionVariables: Record<string, string>;
 }) {
   const environment = environments.find((item) => item.id === activeEnvironmentId);
-  const savedRequest = request.id
-    ? requests.find((item) => item.id === request.id)
-    : undefined;
+  const savedRequest = request.id ? requests.find((item) => item.id === request.id) : undefined;
   const collectionId = savedRequest?.collectionId ?? request.collectionId;
   const folderId = savedRequest?.folderId ?? request.folderId;
   const collection = collections.find((item) => item.id === collectionId);

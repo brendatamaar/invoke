@@ -2,8 +2,7 @@ import { FilePen, FilePlus, X } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
 
 export function SaveActionModal() {
-  const { showSaveActionModal, set, request, requests, saveDialog, addToast } =
-    useStore();
+  const { showSaveActionModal, set, request, requests, saveDialog, addToast } = useStore();
 
   if (!showSaveActionModal) return null;
 
@@ -42,7 +41,10 @@ export function SaveActionModal() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}
+      role="presentation"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) close();
+      }}
     >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
@@ -50,10 +52,9 @@ export function SaveActionModal() {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-          <span className="text-sm font-semibold text-[var(--text-1)]">
-            Save Request
-          </span>
+          <span className="text-sm font-semibold text-[var(--text-1)]">Save Request</span>
           <button
+            type="button"
             onClick={close}
             className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
           >
@@ -72,6 +73,7 @@ export function SaveActionModal() {
           </p>
           <div className="flex flex-col gap-2">
             <button
+              type="button"
               onClick={updateExisting}
               className="flex items-center gap-3 px-3 py-2.5 rounded border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-subtle)] text-left transition-colors group"
             >
@@ -87,17 +89,14 @@ export function SaveActionModal() {
             </button>
 
             <button
+              type="button"
               onClick={saveAsNew}
               className="flex items-center gap-3 px-3 py-2.5 rounded border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-subtle)] text-left transition-colors group"
             >
               <FilePlus size={15} className="text-[var(--accent)] shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs font-medium text-[var(--text-1)]">
-                  Save as new request
-                </p>
-                <p className="text-2xs text-[var(--text-3)]">
-                  Keep the original and save a copy
-                </p>
+                <p className="text-xs font-medium text-[var(--text-1)]">Save as new request</p>
+                <p className="text-2xs text-[var(--text-3)]">Keep the original and save a copy</p>
               </div>
             </button>
           </div>
@@ -105,7 +104,7 @@ export function SaveActionModal() {
 
         {/* Footer */}
         <div className="flex justify-end px-4 py-3 border-t border-[var(--border)]">
-          <button onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
+          <button type="button" onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
             Cancel
           </button>
         </div>

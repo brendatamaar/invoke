@@ -97,9 +97,7 @@ describe("OpenAPI import/export", () => {
       },
     });
 
-    expect(
-      JSON.parse(String((imported.requests[0].request as RequestConfig).body)),
-    ).toEqual({
+    expect(JSON.parse(String((imported.requests[0].request as RequestConfig).body))).toEqual({
       id: 123,
       name: "Nori",
       tag: "featured",
@@ -166,9 +164,7 @@ describe("OpenAPI import/export", () => {
       },
     ];
 
-    const spec = yaml.load(
-      exportCollectionAsOpenApi(collection, requests, [folder]),
-    ) as any;
+    const spec = yaml.load(exportCollectionAsOpenApi(collection, requests, [folder])) as any;
 
     expect(spec.openapi).toBe("3.0.3");
     expect(spec.info.title).toBe("Users API");
@@ -195,15 +191,13 @@ describe("OpenAPI import/export", () => {
         }),
       ]),
     );
-    expect(
-      getUser.parameters.some(
-        (parameter: any) => parameter.name === "Authorization",
-      ),
-    ).toBe(false);
+    expect(getUser.parameters.some((parameter: any) => parameter.name === "Authorization")).toBe(
+      false,
+    );
 
-    expect(
-      spec.paths["/users"].post.requestBody.content["application/json"].example,
-    ).toEqual({ name: "Ada" });
+    expect(spec.paths["/users"].post.requestBody.content["application/json"].example).toEqual({
+      name: "Ada",
+    });
   });
 
   it("resolves local OpenAPI component refs before walking operations", async () => {
@@ -245,9 +239,7 @@ describe("OpenAPI import/export", () => {
     expect(imported.requests[0].request).toMatchObject({
       url: "{{base_url}}/accounts/{{accountId}}",
       params: [{ key: "expand", value: "{{expand}}", enabled: true }],
-      headers: [
-        { key: "Stripe-Version", value: "{{Stripe-Version}}", enabled: true },
-      ],
+      headers: [{ key: "Stripe-Version", value: "{{Stripe-Version}}", enabled: true }],
     });
   });
 
@@ -338,8 +330,6 @@ describe("OpenAPI import/export", () => {
         openapi: "3.0.3",
         info: { title: "Malformed" },
       }),
-    ).rejects.toThrow(
-      /OpenAPI import failed: OpenAPI document is missing required paths object/,
-    );
+    ).rejects.toThrow(/OpenAPI import failed: OpenAPI document is missing required paths object/);
   });
 });

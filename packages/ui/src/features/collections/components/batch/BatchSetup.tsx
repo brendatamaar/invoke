@@ -20,6 +20,7 @@ export function BatchSetup({
   return (
     <div className="grid grid-cols-2 gap-3">
       <NumberField
+        id="batch-iterations"
         label="Iterations"
         value={iterations}
         min={1}
@@ -27,15 +28,15 @@ export function BatchSetup({
         onChange={(value) => onIterationsChange(Math.max(1, value))}
       />
       <NumberField
+        id="batch-concurrency"
         label="Concurrency"
         value={concurrency}
         min={1}
         max={50}
-        onChange={(value) =>
-          onConcurrencyChange(Math.max(1, Math.min(50, value)))
-        }
+        onChange={(value) => onConcurrencyChange(Math.max(1, Math.min(50, value)))}
       />
       <NumberField
+        id="batch-delay"
         label="Delay between batches (ms)"
         value={delayMs}
         min={0}
@@ -61,17 +62,20 @@ function NumberField({
   min,
   max,
   onChange,
+  id,
 }: {
   label: string;
   value: number;
   min: number;
   max?: number;
   onChange: (value: number) => void;
+  id?: string;
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-2xs text-[var(--text-3)]">{label}</label>
+      <label htmlFor={id} className="text-2xs text-[var(--text-3)]">{label}</label>
       <input
+        id={id}
         type="number"
         min={min}
         max={max}

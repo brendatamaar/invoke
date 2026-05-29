@@ -41,6 +41,7 @@ export function GrpcSavedMessagesPanel() {
           {saved.length} saved message{saved.length !== 1 ? "s" : ""}
         </span>
         <button
+          type="button"
           onClick={saveCurrentBody}
           className="flex items-center gap-1 text-2xs text-[var(--accent)] hover:underline"
         >
@@ -49,8 +50,7 @@ export function GrpcSavedMessagesPanel() {
       </div>
       {saved.length === 0 && (
         <p className="p-3 text-2xs text-[var(--text-3)]">
-          No saved messages. Compose a body and click "Save current" to create
-          one.
+          No saved messages. Compose a body and click "Save current" to create one.
         </p>
       )}
       {saved.map((msg) => (
@@ -61,7 +61,7 @@ export function GrpcSavedMessagesPanel() {
           <div className="flex items-center gap-1">
             {editingId === msg.id ? (
               <input
-                autoFocus
+                aria-label="Rename saved message"
                 className="input text-2xs py-0.5 flex-1"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
@@ -84,12 +84,14 @@ export function GrpcSavedMessagesPanel() {
               </span>
             )}
             <button
+              type="button"
               onClick={() => load(msg.name, msg.body)}
               className="text-2xs text-[var(--accent)] hover:underline shrink-0"
             >
               Use
             </button>
             <button
+              type="button"
               onClick={() => remove(msg.id)}
               className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
             >

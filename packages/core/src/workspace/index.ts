@@ -12,8 +12,7 @@ export function serializeWorkspace(
 
 export function parseWorkspaceBackup(json: string): WorkspaceBackup {
   const parsed = JSON.parse(json) as Partial<WorkspaceBackup>;
-  if (parsed.version !== "1.0")
-    throw new Error("Unsupported workspace version");
+  if (parsed.version !== "1.0") throw new Error("Unsupported workspace version");
   return {
     version: "1.0",
     exportedAt: parsed.exportedAt ?? Date.now(),

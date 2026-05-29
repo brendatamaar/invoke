@@ -14,9 +14,7 @@ describe("isGrpcRequestConfig", () => {
   });
 
   it("returns false for a REST request", () => {
-    expect(
-      isGrpcRequestConfig({ url: "http://example.com", method: "GET" }),
-    ).toBe(false);
+    expect(isGrpcRequestConfig({ url: "http://example.com", method: "GET" })).toBe(false);
   });
 
   it("returns false for null/undefined", () => {
@@ -32,9 +30,7 @@ describe("resolveGrpcRequest", () => {
       address: "{{host}}:{{port}}",
       service: "{{pkg}}.Greeter",
       method: "{{rpc}}",
-      metadata: [
-        { key: "authorization", value: "Bearer {{token}}", enabled: true },
-      ],
+      metadata: [{ key: "authorization", value: "Bearer {{token}}", enabled: true }],
       body: '{"name":"{{name}}"}',
     };
     const env = {
@@ -102,9 +98,7 @@ describe("parseGrpcurl", () => {
       "grpcurl -rpc-header 'authorization: Bearer mytoken' -plaintext localhost:50051 svc/M",
     );
     expect(result!.auth).toEqual({ type: "bearer", token: "mytoken" });
-    expect(
-      result!.metadata.find((m) => m.key === "authorization"),
-    ).toBeUndefined();
+    expect(result!.metadata.find((m) => m.key === "authorization")).toBeUndefined();
   });
 
   it("returns null for non-grpcurl commands", () => {
@@ -144,9 +138,7 @@ describe("gRPC codegen", () => {
     const code = generateGrpcBufCurl(request);
     expect(code).toContain("buf");
     expect(code).toContain("curl");
-    expect(code).toContain(
-      "https://api.example.com:443/hello.Greeter/SayHello",
-    );
+    expect(code).toContain("https://api.example.com:443/hello.Greeter/SayHello");
   });
 
   it("generates Go gRPC client", () => {

@@ -82,22 +82,9 @@ const MAX_TIMEOUT_MS = 300000;
 const MAX_DELAY_MS = 300000;
 const LONG_DELAY_MS = 30000;
 const MAX_LOOP_ITERATIONS = 1000;
-const HTTP_METHODS = new Set([
-  "GET",
-  "POST",
-  "PUT",
-  "PATCH",
-  "DELETE",
-  "HEAD",
-  "OPTIONS",
-]);
+const HTTP_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
 const STEP_TYPES = new Set(["request", "delay", "condition", "loop"]);
-const CONDITION_SOURCES = new Set([
-  "variable",
-  "status",
-  "bodyJsonPath",
-  "header",
-]);
+const CONDITION_SOURCES = new Set(["variable", "status", "bodyJsonPath", "header"]);
 const ASSERTION_TYPES = new Set([
   "status",
   "responseTime",
@@ -107,19 +94,10 @@ const ASSERTION_TYPES = new Set([
   "regex",
 ]);
 const EXTRACTION_SOURCES = new Set(["body", "header", "status"]);
-const MATCHERS = new Set([
-  "equals",
-  "notEquals",
-  "exists",
-  "gt",
-  "lt",
-  "contains",
-  "matches",
-]);
+const MATCHERS = new Set(["equals", "notEquals", "exists", "gt", "lt", "contains", "matches"]);
 const BODY_MODES = new Set(["none", "json", "form-data", "urlencoded", "raw"]);
 const HTTP_TOKEN_RE = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
-const VARIABLE_NAME_RE =
-  /^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$/;
+const VARIABLE_NAME_RE = /^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$/;
 
 export function validateFlow(
   flow: Flow,
@@ -130,8 +108,7 @@ export function validateFlow(
   const stats = { totalSteps: 0, maxDepth: 0 };
   const add = (issue: FlowValidationIssue) => issues.push(issue);
 
-  if (!flow.name.trim())
-    add({ level: "error", message: "Flow name is required" });
+  if (!flow.name.trim()) add({ level: "error", message: "Flow name is required" });
   if (flow.name.length > MAX_FLOW_NAME_LENGTH)
     add({
       level: "error",
@@ -140,9 +117,7 @@ export function validateFlow(
   if (!flow.steps.length) {
     add({
       level: options.requireSteps ? "error" : "warning",
-      message: options.requireSteps
-        ? "Flow has no steps"
-        : "Flow has no steps yet",
+      message: options.requireSteps ? "Flow has no steps" : "Flow has no steps yet",
     });
   }
 
@@ -185,8 +160,7 @@ function validateStep(step: FlowStep, context: StepValidationContext) {
   stats.totalSteps += 1;
   stats.maxDepth = Math.max(stats.maxDepth, depth);
 
-  if (!step.id?.trim())
-    add({ level: "error", message: `${path}: id is required`, path });
+  if (!step.id?.trim()) add({ level: "error", message: `${path}: id is required`, path });
   else if (stepIds.has(step.id))
     add({
       level: "error",
@@ -218,10 +192,8 @@ function validateStep(step: FlowStep, context: StepValidationContext) {
       path,
     });
 
-  if (step.type === "request")
-    validateRequestStep(step.request, context, step.id, path);
-  if (step.type === "delay")
-    validateDelayStep(step.delayMs, context, step.id, path);
+  if (step.type === "request") validateRequestStep(step.request, context, step.id, path);
+  if (step.type === "delay") validateDelayStep(step.delayMs, context, step.id, path);
   if (step.type === "condition") validateConditionStep(step, context, path);
   if (step.type === "loop") validateLoopStep(step, context, path);
 }
@@ -254,15 +226,7 @@ function validateRequestStep(
       stepId,
       path,
     });
-  validateIntegerRange(
-    request.timeoutMs,
-    1,
-    MAX_TIMEOUT_MS,
-    `${path}: timeout`,
-    add,
-    stepId,
-    path,
-  );
+  validateIntegerRange(request.timeoutMs, 1, MAX_TIMEOUT_MS, `${path}: timeout`, add, stepId, path);
   if (!BODY_MODES.has(request.bodyMode))
     add({
       level: "error",
@@ -283,15 +247,7 @@ function validateDelayStep(
   stepId: string,
   path: string,
 ) {
-  validateIntegerRange(
-    delayMs,
-    0,
-    MAX_DELAY_MS,
-    `${path}: delay`,
-    context.add,
-    stepId,
-    path,
-  );
+  validateIntegerRange(delayMs, 0, MAX_DELAY_MS, `${path}: delay`, context.add, stepId, path);
   if (Number.isInteger(delayMs) && delayMs > LONG_DELAY_MS)
     context.add({
       level: "warning",
@@ -321,10 +277,7 @@ function validateConditionStep(
       stepId: step.id,
       path,
     });
-  if (
-    (step.thenSteps?.length ?? 0) === 0 &&
-    (step.elseSteps?.length ?? 0) === 0
-  )
+  if ((step.thenSteps?.length ?? 0) === 0 && (step.elseSteps?.length ?? 0) === 0)
     context.add({
       level: "warning",
       message: `${path}: condition has no branch steps`,
@@ -458,30 +411,21 @@ function validateCondition(
       stepId,
       path,
     });
-  if (
-    condition.source === "variable" &&
-    (!expression || !VARIABLE_NAME_RE.test(expression))
-  )
+  if (condition.source === "variable" && (!expression || !VARIABLE_NAME_RE.test(expression)))
     add({
       level: "error",
       message: `${path}: variable condition needs a valid variable name`,
       stepId,
       path,
     });
-  if (
-    condition.source === "header" &&
-    (!expression || !HTTP_TOKEN_RE.test(expression))
-  )
+  if (condition.source === "header" && (!expression || !HTTP_TOKEN_RE.test(expression)))
     add({
       level: "error",
       message: `${path}: header condition needs a valid header name`,
       stepId,
       path,
     });
-  if (
-    condition.source === "bodyJsonPath" &&
-    (!expression || !isJsonPath(expression))
-  )
+  if (condition.source === "bodyJsonPath" && (!expression || !isJsonPath(expression)))
     add({
       level: "error",
       message: `${path}: body condition needs a valid JSONPath expression`,
@@ -495,14 +439,7 @@ function validateCondition(
       stepId,
       path,
     });
-  validateMatcher(
-    condition.matcher,
-    expected,
-    `${path}: condition`,
-    add,
-    stepId,
-    path,
-  );
+  validateMatcher(condition.matcher, expected, `${path}: condition`, add, stepId, path);
 }
 
 function validateHeaders(
@@ -581,12 +518,7 @@ function validateRequestBody(
       stepId,
       path,
     });
-  if (
-    request.bodyMode !== "json" ||
-    !request.body.trim() ||
-    hasTemplate(request.body)
-  )
-    return;
+  if (request.bodyMode !== "json" || !request.body.trim() || hasTemplate(request.body)) return;
   try {
     JSON.parse(request.body);
   } catch {
@@ -678,14 +610,7 @@ function validateAssertions(
         stepId,
         path,
       );
-    validateMatcher(
-      assertion.matcher,
-      assertion.expected.trim(),
-      prefix,
-      add,
-      stepId,
-      path,
-    );
+    validateMatcher(assertion.matcher, assertion.expected.trim(), prefix, add, stepId, path);
   });
 }
 
@@ -698,10 +623,7 @@ function validateExtractionRules(
   rules.forEach((rule, index) => {
     if (rule.enabled === false) return;
     const prefix = `${path}, extraction ${index + 1}`;
-    if (
-      !rule.variableName.trim() ||
-      !VARIABLE_NAME_RE.test(rule.variableName.trim())
-    )
+    if (!rule.variableName.trim() || !VARIABLE_NAME_RE.test(rule.variableName.trim()))
       add({
         level: "error",
         message: `${prefix}: variable name is required and must be valid`,
@@ -733,11 +655,7 @@ function validateExtractionRules(
         stepId,
         path,
       });
-    if (
-      rule.source === "body" &&
-      rule.expression.trim() &&
-      !isJsonPath(rule.expression)
-    )
+    if (rule.source === "body" && rule.expression.trim() && !isJsonPath(rule.expression))
       add({
         level: "error",
         message: `${prefix}: invalid JSONPath expression`,
@@ -762,19 +680,14 @@ function validateMatcher(
       stepId,
       path,
     });
-  if (
-    (matcher === "gt" || matcher === "lt") &&
-    expected &&
-    !Number.isFinite(Number(expected))
-  )
+  if ((matcher === "gt" || matcher === "lt") && expected && !Number.isFinite(Number(expected)))
     add({
       level: "error",
       message: `${label}: expected value must be numeric for ${matcher}`,
       stepId,
       path,
     });
-  if (matcher === "matches")
-    validateRegex(expected, `${label}: expected value`, add, stepId, path);
+  if (matcher === "matches") validateRegex(expected, `${label}: expected value`, add, stepId, path);
 }
 
 function validateIntegerRange(

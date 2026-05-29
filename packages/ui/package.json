@@ -1,14 +1,25 @@
 {
   "name": "@invoke/ui",
-  "version": "1.0.0-local",
+  "version": "1.0.0",
   "private": true,
+  "homepage": "https://runinvoke.com",
+  "bugs": {
+    "url": "https://github.com/brendatamaar/invoke/issues"
+  },
+  "license": "BUSL-1.1",
+  "author": "brendatamaar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brendatamaar/invoke.git",
+    "directory": "packages/ui"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run --passWithNoTests",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "oxlint src"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.1",
@@ -17,11 +28,8 @@
     "@codemirror/lang-python": "^6.2.1",
     "@codemirror/lang-xml": "^6.1.0",
     "@codemirror/language": "^6.12.3",
-    "@codemirror/legacy-modes": "^6.5.2",
-    "@codemirror/lint": "^6.9.6",
+"@codemirror/lint": "^6.9.6",
     "@codemirror/state": "^6.6.0",
-    "@codemirror/theme-one-dark": "^6.1.2",
-    "@codemirror/view": "^6.41.1",
     "@invoke/core": "workspace:*",
     "@tanstack/react-query": "^5.80.5",
     "codemirror": "^6.0.1",
@@ -40,11 +48,11 @@
     "@types/node": "^20.19.25",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.5.2",
+    "@vitejs/plugin-react": "^5.2.0",
     "postcss": "8.5.10",
     "tailwindcss": "^4",
     "typescript": "^5.9.3",
-    "vite": "^5.4.21",
+    "vite": "^7.3.3",
     "vite-plugin-node-polyfills": "^0.26.0",
     "vitest": "^3.2.4"
   }

@@ -32,19 +32,13 @@ export function MockPanel() {
     if (!validation.valid) {
       const [firstError] = validation.errors;
       const remaining = validation.errors.length - 1;
-      addToast(
-        "error",
-        `${firstError.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`,
-      );
+      addToast("error", `${firstError.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`);
       return;
     }
     if (validation.warnings.length > 0) {
       const [firstWarning] = validation.warnings;
       const remaining = validation.warnings.length - 1;
-      addToast(
-        "warn",
-        `${firstWarning.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`,
-      );
+      addToast("warn", `${firstWarning.message}${remaining > 0 ? ` (+${remaining} more)` : ""}`);
     }
     setMockStatus("Syncing...");
     syncMutation.mutate(mockRoutes, {
@@ -80,25 +74,24 @@ export function MockPanel() {
   };
 
   const persistRoutes = (routes: MockRoute[]) => {
-    coreStore.setMeta("mockRoutes", routes).catch((error: unknown) =>
-      addToast(
-        "error",
-        `Failed to save mock routes: ${error instanceof Error ? error.message : String(error)}`,
-      ),
-    );
+    coreStore
+      .setMeta("mockRoutes", routes)
+      .catch((error: unknown) =>
+        addToast(
+          "error",
+          `Failed to save mock routes: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
   };
 
   const saveRoute = (route: MockRoute) => {
     const exists = mockRoutes.some((r) => r.id === route.id);
     persistRoutes(
-      exists
-        ? mockRoutes.map((r) => (r.id === route.id ? route : r))
-        : [...mockRoutes, route],
+      exists ? mockRoutes.map((r) => (r.id === route.id ? route : r)) : [...mockRoutes, route],
     );
   };
 
-  const deleteRoute = (id: string) =>
-    persistRoutes(mockRoutes.filter((r) => r.id !== id));
+  const deleteRoute = (id: string) => persistRoutes(mockRoutes.filter((r) => r.id !== id));
 
   const importRoutes = (imported: MockRoute[]) => {
     const merged = [
@@ -111,9 +104,7 @@ export function MockPanel() {
 
   const toggleEnabled = (id: string) =>
     persistRoutes(
-      mockRoutes.map((r) =>
-        r.id === id ? { ...r, enabled: !(r.enabled !== false) } : r,
-      ),
+      mockRoutes.map((r) => (r.id === id ? { ...r, enabled: !(r.enabled !== false) } : r)),
     );
 
   return (
@@ -133,6 +124,7 @@ export function MockPanel() {
         </div>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={() => refetch()}
             className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
             title="Refresh"
@@ -163,11 +155,7 @@ export function MockPanel() {
       </div>
 
       {editingRoute && (
-        <RouteModal
-          route={editingRoute}
-          onSave={saveRoute}
-          onClose={() => setEditingRoute(null)}
-        />
+        <RouteModal route={editingRoute} onSave={saveRoute} onClose={() => setEditingRoute(null)} />
       )}
       <ConfirmModal
         open={confirmDeleteId !== null}

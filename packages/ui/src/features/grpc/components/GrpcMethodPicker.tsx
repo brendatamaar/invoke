@@ -29,9 +29,7 @@ export function GrpcMethodPicker({
     : methods;
 
   const selectedLabel =
-    selectedService && selectedMethod
-      ? `${selectedService} / ${selectedMethod}`
-      : null;
+    selectedService && selectedMethod ? `${selectedService} / ${selectedMethod}` : null;
 
   const selectedInfo = methods.find(
     (x) => x.service === selectedService && x.method === selectedMethod,
@@ -65,7 +63,6 @@ export function GrpcMethodPicker({
         {open ? (
           <input
             ref={inputRef}
-            autoFocus
             className="w-full px-2 py-1 pr-6 text-xs outline-none"
             style={{
               fontFamily: "var(--font-mono)",
@@ -75,6 +72,7 @@ export function GrpcMethodPicker({
               color: "var(--fg-0)",
             }}
             placeholder="Filter methods..."
+            aria-label="Filter gRPC methods"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -101,18 +99,14 @@ export function GrpcMethodPicker({
               transition: "border-color var(--dur-fast)",
             }}
             onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLElement).style.borderColor =
-                "var(--accent)")
+              ((e.currentTarget as HTMLElement).style.borderColor = "var(--accent)")
             }
             onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLElement).style.borderColor =
-                "var(--line-2)")
+              ((e.currentTarget as HTMLElement).style.borderColor = "var(--line-2)")
             }
             onClick={() => setOpen(true)}
           >
-            <span className="flex-1 truncate">
-              {selectedLabel ?? "Select method..."}
-            </span>
+            <span className="flex-1 truncate">{selectedLabel ?? "Select method..."}</span>
             <ChevronDown
               size={11}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none"

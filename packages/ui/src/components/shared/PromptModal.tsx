@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Dialog } from "./Dialog";
 import type { PromptModalProps } from "../../types";
 
-export function PromptModal({
+export function PromptModal(props: PromptModalProps) {
+  return <PromptModalInner key={`${props.open}-${props.defaultValue ?? ""}`} {...props} />;
+}
+
+function PromptModalInner({
   open,
   title,
   label,
@@ -19,13 +23,13 @@ export function PromptModal({
 
   useEffect(() => {
     if (open) {
-      setValue(defaultValue);
-      setTimeout(() => {
+      const id = setTimeout(() => {
         inputRef.current?.focus();
         (inputRef.current as HTMLInputElement)?.select?.();
       }, 30);
+      return () => clearTimeout(id);
     }
-  }, [open, defaultValue]);
+  }, [open]);
 
   const submit = () => {
     if (allowEmpty) onConfirm(value);
@@ -40,10 +44,11 @@ export function PromptModal({
       width="360px"
       footer={
         <>
-          <button className="btn" onClick={onClose}>
+          <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
           <button
+            type="button"
             className="btn btn-primary"
             onClick={submit}
             disabled={!allowEmpty && !value.trim()}
@@ -55,6 +60,7 @@ export function PromptModal({
     >
       {label && (
         <label
+          htmlFor="prompt-input"
           style={{
             display: "block",
             marginBottom: 6,
@@ -67,6 +73,7 @@ export function PromptModal({
       )}
       {multiline ? (
         <textarea
+          id="prompt-input"
           ref={inputRef as React.RefObject<HTMLTextAreaElement>}
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -77,6 +84,7 @@ export function PromptModal({
         />
       ) : (
         <input
+          id="prompt-input"
           ref={inputRef as React.RefObject<HTMLInputElement>}
           value={value}
           onChange={(e) => setValue(e.target.value)}

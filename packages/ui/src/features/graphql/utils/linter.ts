@@ -4,9 +4,7 @@ import { linter } from "@codemirror/lint";
 import type { Diagnostic } from "@codemirror/lint";
 import type { GraphQLIntrospectionSchema } from "@invoke/core";
 
-export function makeGraphQLLinter(
-  schemaRef: RefObject<GraphQLIntrospectionSchema | undefined>,
-) {
+export function makeGraphQLLinter(schemaRef: RefObject<GraphQLIntrospectionSchema | undefined>) {
   return linter(
     (view) => {
       const schema = schemaRef.current;

@@ -98,10 +98,7 @@ function OAuth2ClientFields({ auth, setAuth }: AuthFormProps) {
         />
       </Field>
       <Field label="Scope">
-        <AuthTextInput
-          value={auth.scope ?? ""}
-          onChange={(scope) => setAuth({ ...auth, scope })}
-        />
+        <AuthTextInput value={auth.scope ?? ""} onChange={(scope) => setAuth({ ...auth, scope })} />
       </Field>
     </>
   );
@@ -134,13 +131,14 @@ function OAuth2AuthorizeRow({
         </span>
       )}
       <button
+        type="button"
         disabled={authorizing || !auth.authUrl || !auth.tokenUrl || !auth.clientId}
         onClick={() => startAuthorization(auth, setAuthorizing, setOauthState, addToast)}
         className="ml-auto btn btn-primary text-2xs py-0.5 px-2 flex items-center gap-1"
       >
         {authorizing ? (
           <>
-            <RefreshCw size={11} className="animate-spin" /> Waiting...
+            <RefreshCw size={11} className="animate-spin" /> Waiting…
           </>
         ) : (
           <>
@@ -151,4 +149,3 @@ function OAuth2AuthorizeRow({
     </div>
   );
 }
-

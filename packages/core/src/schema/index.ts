@@ -1,11 +1,11 @@
-import { Schema } from "effect"
+import { Schema } from "effect";
 
 export const KeyValueSchema = Schema.Struct({
   key: Schema.String,
   value: Schema.String,
   enabled: Schema.optional(Schema.Boolean),
   sensitive: Schema.optional(Schema.Boolean),
-})
+});
 
 export const CollectionSchema = Schema.Struct({
   id: Schema.String,
@@ -15,7 +15,7 @@ export const CollectionSchema = Schema.Struct({
   sortOrder: Schema.optional(Schema.Number),
   createdAt: Schema.Number,
   updatedAt: Schema.Number,
-})
+});
 
 export const FolderSchema = Schema.Struct({
   id: Schema.String,
@@ -27,7 +27,7 @@ export const FolderSchema = Schema.Struct({
   sortOrder: Schema.Number,
   createdAt: Schema.Number,
   updatedAt: Schema.Number,
-})
+});
 
 export const EnvironmentSchema = Schema.Struct({
   id: Schema.String,
@@ -35,5 +35,4 @@ export const EnvironmentSchema = Schema.Struct({
   variables: Schema.Array(KeyValueSchema),
   createdAt: Schema.Number,
   updatedAt: Schema.Number,
-})
-
+});

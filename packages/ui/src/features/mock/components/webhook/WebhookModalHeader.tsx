@@ -1,12 +1,6 @@
 import { X } from "lucide-react";
 
-export function WebhookModalHeader({
-  label,
-  onClose,
-}: {
-  label: string;
-  onClose: () => void;
-}) {
+export function WebhookModalHeader({ label, onClose }: { label: string; onClose: () => void }) {
   return (
     <div
       className="flex items-center justify-between px-4 py-2.5 shrink-0"
@@ -22,6 +16,7 @@ export function WebhookModalHeader({
         {label}
       </span>
       <button
+        type="button"
         onClick={onClose}
         className="p-0.5 rounded"
         style={{ color: "var(--fg-3)", transition: "color var(--dur-fast)" }}

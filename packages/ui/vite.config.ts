@@ -11,12 +11,15 @@ export default defineConfig({
       globals: { Buffer: true, global: true, process: true },
     }),
   ],
+  build: {
+    rollupOptions: {
+      input: { main: "src/main.tsx" },
+    },
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "@invoke/core": fileURLToPath(
-        new URL("../core/src/index.ts", import.meta.url),
-      ),
+      "@invoke/core": fileURLToPath(new URL("../core/src/index.ts", import.meta.url)),
     },
   },
   server: {

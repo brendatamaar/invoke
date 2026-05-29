@@ -15,9 +15,7 @@ export function getStoredTheme(): ThemeMode {
 
 export function resolveTheme(mode: ThemeMode): "light" | "dark" {
   if (mode !== "system") return mode;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function applyUiFontSize(size: number) {

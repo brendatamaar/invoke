@@ -1,11 +1,4 @@
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Info,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Copy, Info } from "lucide-react";
 import type { WebSocketLogItem } from "../../../types";
 import { useStore } from "../../../store";
 import { byteSize, tryPrettyJson } from "../utils/log";
@@ -25,9 +18,7 @@ export function WebSocketLogEntry({
   onToggleExpanded: () => void;
   onToggleDiff: () => void;
 }) {
-  const displayBody = prettyJson
-    ? (tryPrettyJson(entry.body) ?? entry.body)
-    : entry.body;
+  const displayBody = prettyJson ? (tryPrettyJson(entry.body) ?? entry.body) : entry.body;
 
   return (
     <div
@@ -45,11 +36,14 @@ export function WebSocketLogEntry({
           checked={selectedForDiff}
           onChange={onToggleDiff}
           title="Select for diff"
+          aria-label="Select for diff"
           className="mt-0.5 shrink-0 accent-[var(--accent)] cursor-pointer"
           style={{ width: 11, height: 11 }}
         />
         <button
+          type="button"
           onClick={onToggleExpanded}
+          aria-label="Toggle details"
           className="mt-0.5 shrink-0 text-[var(--text-3)] hover:text-[var(--text-1)]"
         >
           {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
@@ -97,28 +91,28 @@ function WebSocketLogMetadata({ entry }: { entry: WebSocketLogItem }) {
         type: <span className="text-[var(--text-2)]">{entry.type}</span>
       </span>
       <span>
-        direction:{" "}
-        <span className="text-[var(--text-2)]">{entry.direction}</span>
+        direction: <span className="text-[var(--text-2)]">{entry.direction}</span>
       </span>
       <span>
         size: <span className="text-[var(--text-2)]">{byteSize(entry.body)} B</span>
       </span>
       <span>
         timestamp:{" "}
-        <span className="text-[var(--text-2)]">
-          {new Date(entry.createdAt).toISOString()}
-        </span>
+        <span className="text-[var(--text-2)]">{new Date(entry.createdAt).toISOString()}</span>
       </span>
       <button
+        type="button"
         onClick={() =>
-          navigator.clipboard.writeText(entry.body).catch((error: unknown) =>
-            useStore
-              .getState()
-              .addToast(
-                "error",
-                `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
-              ),
-          )
+          navigator.clipboard
+            .writeText(entry.body)
+            .catch((error: unknown) =>
+              useStore
+                .getState()
+                .addToast(
+                  "error",
+                  `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
+                ),
+            )
         }
         className="flex items-center gap-0.5 hover:text-[var(--text-1)] transition-colors"
       >

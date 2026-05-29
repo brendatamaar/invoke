@@ -1,8 +1,4 @@
-import {
-  resolveGrpcRequest,
-  runPreRequestScript,
-  type GrpcRequestConfig,
-} from "@invoke/core";
+import { resolveGrpcRequest, runPreRequestScript, type GrpcRequestConfig } from "@invoke/core";
 import { useStore } from "../../../store";
 
 export function resolveCurrentGrpcRequest() {
@@ -11,11 +7,7 @@ export function resolveCurrentGrpcRequest() {
     (environment) => environment.id === state.activeEnvironmentId,
   );
   return {
-    request: resolveGrpcRequest(
-      state.grpcRequest,
-      activeEnv,
-      state.sessionVariables,
-    ).request,
+    request: resolveGrpcRequest(state.grpcRequest, activeEnv, state.sessionVariables).request,
     sessionVariables: state.sessionVariables,
   };
 }

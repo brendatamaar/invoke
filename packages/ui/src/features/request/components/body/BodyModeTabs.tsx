@@ -12,6 +12,7 @@ export function BodyModeTabs({
     <div className="flex items-center gap-1 px-3 py-1.5 border-b border-[var(--border)]">
       {BODY_MODES.map((bodyMode) => (
         <button
+          type="button"
           key={bodyMode}
           onClick={() => onSelect(bodyMode)}
           className={`tab-btn text-2xs ${mode === bodyMode ? "active" : ""}`}

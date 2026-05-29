@@ -9,10 +9,7 @@ export function cacheSchema(
   lastFetched: number,
 ) {
   try {
-    localStorage.setItem(
-      CACHE_PREFIX + endpoint,
-      JSON.stringify({ schema, lastFetched }),
-    );
+    localStorage.setItem(CACHE_PREFIX + endpoint, JSON.stringify({ schema, lastFetched }));
   } catch {
     /* quota exceeded */
   }

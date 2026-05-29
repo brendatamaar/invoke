@@ -1,6 +1,6 @@
 package executor
 
-import "github.com/brendatama/invoke/executor/internal/executorpb"
+import "github.com/brendatamaar/invoke/executor/internal/executorpb"
 
 type Certificate = executorpb.Certificate
 type Header = executorpb.Header

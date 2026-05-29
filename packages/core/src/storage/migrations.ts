@@ -20,9 +20,7 @@ type MigrationTransaction = {
 
 function hasMovedNetworkOptions(options?: RequestOptions) {
   if (!options) return false;
-  return NETWORK_OPTION_KEYS.some((key) =>
-    Object.prototype.hasOwnProperty.call(options, key),
-  );
+  return NETWORK_OPTION_KEYS.some((key) => Object.prototype.hasOwnProperty.call(options, key));
 }
 
 function stripRequestNetworkOptions<T extends { options?: RequestOptions }>(
@@ -39,15 +37,13 @@ function stripRequestNetworkOptions<T extends { options?: RequestOptions }>(
   };
 }
 
-export function stripNetworkOptionsFromProtocolRequest<
-  T extends ProtocolRequestConfig,
->(request: T): T {
+export function stripNetworkOptionsFromProtocolRequest<T extends ProtocolRequestConfig>(
+  request: T,
+): T {
   return stripRequestNetworkOptions(request).request;
 }
 
-export function stripNetworkOptionsFromSavedRequest(
-  saved: SavedRequest,
-): SavedRequest {
+export function stripNetworkOptionsFromSavedRequest(saved: SavedRequest): SavedRequest {
   const cleaned = stripRequestNetworkOptions(saved.request);
   if (!cleaned.changed && !saved.encryptedTlsKey) return saved;
   return {
@@ -73,8 +69,7 @@ function stripNetworkOptionsFromFlowStep(step: FlowStep): {
     const elseSteps = step.elseSteps
       ? stripNetworkOptionsFromFlowSteps(step.elseSteps)
       : { steps: step.elseSteps, changed: false };
-    if (!thenSteps.changed && !elseSteps.changed)
-      return { step, changed: false };
+    if (!thenSteps.changed && !elseSteps.changed) return { step, changed: false };
     return {
       step: {
         ...step,
@@ -114,16 +109,12 @@ export function stripNetworkOptionsFromFlow(flow: Flow): Flow {
   return cleaned.changed ? { ...flow, steps: cleaned.steps ?? [] } : flow;
 }
 
-export function stripNetworkOptionsFromHistoryEntry(
-  entry: HistoryEntry,
-): HistoryEntry {
+export function stripNetworkOptionsFromHistoryEntry(entry: HistoryEntry): HistoryEntry {
   const cleaned = stripRequestNetworkOptions(entry.request);
   return cleaned.changed ? { ...entry, request: cleaned.request } : entry;
 }
 
-export async function migrateNetworkOptionsToDefaults(
-  tx: MigrationTransaction,
-) {
+export async function migrateNetworkOptionsToDefaults(tx: MigrationTransaction) {
   const requests = tx.table<SavedRequest>("requests");
   for (const saved of await requests.toArray()) {
     const cleaned = stripNetworkOptionsFromSavedRequest(saved);

@@ -19,15 +19,11 @@ function serializeBody(input: ExecuteInput): {
       }>;
       const encoded = pairs
         .filter((p) => p.enabled !== false && p.key)
-        .map(
-          (p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`,
-        )
+        .map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
         .join("&");
       return {
         body: Buffer.from(encoded),
-        extraHeaders: [
-          { key: "Content-Type", value: "application/x-www-form-urlencoded" },
-        ],
+        extraHeaders: [{ key: "Content-Type", value: "application/x-www-form-urlencoded" }],
       };
     } catch {
       return { body: Buffer.from(body), extraHeaders: [] };
@@ -163,9 +159,7 @@ function applyAuthIfNeeded(
   if (auth.type === "ntlm") {
     const newHeaders = [...headers];
     if (auth.ntlmUsername) {
-      const user = auth.ntlmDomain
-        ? `${auth.ntlmDomain}\\${auth.ntlmUsername}`
-        : auth.ntlmUsername;
+      const user = auth.ntlmDomain ? `${auth.ntlmDomain}\\${auth.ntlmUsername}` : auth.ntlmUsername;
       newHeaders.push({ key: "X-Invoke-Ntlm-Username", value: user });
       newHeaders.push({ key: "X-Invoke-Ntlm-Password", value: auth.ntlmPassword ?? "" });
     }
@@ -179,9 +173,7 @@ function applyAuthIfNeeded(
     if (!headerKeySet.has("authorization")) {
       newHeaders.push({
         key: "Authorization",
-        value: `Basic ${Buffer.from(
-          `${auth.username}:${auth.password ?? ""}`,
-        ).toString("base64")}`,
+        value: `Basic ${Buffer.from(`${auth.username}:${auth.password ?? ""}`).toString("base64")}`,
       });
     }
   } else if ((auth.type === "bearer" || auth.type === "oauth2") && auth.token) {
@@ -218,13 +210,9 @@ export function executePayload(input: ExecuteInput) {
 
   for (const extra of extraHeaders) {
     const { _soft, ...header } = extra as Header & { _soft?: boolean };
-    const hasContentType = headers.some(
-      (h) => h.key.toLowerCase() === header.key.toLowerCase(),
-    );
+    const hasContentType = headers.some((h) => h.key.toLowerCase() === header.key.toLowerCase());
     if (_soft && hasContentType) continue; // user-set header wins
-    headers = headers.filter(
-      (h) => h.key.toLowerCase() !== header.key.toLowerCase(),
-    );
+    headers = headers.filter((h) => h.key.toLowerCase() !== header.key.toLowerCase());
     headers = [...headers, header];
   }
 

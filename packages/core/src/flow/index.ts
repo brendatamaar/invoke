@@ -30,9 +30,7 @@ export class FlowRunner {
     const variables: Record<string, string> = {};
     const results: FlowStepResult[] = [];
 
-    this.fiber = Effect.runFork(
-      flowEffect(flow, options, startedAt, variables, results),
-    );
+    this.fiber = Effect.runFork(flowEffect(flow, options, startedAt, variables, results));
 
     const exit = await Effect.runPromise(Fiber.await(this.fiber));
     this.fiber = null;
@@ -68,9 +66,7 @@ function flowEffect(
   return Effect.gen(function* () {
     yield* stepsEffect(flow.steps, variables, results, options);
 
-    const status: FlowStatus = results.some((r) => r.status === "failed")
-      ? "failed"
-      : "passed";
+    const status: FlowStatus = results.some((r) => r.status === "failed") ? "failed" : "passed";
 
     const result: FlowResult = {
       flowId: flow.id,
@@ -99,12 +95,7 @@ function stepsEffect(
     for (const step of steps) {
       yield* stepEffect(step, variables, results, options);
       const last = results[results.length - 1];
-      if (
-        last?.status === "failed" &&
-        step.type === "request" &&
-        !step.continueOnFailure
-      )
-        return;
+      if (last?.status === "failed" && step.type === "request" && !step.continueOnFailure) return;
     }
   });
 }
@@ -116,8 +107,7 @@ function stepEffect(
   options: FlowRunnerOptions,
 ): Effect.Effect<void, never> {
   if (step.type === "delay") return delayEffect(step, results, options);
-  if (step.type === "condition")
-    return conditionEffect(step, variables, results, options);
+  if (step.type === "condition") return conditionEffect(step, variables, results, options);
   if (step.type === "loop") return loopEffect(step, variables, results, options);
   return requestEffect(step, variables, results, options);
 }
@@ -220,11 +210,10 @@ function requestEffect(
     catch: (e) => new StepExecutionError({ stepId: step.id, cause: e }),
   }).pipe(
     Effect.timeout(Duration.millis(timeoutMs)),
-    Effect.mapError(
-      (e): StepTimeoutError | StepExecutionError =>
-        e._tag === "TimeoutException"
-          ? new StepTimeoutError({ stepId: step.id, timeoutMs })
-          : (e as StepExecutionError),
+    Effect.mapError((e): StepTimeoutError | StepExecutionError =>
+      e._tag === "TimeoutException"
+        ? new StepTimeoutError({ stepId: step.id, timeoutMs })
+        : (e as StepExecutionError),
     ),
   );
 
@@ -240,10 +229,7 @@ function requestEffect(
     if (outcome._tag === "Right") {
       const response = outcome.right;
       const assertions = runAssertions(response, step.request.assertions ?? []);
-      const extracted = extractVariables(
-        response,
-        step.request.extractionRules ?? [],
-      );
+      const extracted = extractVariables(response, step.request.extractionRules ?? []);
 
       for (const [name, value] of Object.entries(extracted)) {
         variables[name] = value;
@@ -326,8 +312,7 @@ function conditionActual(
   if (condition.source === "status") return response.status;
   if (condition.source === "header") {
     return response.headers.find(
-      (header) =>
-        header.key.toLowerCase() === condition.expression.toLowerCase(),
+      (header) => header.key.toLowerCase() === condition.expression.toLowerCase(),
     )?.value;
   }
   try {

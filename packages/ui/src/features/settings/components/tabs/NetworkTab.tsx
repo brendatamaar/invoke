@@ -34,17 +34,11 @@ export function NetworkTab({
         title="Network policy"
         description="These settings apply to all requests of this protocol. Per-request timeout and retry policy are in each request's Options tab."
       />
-      <ProtocolPills
-        editingProtocol={editingProtocol}
-        onChange={setEditingProtocol}
-      />
+      <ProtocolPills editingProtocol={editingProtocol} onChange={setEditingProtocol} />
 
       <div className="flex flex-col gap-3 border-t border-[var(--border)] pt-4">
         {showAdvancedTimeouts && (
-          <TimeoutFields
-            activeOptions={activeOptions}
-            patchActiveOptions={patchActiveOptions}
-          />
+          <TimeoutFields activeOptions={activeOptions} patchActiveOptions={patchActiveOptions} />
         )}
 
         {showRedirects && (
@@ -65,9 +59,7 @@ export function NetworkTab({
         <FieldRow label="Allow private IPs">
           <CheckboxControl
             checked={activeOptions.allowPrivateAddresses ?? true}
-            onChange={(checked) =>
-              patchActiveOptions({ allowPrivateAddresses: checked })
-            }
+            onChange={(checked) => patchActiveOptions({ allowPrivateAddresses: checked })}
           />
         </FieldRow>
 
@@ -75,6 +67,7 @@ export function NetworkTab({
 
         <div className="pt-1">
           <button
+            type="button"
             onClick={resetActiveProtocolDefaults}
             className="text-2xs text-[var(--text-3)] underline hover:text-[var(--text-1)]"
           >
@@ -109,6 +102,7 @@ function TimeoutFields({
             })
           }
           placeholder="default"
+          aria-label="Connect timeout in milliseconds"
           className="input w-32 text-xs"
         />
       </FieldRow>
@@ -127,6 +121,7 @@ function TimeoutFields({
             })
           }
           placeholder="default"
+          aria-label="Read timeout in milliseconds"
           className="input w-32 text-xs"
         />
       </FieldRow>
@@ -164,6 +159,7 @@ function RedirectFields({
                 maxRedirects: numericInputValue(e.currentTarget.value, 10, 0, 30),
               })
             }
+            aria-label="Max redirects"
             className="input w-20 text-xs"
           />
         </FieldRow>

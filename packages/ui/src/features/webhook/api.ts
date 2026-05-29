@@ -1,9 +1,7 @@
 import { ensureOk, readJson } from "../../lib/http";
 import type { WebhookEntry, WebhookValidationConfig } from "../../types";
 
-export async function loadWebhookLogs(
-  webhookId: string,
-): Promise<WebhookEntry[]> {
+export async function loadWebhookLogs(webhookId: string): Promise<WebhookEntry[]> {
   const response = await fetch(`/api/webhook/${webhookId}/logs`);
   const data = await readJson<{ entries: WebhookEntry[] }>(response);
   return data.entries;

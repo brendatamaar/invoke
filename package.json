@@ -1,8 +1,23 @@
 {
   "name": "invoke",
-  "version": "1.0.0-local",
+  "version": "1.0.0",
   "private": true,
-  "description": "API development and testing platform.",
+  "description": "API platform for development and testing that runs locally.",
+  "homepage": "https://runinvoke.com",
+  "bugs": {
+    "url": "https://github.com/brendatamaar/invoke/issues"
+  },
+  "license": "BUSL-1.1",
+  "author": "brendatamaar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brendatamaar/invoke.git"
+  },
+  "workspaces": [
+    "packages/core",
+    "packages/server",
+    "packages/ui"
+  ],
   "type": "module",
   "scripts": {
     "dev": "pnpm --parallel --filter @invoke/server --filter @invoke/ui dev",
@@ -11,34 +26,33 @@
     "dev:ui": "pnpm --filter @invoke/ui dev",
     "build": "turbo run build",
     "test": "turbo run test",
-    "lint": "turbo run lint",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
     "dev:all:turbo": "turbo run dev",
     "e2e": "turbo run build && playwright test",
     "proto:generate": "buf generate",
-    "format": "prettier --write .",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
     "executor:dev": "cd executor && go run ./cmd/executor",
     "executor:test": "cd executor && go test ./..."
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
     "concurrently": "^9.2.1",
-    "eslint": "^8.57.1",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-vue": "^9.33.0",
-    "prettier": "^3.6.2",
+    "oxfmt": "0.52.0",
+    "oxlint": "^1.67.0",
     "turbo": "^2.9.14",
-    "typescript": "^5.9.3",
-    "vue-eslint-parser": "^9.4.3"
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20"
   },
   "packageManager": "pnpm@9.15.9",
-  "workspaces": [
-    "packages/core",
-    "packages/server",
-    "packages/ui"
-  ]
+  "pnpm": {
+    "overrides": {
+      "protobufjs": "^7.6.1",
+      "fast-uri": "^3.1.2",
+      "uuid": "^11.1.1"
+    }
+  }
 }

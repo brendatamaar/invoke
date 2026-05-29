@@ -41,17 +41,10 @@ export function ProxyRecordingSection() {
             `Added ${result.added} mock route${result.added !== 1 ? "s" : ""} (${skipped} already existed)`,
           );
         } else {
-          addToast(
-            "success",
-            `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`,
-          );
+          addToast("success", `Added ${result.added} mock route${result.added !== 1 ? "s" : ""}`);
         }
-        const selectedRecords = ids
-          ? records.filter((record) => ids.includes(record.id))
-          : records;
-        const withQuery = selectedRecords.filter((record) =>
-          record.path.includes("?"),
-        );
+        const selectedRecords = ids ? records.filter((record) => ids.includes(record.id)) : records;
+        const withQuery = selectedRecords.filter((record) => record.path.includes("?"));
         if (withQuery.length > 0) {
           addToast(
             "success",
@@ -90,6 +83,7 @@ export function ProxyRecordingSection() {
         </span>
         <ProxyUrlTooltip url={proxyUrl} />
         <button
+          type="button"
           onClick={() => refetch()}
           className={`p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors ${isFetching ? "animate-spin" : ""}`}
           title="Refresh"
@@ -99,6 +93,7 @@ export function ProxyRecordingSection() {
         {records.length > 0 && (
           <>
             <button
+              type="button"
               onClick={importSelected}
               disabled={importing}
               className={`p-0.5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${importing ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
@@ -113,6 +108,7 @@ export function ProxyRecordingSection() {
               <Download size={11} />
             </button>
             <button
+              type="button"
               onClick={clearAll}
               disabled={importing}
               className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] disabled:opacity-40 disabled:cursor-not-allowed"

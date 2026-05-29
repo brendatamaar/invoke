@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { ChevronDown, ChevronRight, FileText } from "lucide-react";
 import type { Collection } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
@@ -7,10 +7,7 @@ import { CollectionFolderNode } from "./CollectionFolderNode";
 import { CollectionRequestNode } from "./CollectionRequestNode";
 import { CollectionActionsMenu } from "./tree/CollectionActionsMenu";
 import { CollectionNodeModals } from "./tree/CollectionNodeModals";
-import {
-  exportCollectionToOpenApi,
-  exportCollectionToZip,
-} from "../utils/exportCollection";
+import { exportCollectionToOpenApi, exportCollectionToZip } from "../utils/exportCollection";
 import {
   emptyRequest,
   handleCollectionDragOver,
@@ -23,13 +20,27 @@ import {
 export function CollectionNode({ collection }: { collection: Collection }) {
   const { expandedFolderIds, toggleFolder, requests, set, addToast } = useStore();
   const folders = useFolders();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [addReqModal, setAddReqModal] = useState(false);
-  const [addFolderModal, setAddFolderModal] = useState(false);
-  const [renameModal, setRenameModal] = useState(false);
-  const [deleteModal, setDeleteModal] = useState(false);
-  const [descModal, setDescModal] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
+  type CollectionNodeState = {
+    menuOpen: boolean;
+    addReqModal: boolean;
+    addFolderModal: boolean;
+    renameModal: boolean;
+    deleteModal: boolean;
+    descModal: boolean;
+    isDragOver: boolean;
+  };
+  const [state, dispatch] = useReducer(
+    (prev: CollectionNodeState, patch: Partial<CollectionNodeState>) => ({ ...prev, ...patch }),
+    { menuOpen: false, addReqModal: false, addFolderModal: false, renameModal: false, deleteModal: false, descModal: false, isDragOver: false },
+  );
+  const { menuOpen, addReqModal, addFolderModal, renameModal, deleteModal, descModal, isDragOver } = state;
+  const setMenuOpen = (v: boolean) => dispatch({ menuOpen: v });
+  const setAddReqModal = (v: boolean) => dispatch({ addReqModal: v });
+  const setAddFolderModal = (v: boolean) => dispatch({ addFolderModal: v });
+  const setRenameModal = (v: boolean) => dispatch({ renameModal: v });
+  const setDeleteModal = (v: boolean) => dispatch({ deleteModal: v });
+  const setDescModal = (v: boolean) => dispatch({ descModal: v });
+  const setIsDragOver = (v: boolean) => dispatch({ isDragOver: v });
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!menuOpen) return;
@@ -49,9 +60,7 @@ export function CollectionNode({ collection }: { collection: Collection }) {
   const colRequests = requests.filter(
     (request) => request.collectionId === collection.id && !request.folderId,
   );
-  const totalRequests = requests.filter(
-    (request) => request.collectionId === collection.id,
-  ).length;
+  const totalRequests = requests.filter((request) => request.collectionId === collection.id).length;
 
   const addFolder = async (name: string) => {
     setAddFolderModal(false);
@@ -105,40 +114,44 @@ export function CollectionNode({ collection }: { collection: Collection }) {
     <>
       <div className="mb-0.5">
         <div
-          className={`group flex items-center gap-1.5 px-3 py-1.5 cursor-pointer rounded mx-1 transition-colors ${isDragOver ? "bg-[var(--accent-subtle,var(--surface-2))] ring-1 ring-inset ring-[var(--accent,var(--border))]" : "hover:bg-[var(--surface-2)]"}`}
-          onClick={() => toggleFolder(collection.id)}
-          onDragOver={(event) =>
-            handleCollectionDragOver(event, collection.id, setIsDragOver)
-          }
+          className={`group flex items-center gap-1.5 rounded mx-1 transition-colors ${isDragOver ? "bg-[var(--accent-subtle,var(--surface-2))] ring-1 ring-inset ring-[var(--accent,var(--border))]" : "hover:bg-[var(--surface-2)]"}`}
+          onDragOver={(event) => handleCollectionDragOver(event, collection.id, setIsDragOver)}
           onDragLeave={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget as Node)) {
               setIsDragOver(false);
             }
           }}
           onDrop={(event) =>
-            handleCollectionDrop(
-              event,
-              collection.id,
-              requests,
-              setIsDragOver,
-              addToast,
-            )
+            handleCollectionDrop(event, collection.id, requests, setIsDragOver, addToast)
           }
         >
-          {expanded ? <ChevronDown size={13} className="text-[var(--text-3)]" /> : <ChevronRight size={13} className="text-[var(--text-3)]" />}
-          <span className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate" title={collection.description || undefined}>
-            {collection.name}
-          </span>
-          {collection.description && (
-            <span title={collection.description} className="shrink-0">
-              <FileText size={11} className="text-[var(--text-3)]" />
+          <button
+            type="button"
+            className="flex flex-1 items-center gap-1.5 px-3 py-1.5 cursor-pointer text-left min-w-0"
+            onClick={() => toggleFolder(collection.id)}
+          >
+            {expanded ? (
+              <ChevronDown size={13} className="text-[var(--text-3)]" />
+            ) : (
+              <ChevronRight size={13} className="text-[var(--text-3)]" />
+            )}
+            <span
+              className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate"
+              title={collection.description || undefined}
+            >
+              {collection.name}
             </span>
-          )}
-          <span className="text-2xs text-[var(--text-3)]">{totalRequests}</span>
+            {collection.description && (
+              <span title={collection.description} className="shrink-0">
+                <FileText size={11} className="text-[var(--text-3)]" />
+              </span>
+            )}
+            <span className="text-2xs text-[var(--text-3)]">{totalRequests}</span>
+          </button>
           <CollectionActionsMenu
             open={menuOpen}
             menuRef={menuRef}
-            onToggle={() => setMenuOpen((value) => !value)}
+            onToggle={() => setMenuOpen(!menuOpen)}
             onNewRequest={() => openModal(setMenuOpen, setAddReqModal)}
             onNewFolder={() => openModal(setMenuOpen, setAddFolderModal)}
             onRename={() => openModal(setMenuOpen, setRenameModal)}
@@ -156,7 +169,11 @@ export function CollectionNode({ collection }: { collection: Collection }) {
               <CollectionFolderNode key={folder.id} folder={folder} collectionId={collection.id} />
             ))}
             {colRequests.map((request) => (
-              <CollectionRequestNode key={request.id} request={request} collectionId={collection.id} />
+              <CollectionRequestNode
+                key={request.id}
+                request={request}
+                collectionId={collection.id}
+              />
             ))}
           </div>
         )}

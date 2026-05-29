@@ -21,6 +21,7 @@ export function BackupTab({
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-2 rounded-md bg-[var(--bg-2)] p-4">
           <button
+            type="button"
             onClick={onExportWorkspace}
             className="btn btn-primary flex items-center justify-center gap-2 text-xs"
           >
@@ -37,10 +38,12 @@ export function BackupTab({
             ref={backupInputRef}
             type="file"
             accept=".json,application/json"
+            aria-label="Import workspace file"
             className="hidden"
             onChange={(e) => onImportWorkspace(e.currentTarget.files?.[0])}
           />
           <button
+            type="button"
             onClick={() => backupInputRef.current?.click()}
             className="btn flex items-center justify-center gap-2 text-xs"
           >

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import { useStore } from "../../../store";
 import type { DirectionFilter } from "../types";
 import { WebSocketDiffBar } from "./WebSocketDiffBar";
@@ -8,15 +8,22 @@ import { WsLogDiffModal } from "./WsLogDiffModal";
 
 export function WebSocketLogPanel() {
   const { wsSessions, activeWsSessionId, setWsSession } = useStore();
-  const activeSession =
-    wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
 
-  const [search, setSearch] = useState("");
-  const [dirFilter, setDirFilter] = useState<DirectionFilter>("all");
-  const [prettyJson, setPrettyJson] = useState(false);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [diffSelected, setDiffSelected] = useState<string[]>([]);
-  const [showDiff, setShowDiff] = useState(false);
+  type LogPanelState = { search: string; dirFilter: DirectionFilter; prettyJson: boolean; expandedIds: Set<string>; diffSelected: string[]; showDiff: boolean };
+  const [logState, logDispatch] = useReducer(
+    (prev: LogPanelState, patch: Partial<LogPanelState>) => ({ ...prev, ...patch }),
+    { search: "", dirFilter: "all" as DirectionFilter, prettyJson: false, expandedIds: new Set<string>(), diffSelected: [], showDiff: false },
+  );
+  const { search, dirFilter, prettyJson, expandedIds, diffSelected, showDiff } = logState;
+  const setSearch = (v: string) => logDispatch({ search: v });
+  const setDirFilter = (v: DirectionFilter) => logDispatch({ dirFilter: v });
+  const setPrettyJson = (v: boolean) => logDispatch({ prettyJson: v });
+  const setExpandedIds = (v: Set<string> | ((prev: Set<string>) => Set<string>)) =>
+    logDispatch({ expandedIds: typeof v === "function" ? v(logState.expandedIds) : v });
+  const setDiffSelected = (v: string[] | ((prev: string[]) => string[])) =>
+    logDispatch({ diffSelected: typeof v === "function" ? v(logState.diffSelected) : v });
+  const setShowDiff = (v: boolean) => logDispatch({ showDiff: v });
 
   const filteredLog = useMemo(() => {
     let entries = activeSession?.log ?? [];
@@ -56,19 +63,18 @@ export function WebSocketLogPanel() {
 
   const copyAll = () => {
     const text = (activeSession?.log ?? [])
-      .map(
-        (e) =>
-          `[${new Date(e.createdAt).toISOString()}] [${e.direction}] ${e.body}`,
-      )
+      .map((e) => `[${new Date(e.createdAt).toISOString()}] [${e.direction}] ${e.body}`)
       .join("\n");
-    navigator.clipboard.writeText(text).catch((error: unknown) =>
-      useStore
-        .getState()
-        .addToast(
-          "error",
-          `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
-        ),
-    );
+    navigator.clipboard
+      .writeText(text)
+      .catch((error: unknown) =>
+        useStore
+          .getState()
+          .addToast(
+            "error",
+            `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+      );
   };
 
   const toggleExpanded = (id: string) => {

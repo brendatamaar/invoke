@@ -18,14 +18,11 @@ export function WebSocketDiffBar({
         {selectedCount === 1 ? "Select one more log to diff" : "2 logs selected"}
       </span>
       {selectedCount === 2 && (
-        <button onClick={onOpen} className="btn btn-primary text-2xs px-2">
+        <button type="button" onClick={onOpen} className="btn btn-primary text-2xs px-2">
           Open diff
         </button>
       )}
-      <button
-        onClick={onClear}
-        className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
-      >
+      <button type="button" onClick={onClear} className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]" aria-label="Clear diff selection">
         <X size={11} />
       </button>
     </div>

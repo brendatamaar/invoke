@@ -13,9 +13,7 @@ export function responseFixture(): ExecuteResponse {
   return {
     status: 200,
     statusText: "200 OK",
-    headers: [
-      { key: "Content-Type", value: "application/json", enabled: true },
-    ],
+    headers: [{ key: "Content-Type", value: "application/json", enabled: true }],
     body: "{}",
     timing: {
       dnsMs: 0,
@@ -37,9 +35,7 @@ export function mockRoute(partial: Partial<MockRoute> = {}): MockRoute {
     method: "GET",
     pathPattern: "/users/:id",
     status: 200,
-    headers: [
-      { key: "Content-Type", value: "application/json", enabled: true },
-    ],
+    headers: [{ key: "Content-Type", value: "application/json", enabled: true }],
     body: "{}",
     latencyMs: 0,
     ...partial,
@@ -60,9 +56,7 @@ export function flowFixture(partial: Partial<Flow> = {}): Flow {
         request: {
           ...emptyRequest(),
           url: "https://api.example.com/users",
-          headers: [
-            { key: "Accept", value: "application/json", enabled: true },
-          ],
+          headers: [{ key: "Accept", value: "application/json", enabled: true }],
         },
       },
     ],
@@ -93,9 +87,7 @@ export function fixtureCollection(): {
     ...emptyRequest(),
     method: "POST",
     url: "{{base_url}}/users",
-    headers: [
-      { key: "Content-Type", value: "application/json", enabled: true },
-    ],
+    headers: [{ key: "Content-Type", value: "application/json", enabled: true }],
     bodyMode: "json",
     body: '{ "name": "Ada" }',
   });

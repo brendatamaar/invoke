@@ -1,9 +1,4 @@
-import type {
-  Collection,
-  Environment,
-  Folder,
-  SavedRequest,
-} from "./collection";
+import type { Collection, Environment, Folder, SavedRequest } from "./collection";
 import type { Flow } from "./flow";
 import type { DefaultProtocolOptions } from "./settings";
 

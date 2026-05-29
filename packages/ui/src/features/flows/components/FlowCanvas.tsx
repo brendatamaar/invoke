@@ -4,13 +4,7 @@ import type { FlowResult, FlowStep } from "@invoke/core";
 import { AddStepControls } from "./canvas/AddStepControls";
 import { FlowEdges } from "./canvas/FlowEdges";
 import { FlowNode } from "./canvas/FlowNode";
-import {
-  CANVAS_PAD,
-  NODE_GAP_Y,
-  NODE_H,
-  NODE_W,
-  defaultPositions,
-} from "../utils/layout";
+import { CANVAS_PAD, NODE_GAP_Y, NODE_H, NODE_W, defaultPositions } from "../utils/layout";
 
 export function FlowCanvas({
   steps,
@@ -25,8 +19,8 @@ export function FlowCanvas({
   onSelect: (index: number) => void;
   onAddStep: (type: FlowStep["type"]) => void;
 }) {
-  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>(
-    () => defaultPositions(steps),
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>(() =>
+    defaultPositions(steps),
   );
   const [addingAt, setAddingAt] = useState(false);
   const dragging = useRef<{ id: string; ox: number; oy: number } | null>(null);
@@ -63,8 +57,7 @@ export function FlowCanvas({
     <div
       className="relative w-full h-full overflow-auto bg-[var(--surface-2)]"
       style={{
-        backgroundImage:
-          "radial-gradient(circle, var(--border) 1px, transparent 1px)",
+        backgroundImage: "radial-gradient(circle, var(--border) 1px, transparent 1px)",
         backgroundSize: "20px 20px",
       }}
     >
@@ -99,11 +92,7 @@ export function FlowCanvas({
           />
         ))}
         <div style={{ position: "absolute", left: CANVAS_PAD, top: canvasSize.height - 52 }}>
-          <AddStepControls
-            adding={addingAt}
-            onAddingChange={setAddingAt}
-            onAddStep={onAddStep}
-          />
+          <AddStepControls adding={addingAt} onAddingChange={setAddingAt} onAddStep={onAddStep} />
         </div>
       </div>
     </div>

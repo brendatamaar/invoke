@@ -58,17 +58,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   setWsSession: (id, partial) =>
     set((s) => ({
-      wsSessions: s.wsSessions.map((sess) =>
-        sess.id === id ? { ...sess, ...partial } : sess,
-      ),
+      wsSessions: s.wsSessions.map((sess) => (sess.id === id ? { ...sess, ...partial } : sess)),
     })),
 
   addWsSession: () => {
     const s = get();
     const usedNumbers = new Set(
-      s.wsSessions.map((sess) =>
-        parseInt(sess.label.match(/^Session (\d+)$/)?.[1] ?? "0"),
-      ),
+      s.wsSessions.map((sess) => parseInt(sess.label.match(/^Session (\d+)$/)?.[1] ?? "0")),
     );
     let n = 1;
     while (usedNumbers.has(n)) n++;
@@ -85,9 +81,7 @@ export const useStore = create<AppState>((set, get) => ({
         return { wsSessions: [newSession], activeWsSessionId: newSession.id };
       }
       const newActive =
-        s.activeWsSessionId === id
-          ? remaining[remaining.length - 1].id
-          : s.activeWsSessionId;
+        s.activeWsSessionId === id ? remaining[remaining.length - 1].id : s.activeWsSessionId;
       return { wsSessions: remaining, activeWsSessionId: newActive };
     }),
 

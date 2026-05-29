@@ -59,6 +59,7 @@ export function CollapsibleBody({ text }: { text: string }) {
       </div>
       {isCollapsible && (
         <button
+          type="button"
           onClick={() => setExpanded((v) => !v)}
           className="mt-1.5 text-2xs text-[var(--accent)] hover:underline"
         >
@@ -81,6 +82,7 @@ export function ScrollToBottomBtn({
   if (!show) return null;
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`absolute right-3 flex items-center gap-1.5 px-2 py-1 rounded-full text-2xs bg-[var(--accent)] text-white shadow-md hover:opacity-90 transition-opacity ${offset ? "bottom-10" : "bottom-3"}`}
     >

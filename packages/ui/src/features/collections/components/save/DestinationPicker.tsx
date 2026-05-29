@@ -23,13 +23,17 @@ export function DestinationPicker({
     <>
       <div className="flex flex-col gap-1">
         <span className="text-xs text-[var(--text-3)]">Collection</span>
-        <Select value={collectionId} onChange={(event) => onCollectionChange(event.target.value)} size="sm">
+        <Select
+          value={collectionId}
+          onChange={(event) => onCollectionChange(event.target.value)}
+          size="sm"
+        >
           {collections.map((collection) => (
             <option key={collection.id} value={collection.id}>
               {collection.name}
             </option>
           ))}
-          <option value={NEW_COLLECTION_SENTINEL}>+ New collection...</option>
+          <option value={NEW_COLLECTION_SENTINEL}>+ New collection…</option>
         </Select>
       </div>
       <div className="flex flex-col gap-1">
@@ -41,7 +45,7 @@ export function DestinationPicker({
               {folder.name}
             </option>
           ))}
-          <option value={NEW_FOLDER_SENTINEL}>+ New folder...</option>
+          <option value={NEW_FOLDER_SENTINEL}>+ New folder…</option>
         </Select>
       </div>
     </>

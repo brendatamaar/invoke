@@ -1,4 +1,15 @@
-import { BookmarkPlus, CheckCircle, Clock, Cpu, GitCompare, HardDrive, Indent, PlusCircle, RefreshCw, Wand2 } from "lucide-react";
+import {
+  BookmarkPlus,
+  CheckCircle,
+  Clock,
+  Cpu,
+  GitCompare,
+  HardDrive,
+  Indent,
+  PlusCircle,
+  RefreshCw,
+  Wand2,
+} from "lucide-react";
 import { StatusBadge } from "../../../../components/shared/StatusBadge";
 import type { AssertionDraft, ExtractionDraft } from "../../../../types";
 import { fmt, fmtSize } from "../../responseFormatting";
@@ -81,6 +92,7 @@ export function ResponseStatusBar({
         />
       )}
       <button
+        type="button"
         onClick={onSaveExample}
         className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
         title="Save as response example"
@@ -88,6 +100,7 @@ export function ResponseStatusBar({
         <BookmarkPlus size={11} />
       </button>
       <button
+        type="button"
         onClick={onCreateMock}
         className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
         title="Create mock route from this response"
@@ -96,6 +109,7 @@ export function ResponseStatusBar({
       </button>
       {canDiffHistory && (
         <button
+          type="button"
           onClick={onDiffHistory}
           className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
           title="Diff last two history entries"
@@ -145,6 +159,7 @@ function JsonPathControls({
   return (
     <div className="flex items-center gap-1 border-l border-[var(--border)] pl-2 ml-1">
       <button
+        type="button"
         onClick={onPretty}
         className={`p-0.5 ${responsePretty ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
         title="Pretty print"
@@ -152,6 +167,7 @@ function JsonPathControls({
         <Indent size={11} />
       </button>
       <input
+        aria-label="JSONPath expression"
         value={jsonPathInput}
         onChange={(e) => onJsonPathInput(e.target.value)}
         placeholder="$.path"
@@ -159,6 +175,7 @@ function JsonPathControls({
         title="JSONPath playground - evaluate live"
       />
       <button
+        type="button"
         onClick={() =>
           onAssertion({
             type: "bodyJsonPath",
@@ -173,12 +190,14 @@ function JsonPathControls({
         <PlusCircle size={11} />
       </button>
       <button
+        type="button"
         onClick={() =>
           onExtraction({
-            variableName: jsonPathInput
-              .replace(/^\$\.?/, "")
-              .replace(/[^a-zA-Z0-9_]/g, "_")
-              .replace(/^_+|_+$/g, "") || "extracted",
+            variableName:
+              jsonPathInput
+                .replace(/^\$\.?/, "")
+                .replace(/[^a-zA-Z0-9_]/g, "_")
+                .replace(/^_+|_+$/g, "") || "extracted",
             source: "body",
             expression: jsonPathInput,
           })

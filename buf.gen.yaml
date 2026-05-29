@@ -4,9 +4,9 @@ plugins:
     out: executor
     opt:
       - paths=import
-      - module=github.com/brendatama/invoke/executor
+      - module=github.com/brendatamaar/invoke/executor
   - local: protoc-gen-go-grpc
     out: executor
     opt:
       - paths=import
-      - module=github.com/brendatama/invoke/executor
+      - module=github.com/brendatamaar/invoke/executor

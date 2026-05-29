@@ -1,14 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { useStore } from "../../../../store";
-import type {
-  WebhookEndpoint,
-  WebhookValidationConfig,
-} from "../../../../types";
-import {
-  setWebhookConfig,
-  useClearWebhookLogs,
-  useWebhookLogs,
-} from "../../../webhook";
+import type { WebhookEndpoint, WebhookValidationConfig } from "../../../../types";
+import { setWebhookConfig } from "../../../webhook/api";
+import { useClearWebhookLogs, useWebhookLogs } from "../../../webhook/useWebhookLogs";
 import { HistoryLog } from "./HistoryLog";
 import { WebhookConfigTab } from "./WebhookConfigTab";
 import { WebhookModalHeader } from "./WebhookModalHeader";
@@ -23,24 +17,30 @@ export function WebhookModal({
 }: {
   endpoint: WebhookEndpoint;
   onClose: () => void;
-  onUpdate: (
-    id: string,
-    label: string,
-    validation: WebhookValidationConfig,
-  ) => void;
+  onUpdate: (id: string, label: string, validation: WebhookValidationConfig) => void;
 }) {
   const { addToast } = useStore();
-  const [tab, setTab] = useState<WebhookModalTab>("config");
-  const [label, setLabel] = useState(endpoint.label);
-  const [validation, setValidation] = useState<WebhookValidationConfig>(
-    endpoint.validation,
+  type ModalState = { tab: WebhookModalTab; label: string; validation: WebhookValidationConfig; saving: boolean; copied: boolean };
+  const [state, dispatch] = useReducer(
+    (prev: ModalState, patch: Partial<ModalState>) => ({ ...prev, ...patch }),
+    { tab: "config" as WebhookModalTab, label: endpoint.label, validation: endpoint.validation, saving: false, copied: false },
   );
-  const [saving, setSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const { data: entries = [], isFetching, refetch } = useWebhookLogs(
-    endpoint.id,
-    tab === "history",
-  );
+  const { tab, label, validation, saving, copied } = state;
+  const setTab = (v: WebhookModalTab) => dispatch({ tab: v });
+  const setLabel = (v: string) => dispatch({ label: v });
+  const setValidation = (v: WebhookValidationConfig) => dispatch({ validation: v });
+  const setSaving = (v: boolean) => dispatch({ saving: v });
+  const setCopied = (v: boolean) => dispatch({ copied: v });
+
+  useEffect(() => {
+    setLabel(endpoint.label);
+    setValidation(endpoint.validation);
+  }, [endpoint.id, endpoint.label, endpoint.validation]);
+  const {
+    data: entries = [],
+    isFetching,
+    refetch,
+  } = useWebhookLogs(endpoint.id, tab === "history");
   const clearLogsMutation = useClearWebhookLogs(endpoint.id);
   const url = `${window.location.protocol}//${window.location.hostname}:4000/webhook/${endpoint.id}`;
 
@@ -81,6 +81,7 @@ export function WebhookModal({
     <div
       className="fixed inset-0 z-40 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.65)" }}
+      role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -98,14 +99,8 @@ export function WebhookModal({
       >
         <WebhookModalHeader label={label} onClose={onClose} />
         <WebhookUrlStrip url={url} copied={copied} onCopy={copyUrl} />
-        <WebhookModalTabs
-          activeTab={tab}
-          historyCount={entries.length}
-          onSelect={setTab}
-        />
-        <div
-          className={`flex-1 p-4 ${tab === "history" ? "overflow-auto" : "overflow-visible"}`}
-        >
+        <WebhookModalTabs activeTab={tab} historyCount={entries.length} onSelect={setTab} />
+        <div className={`flex-1 p-4 ${tab === "history" ? "overflow-auto" : "overflow-visible"}`}>
           {tab === "config" && (
             <WebhookConfigTab
               label={label}

@@ -26,6 +26,7 @@ export function RouteModalHeader({
         Enabled
       </label>
       <button
+        type="button"
         onClick={onClose}
         className="text-[var(--text-3)] hover:text-[var(--text-1)] p-1 rounded hover:bg-[var(--surface-2)]"
       >

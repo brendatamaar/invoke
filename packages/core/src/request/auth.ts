@@ -35,15 +35,8 @@ export async function signAwsSigV4Request(
 ): Promise<RequestConfig> {
   const auth = request.auth;
   if (auth.type !== "aws-sigv4") return request;
-  if (
-    !auth.awsAccessKeyId ||
-    !auth.awsSecretAccessKey ||
-    !auth.awsRegion ||
-    !auth.awsService
-  ) {
-    throw new Error(
-      "AWS SigV4 requires access key, secret key, region, and service",
-    );
+  if (!auth.awsAccessKeyId || !auth.awsSecretAccessKey || !auth.awsRegion || !auth.awsService) {
+    throw new Error("AWS SigV4 requires access key, secret key, region, and service");
   }
 
   const url = new URL(request.url);
@@ -54,9 +47,7 @@ export async function signAwsSigV4Request(
   const payloadHash = await sha256Hex(payload);
   const headers = request.headers.filter(
     (header) =>
-      header.enabled !== false &&
-      header.key.trim() &&
-      header.key.toLowerCase() !== "authorization",
+      header.enabled !== false && header.key.trim() && header.key.toLowerCase() !== "authorization",
   );
   const signingHeaders = new Map<string, string[]>();
 
@@ -69,8 +60,7 @@ export async function signAwsSigV4Request(
   }
   signingHeaders.set("host", [url.host]);
   signingHeaders.set("x-amz-date", [amzDate]);
-  if (auth.awsSessionToken)
-    signingHeaders.set("x-amz-security-token", [auth.awsSessionToken]);
+  if (auth.awsSessionToken) signingHeaders.set("x-amz-security-token", [auth.awsSessionToken]);
 
   const signedHeaderKeys = [...signingHeaders.keys()].sort();
   const canonicalHeaders = signedHeaderKeys
@@ -86,12 +76,9 @@ export async function signAwsSigV4Request(
     payloadHash,
   ].join("\n");
   const scope = `${dateStamp}/${auth.awsRegion}/${auth.awsService}/aws4_request`;
-  const stringToSign = [
-    "AWS4-HMAC-SHA256",
-    amzDate,
-    scope,
-    await sha256Hex(canonicalRequest),
-  ].join("\n");
+  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, await sha256Hex(canonicalRequest)].join(
+    "\n",
+  );
   const signingKey = await awsSigningKey(
     auth.awsSecretAccessKey,
     dateStamp,
@@ -105,9 +92,7 @@ export async function signAwsSigV4Request(
   return {
     ...request,
     headers: [
-      ...headers.filter(
-        (header) => !reserved.has(header.key.trim().toLowerCase()),
-      ),
+      ...headers.filter((header) => !reserved.has(header.key.trim().toLowerCase())),
       { key: "X-Amz-Date", value: amzDate, enabled: true },
       ...(auth.awsSessionToken
         ? [
@@ -124,9 +109,7 @@ export async function signAwsSigV4Request(
 }
 
 export function buildUrl(rawUrl: string, params: KeyValue[]) {
-  const enabled = params.filter(
-    (param) => param.enabled !== false && param.key.trim(),
-  );
+  const enabled = params.filter((param) => param.enabled !== false && param.key.trim());
   if (enabled.length === 0) return rawUrl;
   try {
     const url = new URL(rawUrl);
@@ -134,10 +117,7 @@ export function buildUrl(rawUrl: string, params: KeyValue[]) {
     return url.toString();
   } catch {
     const query = enabled
-      .map(
-        (param) =>
-          `${encodeURIComponent(param.key)}=${encodeURIComponent(param.value)}`,
-      )
+      .map((param) => `${encodeURIComponent(param.key)}=${encodeURIComponent(param.value)}`)
       .join("&");
     return rawUrl + (rawUrl.includes("?") ? "&" : "?") + query;
   }
@@ -158,9 +138,7 @@ function canonicalAwsQuery(url: URL) {
   const pairs: Array<[string, string]> = [];
   url.searchParams.forEach((value, key) => pairs.push([key, value]));
   return pairs
-    .map(
-      ([key, value]) => [awsEncode(key), awsEncode(value)] as [string, string],
-    )
+    .map(([key, value]) => [awsEncode(key), awsEncode(value)] as [string, string])
     .sort(
       ([leftKey, leftValue], [rightKey, rightValue]) =>
         leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue),
@@ -185,23 +163,12 @@ function safeDecodeURIComponent(value: string) {
 }
 
 async function sha256Hex(value: string) {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
-  );
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return bytesToHex(new Uint8Array(digest));
 }
 
-async function awsSigningKey(
-  secret: string,
-  dateStamp: string,
-  region: string,
-  service: string,
-) {
-  const dateKey = await hmacBytes(
-    new TextEncoder().encode(`AWS4${secret}`),
-    dateStamp,
-  );
+async function awsSigningKey(secret: string, dateStamp: string, region: string, service: string) {
+  const dateKey = await hmacBytes(new TextEncoder().encode(`AWS4${secret}`), dateStamp);
   const regionKey = await hmacBytes(dateKey, region);
   const serviceKey = await hmacBytes(regionKey, service);
   return hmacBytes(serviceKey, "aws4_request");
@@ -220,11 +187,7 @@ async function hmacBytes(key: Uint8Array, value: string) {
     false,
     ["sign"],
   );
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    cryptoKey,
-    new TextEncoder().encode(value),
-  );
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(value));
   return new Uint8Array(signature);
 }
 

@@ -5,14 +5,13 @@ import { useStore } from "../../../store";
 import type { GraphQLFileUpload } from "../../../types";
 
 export function GraphQLVariablesPanel() {
-  const { graphqlRequest, setGraphqlRequest, graphqlFileUploads, set } =
-    useStore();
+  const { graphqlRequest, setGraphqlRequest, graphqlFileUploads, set } = useStore();
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [filesExpanded, setFilesExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [pendingVarPath, setPendingVarPath] = useState("");
 
-  const handleChange = (value: string) => {
+  const handleVariablesChange = (value: string) => {
     setGraphqlRequest({ variables: value });
     const trimmed = value.trim();
     if (!trimmed || trimmed === "{}") {
@@ -66,11 +65,7 @@ export function GraphQLVariablesPanel() {
         </div>
       )}
       <div className="flex-1 overflow-auto">
-        <CodeEditor
-          value={graphqlRequest.variables ?? "{}"}
-          onChange={handleChange}
-          lang="json"
-        />
+        <CodeEditor value={graphqlRequest.variables ?? "{}"} onChange={handleVariablesChange} lang="json" />
       </div>
       <GraphQLFileUploads
         expanded={filesExpanded}
@@ -111,6 +106,7 @@ function GraphQLFileUploads({
   return (
     <div className="border-t border-[var(--border)] shrink-0">
       <button
+        type="button"
         onClick={onToggle}
         className="w-full flex items-center gap-2 px-3 py-1.5 text-2xs text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-2)]"
       >
@@ -130,12 +126,17 @@ function GraphQLFileUploads({
                 value={file.varPath}
                 onChange={(e) => onUpdateVarPath(file.id, e.target.value)}
                 placeholder="variable path"
+                aria-label={`Variable path for ${file.filename}`}
                 className="input text-2xs py-0.5 px-1.5 font-mono flex-1 min-w-0"
               />
-              <span className="text-2xs text-[var(--text-3)] truncate max-w-[120px]" title={file.filename}>
+              <span
+                className="text-2xs text-[var(--text-3)] truncate max-w-[120px]"
+                title={file.filename}
+              >
                 {file.filename}
               </span>
               <button
+                type="button"
                 onClick={() => onRemoveFile(file.id)}
                 className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
               >
@@ -148,11 +149,13 @@ function GraphQLFileUploads({
               value={pendingVarPath}
               onChange={(e) => onPendingVarPathChange(e.target.value)}
               placeholder="variable path (optional)"
+              aria-label="New file variable path"
               className="input text-2xs py-0.5 px-1.5 font-mono flex-1 min-w-0"
             />
             <input
               ref={fileInputRef}
               type="file"
+              aria-label="Upload file for GraphQL variable"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -160,13 +163,17 @@ function GraphQLFileUploads({
                 if (fileInputRef.current) fileInputRef.current.value = "";
               }}
             />
-            <button onClick={() => fileInputRef.current?.click()} className="btn text-2xs py-0.5 px-2 gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="btn text-2xs py-0.5 px-2 gap-1 shrink-0"
+            >
               <Plus size={11} /> Add file
             </button>
           </div>
           <p className="text-2xs text-[var(--text-3)]">
-            Set variable values to <code className="font-mono">null</code> in
-            the JSON above for file fields.
+            Set variable values to <code className="font-mono">null</code> in the JSON above for
+            file fields.
           </p>
         </div>
       )}

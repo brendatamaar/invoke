@@ -64,9 +64,7 @@ describe("OAuth2 execution helper", () => {
       warn,
     );
 
-    expect(warn).toHaveBeenCalledWith(
-      "OAuth2 token may be expired - re-authorize in the Auth tab",
-    );
+    expect(warn).toHaveBeenCalledWith("OAuth2 token may be expired - re-authorize in the Auth tab");
   });
 
   it("fetches client-credentials tokens and maps them to bearer auth", async () => {

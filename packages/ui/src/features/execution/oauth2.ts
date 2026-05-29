@@ -1,5 +1,5 @@
 import type { AuthConfig, RequestConfig } from "@invoke/core";
-import { oauth2ClientCredentials, oauth2RefreshToken } from "../oauth2";
+import { oauth2ClientCredentials, oauth2RefreshToken } from "../oauth2/api";
 
 export async function applyOAuth2Token(
   request: RequestConfig,
@@ -38,9 +38,7 @@ export async function applyOAuth2Token(
           };
         }
       } catch {
-        warn(
-          "OAuth2: refresh token exchange failed - re-authorize in the Auth tab",
-        );
+        warn("OAuth2: refresh token exchange failed - re-authorize in the Auth tab");
       }
     } else if (isExpiring) {
       warn("OAuth2 token may be expired - re-authorize in the Auth tab");

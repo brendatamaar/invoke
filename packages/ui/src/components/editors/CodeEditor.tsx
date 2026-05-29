@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { EditorView, basicSetup } from "codemirror";
-import { Compartment, EditorState } from "@codemirror/state";
+import { Compartment, EditorState } from "@codemirror/state"; // eslint-disable-line react-doctor/prefer-dynamic-import
 import { StreamLanguage } from "@codemirror/language";
 import { json } from "@codemirror/lang-json";
 import { javascript } from "@codemirror/lang-javascript";
@@ -48,8 +48,7 @@ const graphqlStreamLanguage = StreamLanguage.define({
     if (stream.match("...")) return "punctuation";
     if (stream.match(/^[A-Za-z_]\w*/)) {
       const w = stream.current();
-      if (["query", "mutation", "subscription", "fragment", "on"].includes(w))
-        return "keyword";
+      if (["query", "mutation", "subscription", "fragment", "on"].includes(w)) return "keyword";
       if (
         [
           "type",
@@ -93,13 +92,15 @@ function getLangExtension(lang: CodeEditorLang) {
   }
 }
 
+const EMPTY_EXTENSIONS: import("@codemirror/state").Extension[] = [];
+
 export function CodeEditor({
   value,
   onChange,
   lang = "text",
   readOnly = false,
   minHeight = "120px",
-  extensions: extraExtensions = [],
+  extensions: extraExtensions = EMPTY_EXTENSIONS,
 }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -111,7 +112,7 @@ export function CodeEditor({
   extraExtensionsRef.current = extraExtensions;
   const editorWordWrapRef = useRef(editorWordWrap);
   editorWordWrapRef.current = editorWordWrap;
-  const valueRef = useRef(value);
+  const valueRef = useRef<string>("");
   valueRef.current = value;
 
   useEffect(() => {
@@ -154,22 +155,19 @@ export function CodeEditor({
 
   useEffect(() => {
     viewRef.current?.dispatch({
-      effects: wrapCompartment.reconfigure(
-        editorWordWrap ? EditorView.lineWrapping : [],
-      ),
+      effects: wrapCompartment.reconfigure(editorWordWrap ? EditorView.lineWrapping : []),
     });
   }, [editorWordWrap, wrapCompartment]);
 
-  // sync external value changes without re-mounting
+  // Sync external value changes by checking ref on every render
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    if (view.state.doc.toString() !== value) {
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: value },
-      });
+    const current = valueRef.current;
+    if (view.state.doc.toString() !== current) {
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: current } });
     }
-  }, [value]);
+  });
 
   return <div ref={containerRef} className="h-full w-full overflow-auto" />;
 }

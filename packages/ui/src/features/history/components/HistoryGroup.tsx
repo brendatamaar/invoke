@@ -27,6 +27,7 @@ export function HistoryGroup({
     <div>
       <div className="group/hdr flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-1)] border-b border-[var(--border)] sticky top-0">
         <button
+          type="button"
           onClick={() => setExpanded((value) => !value)}
           className="flex items-center gap-1.5 flex-1 text-2xs font-semibold text-[var(--text-3)] uppercase tracking-wider hover:text-[var(--text-1)]"
         >
@@ -36,6 +37,7 @@ export function HistoryGroup({
         </button>
         {label !== "Pinned" && (
           <button
+            type="button"
             onClick={(event) => {
               event.stopPropagation();
               onDeleteGroup();

@@ -1,17 +1,11 @@
-import type {
-  GrpcAuthInput,
-  GrpcReflectInput,
-  ServerHeaderInput,
-} from "../../types/index.js";
+import type { GrpcAuthInput, GrpcReflectInput, ServerHeaderInput } from "../../types/index.js";
 import { tlsClientConfigPayload } from "../shared/payload.js";
 
 function authToMetadata(auth: GrpcAuthInput | undefined): ServerHeaderInput[] {
   if (!auth || auth.type === "none") return [];
   switch (auth.type) {
     case "bearer":
-      return auth.token
-        ? [{ key: "authorization", value: `Bearer ${auth.token}` }]
-        : [];
+      return auth.token ? [{ key: "authorization", value: `Bearer ${auth.token}` }] : [];
     case "basic":
       return [
         {
@@ -39,10 +33,7 @@ export function grpcPayload(input: GrpcReflectInput) {
     address: input.address,
     tls: input.tls,
     timeoutMs: input.timeoutMs,
-    metadata: [
-      ...authHeaders,
-      ...input.metadata.filter((header) => header.enabled !== false),
-    ],
+    metadata: [...authHeaders, ...input.metadata.filter((header) => header.enabled !== false)],
     verifySsl: input.verifySsl,
     allowPrivate: input.allowPrivateAddresses ?? true,
     tlsClientConfig: tlsClientConfigPayload(input.tlsClientConfig),

@@ -2,12 +2,7 @@ import { Database, Globe, Network, Palette, Save } from "lucide-react";
 import type { RequestProtocol, RetentionSettings } from "@invoke/core";
 import type { SettingsTab } from "../../types";
 
-export const PROTOCOLS: RequestProtocol[] = [
-  "rest",
-  "graphql",
-  "websocket",
-  "grpc",
-];
+export const PROTOCOLS: RequestProtocol[] = ["rest", "graphql", "websocket", "grpc"];
 
 export const FONT_SIZE_MIN = 11;
 export const FONT_SIZE_MAX = 16;

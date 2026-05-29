@@ -1,8 +1,4 @@
-import {
-  emptyGraphQLRequest,
-  emptyGrpcRequest,
-  emptyWebSocketRequest,
-} from "@invoke/core";
+import { emptyGraphQLRequest, emptyGrpcRequest, emptyWebSocketRequest } from "@invoke/core";
 import { useCollections, useFlows, useHistory, useMockRoutes } from "../../../hooks/useDb";
 import { useStore } from "../../../store";
 import type { PaletteItem } from "../../../types";
@@ -50,8 +46,7 @@ function useEntityPaletteItems(): PaletteItem[] {
       title: flow.name,
       subtitle: `${flow.steps?.length ?? 0} steps`,
       keywords: `flow ${flow.name}`,
-      run: () =>
-        set({ sidebarCollapsed: false, sidebarSection: "flows", flowDraft: flow }),
+      run: () => set({ sidebarCollapsed: false, sidebarSection: "flows", flowDraft: flow }),
     })),
     ...collections.map((collection) => ({
       id: `col-${collection.id}`,
@@ -77,7 +72,9 @@ function useEntityPaletteItems(): PaletteItem[] {
             method: method as Parameters<typeof setRequest>[0]["method"],
             url,
             headers:
-              ((request as { headers?: unknown[] })?.headers as Parameters<typeof setRequest>[0]["headers"]) ?? [],
+              ((request as { headers?: unknown[] })?.headers as Parameters<
+                typeof setRequest
+              >[0]["headers"]) ?? [],
             body: (request as { body?: string })?.body ?? "",
           });
           set({ sidebarCollapsed: false, sidebarSection: "history" });

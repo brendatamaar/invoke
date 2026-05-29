@@ -19,9 +19,9 @@ export function EnvironmentList({
       {environments.map((environment) => (
         <div
           key={environment.id}
-          className={`group flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[var(--surface-2)] ${activeEnvironmentId === environment.id ? "bg-[var(--accent-subtle)]" : ""}`}
-          onClick={() => onActivate(environment.id)}
+          className={`relative group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] ${activeEnvironmentId === environment.id ? "bg-[var(--accent-subtle)]" : ""}`}
         >
+          <button type="button" className="absolute inset-0" onClick={() => onActivate(environment.id)} aria-label={`Activate ${environment.name}`} />
           <span
             className={`flex-1 text-xs truncate ${activeEnvironmentId === environment.id ? "text-[var(--accent)] font-medium" : "text-[var(--text-1)]"}`}
           >
@@ -31,21 +31,17 @@ export function EnvironmentList({
             {environment.variables?.length ?? 0} vars
           </span>
           <button
-            onClick={(event) => {
-              event.stopPropagation();
-              onEdit(environment);
-            }}
-            className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
+            type="button"
+            onClick={() => onEdit(environment)}
+            className="relative opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
             title="Edit"
           >
             <Edit3 size={12} />
           </button>
           <button
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete(environment.id);
-            }}
-            className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
+            type="button"
+            onClick={() => onDelete(environment.id)}
+            className="relative opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
             title="Delete"
           >
             <Trash2 size={12} />
@@ -53,9 +49,7 @@ export function EnvironmentList({
         </div>
       ))}
       {!environments.length && (
-        <p className="p-4 text-xs text-[var(--text-3)] text-center">
-          No environments yet
-        </p>
+        <p className="p-4 text-xs text-[var(--text-3)] text-center">No environments yet</p>
       )}
     </div>
   );

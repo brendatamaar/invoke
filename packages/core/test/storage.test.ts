@@ -73,8 +73,7 @@ describe("storage migrations", () => {
     legacy.version(5).stores({
       collections: "id, name, updatedAt, sortOrder",
       folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
-      requests:
-        "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+      requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
       environments: "id, name, updatedAt",
       history: "id, createdAt, requestId, collectionId, protocol, pinned",
       flows: "id, name, updatedAt",
@@ -200,9 +199,7 @@ describe("protocol defaults", () => {
   it("returns initial protocol defaults when the meta key is absent", async () => {
     const store = new InvokeStore();
 
-    await expect(store.getDefaultProtocolOptions()).resolves.toEqual(
-      INITIAL_PROTOCOL_DEFAULTS,
-    );
+    await expect(store.getDefaultProtocolOptions()).resolves.toEqual(INITIAL_PROTOCOL_DEFAULTS);
     store.close();
   });
 

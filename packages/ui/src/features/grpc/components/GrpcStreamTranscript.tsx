@@ -23,7 +23,10 @@ export function GrpcStreamTranscript({
 }) {
   const { addToast } = useStore();
   const triggerCount = sentMessages.length + receivedMessages.length;
-  const { scrollRef, showScrollBtn, handleScroll, scrollToBottom } = useAutoScroll(triggerCount, grpcStreaming);
+  const { scrollRef, showScrollBtn, handleScroll, scrollToBottom } = useAutoScroll(
+    triggerCount,
+    grpcStreaming,
+  );
 
   const sentCount = sentMessages.length;
   const receivedCount = receivedMessages.filter((m) => !m.done).length;
@@ -44,7 +47,7 @@ export function GrpcStreamTranscript({
         <span className="text-2xs text-[var(--text-3)]">Stream transcript</span>
         {grpcStreaming && (
           <span className="flex items-center gap-1 text-[var(--accent)] text-2xs">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+            <span className="inline-block size-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
             live
           </span>
         )}
@@ -56,6 +59,7 @@ export function GrpcStreamTranscript({
         )}
         {(sentMessages.length > 0 || receivedMessages.length > 0) && (
           <button
+            type="button"
             className="p-0.5 text-[var(--text-3)] hover:text-[var(--danger)] shrink-0"
             title="Clear transcript (Ctrl+L)"
             onClick={onClear}
@@ -66,18 +70,14 @@ export function GrpcStreamTranscript({
       </div>
 
       <div className="flex-1 min-h-0 relative overflow-hidden">
-        <div
-          ref={scrollRef}
-          className="h-full overflow-y-auto"
-          onScroll={handleScroll}
-        >
+        <div ref={scrollRef} className="h-full overflow-y-auto" onScroll={handleScroll}>
           {sentMessages.length === 0 && receivedMessages.length === 0 && !grpcStreaming && (
             <p className="p-3 text-2xs text-[var(--text-3)]">No stream messages yet.</p>
           )}
 
           {sentMessages.map((body, i) => (
             <div
-              key={`s${i}`}
+              key={body}
               className="group flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
             >
               <span className="mt-0.5 text-2xs font-bold text-[var(--accent)] shrink-0">→</span>
@@ -87,6 +87,7 @@ export function GrpcStreamTranscript({
                     #{i}
                   </span>
                   <button
+                    type="button"
                     className="ml-auto p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Copy message"
                     onClick={() => copyText(body)}
@@ -110,7 +111,7 @@ export function GrpcStreamTranscript({
             if (msg.done) {
               return (
                 <div
-                  key={`r${i}`}
+                  key={`done-${msg.statusCode ?? ""}-${msg.receivedAt ?? msg.durationMs ?? ""}`}
                   className="px-3 py-2 border-b border-[var(--border)] last:border-0 bg-[var(--surface-2)]"
                 >
                   <div className="flex items-center gap-2">
@@ -136,12 +137,19 @@ export function GrpcStreamTranscript({
 
             return (
               <div
-                key={`r${i}`}
+                key={msg.bodyJson ?? `recv-${msg.receivedAt}`}
                 className={`group flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] last:border-0 transition-colors ${isSelected ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--surface-2)]"}`}
               >
                 <button
+                  type="button"
                   onClick={() => msg.bodyJson && onSelectForDiff(msg.bodyJson)}
-                  title={isSelected ? "Deselect" : hasDiffSelection ? "Select as 2nd message" : "Select for diff"}
+                  title={
+                    isSelected
+                      ? "Deselect"
+                      : hasDiffSelection
+                        ? "Select as 2nd message"
+                        : "Select for diff"
+                  }
                   className={`mt-0.5 shrink-0 transition-opacity ${showCheckbox ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isSelected ? "text-[var(--accent)]" : "text-[var(--text-3)] hover:text-[var(--accent)]"}`}
                 >
                   {isSelected ? <CheckCircle2 size={13} /> : <Circle size={13} />}
@@ -158,6 +166,7 @@ export function GrpcStreamTranscript({
                       <span className="text-2xs text-[var(--text-3)]">+{relativeMs}ms</span>
                     )}
                     <button
+                      type="button"
                       className="ml-auto p-0.5 text-[var(--text-3)] hover:text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Copy message"
                       onClick={() => msg.bodyJson && copyText(msg.bodyJson)}
@@ -175,10 +184,9 @@ export function GrpcStreamTranscript({
         {hasDiffSelection && (
           <div className="absolute bottom-0 left-0 right-0 border-t border-[var(--border)] px-3 py-1.5 flex items-center gap-2 bg-[var(--surface-2)] shrink-0">
             <ArrowLeftRight size={11} className="text-[var(--accent)] shrink-0" />
-            <span className="text-2xs text-[var(--text-2)] flex-1">
-              Select one more to diff
-            </span>
+            <span className="text-2xs text-[var(--text-2)] flex-1">Select one more to diff</span>
             <button
+              type="button"
               onClick={onResetDiff}
               className="p-0.5 text-[var(--text-3)] hover:text-[var(--text-1)]"
             >

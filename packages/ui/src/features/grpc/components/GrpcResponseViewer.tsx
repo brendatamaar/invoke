@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useEffect, useCallback, useReducer, useRef, type ReactNode } from "react";
 import { Code2 } from "lucide-react";
 import { useStore } from "../../../store";
 import { grpcMethodFlags, selectedGrpcMethod } from "../utils/protocolBar";
@@ -23,19 +23,22 @@ export function GrpcResponseViewer() {
     set,
   } = useStore();
 
-  // Stream diff state (server-streaming panel)
-  const [streamDiffSelected, setStreamDiffSelected] = useState<number[]>([]);
-  const [showStreamDiff, setShowStreamDiff] = useState(false);
-
-  // Transcript diff state (bidi/client-streaming panel — kept as-is)
-  const [diffLeft, setDiffLeft] = useState<string | null>(null);
-  const [diffRight, setDiffRight] = useState<string | null>(null);
-  const [showTranscriptDiff, setShowTranscriptDiff] = useState(false);
+  type ViewerState = { streamDiffSelected: number[]; showStreamDiff: boolean; diffLeft: string | null; diffRight: string | null; showTranscriptDiff: boolean };
+  const [viewerState, viewerDispatch] = useReducer(
+    (prev: ViewerState, patch: Partial<ViewerState>) => ({ ...prev, ...patch }),
+    { streamDiffSelected: [], showStreamDiff: false, diffLeft: null, diffRight: null, showTranscriptDiff: false },
+  );
+  const { streamDiffSelected, showStreamDiff, diffLeft, diffRight, showTranscriptDiff } = viewerState;
+  const setStreamDiffSelected = (v: number[] | ((prev: number[]) => number[])) =>
+    viewerDispatch({ streamDiffSelected: typeof v === "function" ? v(streamDiffSelected) : v });
+  const setShowStreamDiff = (v: boolean) => viewerDispatch({ showStreamDiff: v });
+  const setDiffLeft = (v: string | null) => viewerDispatch({ diffLeft: v });
+  const setDiffRight = (v: string | null) => viewerDispatch({ diffRight: v });
+  const setShowTranscriptDiff = (v: boolean) => viewerDispatch({ showTranscriptDiff: v });
 
   const selectedMethod = selectedGrpcMethod(grpcMethods, grpcRequest);
   const { isServerStreaming, isClientStream } = grpcMethodFlags(selectedMethod);
-  const isBidiStream =
-    isClientStream && (selectedMethod?.serverStreaming ?? false);
+  const isBidiStream = isClientStream && (selectedMethod?.serverStreaming ?? false);
   const hasClientStreamLog =
     isBidiStream ||
     (isClientStream && grpcStreaming) ||
@@ -43,15 +46,9 @@ export function GrpcResponseViewer() {
     grpcStreamSentMessages.length > 0 ||
     grpcStreamReceivedMessages.length > 0;
   const hasServerStreamLog =
-    isServerStreaming ||
-    (!isClientStream && grpcStreaming) ||
-    grpcStreamMessages.length > 0;
+    isServerStreaming || (!isClientStream && grpcStreaming) || grpcStreamMessages.length > 0;
   const hasClosedClientStreamResponse =
-    isClientStream &&
-    !isBidiStream &&
-    !grpcStreamId &&
-    !grpcStreaming &&
-    !!grpcResponse;
+    isClientStream && !isBidiStream && !grpcStreamId && !grpcStreaming && !!grpcResponse;
 
   const toggleStreamDiff = (i: number) => {
     setStreamDiffSelected((prev) => {
@@ -61,30 +58,41 @@ export function GrpcResponseViewer() {
     });
   };
 
-  const clearStreamDiff = () => {
-    setStreamDiffSelected([]);
-    setShowStreamDiff(false);
-  };
+  const clearStreamDiff = useCallback(() => {
+    viewerDispatch({ streamDiffSelected: [], showStreamDiff: false });
+  }, [viewerDispatch]);
 
-  const clearStreamMessages = () => {
+  const clearStreamMessages = useCallback(() => {
     clearStreamDiff();
     set({ grpcStreamMessages: [] });
-  };
+  }, [clearStreamDiff, set]);
+
+  const clearStreamMessagesRef = useRef(clearStreamMessages);
+  clearStreamMessagesRef.current = clearStreamMessages;
+  const hasServerStreamLogRef = useRef(hasServerStreamLog);
+  hasServerStreamLogRef.current = hasServerStreamLog;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "l" && hasServerStreamLog) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "l" && hasServerStreamLogRef.current) {
         e.preventDefault();
-        clearStreamMessages();
+        clearStreamMessagesRef.current();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [hasServerStreamLog]);
+  }, []);
 
   const selectForDiff = (body: string) => {
-    if (!diffLeft) { setDiffLeft(body); return; }
-    if (!diffRight) { setDiffRight(body); setShowTranscriptDiff(true); return; }
+    if (!diffLeft) {
+      setDiffLeft(body);
+      return;
+    }
+    if (!diffRight) {
+      setDiffRight(body);
+      setShowTranscriptDiff(true);
+      return;
+    }
     setDiffLeft(body);
     setDiffRight(null);
   };
@@ -100,10 +108,7 @@ export function GrpcResponseViewer() {
   };
 
   const isPlaceholder =
-    !hasClosedClientStreamResponse &&
-    !hasClientStreamLog &&
-    !hasServerStreamLog &&
-    !grpcResponse;
+    !hasClosedClientStreamResponse && !hasClientStreamLog && !hasServerStreamLog && !grpcResponse;
 
   const firstArrival = grpcStreamMessages.find((m) => m.receivedAt)?.receivedAt;
   const streamDiffLabel = (i: number) => {
@@ -184,15 +189,13 @@ export function GrpcResponseViewer() {
 function GrpcResponsePlaceholder({ active }: { active: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-8">
-      <div className="w-10 h-10 rounded bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center mb-2">
+      <div className="size-10 rounded bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center mb-2">
         <Code2 size={18} className="text-[var(--text-3)]" />
       </div>
-      <p className="text-sm text-[var(--text-2)] font-medium">
-        No gRPC response yet
-      </p>
+      <p className="text-sm text-[var(--text-2)] font-medium">No gRPC response yet</p>
       {active && (
         <div className="flex items-center gap-2 text-2xs text-[var(--text-3)]">
-          <span className="text-[var(--accent)] animate-pulse">Working...</span>
+          <span className="text-[var(--accent)] animate-pulse">Working\u2026</span>
           <GrpcDeadlineCountdown />
         </div>
       )}

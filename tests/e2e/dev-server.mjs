@@ -11,12 +11,8 @@ function start(name, command, args, options = {}) {
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
-  child.stdout?.on("data", (chunk) =>
-    process.stdout.write(`[${name}] ${chunk}`),
-  );
-  child.stderr?.on("data", (chunk) =>
-    process.stderr.write(`[${name}] ${chunk}`),
-  );
+  child.stdout?.on("data", (chunk) => process.stdout.write(`[${name}] ${chunk}`));
+  child.stderr?.on("data", (chunk) => process.stderr.write(`[${name}] ${chunk}`));
   child.on("exit", (code, signal) => {
     console.log(`[e2e] ${name} exited code=${code} signal=${signal}`);
   });

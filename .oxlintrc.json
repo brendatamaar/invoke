@@ -1,0 +1,61 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react"],
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true
+  },
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/coverage/**",
+    "**/.turbo/**",
+    "**/playwright-report/**",
+    "**/test-results/**",
+    "**/executor/**",
+    "**/spikes/**",
+    "**/*.pb.go"
+  ],
+  "rules": {
+    "no-console": "off",
+    "no-unused-vars": "off",
+    "typescript/no-explicit-any": "off",
+    "typescript/no-non-null-assertion": "off",
+    "typescript/no-unused-vars": [
+      "error",
+      {
+        "varsIgnorePattern": "^_",
+        "argsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ],
+    "react/react-in-jsx-scope": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["packages/ui/src/**/*.ts", "packages/ui/src/**/*.tsx"],
+      "excludeFiles": ["packages/ui/src/features/*/**/*.ts", "packages/ui/src/features/*/**/*.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/features/*/components/**",
+                  "**/features/*/hooks/**",
+                  "**/features/*/utils/**",
+                  "**/features/*/api"
+                ],
+                "message": "Import from the feature's index.ts (the slice public API), not deep paths."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

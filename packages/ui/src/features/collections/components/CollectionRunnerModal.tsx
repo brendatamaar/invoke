@@ -1,12 +1,8 @@
 import { useRef, useState } from "react";
-import {
-  CollectionRunner,
-  type RequestRunResult,
-  type VariableScope,
-} from "@invoke/core";
+import { CollectionRunner, type RequestRunResult, type VariableScope } from "@invoke/core";
 import { useStore } from "../../../store";
-import { execute } from "../../execute";
-import { protocolMethod } from "../../../components/shared/MethodBadge";
+import { execute } from "../../execute/api";
+import { protocolMethod } from "../../../components/shared/methodUtils";
 import { RunnerFooter } from "./runner/RunnerFooter";
 import { RunnerHeader } from "./runner/RunnerHeader";
 import { RunnerResults } from "./runner/RunnerResults";
@@ -56,10 +52,7 @@ export function CollectionRunnerModal() {
           scopes: buildScopes(environments, activeEnvironmentId, sessionVariables),
           stopOnFailure,
           onRequestStart: (_request, index) =>
-            setLiveResults((prev) => [
-              ...prev.slice(0, index),
-              pendingResult(runRequests[index]),
-            ]),
+            setLiveResults((prev) => [...prev.slice(0, index), pendingResult(runRequests[index])]),
           onRequestComplete: (result, index) =>
             setLiveResults((prev) => {
               const next = [...prev];
@@ -71,13 +64,9 @@ export function CollectionRunnerModal() {
           id: Math.random().toString(36).slice(2),
           name: collectionRunnerTarget?.name ?? "Run",
           collectionId:
-            collectionRunnerTarget?.type === "collection"
-              ? collectionRunnerTarget.id
-              : undefined,
+            collectionRunnerTarget?.type === "collection" ? collectionRunnerTarget.id : undefined,
           folderId:
-            collectionRunnerTarget?.type === "folder"
-              ? collectionRunnerTarget.id
-              : undefined,
+            collectionRunnerTarget?.type === "folder" ? collectionRunnerTarget.id : undefined,
         },
       );
       set({ collectionRunResult: result });
@@ -100,7 +89,12 @@ export function CollectionRunnerModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={close}>
+    <div
+      role="presentation"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={close}
+      onKeyDown={(e) => { if (e.key === "Escape") close(); }}
+    >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 600, maxHeight: "80vh" }}
@@ -165,10 +159,7 @@ function pendingResult(request: any): RequestRunResult {
   return {
     requestId: request.id,
     name: request.name,
-    method: protocolMethod(
-      request.protocol,
-      (request.request as { method?: string })?.method,
-    ),
+    method: protocolMethod(request.protocol, (request.request as { method?: string })?.method),
     url: (request.request as { url?: string })?.url ?? "",
     status: "skipped",
     durationMs: 0,

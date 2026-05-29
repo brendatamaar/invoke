@@ -7,12 +7,7 @@ export function clampNumber(value: number, min: number, max?: number) {
   return Math.min(Math.max(value, min), max ?? value);
 }
 
-export function numericInputValue(
-  raw: string,
-  fallback: number,
-  min: number,
-  max?: number,
-) {
+export function numericInputValue(raw: string, fallback: number, min: number, max?: number) {
   if (raw.trim() === "") return fallback;
   return clampNumber(Number(raw), min, max);
 }

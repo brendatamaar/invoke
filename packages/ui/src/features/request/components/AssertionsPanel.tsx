@@ -39,7 +39,7 @@ export function AssertionsPanel() {
       {assertionRules.length > 0 && <AssertionHeader />}
       {assertionRules.map((rule, index) => (
         <div
-          key={index}
+          key={rule.id}
           className={`flex items-center gap-2 p-2 rounded border ${resultClass(assertionResults[index])}`}
         >
           <div className="w-28 shrink-0">
@@ -48,11 +48,13 @@ export function AssertionsPanel() {
               value={rule.type}
               onChange={(e) => update(index, { type: e.target.value })}
             >
-              {["status", "responseTime", "header", "bodyJsonPath", "bodySchema", "regex"].map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              {["status", "responseTime", "header", "bodyJsonPath", "bodySchema", "regex"].map(
+                (type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ),
+              )}
             </Select>
           </div>
           <div className="w-48 shrink-0">
@@ -61,6 +63,7 @@ export function AssertionsPanel() {
                 value={(rule as { expression?: string }).expression ?? ""}
                 onChange={(e) => update(index, { expression: e.target.value })}
                 placeholder={EXPR_PLACEHOLDER[rule.type] ?? "value"}
+                aria-label="Expression"
                 className="input py-0.5 text-2xs font-mono"
               />
             ) : (
@@ -73,11 +76,13 @@ export function AssertionsPanel() {
               value={rule.matcher}
               onChange={(e) => update(index, { matcher: e.target.value })}
             >
-              {["equals", "notEquals", "contains", "exists", "gt", "lt", "matches"].map((matcher) => (
-                <option key={matcher} value={matcher}>
-                  {matcher}
-                </option>
-              ))}
+              {["equals", "notEquals", "contains", "exists", "gt", "lt", "matches"].map(
+                (matcher) => (
+                  <option key={matcher} value={matcher}>
+                    {matcher}
+                  </option>
+                ),
+              )}
             </Select>
           </div>
           <div className="flex-1 min-w-0">
@@ -85,10 +90,12 @@ export function AssertionsPanel() {
               value={String(rule.expected ?? "")}
               onChange={(e) => update(index, { expected: e.target.value })}
               placeholder="expected value"
+              aria-label="Expected value"
               className="input py-0.5 text-2xs font-mono"
             />
           </div>
           <button
+            type="button"
             onClick={() => remove(index)}
             className="shrink-0 text-[var(--text-3)] hover:text-[var(--danger)]"
           >
@@ -96,7 +103,7 @@ export function AssertionsPanel() {
           </button>
         </div>
       ))}
-      <button onClick={add} className="btn text-xs self-start">
+      <button type="button" onClick={add} className="btn text-xs self-start">
         + Add assertion
       </button>
     </div>

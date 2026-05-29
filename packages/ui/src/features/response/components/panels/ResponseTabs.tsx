@@ -15,31 +15,22 @@ export function ResponseTabs({
   responseTab,
   passedCount,
   totalCount,
-  hasConsoleLogs,
-  hasConsoleError,
-  consoleCount,
-  hasGraphQLTab,
-  hasGraphQLErrors,
-  graphqlErrorCount,
-  deferredCount,
+  consoleLogs,
+  graphql,
   onSelect,
 }: {
   responseTab: ResponseTab;
   passedCount: number;
   totalCount: number;
-  hasConsoleLogs: boolean;
-  hasConsoleError: boolean;
-  consoleCount: number;
-  hasGraphQLTab: boolean;
-  hasGraphQLErrors: boolean;
-  graphqlErrorCount: number;
-  deferredCount: number;
+  consoleLogs?: { count: number; hasError: boolean };
+  graphql?: { hasErrors: boolean; errorCount: number; deferredCount: number };
   onSelect: (tab: ResponseTab) => void;
 }) {
   return (
     <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)]">
       {STATIC_TABS.map((tab) => (
         <button
+          type="button"
           key={tab.id}
           onClick={() => onSelect(tab.id)}
           className={`tab-btn text-2xs ${responseTab === tab.id ? "active" : ""}`}
@@ -54,40 +45,43 @@ export function ResponseTabs({
           )}
         </button>
       ))}
-      {hasConsoleLogs && (
+      {consoleLogs && (
         <button
+          type="button"
           onClick={() => onSelect("console")}
           className={`tab-btn text-2xs ${responseTab === "console" ? "active" : ""}`}
         >
           Console
           <span
-            className={`ml-1 px-1 rounded ${hasConsoleError ? "bg-[var(--danger-bg)] text-[var(--danger)]" : "bg-[var(--accent-subtle)] text-[var(--accent)]"}`}
+            className={`ml-1 px-1 rounded ${consoleLogs.hasError ? "bg-[var(--danger-bg)] text-[var(--danger)]" : "bg-[var(--accent-subtle)] text-[var(--accent)]"}`}
           >
-            {hasConsoleError ? "err" : consoleCount}
+            {consoleLogs.hasError ? "err" : consoleLogs.count}
           </span>
         </button>
       )}
-      {hasGraphQLTab && (
+      {graphql && (
         <button
+          type="button"
           onClick={() => onSelect("graphql-errors")}
           className={`tab-btn text-2xs ${responseTab === "graphql-errors" ? "active" : ""}`}
         >
           GraphQL
-          {hasGraphQLErrors && (
+          {graphql.hasErrors && (
             <span className="ml-1 px-1 rounded bg-[var(--danger-bg)] text-[var(--danger)]">
-              {graphqlErrorCount}
+              {graphql.errorCount}
             </span>
           )}
         </button>
       )}
-      {deferredCount > 0 && (
+      {graphql && graphql.deferredCount > 0 && (
         <button
+          type="button"
           onClick={() => onSelect("graphql-deferred")}
           className={`tab-btn text-2xs ${responseTab === "graphql-deferred" ? "active" : ""}`}
         >
           Deferred
           <span className="ml-1 px-1 rounded bg-[var(--accent-subtle)] text-[var(--accent)]">
-            {deferredCount}
+            {graphql.deferredCount}
           </span>
         </button>
       )}

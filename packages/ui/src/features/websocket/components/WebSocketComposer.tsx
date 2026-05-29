@@ -41,20 +41,21 @@ export function WebSocketComposer({
             value={websocketRequest.presetQuery ?? ""}
             onChange={(e) => onRequestChange({ presetQuery: e.target.value })}
             placeholder="subscription { ... }"
+            aria-label="GraphQL subscription query"
             rows={3}
             className="input text-xs font-mono resize-none py-1.5"
           />
           <textarea
             value={websocketRequest.presetVariables ?? "{}"}
-            onChange={(e) =>
-              onRequestChange({ presetVariables: e.target.value })
-            }
+            onChange={(e) => onRequestChange({ presetVariables: e.target.value })}
             placeholder="{}"
+            aria-label="GraphQL subscription variables"
             rows={2}
             className="input text-xs font-mono resize-none py-1.5"
           />
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={onSubscribe}
               disabled={websocketState !== "connected" || gqlSubscribed}
               className="btn btn-primary text-xs px-3"
@@ -62,6 +63,7 @@ export function WebSocketComposer({
               Subscribe
             </button>
             <button
+              type="button"
               onClick={onUnsubscribe}
               disabled={websocketState !== "connected" || !gqlSubscribed}
               className="btn btn-danger text-xs px-3"
@@ -74,12 +76,14 @@ export function WebSocketComposer({
         <>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => onBinaryModeChange(false)}
               className={`flex items-center gap-1 text-2xs px-2 py-0.5 rounded ${!binaryMode ? "bg-[var(--accent)] text-white" : "text-[var(--text-3)] hover:text-[var(--text-1)]"}`}
             >
               <FileText size={10} /> Text
             </button>
             <button
+              type="button"
               onClick={() => onBinaryModeChange(true)}
               className={`flex items-center gap-1 text-2xs px-2 py-0.5 rounded ${binaryMode ? "bg-[var(--accent)] text-white" : "text-[var(--text-3)] hover:text-[var(--text-1)]"}`}
             >
@@ -93,6 +97,7 @@ export function WebSocketComposer({
               placeholder={binaryMode ? "Base64-encoded bytes\u2026" : "Message\u2026"}
               disabled={websocketState !== "connected"}
               rows={6}
+              aria-label="Message to send"
               className="input text-xs font-mono flex-1 resize-none py-1.5"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -104,13 +109,14 @@ export function WebSocketComposer({
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={onSend}
               disabled={websocketState !== "connected"}
               className="btn btn-primary text-xs px-4"
             >
               Send
             </button>
-            <button onClick={onOpenSaved} className="btn text-xs gap-1">
+            <button type="button" onClick={onOpenSaved} className="btn text-xs gap-1">
               <Plus size={11} /> Saved Messages
             </button>
           </div>

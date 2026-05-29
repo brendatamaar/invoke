@@ -24,6 +24,7 @@ export function StepEditorPanel({
           {step.type}
         </span>
         <button
+          type="button"
           onClick={onRemove}
           className="flex items-center gap-1 text-xs text-[var(--text-3)] hover:text-[var(--danger)]"
         >
@@ -31,23 +32,18 @@ export function StepEditorPanel({
         </button>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-[var(--text-2)]">Name</label>
+        <label htmlFor="step-name" className="text-xs font-medium text-[var(--text-2)]">Name</label>
         <input
+          id="step-name"
           className="input text-sm py-1.5 w-full"
           placeholder="Step name"
           value={step.name}
           onChange={(event) => onChange({ ...step, name: event.target.value })}
         />
       </div>
-      {step.type === "request" && (
-        <RequestStepEditor step={step} onChange={onChange} />
-      )}
-      {step.type === "delay" && (
-        <DelayStepEditor step={step} onChange={onChange} />
-      )}
-      {step.type === "condition" && (
-        <ConditionalStepEditor step={step} onChange={onChange} />
-      )}
+      {step.type === "request" && <RequestStepEditor step={step} onChange={onChange} />}
+      {step.type === "delay" && <DelayStepEditor step={step} onChange={onChange} />}
+      {step.type === "condition" && <ConditionalStepEditor step={step} onChange={onChange} />}
       {step.type === "loop" && <LoopStepEditor step={step} onChange={onChange} />}
     </div>
   );

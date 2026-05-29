@@ -7,8 +7,7 @@ import { EnvironmentList } from "./EnvironmentList";
 import { EnvironmentModal } from "./EnvironmentModal";
 
 export function EnvironmentPanel() {
-  const { environments, activeEnvironmentId, envDraft, set, addToast } =
-    useStore();
+  const { environments, activeEnvironmentId, envDraft, set, addToast } = useStore();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const openDraft = (env?: Environment) =>
@@ -46,8 +45,7 @@ export function EnvironmentPanel() {
       const envs = await coreStore.listEnvironments();
       set({
         environments: envs,
-        activeEnvironmentId:
-          activeEnvironmentId === id ? undefined : activeEnvironmentId,
+        activeEnvironmentId: activeEnvironmentId === id ? undefined : activeEnvironmentId,
       });
     } catch (error) {
       addToast("error", String(error));
@@ -61,6 +59,7 @@ export function EnvironmentPanel() {
           Environments
         </span>
         <button
+          type="button"
           onClick={() => openDraft()}
           className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
           title="New environment"

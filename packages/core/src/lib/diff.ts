@@ -1,9 +1,4 @@
-import type {
-  DiffChange,
-  DiffResult,
-  ExecuteResponse,
-  KeyValue,
-} from "../types";
+import type { DiffChange, DiffResult, ExecuteResponse, KeyValue } from "../types";
 
 export function compareResponses(
   left: ExecuteResponse,
@@ -12,9 +7,7 @@ export function compareResponses(
 ): DiffResult {
   const ignorePaths = options?.ignorePaths ?? [];
   const shouldIgnore = (path: string) =>
-    ignorePaths.some(
-      (p) => path === p || path.startsWith(p + ".") || path.startsWith(p + "["),
-    );
+    ignorePaths.some((p) => path === p || path.startsWith(p + ".") || path.startsWith(p + "["));
 
   const leftBody = parseMaybeJson(left.body);
   const rightBody = parseMaybeJson(right.body);
@@ -24,11 +17,7 @@ export function compareResponses(
     : compareText(left.body, right.body);
 
   rawChanges.push(
-    ...compareValues(
-      headersToObject(left.headers),
-      headersToObject(right.headers),
-      "headers",
-    ),
+    ...compareValues(headersToObject(left.headers), headersToObject(right.headers), "headers"),
   );
   if (left.status !== right.status)
     rawChanges.push({
@@ -46,9 +35,7 @@ export function compareResponses(
     });
   }
 
-  const changes = ignorePaths.length
-    ? rawChanges.filter((c) => !shouldIgnore(c.path))
-    : rawChanges;
+  const changes = ignorePaths.length ? rawChanges.filter((c) => !shouldIgnore(c.path)) : rawChanges;
 
   const summary = summarize(changes);
   return {
@@ -56,17 +43,12 @@ export function compareResponses(
     summary,
     leftText: pretty(leftBody.ok ? leftBody.value : left.body),
     rightText: pretty(rightBody.ok ? rightBody.value : right.body),
-    responseTimeDeltaMs:
-      (right.timing?.totalMs ?? 0) - (left.timing?.totalMs ?? 0),
+    responseTimeDeltaMs: (right.timing?.totalMs ?? 0) - (left.timing?.totalMs ?? 0),
     mode: jsonMode ? "json" : "text",
   };
 }
 
-function compareValues(
-  left: unknown,
-  right: unknown,
-  path: string,
-): DiffChange[] {
+function compareValues(left: unknown, right: unknown, path: string): DiffChange[] {
   if (isEqual(left, right)) return [];
 
   if (Array.isArray(left) && Array.isArray(right)) {
@@ -86,15 +68,9 @@ function compareValues(
   return [{ type: "change", path, oldValue: left, value: right }];
 }
 
-function compareValueAt(
-  left: unknown,
-  right: unknown,
-  path: string,
-): DiffChange[] {
-  if (left === undefined && right !== undefined)
-    return [{ type: "add", path, value: right }];
-  if (left !== undefined && right === undefined)
-    return [{ type: "remove", path, oldValue: left }];
+function compareValueAt(left: unknown, right: unknown, path: string): DiffChange[] {
+  if (left === undefined && right !== undefined) return [{ type: "add", path, value: right }];
+  if (left !== undefined && right === undefined) return [{ type: "remove", path, oldValue: left }];
   return compareValues(left, right, path);
 }
 
@@ -107,8 +83,7 @@ function compareText(left: string, right: string): DiffChange[] {
     const oldValue = leftLines[index];
     const value = rightLines[index];
     if (oldValue === value) continue;
-    if (oldValue === undefined)
-      changes.push({ type: "add", path: `line ${index + 1}`, value });
+    if (oldValue === undefined) changes.push({ type: "add", path: `line ${index + 1}`, value });
     else if (value === undefined)
       changes.push({ type: "remove", path: `line ${index + 1}`, oldValue });
     else
@@ -131,14 +106,10 @@ function summarize(changes: DiffChange[]) {
 }
 
 function headersToObject(headers: KeyValue[]) {
-  return Object.fromEntries(
-    headers.map((header) => [header.key.toLowerCase(), header.value]),
-  );
+  return Object.fromEntries(headers.map((header) => [header.key.toLowerCase(), header.value]));
 }
 
-function parseMaybeJson(
-  value: string,
-): { ok: true; value: unknown } | { ok: false } {
+function parseMaybeJson(value: string): { ok: true; value: unknown } | { ok: false } {
   try {
     return { ok: true, value: JSON.parse(value) as unknown };
   } catch {

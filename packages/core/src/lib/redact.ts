@@ -17,15 +17,11 @@ const SENSITIVE_KEY_PATTERN =
 const REDACTED = "[redacted]";
 
 function isSensitiveKey(key: string): boolean {
-  return (
-    SENSITIVE_HEADERS.has(key.toLowerCase()) || SENSITIVE_KEY_PATTERN.test(key)
-  );
+  return SENSITIVE_HEADERS.has(key.toLowerCase()) || SENSITIVE_KEY_PATTERN.test(key);
 }
 
 function redactHeaders(headers: KeyValue[]): KeyValue[] {
-  return headers.map((h) =>
-    isSensitiveKey(h.key) ? { ...h, value: REDACTED } : h,
-  );
+  return headers.map((h) => (isSensitiveKey(h.key) ? { ...h, value: REDACTED } : h));
 }
 
 function redactAuth(auth: AuthConfig): AuthConfig {
@@ -34,9 +30,7 @@ function redactAuth(auth: AuthConfig): AuthConfig {
     password: auth.password ? REDACTED : auth.password,
     token: auth.token ? REDACTED : auth.token,
     clientSecret: auth.clientSecret ? REDACTED : auth.clientSecret,
-    awsSecretAccessKey: auth.awsSecretAccessKey
-      ? REDACTED
-      : auth.awsSecretAccessKey,
+    awsSecretAccessKey: auth.awsSecretAccessKey ? REDACTED : auth.awsSecretAccessKey,
     accessToken: auth.accessToken ? REDACTED : auth.accessToken,
     refreshToken: auth.refreshToken ? REDACTED : auth.refreshToken,
     apiKeyValue: auth.apiKeyValue ? REDACTED : auth.apiKeyValue,
@@ -56,9 +50,7 @@ export function redactHistoryEntry(entry: HistoryEntry): HistoryEntry {
   const redactedResponse = response
     ? {
         ...response,
-        headers: response.headers
-          ? redactHeaders(response.headers)
-          : response.headers,
+        headers: response.headers ? redactHeaders(response.headers) : response.headers,
       }
     : response;
 

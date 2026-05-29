@@ -15,7 +15,6 @@ export function useClearWebhookLogs(webhookId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => clearWebhookLogs(webhookId),
-    onSuccess: () =>
-      queryClient.setQueryData(["webhookLogs", webhookId], []),
+    onSuccess: () => queryClient.setQueryData(["webhookLogs", webhookId], []),
   });
 }

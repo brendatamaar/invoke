@@ -7,25 +7,13 @@ import type {
   RequestDraft,
   WebSocketRequestConfig,
 } from "../types";
-import {
-  isGraphQLRequestConfig,
-  isGrpcRequestConfig,
-  isWebSocketRequestConfig,
-} from "../request";
+import { isGraphQLRequestConfig, isGrpcRequestConfig, isWebSocketRequestConfig } from "../request";
 
-export function searchHistory(
-  entries: HistoryEntry[],
-  query: string,
-  limit = 100,
-) {
+export function searchHistory(entries: HistoryEntry[], query: string, limit = 100) {
   const normalized = query.trim().toLowerCase();
-  const newest = [...entries].sort(
-    (left, right) => right.createdAt - left.createdAt,
-  );
+  const newest = [...entries].sort((left, right) => right.createdAt - left.createdAt);
   if (!normalized) return newest.slice(0, limit);
-  return newest
-    .filter((entry) => historyHaystack(entry).includes(normalized))
-    .slice(0, limit);
+  return newest.filter((entry) => historyHaystack(entry).includes(normalized)).slice(0, limit);
 }
 
 function historyHaystack(entry: HistoryEntry) {
@@ -64,9 +52,7 @@ function requestMethod(entry: HistoryEntry) {
 function requestBody(entry: HistoryEntry) {
   if (isGraphQLRequestConfig(entry.request)) {
     const request = entry.request as GraphQLRequestConfig;
-    return [request.query, request.variables, request.operationName ?? ""].join(
-      "\n",
-    );
+    return [request.query, request.variables, request.operationName ?? ""].join("\n");
   }
   if (isWebSocketRequestConfig(entry.request))
     return (entry.request as WebSocketRequestConfig).message;
@@ -76,8 +62,7 @@ function requestBody(entry: HistoryEntry) {
 
 function requestUrl(request: ProtocolRequestConfig) {
   if ("url" in request) return request.url;
-  if ("address" in request)
-    return `${request.address}/${request.service}/${request.method}`;
+  if ("address" in request) return `${request.address}/${request.service}/${request.method}`;
   return "";
 }
 

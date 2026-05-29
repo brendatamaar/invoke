@@ -21,6 +21,7 @@ export function Toasts() {
           {ICONS[t.kind]}
           <span className="text-[var(--text-1)] flex-1">{t.message}</span>
           <button
+            type="button"
             onClick={() => removeToast(t.id)}
             className="text-[var(--text-3)] hover:text-[var(--text-2)] ml-1"
           >

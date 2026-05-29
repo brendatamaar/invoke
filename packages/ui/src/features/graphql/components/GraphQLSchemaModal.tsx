@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef } from "react";
 import {
   GRAPHQL_INTROSPECTION_QUERY,
   parseGraphQLIntrospection,
@@ -8,11 +8,7 @@ import {
 } from "@invoke/core";
 import { useStore } from "../../../store";
 import { cacheSchema } from "../utils/cache";
-import {
-  extractFragmentDefs,
-  loadFragments,
-  saveFragments,
-} from "../utils/fragments";
+import { extractFragmentDefs, loadFragments, saveFragments } from "../utils/fragments";
 import { schemaToSDL } from "../utils/sdl";
 import { mergeFragments, refreshMessage } from "../utils/schemaModal";
 import { FragmentsPanel } from "./FragmentsPanel";
@@ -36,11 +32,38 @@ export function GraphQLSchemaModal({
     set,
     addToast,
   } = useStore();
-  const [search, setSearch] = useState("");
-  const [view, setView] = useState<"types" | "sdl" | "frags">("types");
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [fragments, setFragments] = useState(loadFragments);
+  type SchemaModalState = {
+    search: string;
+    view: "types" | "sdl" | "frags";
+    selectedType: string | null;
+    refreshing: boolean;
+    fragments: ReturnType<typeof loadFragments>;
+  };
+  type SchemaModalAction =
+    | { type: "SET_SEARCH"; search: string }
+    | { type: "SET_VIEW"; view: "types" | "sdl" | "frags" }
+    | { type: "SET_SELECTED_TYPE"; selectedType: string | null }
+    | { type: "SET_REFRESHING"; refreshing: boolean }
+    | { type: "SET_FRAGMENTS"; fragments: ReturnType<typeof loadFragments> };
+
+  const [state, dispatch] = useReducer(
+    (s: SchemaModalState, a: SchemaModalAction): SchemaModalState => {
+      switch (a.type) {
+        case "SET_SEARCH": return { ...s, search: a.search };
+        case "SET_VIEW": return { ...s, view: a.view };
+        case "SET_SELECTED_TYPE": return { ...s, selectedType: a.selectedType };
+        case "SET_REFRESHING": return { ...s, refreshing: a.refreshing };
+        case "SET_FRAGMENTS": return { ...s, fragments: a.fragments };
+      }
+    },
+    { search: "", view: "types", selectedType: null, refreshing: false, fragments: loadFragments() },
+  );
+  const { search, view, selectedType, refreshing, fragments } = state;
+  const setSearch = (search: string) => dispatch({ type: "SET_SEARCH", search });
+  const setView = (view: "types" | "sdl" | "frags") => dispatch({ type: "SET_VIEW", view });
+  const setSelectedType = (selectedType: string | null) => dispatch({ type: "SET_SELECTED_TYPE", selectedType });
+  const setRefreshing = (refreshing: boolean) => dispatch({ type: "SET_REFRESHING", refreshing });
+  const setFragments = (fragments: ReturnType<typeof loadFragments>) => dispatch({ type: "SET_FRAGMENTS", fragments });
   const refreshAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -64,10 +87,7 @@ export function GraphQLSchemaModal({
     );
   }, [allTypes, search]);
   const activeType = selectedType ? typeByName(schema, selectedType) : undefined;
-  const sdlText = useMemo(
-    () => (view === "sdl" ? schemaToSDL(schema) : ""),
-    [view, schema],
-  );
+  const sdlText = useMemo(() => (view === "sdl" ? schemaToSDL(schema) : ""), [view, schema]);
 
   const handleRefresh = async () => {
     const endpoint = graphqlSchemaEndpoint || request.url.trim();
@@ -86,9 +106,10 @@ export function GraphQLSchemaModal({
         headers: {
           "Content-Type": "application/json",
           ...Object.fromEntries(
-            (request.headers ?? [])
-              .filter((h) => h.enabled !== false && h.key)
-              .map((h) => [h.key, h.value]),
+            (request.headers ?? []).reduce<[string, string][]>((acc, h) => {
+              if (h.enabled !== false && h.key) acc.push([h.key, h.value]);
+              return acc;
+            }, []),
           ),
         },
         body: JSON.stringify({ query: GRAPHQL_INTROSPECTION_QUERY }),
@@ -107,10 +128,7 @@ export function GraphQLSchemaModal({
       addToast("success", refreshMessage(schema, newSchema));
     } catch (e) {
       if (!(e instanceof Error && e.name === "AbortError")) {
-        addToast(
-          "error",
-          `Refresh failed: ${e instanceof Error ? e.message : String(e)}`,
-        );
+        addToast("error", `Refresh failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     } finally {
       setRefreshing(false);
@@ -119,6 +137,7 @@ export function GraphQLSchemaModal({
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={onClose}
     >

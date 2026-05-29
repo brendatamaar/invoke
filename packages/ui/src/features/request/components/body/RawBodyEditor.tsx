@@ -25,19 +25,15 @@ export function RawBodyEditor({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-1 px-2 py-1 border-b border-[var(--border)] bg-[var(--surface-2)]">
-        <button onClick={() => reformat(true)} className="tab-btn text-2xs" title="Format JSON">
+        <button type="button" onClick={() => reformat(true)} className="tab-btn text-2xs" title="Format JSON">
           Format
         </button>
-        <button onClick={() => reformat(false)} className="tab-btn text-2xs" title="Minify JSON">
+        <button type="button" onClick={() => reformat(false)} className="tab-btn text-2xs" title="Minify JSON">
           Minify
         </button>
       </div>
       <div className="flex-1 overflow-auto">
-        <CodeEditor
-          value={body}
-          onChange={onChange}
-          lang={mode === "json" ? "json" : "text"}
-        />
+        <CodeEditor value={body} onChange={onChange} lang={mode === "json" ? "json" : "text"} />
       </div>
     </div>
   );

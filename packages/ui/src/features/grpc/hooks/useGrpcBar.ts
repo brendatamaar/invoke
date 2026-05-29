@@ -10,11 +10,7 @@ import {
   hasGrpcTlsLocalhostWarning,
   selectedGrpcMethod,
 } from "../utils/protocolBar";
-import {
-  cancelGrpcExecute,
-  cancelGrpcStream,
-  closeGrpcStream,
-} from "../utils/streamControls";
+import { cancelGrpcExecute, cancelGrpcStream, closeGrpcStream } from "../utils/streamControls";
 
 export function useGrpcBar() {
   const {
@@ -52,11 +48,13 @@ export function useGrpcBar() {
   useEffect(() => {
     const req = resolvedForReflectRef.current;
     if (!req?.protosetBase64) return;
-    grpcReflect(req).then((data) => {
-      if (!data.error) {
-        set({ grpcMethods: data.methods, grpcStatus: `${data.methods.length} methods found` });
-      }
-    }).catch(() => {});
+    grpcReflect(req)
+      .then((data) => {
+        if (!data.error) {
+          set({ grpcMethods: data.methods, grpcStatus: `${data.methods.length} methods found` });
+        }
+      })
+      .catch(() => {});
   }, [grpcRequest.protosetBase64, set]);
 
   const reflect = useCallback(async () => {
@@ -67,8 +65,7 @@ export function useGrpcBar() {
         addToast("error", data.error);
       } else {
         set({ grpcMethods: data.methods, grpcStatus: `${data.methods.length} methods found` });
-        if (data.methods.length === 0)
-          addToast("warn", "Reflection returned no methods");
+        if (data.methods.length === 0) addToast("warn", "Reflection returned no methods");
       }
     } catch (error) {
       set({ grpcMethods: [], grpcStatus: "Error" });
@@ -76,10 +73,7 @@ export function useGrpcBar() {
     }
   }, [fetchReflect, addToast, set]);
 
-  const execute = useCallback(
-    () => executeCurrentGrpcRequest(selectedMethod),
-    [selectedMethod],
-  );
+  const execute = useCallback(() => executeCurrentGrpcRequest(selectedMethod), [selectedMethod]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -103,14 +97,7 @@ export function useGrpcBar() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [
-    grpcStreaming,
-    grpcExecuteController,
-    grpcStreamId,
-    execute,
-    reflect,
-    set,
-  ]);
+  }, [grpcStreaming, grpcExecuteController, grpcStreamId, execute, reflect, set]);
 
   return {
     grpcRequest,

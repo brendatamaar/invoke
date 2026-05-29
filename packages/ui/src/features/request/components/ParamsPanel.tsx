@@ -23,9 +23,7 @@ export function ParamsPanel({
   return (
     <div className="flex flex-col">
       <div>
-        {pathVarNames.length > 0 && (
-          <div className={SECTION_HEADER}>Query Parameters</div>
-        )}
+        {pathVarNames.length > 0 && <div className={SECTION_HEADER}>Query Parameters</div>}
         <KeyValueEditor
           rows={params}
           onChange={(rows) => onParamsChange(rows as KeyValue[])}
@@ -73,9 +71,7 @@ function PathVariableRow({
   const filled = value.trim() !== "";
   return (
     <div className="grid grid-cols-[1fr_1px_1fr] items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]">
-      <span className="px-3 py-1.5 text-xs font-mono text-[var(--text-2)]">
-        :{name}
-      </span>
+      <span className="px-3 py-1.5 text-xs font-mono text-[var(--text-2)]">:{name}</span>
       <span className="h-4 bg-[var(--border)]" />
       <input
         type="text"
@@ -83,13 +79,13 @@ function PathVariableRow({
         onChange={(event) => {
           const next = pathVarNames.map((pathName) => ({
             key: pathName,
-            value:
-              pathName === name ? event.target.value : (valueMap.get(pathName) ?? ""),
+            value: pathName === name ? event.target.value : (valueMap.get(pathName) ?? ""),
             enabled: true,
           }));
           onPathVariablesChange(next);
         }}
         placeholder="value"
+        aria-label={`Value for :${name}`}
         className={`w-full bg-transparent border-0 outline-none py-1.5 px-2 text-xs font-mono placeholder-[var(--text-3)] min-w-0 ${filled ? "text-[var(--success,#22c55e)]" : "text-[var(--warn)]"}`}
       />
     </div>

@@ -11,14 +11,10 @@ export function buildExecutePayload(request: RequestConfig) {
   if (
     autoContentType &&
     !headers.some(
-      (header) =>
-        header.enabled !== false && header.key.toLowerCase() === "content-type",
+      (header) => header.enabled !== false && header.key.toLowerCase() === "content-type",
     )
   ) {
-    headers = [
-      ...headers,
-      { key: "Content-Type", value: autoContentType, enabled: true },
-    ];
+    headers = [...headers, { key: "Content-Type", value: autoContentType, enabled: true }];
   }
 
   return {

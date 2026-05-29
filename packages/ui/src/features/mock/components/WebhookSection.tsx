@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import type { WebhookEndpoint, WebhookValidationConfig } from "../../../types";
 import { useStore } from "../../../store";
-import { deleteWebhookEndpoint } from "../../webhook";
+import { deleteWebhookEndpoint } from "../../webhook/api";
 import { DEFAULT_VALIDATION } from "./webhook/constants";
 import { WebhookEndpointRow } from "./webhook/WebhookEndpointRow";
 import { WebhookModal } from "./webhook/WebhookModal";
@@ -27,18 +27,17 @@ export function WebhookSection() {
     try {
       await deleteWebhookEndpoint(id);
     } catch (error) {
-      addToast("error", `Failed to delete webhook: ${error instanceof Error ? error.message : String(error)}`);
+      addToast(
+        "error",
+        `Failed to delete webhook: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return;
     }
     setEndpoints((previous) => previous.filter((endpoint) => endpoint.id !== id));
     if (activeEndpoint?.id === id) setActiveEndpoint(null);
   };
 
-  const updateEndpoint = (
-    id: string,
-    label: string,
-    validation: WebhookValidationConfig,
-  ) =>
+  const updateEndpoint = (id: string, label: string, validation: WebhookValidationConfig) =>
     setEndpoints((previous) =>
       previous.map((endpoint) =>
         endpoint.id === id ? { ...endpoint, label, validation } : endpoint,
@@ -58,6 +57,7 @@ export function WebhookSection() {
           Webhooks {endpoints.length > 0 && `- ${endpoints.length}`}
         </span>
         <button
+          type="button"
           onClick={addEndpoint}
           className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5"
           title="New webhook endpoint"
@@ -66,9 +66,7 @@ export function WebhookSection() {
         </button>
       </div>
       {endpoints.length === 0 && (
-        <p className="p-4 text-xs text-[var(--text-3)] text-center">
-          No endpoints yet
-        </p>
+        <p className="p-4 text-xs text-[var(--text-3)] text-center">No endpoints yet</p>
       )}
       {endpoints.map((endpoint) => (
         <WebhookEndpointRow

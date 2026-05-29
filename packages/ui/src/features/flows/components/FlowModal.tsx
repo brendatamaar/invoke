@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useReducer, useRef } from "react";
 import {
   FlowRunner,
   validateFlow,
@@ -7,7 +7,7 @@ import {
   type VariableScope,
 } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
-import { execute } from "../../execute";
+import { execute } from "../../execute/api";
 import { showFlowValidation } from "../utils/validation";
 import { FlowModalBody } from "./flow-modal/FlowModalBody";
 import { FlowModalFooter } from "./flow-modal/FlowModalFooter";
@@ -15,13 +15,32 @@ import { FlowModalHeader } from "./flow-modal/FlowModalHeader";
 import { FlowRunLog } from "./FlowRunLog";
 import { makeStep } from "../flowStepUtils";
 
-export function FlowModal({
-  flow,
-  onClose,
-}: {
-  flow: Flow;
-  onClose: () => void;
-}) {
+type FlowModalState = {
+  draft: Flow;
+  selectedIndex: number | null;
+  addingStep: boolean;
+  dragOver: number | null;
+  viewMode: "list" | "canvas";
+};
+
+type FlowModalAction =
+  | { type: "SET_DRAFT"; draft: Flow }
+  | { type: "SET_SELECTED_INDEX"; index: number | null }
+  | { type: "SET_ADDING_STEP"; adding: boolean }
+  | { type: "SET_DRAG_OVER"; index: number | null }
+  | { type: "SET_VIEW_MODE"; mode: "list" | "canvas" };
+
+function flowModalReducer(state: FlowModalState, action: FlowModalAction): FlowModalState {
+  switch (action.type) {
+    case "SET_DRAFT": return { ...state, draft: action.draft };
+    case "SET_SELECTED_INDEX": return { ...state, selectedIndex: action.index };
+    case "SET_ADDING_STEP": return { ...state, addingStep: action.adding };
+    case "SET_DRAG_OVER": return { ...state, dragOver: action.index };
+    case "SET_VIEW_MODE": return { ...state, viewMode: action.mode };
+  }
+}
+
+export function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
   const {
     set,
     addToast,
@@ -39,14 +58,20 @@ export function FlowModal({
     set({ flowRunning: false, flowLog: [], flowResult: undefined });
     onClose();
   };
-  const [draft, setDraft] = useState<Flow>({
-    ...flow,
-    steps: flow.steps ?? [],
+
+  const [state, dispatch] = useReducer(flowModalReducer, {
+    draft: { ...flow, steps: flow.steps ?? [] },
+    selectedIndex: null,
+    addingStep: false,
+    dragOver: null,
+    viewMode: "list",
   });
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [addingStep, setAddingStep] = useState(false);
-  const [dragOver, setDragOver] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "canvas">("list");
+  const { draft, selectedIndex, addingStep, dragOver, viewMode } = state;
+  const setDraft = (d: Flow) => dispatch({ type: "SET_DRAFT", draft: d });
+  const setSelectedIndex = (index: number | null) => dispatch({ type: "SET_SELECTED_INDEX", index });
+  const setAddingStep = (adding: boolean) => dispatch({ type: "SET_ADDING_STEP", adding });
+  const setDragOver = (index: number | null) => dispatch({ type: "SET_DRAG_OVER", index });
+  const setViewMode = (mode: "list" | "canvas") => dispatch({ type: "SET_VIEW_MODE", mode });
   const dragIndex = useRef<number | null>(null);
 
   const updateStep = (index: number, step: FlowStep) => {
@@ -57,11 +82,11 @@ export function FlowModal({
 
   const removeStep = (index: number) => {
     setDraft({ ...draft, steps: draft.steps.filter((_, i) => i !== index) });
-    setSelectedIndex((prev) => {
-      if (prev === null) return null;
-      if (prev === index) return null;
-      return prev > index ? prev - 1 : prev;
-    });
+    const prev = selectedIndex;
+    if (prev !== null) {
+      if (prev === index) setSelectedIndex(null);
+      else setSelectedIndex(prev > index ? prev - 1 : prev);
+    }
   };
 
   const addStep = (type: FlowStep["type"]) => {
@@ -96,8 +121,7 @@ export function FlowModal({
     set({ flowRunning: true, flowResult: undefined, flowLog: [] });
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const scopes: VariableScope[] = [];
-    if (env?.variables?.length)
-      scopes.push({ name: "environment", variables: env.variables });
+    if (env?.variables?.length) scopes.push({ name: "environment", variables: env.variables });
     if (Object.keys(sessionVariables).length)
       scopes.push({ name: "session", variables: sessionVariables });
     try {
@@ -133,6 +157,7 @@ export function FlowModal({
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-[1px]"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) handleClose();

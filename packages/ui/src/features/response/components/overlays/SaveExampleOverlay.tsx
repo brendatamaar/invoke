@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 export function SaveExampleOverlay({
   exampleName,
   placeholder,
@@ -11,13 +13,15 @@ export function SaveExampleOverlay({
   onSave: () => void;
   onClose: () => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
   return (
     <div className="absolute z-20 right-3 top-12 bg-[var(--bg-2)] border border-[var(--line-2)] rounded-md shadow-[var(--shadow-2)] p-3 flex flex-col gap-2 w-60">
-      <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">
-        Save as example
-      </span>
+      <span className="text-2xs font-semibold text-[var(--text-3)] uppercase">Save as example</span>
       <input
-        autoFocus
+        ref={inputRef}
+        aria-label="Example name"
         value={exampleName}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
@@ -28,13 +32,10 @@ export function SaveExampleOverlay({
         className="input text-xs py-1"
       />
       <div className="flex gap-1.5 justify-end">
-        <button onClick={onClose} className="btn text-2xs py-0.5 px-2">
+        <button type="button" onClick={onClose} className="btn text-2xs py-0.5 px-2">
           Cancel
         </button>
-        <button
-          onClick={onSave}
-          className="btn btn-primary text-2xs py-0.5 px-2"
-        >
+        <button type="button" onClick={onSave} className="btn btn-primary text-2xs py-0.5 px-2">
           Save
         </button>
       </div>

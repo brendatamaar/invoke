@@ -28,14 +28,13 @@ export function TypeDetail({
       <>
         {type.enumValues?.map((val) => (
           <button
+            type="button"
             key={val.name}
             onClick={() => onInsertField(val.name)}
             className={`w-full flex items-center gap-1 ${indent} pr-2 py-0.5 hover:bg-[var(--border)] text-left`}
             title={val.description ?? undefined}
           >
-            {val.isDeprecated && (
-              <AlertTriangle size={9} className="text-[var(--warn)] shrink-0" />
-            )}
+            {val.isDeprecated && <AlertTriangle size={9} className="text-[var(--warn)] shrink-0" />}
             <span
               className={`text-2xs font-mono flex-1 truncate ${val.isDeprecated ? "line-through text-[var(--text-3)]" : "text-[var(--text-1)]"}`}
             >
@@ -52,13 +51,12 @@ export function TypeDetail({
       <>
         {type.possibleTypes?.map((pt) => (
           <button
+            type="button"
             key={pt.name}
             onClick={() => pt.name && onNavigate(pt.name)}
             className={`w-full flex items-center gap-1 ${indent} pr-2 py-0.5 hover:bg-[var(--border)] text-left`}
           >
-            <span className="text-2xs font-mono text-[var(--accent)] truncate">
-              {pt.name}
-            </span>
+            <span className="text-2xs font-mono text-[var(--accent)] truncate">{pt.name}</span>
           </button>
         ))}
       </>
@@ -88,6 +86,7 @@ export function TypeDetail({
         const isNavigable = namedType && typeByName(schema, namedType);
         return (
           <button
+            type="button"
             key={field.name}
             onClick={() => onInsertField(graphQLFieldSnippet(field))}
             className={`w-full flex items-center gap-1 ${indent} pr-2 py-0.5 hover:bg-[var(--border)] text-left`}
@@ -132,9 +131,7 @@ function InputFieldRow({
       className={`w-full flex items-center gap-1 ${indent} pr-2 py-0.5`}
       title={field.description ?? undefined}
     >
-      <span className="text-2xs font-mono text-[var(--text-1)] truncate flex-1">
-        {field.name}
-      </span>
+      <span className="text-2xs font-mono text-[var(--text-1)] truncate flex-1">{field.name}</span>
       <TypeRefButton
         namedType={namedType}
         typeRef={field.type}
@@ -166,6 +163,7 @@ function TypeRefButton({
 
   return (
     <button
+      type="button"
       onClick={(e) => {
         e.stopPropagation();
         onNavigate(namedType);

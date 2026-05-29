@@ -19,10 +19,9 @@ export function TlsClientFields({
         <textarea
           rows={3}
           value={tls.caCertPem ?? ""}
-          onChange={(e) =>
-            patchTlsClientConfig({ caCertPem: e.currentTarget.value })
-          }
+          onChange={(e) => patchTlsClientConfig({ caCertPem: e.currentTarget.value })}
           placeholder="-----BEGIN CERTIFICATE-----"
+          aria-label="CA certificate"
           className="input min-w-0 flex-1 resize-y font-mono text-2xs"
         />
       </FieldRow>
@@ -30,10 +29,9 @@ export function TlsClientFields({
         <textarea
           rows={3}
           value={tls.clientCertPem ?? ""}
-          onChange={(e) =>
-            patchTlsClientConfig({ clientCertPem: e.currentTarget.value })
-          }
+          onChange={(e) => patchTlsClientConfig({ clientCertPem: e.currentTarget.value })}
           placeholder="-----BEGIN CERTIFICATE-----"
+          aria-label="Client certificate"
           className="input min-w-0 flex-1 resize-y font-mono text-2xs"
         />
       </FieldRow>
@@ -41,10 +39,9 @@ export function TlsClientFields({
         <textarea
           rows={3}
           value={tls.clientKeyPem ?? ""}
-          onChange={(e) =>
-            patchTlsClientConfig({ clientKeyPem: e.currentTarget.value })
-          }
+          onChange={(e) => patchTlsClientConfig({ clientKeyPem: e.currentTarget.value })}
           placeholder="-----BEGIN PRIVATE KEY-----"
+          aria-label="Client key"
           className="input min-w-0 flex-1 resize-y font-mono text-2xs"
         />
       </FieldRow>
@@ -52,10 +49,9 @@ export function TlsClientFields({
         <input
           type="text"
           value={tls.serverName ?? ""}
-          onChange={(e) =>
-            patchTlsClientConfig({ serverName: e.currentTarget.value })
-          }
+          onChange={(e) => patchTlsClientConfig({ serverName: e.currentTarget.value })}
           placeholder="override.example.com"
+          aria-label="Server name"
           className="input min-w-0 flex-1 text-xs"
         />
       </FieldRow>

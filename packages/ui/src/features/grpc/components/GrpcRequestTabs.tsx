@@ -26,15 +26,9 @@ export function GrpcRequestTabs({
 
   return (
     <>
-      <GrpcTabBar
-        activeTab={activeTab}
-        includeMessage={true}
-        onSelect={onSelectTab}
-      />
+      <GrpcTabBar activeTab={activeTab} includeMessage={true} onSelect={onSelectTab} />
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {activeTab === "message" && grpcStreamId && (
-          <GrpcStreamComposer streamId={grpcStreamId} />
-        )}
+        {activeTab === "message" && grpcStreamId && <GrpcStreamComposer streamId={grpcStreamId} />}
         {activeTab === "message" && !grpcStreamId && (
           <div className="flex-1 overflow-auto">
             <CodeEditor
@@ -47,9 +41,7 @@ export function GrpcRequestTabs({
         {activeTab === "metadata" && (
           <KeyValueEditor
             rows={(grpcRequest.metadata as KeyValue[] | undefined) ?? []}
-            onChange={(rows) =>
-              setGrpcRequest({ metadata: rows as KeyValue[] })
-            }
+            onChange={(rows) => setGrpcRequest({ metadata: rows as KeyValue[] })}
             keyPlaceholder="key"
             valuePlaceholder="value"
           />
@@ -59,10 +51,7 @@ export function GrpcRequestTabs({
         {activeTab === "options" && <GrpcOptionsPanel />}
         {activeTab === "saved" && <GrpcSavedMessagesPanel />}
         {activeTab === "stress" && (
-          <GrpcStressContent
-            isClientStream={isClientStream}
-            grpcStreamId={grpcStreamId}
-          />
+          <GrpcStressContent isClientStream={isClientStream} grpcStreamId={grpcStreamId} />
         )}
       </div>
     </>
@@ -85,11 +74,7 @@ function GrpcStressContent({
   }
 
   if (!grpcStreamId) {
-    return (
-      <div className="p-3 text-2xs text-[var(--text-3)]">
-        Open the stream first.
-      </div>
-    );
+    return <div className="p-3 text-2xs text-[var(--text-3)]">Open the stream first.</div>;
   }
 
   return <GrpcStressPanel streamId={grpcStreamId} />;

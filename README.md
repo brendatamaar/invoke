@@ -2,7 +2,7 @@
 
 A local-first API development, debugging, and testing platform with a fast browser UI, accurate network timing, and no required account or cloud sync.
 
-invoke combines a React UI, a TypeScript core engine, a thin Hono server on Bun, and a Go executor. The browser owns workspace state, the core engine handles client-side API logic, and the Go executor performs network I/O with the low-level timing data that browser-only tools cannot capture reliably.
+invoke combines a React UI, a TypeScript core engine, a thin Effect HttpApi server on Bun, and a Go executor. The browser owns workspace state, the core engine handles client-side API logic, and the Go executor performs network I/O with the low-level timing data that browser-only tools cannot capture reliably.
 
 ## Features
 
@@ -21,7 +21,7 @@ flowchart LR
   User --> UI[React UI]
   UI --> Core["@invoke/core"]
   Core --> Storage[(Browser storage)]
-  Core --> Server[Hono server on Bun]
+  Core --> Server[Effect HttpApi on Bun]
   Server --> Executor[Go executor]
   Executor --> API[Target APIs]
   Server --> Mock[In-memory mock server]
@@ -32,8 +32,8 @@ flowchart LR
 |-------|------|----------------|
 | **React UI** | `packages/ui` | Request builder, response viewer, runners, mock/webhook tools, flow editor, settings. Imports `@invoke/core` directly. |
 | **Core engine** | `packages/core` | Browser-safe TypeScript: types, variable resolution, auth helpers, assertions, extraction, diffing, flow execution, run orchestration, import/export, code generation. Must not depend on Node-only APIs. |
-| **Server** | `packages/server` | Thin bridge on Hono + Bun: forwards requests to the executor, relays gRPC/WebSocket over SSE, hosts the in-memory mock and webhook capture, handles the OAuth2 authorization-code callback. |
-| **Executor** | `executor/` | Network correctness in Go: HTTP/2, timing, redirects, mTLS, custom CAs, WebSocket lifecycle (`nhooyr.io/websocket`), gRPC reflection (v1/v1alpha), unary + streaming, gRPC-Web, SSRF guard. Speaks gRPC to the server (contract: `proto/executor.proto`). |
+| **Server** | `packages/server` | Thin bridge on `@effect/platform` HttpApi + Bun: forwards requests to the executor, relays gRPC/WebSocket over SSE, hosts the in-memory mock and webhook capture, handles the OAuth2 authorization-code callback. Exposes `/api/openapi.json` and a Scalar UI at `/api/docs`. |
+| **Executor** | `executor/` | Network correctness in Go: HTTP/2, timing, redirects, mTLS, custom CAs, WebSocket lifecycle (`gorilla/websocket`), gRPC reflection (v1/v1alpha), unary + streaming, gRPC-Web, SSRF guard, NTLM auth. Speaks gRPC to the server (contract: `proto/executor.proto`). |
 
 The browser is the source of truth for workspace data. The server and executor only see resolved requests at execution time.
 
@@ -67,7 +67,7 @@ To run services in separate terminals:
 
 ```bash
 pnpm executor:dev   # Go executor on :50051
-pnpm dev:server     # Bun + Hono server on :4000
+pnpm dev:server     # Bun + Effect HttpApi server on :4000
 pnpm dev:ui         # Vite UI on :3000
 ```
 
@@ -104,7 +104,7 @@ The SSRF guard is opt-in. The server middleware (`INVOKE_SSRF_GUARD`) does a hos
 │   └── internal/executorpb/        Generated protobuf code (checked in)
 ├── packages/
 │   ├── core/                       Browser-safe TypeScript engine
-│   ├── server/                     Hono server (Bun runtime)
+│   ├── server/                     Effect HttpApi server (Bun runtime)
 │   └── ui/                         React + Vite app
 ├── proto/executor.proto            Executor gRPC contract
 ├── tests/e2e/                      Playwright tests + dev-server.mjs orchestrator
@@ -127,11 +127,13 @@ Root scripts (Turbo orchestrates `build`, `test`, `lint`, `e2e`):
 | `pnpm dev:all` | Executor + server + UI |
 | `pnpm build` | Build all packages |
 | `pnpm test` | Run package tests |
-| `pnpm lint` | Lint all packages |
+| `pnpm lint` | `oxlint` across the workspace |
+| `pnpm lint:fix` | `oxlint --fix` |
 | `pnpm e2e` | Build, then run Playwright with the full stack |
 | `pnpm executor:test` | `cd executor && go test ./...` |
 | `pnpm proto:generate` | `buf generate` |
-| `pnpm format` | `prettier --write .` |
+| `pnpm format` | `oxfmt` |
+| `pnpm format:check` | `oxfmt --check` |
 
 Per-package commands are also available:
 
@@ -153,7 +155,7 @@ pnpm e2e
 pnpm executor:test
 ```
 
-`pnpm e2e` boots the full stack via [`tests/e2e/dev-server.mjs`](tests/e2e/dev-server.mjs): the Go executor, a local mock target API, the Hono server, and the Vite UI, each waited on by port before tests run.
+`pnpm e2e` boots the full stack via [`tests/e2e/dev-server.mjs`](tests/e2e/dev-server.mjs): the Go executor, a local mock target API, the Effect HttpApi server, and the Vite UI, each waited on by port before tests run.
 
 ## Protobuf
 

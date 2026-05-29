@@ -17,7 +17,8 @@ export function CommandSearchInput({
         ref={inputRef}
         value={query}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Search requests, environments, commands..."
+        placeholder="Search requests, environments, commands…"
+        aria-label="Search requests, environments, commands"
         className="flex-1 bg-transparent outline-none text-sm text-[var(--text-1)] placeholder-[var(--text-3)]"
       />
       <kbd className="text-2xs px-1.5 py-0.5 rounded bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-3)]">

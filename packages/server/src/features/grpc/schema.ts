@@ -1,5 +1,5 @@
-import { Schema } from "effect"
-import { headerSchema, tlsClientConfigSchema } from "../shared/schema.js"
+import { Schema } from "effect";
+import { headerSchema, tlsClientConfigSchema } from "../shared/schema.js";
 
 const grpcAuthSchema = Schema.optional(
   Schema.Struct({
@@ -12,7 +12,7 @@ const grpcAuthSchema = Schema.optional(
     apiKeyIn: Schema.optional(Schema.Literal("header", "query")),
     accessToken: Schema.optional(Schema.String),
   }),
-)
+);
 
 export const grpcReflectSchema = Schema.Struct({
   address: Schema.String.pipe(Schema.minLength(1)),
@@ -24,11 +24,24 @@ export const grpcReflectSchema = Schema.Struct({
   tlsClientConfig: tlsClientConfigSchema,
   auth: grpcAuthSchema,
   protosetBase64: Schema.optional(Schema.String),
-})
+});
 
 export const grpcExecuteSchema = Schema.Struct({
   ...grpcReflectSchema.fields,
   fullMethod: Schema.String.pipe(Schema.minLength(1)),
   bodyJson: Schema.optionalWith(Schema.String, { default: () => "{}" }),
   compression: Schema.optional(Schema.Literal("none", "gzip")),
-})
+});
+
+export const grpcStreamSendSchema = Schema.Struct({
+  streamId: Schema.String.pipe(Schema.minLength(1)),
+  bodyJson: Schema.optionalWith(Schema.String, { default: () => "{}" }),
+});
+
+export const grpcStreamCloseSchema = Schema.Struct({
+  streamId: Schema.String.pipe(Schema.minLength(1)),
+});
+
+export const grpcStreamEventsUrlParamsSchema = Schema.Struct({
+  streamId: Schema.String.pipe(Schema.minLength(1)),
+});

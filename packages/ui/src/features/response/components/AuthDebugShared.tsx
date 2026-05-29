@@ -14,12 +14,10 @@ export function Section({
   return (
     <section className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)]">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)]">
           {icon}
         </span>
-        <span className="text-xs font-semibold text-[var(--text-1)]">
-          {title}
-        </span>
+        <span className="text-xs font-semibold text-[var(--text-1)]">{title}</span>
         {meta && <div className="ml-auto">{meta}</div>}
       </div>
       {children}
@@ -39,8 +37,7 @@ export function Badge({
     ok: "border-[var(--ok)] bg-[var(--ok-bg)] text-[var(--ok)]",
     warn: "border-[var(--warn)] bg-[var(--warn-bg)] text-[var(--warn)]",
     danger: "border-[var(--danger)] bg-[var(--danger-bg)] text-[var(--danger)]",
-    accent:
-      "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]",
+    accent: "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]",
   };
 
   return (
@@ -52,15 +49,9 @@ export function Badge({
   );
 }
 
-export function EmptyState({
-  icon,
-  children,
-}: {
-  icon: ReactNode;
-  children: ReactNode;
-}) {
+export function EmptyState({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2 rounded border border-dashed border-[var(--border)] bg-[var(--surface-2)] px-3 py-3 text-xs text-[var(--text-3)]">
+    <div className="flex items-center gap-2 rounded border border-dashed border-[var(--border)] bg-[var(--surface-2)] p-3 text-xs text-[var(--text-3)]">
       <span className="text-[var(--text-3)]">{icon}</span>
       {children}
     </div>
@@ -79,9 +70,7 @@ export function Row({
   return (
     <div className="grid grid-cols-[minmax(7rem,10rem)_minmax(0,1fr)] gap-3 border-b border-[var(--border)] px-3 py-2.5 last:border-0">
       <span className="text-2xs font-medium text-[var(--text-3)]">{label}</span>
-      <span
-        className={`min-w-0 break-all text-xs text-[var(--text-1)] ${mono ? "font-mono" : ""}`}
-      >
+      <span className={`min-w-0 break-all text-xs text-[var(--text-1)] ${mono ? "font-mono" : ""}`}>
         {value}
       </span>
     </div>

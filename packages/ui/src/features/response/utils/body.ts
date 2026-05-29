@@ -3,8 +3,7 @@ import type { CodeEditorLang } from "../../../types";
 export function getBodyInfo(response: any, responsePretty: boolean) {
   const ct = response
     ? ((Array.isArray(response.headers)
-        ? response.headers.find((h: any) => h.key.toLowerCase() === "content-type")
-            ?.value
+        ? response.headers.find((h: any) => h.key.toLowerCase() === "content-type")?.value
         : "") ?? "")
     : "";
   const isJson = response
@@ -24,9 +23,7 @@ export function getBodyInfo(response: any, responsePretty: boolean) {
       ? "xml"
       : "text";
   const displayBody =
-    response && isJson && responsePretty
-      ? prettyBody(response.body)
-      : (response?.body ?? "");
+    response && isJson && responsePretty ? prettyBody(response.body) : (response?.body ?? "");
   return { isJson, lang, displayBody };
 }
 

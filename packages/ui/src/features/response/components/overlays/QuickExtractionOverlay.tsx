@@ -12,7 +12,8 @@ export function QuickExtractionOverlay({
   onConfirm: (draft: ExtractionDraft) => void;
   onClose: () => void;
 }) {
-  const [current, setCurrent] = useState(draft);
+  const [edits, setEdits] = useState<Partial<ExtractionDraft>>({});
+  const current = { ...draft, ...edits };
   const needsExpression = current.source !== "status";
 
   return (
@@ -21,10 +22,11 @@ export function QuickExtractionOverlay({
         Quick extraction
       </span>
       <input
+        aria-label="Variable name"
         value={current.variableName}
         onChange={(event) =>
-          setCurrent((draft) => ({
-            ...draft,
+          setEdits((prev) => ({
+            ...prev,
             variableName: event.target.value,
           }))
         }
@@ -36,8 +38,8 @@ export function QuickExtractionOverlay({
           size="2xs"
           value={current.source}
           onChange={(event) =>
-            setCurrent((draft) => ({
-              ...draft,
+            setEdits((prev) => ({
+              ...prev,
               source: event.target.value as ExtractionSource,
             }))
           }
@@ -50,10 +52,11 @@ export function QuickExtractionOverlay({
         </Select>
         {needsExpression && (
           <input
+            aria-label="Extraction expression"
             value={current.expression}
             onChange={(event) =>
-              setCurrent((draft) => ({
-                ...draft,
+              setEdits((prev) => ({
+                ...prev,
                 expression: event.target.value,
               }))
             }
@@ -63,13 +66,10 @@ export function QuickExtractionOverlay({
         )}
       </div>
       <div className="flex gap-1.5 justify-end">
-        <button onClick={onClose} className="btn text-2xs py-0.5 px-2">
+        <button type="button" onClick={onClose} className="btn text-2xs py-0.5 px-2">
           Cancel
         </button>
-        <button
-          onClick={() => onConfirm(current)}
-          className="btn btn-primary text-2xs py-0.5 px-2"
-        >
+        <button type="button" onClick={() => onConfirm(current)} className="btn btn-primary text-2xs py-0.5 px-2">
           Add rule
         </button>
       </div>

@@ -1,0 +1,24 @@
+# oxfmt reads this file (Prettier convention) — controls files
+# excluded from `pnpm format` / `pnpm format:check`.
+#
+# Markdown is excluded because nested numbered + bulleted lists
+# get mangled into single-line continuations during reformat.
+
+*.md
+**/*.md
+
+# Generated / vendored
+**/dist/**
+**/node_modules/**
+**/.turbo/**
+**/coverage/**
+**/playwright-report/**
+**/test-results/**
+
+# Go executor (formatted by gofmt, not oxfmt)
+executor/**
+*.pb.go
+
+# Lockfiles
+pnpm-lock.yaml
+go.sum

@@ -21,6 +21,7 @@ export function CollectionRequestMenu({
       onClick={(event) => event.stopPropagation()}
     >
       <button
+        type="button"
         onClick={onToggle}
         className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
       >
@@ -31,11 +32,7 @@ export function CollectionRequestMenu({
           className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] py-1 min-w-[140px]"
           onClick={(event) => event.stopPropagation()}
         >
-          <CollectionMenuItem
-            icon={<Copy size={12} />}
-            label="Duplicate"
-            onClick={onDuplicate}
-          />
+          <CollectionMenuItem icon={<Copy size={12} />} label="Duplicate" onClick={onDuplicate} />
           <CollectionMenuItem
             icon={<Trash2 size={12} />}
             label="Delete"

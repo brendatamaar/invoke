@@ -16,8 +16,7 @@ import { useCodeSnippetGeneration } from "../../codegen/useCodeSnippetGeneration
 export function CodeTab() {
   const { codeTarget, request, grpcRequest, set } = useStore();
   const [copied, setCopied] = useState(false);
-  const [grpcTarget, setGrpcTarget] =
-    useState<GrpcCodeExportTarget>("grpc-grpcurl");
+  const [grpcTarget, setGrpcTarget] = useState<GrpcCodeExportTarget>("grpc-grpcurl");
   const [grpcSnippet, setGrpcSnippet] = useState("");
 
   const { data: codeSnippet = "", isFetching: codeLoading } = useCodeSnippetGeneration();
@@ -63,9 +62,7 @@ export function CodeTab() {
           <Select
             size="2xs"
             value={grpcTarget}
-            onChange={(e) =>
-              generateGrpc(e.target.value as GrpcCodeExportTarget)
-            }
+            onChange={(e) => generateGrpc(e.target.value as GrpcCodeExportTarget)}
             wrapperClassName="w-44"
           >
             {GRPC_CODE_EXPORT_TARGETS.map((t) => (
@@ -78,9 +75,7 @@ export function CodeTab() {
           <Select
             size="2xs"
             value={codeTarget}
-            onChange={(e) =>
-              set({ codeTarget: e.target.value as typeof codeTarget })
-            }
+            onChange={(e) => set({ codeTarget: e.target.value as typeof codeTarget })}
             wrapperClassName="w-44"
           >
             {visibleTargets.map((t) => (
@@ -91,27 +86,20 @@ export function CodeTab() {
           </Select>
         )}
         {codeLoading && !isGrpc && (
-          <span className="text-2xs text-[var(--text-3)]">Generating...</span>
+          <span className="text-2xs text-[var(--text-3)]">Generating{"\u2026"}</span>
         )}
         <button
+          type="button"
           onClick={copy}
           disabled={!displayCode}
           className="ml-auto p-1 text-[var(--text-3)] hover:text-[var(--text-1)] disabled:opacity-40"
           title="Copy to clipboard"
         >
-          {copied ? (
-            <Check size={13} className="text-[var(--ok)]" />
-          ) : (
-            <Copy size={13} />
-          )}
+          {copied ? <Check size={13} className="text-[var(--ok)]" /> : <Copy size={13} />}
         </button>
       </div>
       <div className="flex-1 overflow-auto">
-        <CodeEditor
-          value={displayCode}
-          lang={codeTarget === "curl" ? "text" : "text"}
-          readOnly
-        />
+        <CodeEditor value={displayCode} lang={codeTarget === "curl" ? "text" : "text"} readOnly />
       </div>
     </div>
   );

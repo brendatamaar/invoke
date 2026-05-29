@@ -40,9 +40,7 @@ export function DiffSelectors({
         onChange={onRightChange}
       />
       <div className="flex-1">
-        <label className="text-2xs text-[var(--text-3)] block mb-1">
-          Ignore paths
-        </label>
+        <label htmlFor="diff-ignore-paths" className="text-2xs text-[var(--text-3)] block mb-1">Ignore paths</label>
         <div className="flex flex-wrap gap-1 mb-1">
           {ignoreRules.map((rule) => (
             <span
@@ -51,6 +49,7 @@ export function DiffSelectors({
             >
               {rule.path}
               <button
+                type="button"
                 onClick={() => onRemoveIgnorePath(rule.id)}
                 className="text-[var(--text-3)] hover:text-[var(--danger)] ml-0.5"
               >
@@ -61,6 +60,8 @@ export function DiffSelectors({
         </div>
         <div className="flex gap-1">
           <input
+            id="diff-ignore-paths"
+            aria-label="Ignore path"
             value={newPath}
             onChange={(event) => onNewPathChange(event.target.value)}
             onKeyDown={(event) => {
@@ -70,6 +71,7 @@ export function DiffSelectors({
             className="input text-2xs py-0.5 flex-1 font-mono"
           />
           <button
+            type="button"
             onClick={() => onAddIgnorePath(newPath)}
             className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
           >
@@ -94,11 +96,9 @@ function HistorySelect({
 }) {
   return (
     <div className="flex-1">
-      <label className="text-2xs text-[var(--text-3)] block mb-1">
-        {label}
-      </label>
+      <label className="text-2xs text-[var(--text-3)] block mb-1">{label}</label>
       <Select value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">Select response...</option>
+        <option value="">Select response…</option>
         {history.map((entry) => (
           <option key={entry.id} value={entry.id}>
             {entryLabel(entry)}

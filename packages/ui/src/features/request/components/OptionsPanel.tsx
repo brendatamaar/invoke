@@ -1,18 +1,10 @@
 import { useStore } from "../../../store";
 import type { RequestDraft, RetryPolicy } from "@invoke/core";
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2">
-      <label className="w-36 shrink-0 text-xs text-[var(--text-2)]">
-        {label}
-      </label>
+      <label className="w-36 shrink-0 text-xs text-[var(--text-2)]">{label}</label>
       <div className="flex-1">{children}</div>
     </div>
   );
@@ -60,9 +52,8 @@ export function OptionsPanel() {
           min={0}
           step={1000}
           value={timeoutMs}
-          onChange={(e) =>
-            setRequest({ timeoutMs: Math.max(0, Number(e.target.value)) })
-          }
+          onChange={(e) => setRequest({ timeoutMs: Math.max(0, Number(e.target.value)) })}
+          aria-label="Timeout milliseconds"
           className="input w-28 py-1 text-xs"
         />
       </Field>
@@ -73,9 +64,8 @@ export function OptionsPanel() {
           <input
             type="checkbox"
             checked={retryEnabled}
-            onChange={(e) =>
-              updateRetry({ maxRetries: e.target.checked ? 3 : 0 })
-            }
+            onChange={(e) => updateRetry({ maxRetries: e.target.checked ? 3 : 0 })}
+            aria-label="Enable retry"
           />
         </Field>
         {retryEnabled && (
@@ -91,6 +81,7 @@ export function OptionsPanel() {
                     maxRetries: Math.max(1, Number(e.target.value)),
                   })
                 }
+                aria-label="Max retries"
                 className="input w-20 py-1 text-xs"
               />
             </Field>
@@ -105,6 +96,7 @@ export function OptionsPanel() {
                     backoffMs: Math.max(0, Number(e.target.value)),
                   })
                 }
+                aria-label="Backoff milliseconds"
                 className="input w-24 py-1 text-xs"
               />
             </Field>
@@ -114,9 +106,7 @@ export function OptionsPanel() {
                   <input
                     type="checkbox"
                     checked={policy.retryOn5xx}
-                    onChange={(e) =>
-                      updateRetry({ retryOn5xx: e.target.checked })
-                    }
+                    onChange={(e) => updateRetry({ retryOn5xx: e.target.checked })}
                   />
                   5xx errors
                 </label>
@@ -124,9 +114,7 @@ export function OptionsPanel() {
                   <input
                     type="checkbox"
                     checked={policy.retryOnTimeout}
-                    onChange={(e) =>
-                      updateRetry({ retryOnTimeout: e.target.checked })
-                    }
+                    onChange={(e) => updateRetry({ retryOnTimeout: e.target.checked })}
                   />
                   Timeout
                 </label>

@@ -1,10 +1,6 @@
-import {
-  graphQLToRequestConfig,
-  type GraphQLRequestConfig,
-  type RequestDraft,
-} from "@invoke/core";
+import { graphQLToRequestConfig, type GraphQLRequestConfig, type RequestDraft } from "@invoke/core";
 import type { AppState, GraphQLFileUpload } from "../../../types";
-import { extractRequiredVarNames } from "../../graphql";
+import { extractRequiredVarNames } from "../../graphql/utils/query";
 
 export function buildGraphQLExecutionRequest({
   request,
@@ -27,8 +23,7 @@ export function buildGraphQLExecutionRequest({
   }
 
   const missingVars = extractRequiredVarNames(graphqlRequest.query ?? "").filter(
-    (name) =>
-      !(name in parsedVariables.value) || parsedVariables.value[name] === null,
+    (name) => !(name in parsedVariables.value) || parsedVariables.value[name] === null,
   );
   if (missingVars.length > 0) {
     addToast(

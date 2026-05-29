@@ -29,7 +29,8 @@ export function FlowNode({
       ? "border-[var(--accent)]"
       : "border-[var(--border)]";
   return (
-    <div
+    <button
+      type="button"
       style={{
         position: "absolute",
         left: position.x,
@@ -39,15 +40,13 @@ export function FlowNode({
         cursor: "grab",
         userSelect: "none",
       }}
-      className={`bg-[var(--surface)] rounded-md border-2 shadow-sm flex flex-col px-3 py-2 gap-0.5 ${statusColor} ${selected ? "shadow-md" : ""}`}
+      className={`bg-[var(--surface)] rounded-md border-2 shadow-sm flex flex-col px-3 py-2 gap-0.5 text-left ${statusColor} ${selected ? "shadow-md" : ""}`}
       onMouseDown={(event) => onMouseDown(event, step.id)}
       onClick={() => onSelect(index)}
     >
       <div className="flex items-center gap-1.5">
         <div className={`w-2 h-2 rounded-full shrink-0 ${STEP_COLORS[step.type]}`} />
-        <span className="text-2xs text-[var(--text-3)] uppercase tracking-wide">
-          {step.type}
-        </span>
+        <span className="text-2xs text-[var(--text-3)] uppercase tracking-wide">{step.type}</span>
         {stepResult &&
           (stepResult.status === "passed" ? (
             <CheckCircle2 size={10} className="ml-auto text-[var(--ok)]" />
@@ -55,9 +54,7 @@ export function FlowNode({
             <XCircle size={10} className="ml-auto text-[var(--danger)]" />
           ))}
       </div>
-      <div className="text-xs font-medium text-[var(--text-1)] truncate">
-        {step.name}
-      </div>
+      <div className="text-xs font-medium text-[var(--text-1)] truncate">{step.name}</div>
       {step.type === "request" && (
         <div className="text-2xs text-[var(--text-3)] truncate">
           {step.request.method} {step.request.url || "-"}
@@ -69,10 +66,9 @@ export function FlowNode({
       {stepResult?.response?.status && (
         <div className="flex items-center gap-1 text-2xs text-[var(--text-3)]">
           <Clock size={9} />
-          {stepResult.completedAt - stepResult.startedAt}ms -{" "}
-          {stepResult.response.status}
+          {stepResult.completedAt - stepResult.startedAt}ms - {stepResult.response.status}
         </div>
       )}
-    </div>
+    </button>
   );
 }

@@ -1,16 +1,10 @@
-import { useState } from "react";
-import {
-  Cpu,
-  MoreHorizontal,
-  Pin,
-  PinOff,
-  Tag,
-  Trash2,
-} from "lucide-react";
+import { useRef, useState } from "react";
+import { Cpu, MoreHorizontal, Pin, PinOff, Tag, Trash2 } from "lucide-react";
 import type { HistoryEntry } from "@invoke/core";
-import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
+import { MethodBadge } from "../../../components/shared/MethodBadge";
+import { protocolMethod } from "../../../components/shared/methodUtils";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
-import { CollectionMenuItem } from "../../collections";
+import { CollectionMenuItem } from "../../collections/components/CollectionMenuItem";
 
 export function HistoryItem({
   entry,
@@ -31,58 +25,63 @@ export function HistoryItem({
   const [menuOpen, setMenuOpen] = useState(false);
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(entry.label ?? "");
+  const labelInputRef = useRef<HTMLInputElement>(null);
+
+  const startEditingLabel = () => {
+    setLabelDraft(entry.label ?? "");
+    setEditingLabel(true);
+    requestAnimationFrame(() => labelInputRef.current?.focus());
+  };
 
   return (
-    <div
-      className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-b border-[var(--border)] cursor-pointer"
-      onClick={() => restore(entry)}
-    >
-      <MethodBadge method={protocolMethod(entry.protocol, request?.method)} />
-      <div className="flex-1 min-w-0">
-        <span
-          className="block text-xs font-mono text-[var(--text-1)] truncate"
-          title={request?.url}
-        >
-          {request?.url ?? "-"}
-        </span>
-        {editingLabel ? (
-          <input
-            autoFocus
-            value={labelDraft}
-            onChange={(event) => setLabelDraft(event.target.value)}
-            onBlur={() => {
+    <div className="group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-b border-[var(--border)]">
+      <button
+        type="button"
+        className="flex flex-1 items-center gap-2 cursor-pointer text-left min-w-0"
+        onClick={() => restore(entry)}
+      >
+        <MethodBadge method={protocolMethod(entry.protocol, request?.method)} />
+        <div className="flex-1 min-w-0">
+          <span
+            className="block text-xs font-mono text-[var(--text-1)] truncate"
+            title={request?.url}
+          >
+            {request?.url ?? "-"}
+          </span>
+          {entry.label && !editingLabel && (
+            <span className="text-2xs text-[var(--accent)] truncate">{entry.label}</span>
+          )}
+        </div>
+        <StatusBadge status={entry.response?.status ?? 0} />
+        {entry.pinned && <Pin size={11} className="text-[var(--accent)] shrink-0" />}
+      </button>
+      {editingLabel && (
+        <input
+          ref={labelInputRef}
+          aria-label="Edit history label"
+          value={labelDraft}
+          onChange={(event) => setLabelDraft(event.target.value)}
+          onBlur={() => {
+            setEditingLabel(false);
+            onLabel(entry, labelDraft.trim());
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
               setEditingLabel(false);
               onLabel(entry, labelDraft.trim());
-            }}
-            onKeyDown={(event) => {
-              event.stopPropagation();
-              if (event.key === "Enter") {
-                setEditingLabel(false);
-                onLabel(entry, labelDraft.trim());
-              }
-              if (event.key === "Escape") setEditingLabel(false);
-            }}
-            onClick={(event) => event.stopPropagation()}
-            placeholder="Add label..."
-            className="input text-xs py-0 px-1 w-32 mt-0.5"
-          />
-        ) : entry.label ? (
-          <span className="text-2xs text-[var(--accent)] truncate">
-            {entry.label}
-          </span>
-        ) : null}
-      </div>
-      <StatusBadge status={entry.response?.status ?? 0} />
-      {entry.pinned && (
-        <Pin size={11} className="text-[var(--accent)] shrink-0" />
+            }
+            if (event.key === "Escape") setEditingLabel(false);
+          }}
+          placeholder="Add label..."
+          className="input text-xs py-0 px-1 w-32 mt-0.5"
+        />
       )}
       <HistoryItemMenu
         entry={entry}
         open={menuOpen}
         onOpenChange={setMenuOpen}
         onEditLabel={() => {
-          setLabelDraft(entry.label ?? "");
-          setEditingLabel(true);
+          startEditingLabel();
         }}
         onDelete={onDelete}
         onPin={onPin}
@@ -111,10 +110,12 @@ function HistoryItemMenu({
 }) {
   return (
     <div
+      role="presentation"
       className="opacity-0 group-hover:opacity-100 relative shrink-0"
       onClick={(event) => event.stopPropagation()}
     >
       <button
+        type="button"
         onClick={() => onOpenChange(!open)}
         className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
       >

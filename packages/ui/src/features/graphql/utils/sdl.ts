@@ -6,10 +6,7 @@ import {
   parse as gqlParse,
   printSchema,
 } from "graphql";
-import {
-  parseGraphQLIntrospection,
-  type GraphQLIntrospectionSchema,
-} from "@invoke/core";
+import { parseGraphQLIntrospection, type GraphQLIntrospectionSchema } from "@invoke/core";
 
 export function schemaToSDL(schema: GraphQLIntrospectionSchema): string {
   try {
@@ -20,9 +17,7 @@ export function schemaToSDL(schema: GraphQLIntrospectionSchema): string {
   }
 }
 
-export function sdlToIntrospectionSchema(
-  sdl: string,
-): GraphQLIntrospectionSchema {
+export function sdlToIntrospectionSchema(sdl: string): GraphQLIntrospectionSchema {
   const schema = buildASTSchema(gqlParse(sdl));
   const result = graphqlSync({
     schema,

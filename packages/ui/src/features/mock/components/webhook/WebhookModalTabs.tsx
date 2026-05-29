@@ -16,6 +16,7 @@ export function WebhookModalTabs({
     >
       {(["config", "history"] as const).map((tab) => (
         <button
+          type="button"
           key={tab}
           onClick={() => onSelect(tab)}
           className="flex items-center gap-1.5 px-1 py-2.5 mr-4"
@@ -23,10 +24,7 @@ export function WebhookModalTabs({
             fontSize: "var(--t-xs)",
             fontWeight: 500,
             color: activeTab === tab ? "var(--fg-0)" : "var(--fg-3)",
-            borderBottom:
-              activeTab === tab
-                ? "2px solid var(--accent)"
-                : "2px solid transparent",
+            borderBottom: activeTab === tab ? "2px solid var(--accent)" : "2px solid transparent",
             marginBottom: -1,
             textTransform: "capitalize",
             transition: "color var(--dur-fast)",
@@ -37,7 +35,7 @@ export function WebhookModalTabs({
             <span
               className="font-mono"
               style={{
-                fontSize: 10,
+                fontSize: 12,
                 background: "var(--bg-3)",
                 color: "var(--fg-2)",
                 borderRadius: "var(--r-2)",

@@ -14,6 +14,7 @@ export function AddStepControls({
   if (!adding) {
     return (
       <button
+        type="button"
         onClick={() => onAddingChange(true)}
         className="flex items-center gap-1.5 text-xs text-[var(--text-3)] hover:text-[var(--text-1)] bg-[var(--surface)] border border-[var(--border)] rounded px-2.5 py-1.5 shadow-sm"
       >
@@ -25,6 +26,7 @@ export function AddStepControls({
     <div className="flex gap-1">
       {FLOW_STEP_TYPES.map((type) => (
         <button
+          type="button"
           key={type}
           onClick={() => {
             onAddStep(type);
@@ -37,6 +39,7 @@ export function AddStepControls({
         </button>
       ))}
       <button
+        type="button"
         onClick={() => onAddingChange(false)}
         className="text-2xs px-2 py-1 text-[var(--text-3)]"
       >

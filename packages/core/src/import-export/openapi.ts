@@ -37,40 +37,19 @@ export async function importOpenApiSpec(
       updatedAt: now,
     };
     const environments = environmentsFromServers(doc, now);
-    const serverUrl =
-      environments.length > 0 ? "{{base_url}}" : normalizeServerUrl("");
+    const serverUrl = environments.length > 0 ? "{{base_url}}" : normalizeServerUrl("");
     const foldersByTag = new Map<string, Folder>();
     const requests: SavedRequest[] = [];
-    const methods = new Set([
-      "get",
-      "post",
-      "put",
-      "patch",
-      "delete",
-      "head",
-      "options",
-    ]);
+    const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options"]);
 
     for (const [rawPath, pathItem] of Object.entries(doc.paths ?? {})) {
       if (!pathItem || typeof pathItem !== "object") continue;
-      for (const [rawMethod, operation] of Object.entries(
-        pathItem as Record<string, any>,
-      )) {
-        if (
-          !methods.has(rawMethod) ||
-          !operation ||
-          typeof operation !== "object"
-        )
-          continue;
+      for (const [rawMethod, operation] of Object.entries(pathItem as Record<string, any>)) {
+        if (!methods.has(rawMethod) || !operation || typeof operation !== "object") continue;
 
         const tag = operation.tags?.[0] ? String(operation.tags[0]) : "";
         const folder = tag
-          ? folderForTag(
-              collection.id,
-              foldersByTag,
-              tag,
-              now + foldersByTag.size,
-            )
+          ? folderForTag(collection.id, foldersByTag, tag, now + foldersByTag.size)
           : undefined;
         const parameters = [
           ...((pathItem as any).parameters ?? []),
@@ -97,11 +76,7 @@ export async function importOpenApiSpec(
             })),
           bodyMode: operation.requestBody ? "json" : "none",
           body: operation.requestBody
-            ? JSON.stringify(
-                exampleFromRequestBody(operation.requestBody),
-                null,
-                2,
-              )
+            ? JSON.stringify(exampleFromRequestBody(operation.requestBody), null, 2)
             : "",
           timeoutMs: 30000,
         });
@@ -109,10 +84,7 @@ export async function importOpenApiSpec(
           id: id(),
           collectionId: collection.id,
           folderId: folder?.id ?? null,
-          name:
-            operation.operationId ??
-            operation.summary ??
-            `${request.method} ${rawPath}`,
+          name: operation.operationId ?? operation.summary ?? `${request.method} ${rawPath}`,
           protocol: "rest",
           request,
           sortOrder: now + requests.length,
@@ -143,12 +115,7 @@ export function exportCollectionAsOpenApi(
     (r) => r.collectionId === collection.id && r.protocol === "rest",
   );
 
-  const SKIP_HEADERS = new Set([
-    "content-type",
-    "accept",
-    "authorization",
-    "content-length",
-  ]);
+  const SKIP_HEADERS = new Set(["content-type", "accept", "authorization", "content-length"]);
 
   const paths: Record<string, Record<string, unknown>> = {};
 
@@ -167,9 +134,7 @@ export function exportCollectionAsOpenApi(
     const method = req.method.toLowerCase();
     if (!paths[urlPath]) paths[urlPath] = {};
 
-    const folderName = saved.folderId
-      ? foldersById.get(saved.folderId)?.name
-      : undefined;
+    const folderName = saved.folderId ? foldersById.get(saved.folderId)?.name : undefined;
 
     const pathParams = pathParameterNames(urlPath);
     const parameters: unknown[] = pathParams.map((name) => ({
@@ -191,8 +156,7 @@ export function exportCollectionAsOpenApi(
     );
 
     for (const h of (req.headers ?? []).filter(
-      (h) =>
-        h.enabled !== false && h.key && !SKIP_HEADERS.has(h.key.toLowerCase()),
+      (h) => h.enabled !== false && h.key && !SKIP_HEADERS.has(h.key.toLowerCase()),
     )) {
       parameters.push({
         name: h.key,
@@ -244,9 +208,7 @@ export function exportCollectionAsOpenApi(
     openapi: "3.0.3",
     info: {
       title: collection.name,
-      ...(collection.description
-        ? { description: collection.description }
-        : {}),
+      ...(collection.description ? { description: collection.description } : {}),
       version: "1.0.0",
     },
     ...(tagNames.length ? { tags: tagNames.map((name) => ({ name })) } : {}),
@@ -269,9 +231,7 @@ function openApiOperationId(name: string, method: HttpMethod, path: string) {
     .replace(/\{\{?([^}]+)\}?\}/g, "$1")
     .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr: string) => chr.toUpperCase())
     .replace(/^[^a-zA-Z]+/, "");
-  return base
-    ? `${base[0].toLowerCase()}${base.slice(1)}`
-    : method.toLowerCase();
+  return base ? `${base[0].toLowerCase()}${base.slice(1)}` : method.toLowerCase();
 }
 
 function openApiBodyExample(request: RequestConfig) {
@@ -286,9 +246,7 @@ function openApiBodyExample(request: RequestConfig) {
     try {
       const rows = JSON.parse(request.body) as KeyValue[];
       return Object.fromEntries(
-        rows
-          .filter((row) => row.enabled !== false && row.key)
-          .map((row) => [row.key, row.value]),
+        rows.filter((row) => row.enabled !== false && row.key).map((row) => [row.key, row.value]),
       );
     } catch {
       return request.body;
@@ -305,14 +263,10 @@ function normalizeServerUrl(value: string) {
 function environmentsFromServers(doc: any, now: number): Environment[] {
   const servers = Array.isArray(doc.servers) ? doc.servers : [];
   return servers
-    .filter(
-      (server: any) => typeof server?.url === "string" && server.url.trim(),
-    )
+    .filter((server: any) => typeof server?.url === "string" && server.url.trim())
     .map((server: any, index: number) => ({
       id: id(),
-      name:
-        server.description ||
-        `${doc.info?.title ?? "OpenAPI"} server ${index + 1}`,
+      name: server.description || `${doc.info?.title ?? "OpenAPI"} server ${index + 1}`,
       variables: [
         {
           key: "base_url",
@@ -326,10 +280,7 @@ function environmentsFromServers(doc: any, now: number): Environment[] {
 }
 
 function pathWithVariables(path: string) {
-  return path.replace(
-    /\{([^}]+)\}/g,
-    (_match, name: string) => `{{${name.trim()}}}`,
-  );
+  return path.replace(/\{([^}]+)\}/g, (_match, name: string) => `{{${name.trim()}}}`);
 }
 
 function folderForTag(
@@ -358,18 +309,11 @@ function folderForTag(
 function exampleFromRequestBody(requestBody: any) {
   const content = requestBody?.content ?? {};
   const json = content["application/json"] ?? Object.values(content)[0];
-  const firstExample = Object.values(json?.examples ?? {})[0] as
-    | { value?: unknown }
-    | undefined;
-  return (
-    json?.example ?? firstExample?.value ?? exampleFromSchema(json?.schema)
-  );
+  const firstExample = Object.values(json?.examples ?? {})[0] as { value?: unknown } | undefined;
+  return json?.example ?? firstExample?.value ?? exampleFromSchema(json?.schema);
 }
 
-function exampleFromSchema(
-  schema: any,
-  stack = new WeakSet<object>(),
-): unknown {
+function exampleFromSchema(schema: any, stack = new WeakSet<object>()): unknown {
   if (!schema || typeof schema !== "object") return {};
   if (stack.has(schema)) return {};
   stack.add(schema);
@@ -388,9 +332,7 @@ function exampleFromSchema(
         exampleFromSchema(property, stack),
       ]),
     );
-    const type =
-      schema.type ??
-      (schema.properties || allOfExamples.length ? "object" : undefined);
+    const type = schema.type ?? (schema.properties || allOfExamples.length ? "object" : undefined);
 
     if (type === "object") {
       return mergeExampleObjects([...allOfExamples, ownProperties]);
@@ -424,18 +366,10 @@ function firstDefined(values: unknown[]) {
 }
 
 function assertOpenApiDocument(doc: any) {
-  if (
-    !isPlainObject(doc) ||
-    typeof doc.openapi !== "string" ||
-    !doc.openapi.startsWith("3.")
-  ) {
+  if (!isPlainObject(doc) || typeof doc.openapi !== "string" || !doc.openapi.startsWith("3.")) {
     throw new Error("Only OpenAPI 3.x documents are supported");
   }
-  if (
-    !isPlainObject(doc.info) ||
-    typeof doc.info.title !== "string" ||
-    !doc.info.title.trim()
-  ) {
+  if (!isPlainObject(doc.info) || typeof doc.info.title !== "string" || !doc.info.title.trim()) {
     throw new Error("OpenAPI document is missing required info.title");
   }
   if (!isPlainObject(doc.paths)) {

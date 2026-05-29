@@ -30,6 +30,7 @@ export function WebSocketBarActions({
       )}
       {state === "connected" && (
         <button
+          type="button"
           onClick={() => onSendPing(activeSession.id)}
           title="Send ping and measure RTT"
           className="p-1 text-[var(--text-3)] hover:text-[var(--text-1)] rounded shrink-0"
@@ -39,6 +40,7 @@ export function WebSocketBarActions({
       )}
       {state === "connected" && (
         <button
+          type="button"
           onClick={() => onDisconnect(activeSession.id)}
           className="btn btn-danger text-xs gap-1"
         >
@@ -47,6 +49,7 @@ export function WebSocketBarActions({
       )}
       {state === "connecting" && (
         <button
+          type="button"
           onClick={() => onCancelConnect(activeSession.id)}
           className="btn btn-danger text-xs gap-1"
         >
@@ -55,6 +58,7 @@ export function WebSocketBarActions({
       )}
       {state === "disconnected" && (
         <button
+          type="button"
           onClick={() => onConnect(activeSession.id)}
           className="btn btn-primary text-xs gap-1 shrink-0"
           title="Connect (Ctrl+Enter)"

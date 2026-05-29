@@ -7,13 +7,7 @@ import { useGraphQLQueryPanel } from "../hooks/useGraphQLQueryPanel";
 
 export function GraphQLQueryPanel() {
   const model = useGraphQLQueryPanel();
-  const {
-    graphqlRequest,
-    setGraphqlRequest,
-    graphqlSchema,
-    request,
-    subscription,
-  } = model;
+  const { graphqlRequest, setGraphqlRequest, graphqlSchema, request, subscription } = model;
 
   return (
     <div className="flex flex-col h-full">
@@ -30,9 +24,7 @@ export function GraphQLQueryPanel() {
         onToggleExplorer={() => model.setSchemaExplorerOpen((v) => !v)}
         onPrettify={model.handlePrettify}
         onCopyCurl={model.copyCurl}
-        onOperationName={(operationName) =>
-          setGraphqlRequest({ operationName })
-        }
+        onOperationName={(operationName) => setGraphqlRequest({ operationName })}
         onSubscribe={() =>
           subscription.subscribe({
             url: request.url,

@@ -3,9 +3,7 @@ import type { HttpMethod, RequestConfig } from "../types";
 
 export function parseCurl(command: string): Partial<RequestConfig> {
   const tokens =
-    command
-      .match(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"']+/g)
-      ?.map(stripQuotes) ?? [];
+    command.match(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"']+/g)?.map(stripQuotes) ?? [];
   const request = emptyRequest();
   if (tokens[0] !== "curl") return {};
   for (let i = 1; i < tokens.length; i += 1) {
@@ -19,9 +17,7 @@ export function parseCurl(command: string): Partial<RequestConfig> {
         value: rest.join(":").trim(),
         enabled: true,
       });
-    } else if (
-      ["-d", "--data", "--data-raw", "--data-binary"].includes(token)
-    ) {
+    } else if (["-d", "--data", "--data-raw", "--data-binary"].includes(token)) {
       request.method = request.method === "GET" ? "POST" : request.method;
       request.bodyMode = "raw";
       request.body = tokens[++i] ?? "";
@@ -29,9 +25,7 @@ export function parseCurl(command: string): Partial<RequestConfig> {
       request.url = token;
     }
   }
-  const authHeader = request.headers.find(
-    (header) => header.key.toLowerCase() === "authorization",
-  );
+  const authHeader = request.headers.find((header) => header.key.toLowerCase() === "authorization");
   if (authHeader?.value.toLowerCase().startsWith("bearer ")) {
     request.auth = { type: "bearer", token: authHeader.value.slice(7) };
   }

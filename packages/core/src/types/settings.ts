@@ -17,10 +17,7 @@ export interface ProtocolNetworkDefaults {
   options: NetworkOptions;
 }
 
-export type DefaultProtocolOptions = Record<
-  RequestProtocol,
-  ProtocolNetworkDefaults
->;
+export type DefaultProtocolOptions = Record<RequestProtocol, ProtocolNetworkDefaults>;
 
 export const INITIAL_PROTOCOL_DEFAULTS: DefaultProtocolOptions = {
   rest: {

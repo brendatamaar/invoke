@@ -28,10 +28,7 @@ export async function executeWithAPQ(
 
   if (!isPersistedQueryNotFound(probe.body)) return probe;
 
-  return executeWithRetry(
-    { ...request, body: JSON.stringify({ ...body, extensions }) },
-    signal,
-  );
+  return executeWithRetry({ ...request, body: JSON.stringify({ ...body, extensions }) }, signal);
 }
 
 async function computeQueryHash(query: string): Promise<string> {

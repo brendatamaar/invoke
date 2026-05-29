@@ -157,9 +157,7 @@ describe("response processing", () => {
       deletions: 0,
       changes: 1,
     });
-    expect(diff.changes.map((change) => change.path)).toContain(
-      "body.users[0].email",
-    );
+    expect(diff.changes.map((change) => change.path)).toContain("body.users[0].email");
   });
 
   it("does not report object key order as a structural diff", () => {

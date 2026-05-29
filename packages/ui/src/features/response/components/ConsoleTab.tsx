@@ -1,15 +1,7 @@
 import { AlertCircle, Terminal } from "lucide-react";
 import { useStore } from "../../../store";
 
-function LogSection({
-  label,
-  logs,
-  error,
-}: {
-  label: string;
-  logs: string[];
-  error?: string;
-}) {
+function LogSection({ label, logs, error }: { label: string; logs: string[]; error?: string }) {
   if (!logs.length && !error) return null;
   return (
     <div className="flex flex-col gap-1.5">
@@ -19,8 +11,8 @@ function LogSection({
       </span>
       {logs.length > 0 && (
         <div className="rounded border border-[var(--border)] bg-[var(--surface-2)] p-2.5 flex flex-col gap-0.5">
-          {logs.map((log, i) => (
-            <div key={i} className="text-2xs font-mono text-[var(--text-1)] break-all">
+          {logs.map((log) => (
+            <div key={log} className="text-2xs font-mono text-[var(--text-1)] break-all">
               {log}
             </div>
           ))}

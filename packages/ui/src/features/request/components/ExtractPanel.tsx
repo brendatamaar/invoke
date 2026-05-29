@@ -26,11 +26,10 @@ export function ExtractPanel() {
       {extractRules.length > 0 && <ExtractHeader />}
       {extractRules.map((rule, index) => {
         const source = rule.source ?? "body";
-        const exprPlaceholder =
-          source === "header" ? "Header-Name" : "$.path.to.value";
+        const exprPlaceholder = source === "header" ? "Header-Name" : "$.path.to.value";
         return (
           <div
-            key={index}
+            key={`${rule.variableName}-${rule.source}-${index}`}
             className="flex items-center gap-2 border border-[var(--border)] rounded p-2"
           >
             <div className="w-32 shrink-0">
@@ -38,6 +37,7 @@ export function ExtractPanel() {
                 value={rule.variableName ?? ""}
                 onChange={(e) => update(index, { variableName: e.target.value })}
                 placeholder="variableName"
+                aria-label="Variable name"
                 className="input py-0.5 text-2xs font-mono"
               />
             </div>
@@ -60,15 +60,15 @@ export function ExtractPanel() {
                   value={rule.expression ?? ""}
                   onChange={(e) => update(index, { expression: e.target.value })}
                   placeholder={exprPlaceholder}
+                  aria-label="Expression"
                   className="input py-0.5 text-2xs font-mono"
                 />
               ) : (
-                <span className="text-2xs text-[var(--text-3)] px-2">
-                  no expression needed
-                </span>
+                <span className="text-2xs text-[var(--text-3)] px-2">no expression needed</span>
               )}
             </div>
             <button
+              type="button"
               onClick={() => remove(index)}
               className="shrink-0 text-[var(--text-3)] hover:text-[var(--danger)]"
             >
@@ -77,7 +77,7 @@ export function ExtractPanel() {
           </div>
         );
       })}
-      <button onClick={add} className="btn text-xs self-start">
+      <button type="button" onClick={add} className="btn text-xs self-start">
         + Add rule
       </button>
     </div>
@@ -87,12 +87,8 @@ export function ExtractPanel() {
 function ExtractHeader() {
   return (
     <div className="flex items-center gap-2 px-2">
-      <span className="w-32 shrink-0 text-2xs text-[var(--text-3)]">
-        Variable
-      </span>
-      <span className="w-24 shrink-0 text-2xs text-[var(--text-3)]">
-        Source
-      </span>
+      <span className="w-32 shrink-0 text-2xs text-[var(--text-3)]">Variable</span>
+      <span className="w-24 shrink-0 text-2xs text-[var(--text-3)]">Source</span>
       <span className="flex-1 text-2xs text-[var(--text-3)]">Expression</span>
     </div>
   );

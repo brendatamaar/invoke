@@ -12,12 +12,12 @@ export function prettifyQuery(query: string): { result: string; error?: string }
 export function extractOperations(query: string): ParsedOperation[] {
   try {
     const ast = gqlParse(query);
-    return ast.definitions
-      .filter((d) => d.kind === "OperationDefinition")
-      .map((d) => ({
-        name: (d as any).name?.value ?? null,
-        kind: (d as any).operation ?? "query",
-      }));
+    return ast.definitions.reduce<ParsedOperation[]>((acc, d) => {
+      if (d.kind === "OperationDefinition") {
+        acc.push({ name: (d as any).name?.value ?? null, kind: (d as any).operation ?? "query" });
+      }
+      return acc;
+    }, []);
   } catch {
     return [];
   }
@@ -26,13 +26,14 @@ export function extractOperations(query: string): ParsedOperation[] {
 export function extractQueryVarDefs(query: string): string[] {
   try {
     const ast = gqlParse(query);
-    return ast.definitions
-      .filter((d) => d.kind === "OperationDefinition")
-      .flatMap((d) =>
-        ((d as any).variableDefinitions ?? []).map(
-          (v: any) => v.variable.name.value as string,
-        ),
-      );
+    return ast.definitions.reduce<string[]>((acc, d) => {
+      if (d.kind === "OperationDefinition") {
+        for (const v of ((d as any).variableDefinitions ?? [])) {
+          acc.push(v.variable.name.value as string);
+        }
+      }
+      return acc;
+    }, []);
   } catch {
     return [];
   }
@@ -41,11 +42,16 @@ export function extractQueryVarDefs(query: string): string[] {
 export function extractRequiredVarNames(query: string): string[] {
   try {
     const ast = gqlParse(query);
-    return ast.definitions
-      .filter((d) => d.kind === "OperationDefinition")
-      .flatMap((d) => (d as any).variableDefinitions ?? [])
-      .filter((v: any) => v.type.kind === "NonNullType" && !v.defaultValue)
-      .map((v: any) => v.variable.name.value as string);
+    return ast.definitions.reduce<string[]>((acc, d) => {
+      if (d.kind === "OperationDefinition") {
+        for (const v of ((d as any).variableDefinitions ?? [])) {
+          if (v.type.kind === "NonNullType" && !v.defaultValue) {
+            acc.push(v.variable.name.value as string);
+          }
+        }
+      }
+      return acc;
+    }, []);
   } catch {
     return [];
   }

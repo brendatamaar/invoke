@@ -37,9 +37,8 @@ export function RetryPanel() {
               min={1}
               max={10}
               value={policy.maxRetries}
-              onChange={(e) =>
-                update({ maxRetries: Math.max(1, Number(e.target.value)) })
-              }
+              onChange={(e) => update({ maxRetries: Math.max(1, Number(e.target.value)) })}
+              aria-label="Max retries"
               className="input text-xs py-1 w-20"
             />
           </Field>
@@ -49,9 +48,8 @@ export function RetryPanel() {
               min={0}
               step={100}
               value={policy.backoffMs}
-              onChange={(e) =>
-                update({ backoffMs: Math.max(0, Number(e.target.value)) })
-              }
+              onChange={(e) => update({ backoffMs: Math.max(0, Number(e.target.value)) })}
+              aria-label="Backoff milliseconds"
               className="input text-xs py-1 w-24"
             />
           </Field>
@@ -76,8 +74,7 @@ export function RetryPanel() {
             </div>
           </Field>
           <p className="text-2xs text-[var(--text-3)]">
-            Backoff doubles each retry. Total wait approx {retryWait(policy)}ms
-            max.
+            Backoff doubles each retry. Total wait approx {retryWait(policy)}ms max.
           </p>
         </>
       )}

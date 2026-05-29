@@ -21,19 +21,17 @@ export function HelpModal() {
   const close = () => set({ showHelp: false });
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={close}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <button type="button" className="absolute inset-0 bg-black/40" onClick={close} aria-label="Close" />
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
+        className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 460 }}
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
           <Keyboard size={15} className="text-[var(--accent)]" />
           <span className="text-sm font-semibold">Help</span>
           <button
+            type="button"
             onClick={close}
             className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
           >
@@ -64,13 +62,8 @@ export function HelpModal() {
             </p>
             <ul className="flex flex-col gap-1.5">
               {TIPS.map((tip) => (
-                <li
-                  key={tip}
-                  className="text-xs text-[var(--text-2)] flex gap-2"
-                >
-                  <span className="text-[var(--accent)] shrink-0 mt-0.5">
-                    •
-                  </span>
+                <li key={tip} className="text-xs text-[var(--text-2)] flex gap-2">
+                  <span className="text-[var(--accent)] shrink-0 mt-0.5">•</span>
                   {tip}
                 </li>
               ))}
@@ -79,9 +72,7 @@ export function HelpModal() {
         </div>
 
         <div className="px-4 py-3 border-t border-[var(--border)]">
-          <p className="text-2xs text-[var(--text-3)]">
-            invoke — open-source API client
-          </p>
+          <p className="text-2xs text-[var(--text-3)]">invoke: open-source API client</p>
         </div>
       </div>
     </div>

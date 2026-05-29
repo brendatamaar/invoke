@@ -1,13 +1,6 @@
 import type { BodyMode, KeyValue, RequestDraft } from "@invoke/core";
 
-export const BODY_MODES: BodyMode[] = [
-  "none",
-  "json",
-  "form-data",
-  "urlencoded",
-  "raw",
-  "file",
-];
+export const BODY_MODES: BodyMode[] = ["none", "json", "form-data", "urlencoded", "raw", "file"];
 
 export function buildBodyModePatch(
   request: RequestDraft,
@@ -52,9 +45,9 @@ function rowsToJsonPatch(request: RequestDraft, bodyMode: BodyMode) {
     const rows = JSON.parse(request.body || "[]") as KeyValue[];
     if (Array.isArray(rows)) {
       const obj = Object.fromEntries(
-        rows
-          .filter((row) => row.enabled !== false && row.type !== "file")
-          .map((row) => [row.key, row.value]),
+        rows.flatMap((row) =>
+          row.enabled !== false && row.type !== "file" ? [[row.key, row.value]] : [],
+        ),
       );
       return { bodyMode, body: JSON.stringify(obj, null, 2) };
     }

@@ -38,10 +38,7 @@ export type ExecutorUnaryMethod =
   | "GrpcStreamClose"
   | "GrpcStreamPoll";
 
-export function grpcCall<T>(
-  method: ExecutorUnaryMethod,
-  payload: unknown,
-): Promise<T> {
+export function grpcCall<T>(method: ExecutorUnaryMethod, payload: unknown): Promise<T> {
   return grpcCallWithSignal(method, payload);
 }
 
@@ -55,13 +52,10 @@ export function grpcCallWithSignal<T>(
       reject(Object.assign(new Error("cancelled"), { code: "CANCELLED" }));
       return;
     }
-    const call = executorClient[method](
-      payload,
-      (error: grpc.ServiceError | null, response: T) => {
-        if (error) reject(error);
-        else resolveCall(response);
-      },
-    );
+    const call = executorClient[method](payload, (error: grpc.ServiceError | null, response: T) => {
+      if (error) reject(error);
+      else resolveCall(response);
+    });
     if (signal) {
       signal.addEventListener(
         "abort",

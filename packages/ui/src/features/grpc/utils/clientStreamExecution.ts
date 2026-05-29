@@ -24,42 +24,37 @@ export async function openGrpcClientStream(
     const controller = new AbortController();
     set({ grpcStreamController: controller });
     const msLeft = deadlineEnd ? Math.max(0, deadlineEnd - Date.now()) : undefined;
-    deadlineTimer = msLeft !== undefined
-      ? setTimeout(async () => {
-          try { await grpcStreamClose(streamId); } catch {}
-          controller.abort();
-          useStore.getState().set({
-            grpcStreamId: undefined,
-            grpcStreaming: false,
-            grpcStreamController: undefined,
-            grpcStatus: "Deadline exceeded",
-            grpcDeadlineEnd: undefined,
-          });
-        }, msLeft + 500)
-      : undefined;
+    deadlineTimer =
+      msLeft !== undefined
+        ? setTimeout(async () => {
+            try {
+              await grpcStreamClose(streamId);
+            } catch {}
+            controller.abort();
+            useStore.getState().set({
+              grpcStreamId: undefined,
+              grpcStreaming: false,
+              grpcStreamController: undefined,
+              grpcStatus: "Deadline exceeded",
+              grpcDeadlineEnd: undefined,
+            });
+          }, msLeft + 500)
+        : undefined;
     if (selectedMethod?.serverStreaming) {
       grpcStreamEvents(streamId, {
         onMessage: (message) => {
           set((state) => ({
-            grpcStreamReceivedMessages: [
-              ...state.grpcStreamReceivedMessages,
-              message,
-            ],
+            grpcStreamReceivedMessages: [...state.grpcStreamReceivedMessages, message],
           }));
         },
         onDone: (message) => {
           clearTimeout(deadlineTimer);
           set((state) => ({
-            grpcStreamReceivedMessages: [
-              ...state.grpcStreamReceivedMessages,
-              message,
-            ],
+            grpcStreamReceivedMessages: [...state.grpcStreamReceivedMessages, message],
             grpcStreaming: false,
             grpcStreamId: undefined,
             grpcStreamController: undefined,
-            grpcStatus: message.error
-              ? `Error: ${message.statusMessage}`
-              : "Stream closed",
+            grpcStatus: message.error ? `Error: ${message.statusMessage}` : "Stream closed",
             grpcDeadlineEnd: undefined,
           }));
         },

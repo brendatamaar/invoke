@@ -16,18 +16,16 @@ export function GraphQLSchemaImportModal({
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={model.close}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <button type="button" className="absolute inset-0 bg-black/40" onClick={model.close} aria-label="Close" />
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
+        className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 520, maxWidth: "calc(100vw - 32px)" }}
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
           <span className="text-sm font-semibold">Import Schema</span>
           <button
+            type="button"
             onClick={model.close}
             disabled={model.working}
             className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] disabled:opacity-50"
@@ -39,11 +37,12 @@ export function GraphQLSchemaImportModal({
         <GraphQLSchemaImportBody model={model} status={graphqlSchemaStatus} />
 
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
-          <button onClick={model.close} disabled={model.working} className="btn text-xs">
+          <button type="button" onClick={model.close} disabled={model.working} className="btn text-xs">
             Cancel
           </button>
           {model.source === "url" && (
             <button
+              type="button"
               onClick={model.fetchSchema}
               disabled={model.working || !model.schemaUrl.trim()}
               className="btn btn-primary text-xs gap-1.5"
@@ -54,6 +53,7 @@ export function GraphQLSchemaImportModal({
           )}
           {model.source === "sdl" && (
             <button
+              type="button"
               onClick={model.importSDLText}
               disabled={model.working || !model.sdlText.trim()}
               className="btn btn-primary text-xs gap-1.5"

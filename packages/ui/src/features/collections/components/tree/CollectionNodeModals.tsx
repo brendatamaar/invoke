@@ -40,9 +40,30 @@ export function CollectionNodeModals({
 }) {
   return (
     <>
-      <PromptModal open={addFolderOpen} title="New Folder" label="Name" placeholder="My Folder" onConfirm={onAddFolder} onClose={onCloseAddFolder} />
-      <PromptModal open={addRequestOpen} title="New Request" label="Name" defaultValue="New Request" onConfirm={onAddRequest} onClose={onCloseAddRequest} />
-      <PromptModal open={renameOpen} title="Rename Collection" label="Name" defaultValue={collectionName} onConfirm={onRename} onClose={onCloseRename} />
+      <PromptModal
+        open={addFolderOpen}
+        title="New Folder"
+        label="Name"
+        placeholder="My Folder"
+        onConfirm={onAddFolder}
+        onClose={onCloseAddFolder}
+      />
+      <PromptModal
+        open={addRequestOpen}
+        title="New Request"
+        label="Name"
+        defaultValue="New Request"
+        onConfirm={onAddRequest}
+        onClose={onCloseAddRequest}
+      />
+      <PromptModal
+        open={renameOpen}
+        title="Rename Collection"
+        label="Name"
+        defaultValue={collectionName}
+        onConfirm={onRename}
+        onClose={onCloseRename}
+      />
       <ConfirmModal
         open={deleteOpen}
         title="Delete Collection"

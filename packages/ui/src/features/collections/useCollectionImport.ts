@@ -64,36 +64,32 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
   };
 
   const persistImported = async (imported: CollectionImportResult) => {
-    const col = await coreStore.createCollection(
-      imported.collection.name,
-      imported.collection,
+    const col = await coreStore.createCollection(imported.collection.name, imported.collection);
+    const folders = imported.folders ?? [];
+    let folderChain = Promise.resolve(new Map<string, string>());
+    for (const folder of folders) {
+      folderChain = folderChain.then((map) => {
+        const parentId = folder.parentFolderId ? (map.get(folder.parentFolderId) ?? null) : null;
+        return coreStore.createFolder(col.id, folder.name, parentId, folder).then((saved) => {
+          map.set(folder.id, saved.id);
+          return map;
+        });
+      });
+    }
+    const folderIds = await folderChain;
+    await Promise.all(
+      imported.requests.map((item) =>
+        coreStore.saveRequest(
+          item.request as Parameters<typeof coreStore.saveRequest>[0],
+          item.name,
+          col.id,
+          {
+            protocol: item.protocol,
+            folderId: item.folderId ? (folderIds.get(item.folderId) ?? null) : null,
+          },
+        ),
+      ),
     );
-    const folderIds = new Map<string, string>();
-    for (const folder of imported.folders ?? []) {
-      const parentId = folder.parentFolderId
-        ? (folderIds.get(folder.parentFolderId) ?? null)
-        : null;
-      const saved = await coreStore.createFolder(
-        col.id,
-        folder.name,
-        parentId,
-        folder,
-      );
-      folderIds.set(folder.id, saved.id);
-    }
-    for (const item of imported.requests) {
-      await coreStore.saveRequest(
-        item.request as Parameters<typeof coreStore.saveRequest>[0],
-        item.name,
-        col.id,
-        {
-          protocol: item.protocol,
-          folderId: item.folderId
-            ? (folderIds.get(item.folderId) ?? null)
-            : null,
-        },
-      );
-    }
     return imported.requests.length;
   };
 
@@ -104,9 +100,7 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
     try {
       let imported: CollectionImportResult | undefined;
       if (importType === "zip") {
-        imported = (await importInvokeZip(
-          files[0],
-        )) as unknown as CollectionImportResult;
+        imported = (await importInvokeZip(files[0])) as unknown as CollectionImportResult;
       } else if (importType === "postman") {
         imported = importPostmanCollection(
           JSON.parse(await files[0].text()),
@@ -124,9 +118,7 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
           await files[0].text(),
         )) as unknown as CollectionImportResult;
       } else if (importType === "yaml") {
-        imported = (await importYamlFiles(
-          files,
-        )) as unknown as CollectionImportResult;
+        imported = (await importYamlFiles(files)) as unknown as CollectionImportResult;
       }
       if (importType === "har") {
         imported = importHarFile(
@@ -142,8 +134,7 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
     }
   };
 
-  const accept =
-    COLLECTION_IMPORT_OPTIONS.find((o) => o.type === importType)?.accept ?? "*";
+  const accept = COLLECTION_IMPORT_OPTIONS.find((o) => o.type === importType)?.accept ?? "*";
 
   return {
     accept,

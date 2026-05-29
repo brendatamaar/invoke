@@ -1,7 +1,7 @@
 # invoke — Product Requirements Document
 
-**Version:** 1.1
-**Last Updated:** May 21, 2026
+**Version:** 1.2
+**Last Updated:** May 28, 2026
 **Author:** Brendatama
 **Status:** Active
 
@@ -162,7 +162,7 @@ invoke uses an **isomorphic architecture** — the same core engine (`@invoke/co
 
 ### 4.0 Architecture (Thick Client)
 
-`@invoke/core` runs **inside the browser** alongside the React UI. It reads IndexedDB directly, resolves variables, orchestrates flows, runs assertions, and generates code. The Node.js server is a thin proxy that forwards fully-resolved requests to the Go executor.
+`@invoke/core` runs **inside the browser** alongside the React UI. It reads IndexedDB directly, resolves variables, orchestrates flows, runs assertions, and generates code. The Bun server (Effect HttpApi) is a thin proxy that forwards fully-resolved requests to the Go executor.
 
 ```
 ┌───────────────────────────────────────────────────┐
@@ -180,11 +180,13 @@ invoke uses an **isomorphic architecture** — the same core engine (`@invoke/co
 └──────────────────┬────────────────────────────────┘
                    │ POST with fully-resolved request
 ┌──────────────────▼────────────────────────────────┐
-│  Node.js Proxy (thin)                              │
+│  Bun Proxy — Effect HttpApi (thin)                 │
 │  - Forwards resolved requests to Go executor       │
 │  - Relays WebSocket/SSE streams                    │
 │  - Serves React SPA static files                   │
 │  - Hosts mock server (in-memory state)             │
+│  - Publishes OpenAPI 3.1 at /api/openapi.json      │
+│    and Scalar UI at /api/docs                      │
 └──────────────────┬────────────────────────────────┘
                    │ gRPC (Protocol Buffers)
 ┌──────────────────▼────────────────────────────────┐
@@ -197,13 +199,13 @@ invoke uses an **isomorphic architecture** — the same core engine (`@invoke/co
 
 ### 4.0.1 Why Thick Client
 
-All data is stored in browser IndexedDB (no server-side database, no accounts). If business logic ran on the Node.js server, it would have no way to access the browser's IndexedDB — the server cannot read the user's local storage. This creates a "split-brain" problem where state lives in the browser but logic runs on the server.
+All data is stored in browser IndexedDB (no server-side database, no accounts). If business logic ran on the Bun server, it would have no way to access the browser's IndexedDB — the server cannot read the user's local storage. This creates a "split-brain" problem where state lives in the browser but logic runs on the server.
 
 The thick client approach solves this cleanly:
 - `@invoke/core` runs in the browser, directly accessing IndexedDB
 - No state needs to be shipped between browser and server on every request
 - The user experience works fully offline (except for the Go executor proxy)
-- The Node.js server is genuinely thin — ~200-300 lines of proxy code
+- The Bun server is genuinely thin — a small set of typed HttpApi groups that proxy to the executor and host mock/webhook state
 
 ### 4.1 Why This Architecture
 
@@ -211,18 +213,18 @@ The thick client approach solves this cleanly:
 The browser cannot make arbitrary API requests due to CORS. A server-side proxy is required. Go provides nanosecond-precision HTTP timing via `net/http/httptrace`, TLS certificate inspection, client certificate authentication, and efficient concurrent request execution — capabilities that are difficult or impossible in Node.js or the browser.
 
 **Why TypeScript for the core engine?**
-The core engine is **isomorphic** — it runs in the browser and is designed to also run on a Node.js server. TypeScript provides type safety shared across all layers. The storage adapter pattern (`IndexedDBAdapter` for browser, `PostgresAdapter` for server) and script sandbox adapter pattern (`WebWorkerSandbox` for browser, `IsolatedVmSandbox` for server) let the same business logic work in both environments.
+The core engine is **isomorphic** — it runs in the browser today and can also run inside a Node-compatible runtime (Bun) on the server in future phases. TypeScript provides type safety shared across all layers. The storage adapter pattern leaves room for a non-browser implementation, and the script sandbox is abstracted so it can be swapped for an `IsolatedVmSandbox` on the server side.
 
-**Why gRPC between Node.js proxy and Go?**
-gRPC provides typed contracts (protobuf), response streaming for large payloads and SSE, bidirectional communication for cancellation, and better performance than JSON over REST. The browser sends fully-resolved requests to the Node.js proxy via REST, which forwards to Go via gRPC.
+**Why gRPC between the Bun proxy and Go?**
+gRPC provides typed contracts (protobuf), response streaming for large payloads and SSE, bidirectional communication for cancellation, and better performance than JSON over REST. The browser sends fully-resolved requests to the Bun proxy as typed HttpApi calls, which forwards to Go via gRPC.
 
-**Why keep Node.js if core runs in the browser?**
-The Node.js server is still needed for:
+**Why keep a server at all if core runs in the browser?**
+The Bun server (Effect HttpApi) is still needed for:
 1. **Proxying requests to Go** — the browser can't call gRPC directly
-2. **Hosting the mock server** — mock servers must run server-side to accept connections from external clients
-3. **Relaying WebSocket streams** — SSE and streaming responses need server-side relay
+2. **Hosting the mock server and webhook capture** — these must run server-side to accept connections from external clients
+3. **Relaying WebSocket and gRPC streams** — SSE and streaming responses need server-side relay
 4. **Serving the React SPA** — static file serving in production
-5. **Future readiness** — Node.js is positioned to absorb `@invoke/core` when server-side features are added, avoiding the need to introduce it later
+5. **Future readiness** — the Bun runtime is positioned to absorb more of `@invoke/core` when server-side features are added, avoiding the need to introduce a separate runtime later
 
 ---
 
@@ -248,29 +250,32 @@ The React UI imports `@invoke/core` directly. The core engine runs in the browse
   - Executes pre/post scripts via Web Worker sandbox
   - Computes response diffs
   - Handles import/export
-- Sends fully-resolved requests to Node.js proxy for execution
-- Receives streaming responses via WebSocket
+- Sends fully-resolved requests to the Bun proxy for execution
+- Receives streaming responses via SSE
 - Handles keyboard shortcuts and command palette
 
 **Does NOT:**
-- Execute HTTP requests directly (delegates to Go executor via Node.js proxy)
-- Host mock servers (Node.js handles this)
+- Execute HTTP requests directly (delegates to Go executor via the Bun proxy)
+- Host mock servers (the Bun proxy handles this)
 - Access gRPC directly (browser limitation)
 
-#### 5.1.2 Node.js Proxy
+#### 5.1.2 Bun Proxy (Effect HttpApi)
 
-**Responsibility:** Thin proxy and mock server host.
+**Responsibility:** Thin typed proxy, mock/webhook host, and OAuth2 callback handler.
 
-- Serves the React SPA as static files
+- Serves the React SPA as static files (via Nginx in the production image)
+- Exposes a typed `InvokeApi` (`@effect/platform` HttpApi) with groups for health, execute, proxy capture, OAuth2, mock, mock gRPC, webhook, WebSocket, and gRPC
 - Proxies fully-resolved HTTP requests to the Go executor via gRPC
-- Relays WebSocket/SSE streams from Go executor to browser
-- Hosts mock server (receives full config from UI, holds state in memory)
-- ~200-300 lines of code total
+- Relays WebSocket and gRPC streams to the browser as SSE
+- Hosts an in-memory mock server and an in-memory webhook capture (receives full config from UI, holds state in memory)
+- Performs the OAuth2 authorization-code callback exchange on behalf of the browser
+- Publishes its OpenAPI 3.1 document at `/api/openapi.json` and a Scalar UI at `/api/docs`
+- Runs on Bun via `@effect/platform-bun` (`BunHttpServer.layer`)
 
 **Does NOT:**
 - Contain business logic (core runs in browser)
 - Access IndexedDB (browser-only)
-- Store any user data
+- Persist any user data to disk or a database
 
 #### 5.1.3 @invoke/core (Isomorphic TypeScript Library)
 
@@ -280,21 +285,19 @@ The React UI imports `@invoke/core` directly. The core engine runs in the browse
 - Variable resolution across scopes (environment → collection → flow)
 - Flow orchestration (chaining, variable extraction, conditional logic)
 - Assertion evaluation
-- JSON/response diffing (via `microdiff` library)
+- JSON/response diffing (in-house structural diff in `@invoke/core/lib/diff.ts`)
 - Code generation (curl, fetch, axios, Spring RestTemplate, OkHttp, etc.)
 - Import/export (Postman, OpenAPI, cURL, Insomnia, Hoppscotch)
-- Storage adapter interface (IndexedDB for browser, PostgreSQL for server)
-- Script sandbox adapter interface (Web Worker for browser, isolated-vm for server)
+- Storage adapter interface (IndexedDB in the browser today; a server-side adapter is a future consideration)
+- Script sandbox adapter interface (Web Worker in the browser today; an `isolated-vm` server sandbox is a future consideration)
 
-**Isomorphic design:** The library has two entry points:
-- `@invoke/core` — browser-safe modules (collections, variables, assertions, diff, codegen, import/export, storage adapters, Web Worker sandbox)
-- `@invoke/core/server` — Node.js-only modules (gRPC client, isolated-vm sandbox, PostgreSQL adapter)
+**Design:** The library exposes a single browser-safe entry point today (`@invoke/core`) that ships only modules with no Node-only APIs. Server-side adapters (gRPC client, `isolated-vm` sandbox) are reserved for a future entry point if/when business logic moves server-side.
 
 **Does NOT:**
 - Handle HTTP routing or middleware
 - Manage authentication
 - Render UI
-- Import Node.js-specific APIs in the browser-safe entry point
+- Import Node-only APIs in the browser-safe entry point
 
 #### 5.1.4 Go HTTP Executor
 
@@ -325,11 +328,12 @@ User clicks "Send"
   → @invoke/core (in browser) reads active environment from IndexedDB
   → @invoke/core resolves all {{variables}} in URL, headers, body
   → @invoke/core resolves auth config (Bearer, Basic, OAuth2, etc.)
-  → React UI sends fully-resolved request to POST /api/proxy/execute
-  → Node.js proxy forwards resolved request to Go executor via gRPC Execute()
+  → React UI sends fully-resolved request to POST /api/execute
+  → Bun proxy (Effect HttpApi) decodes the typed payload and forwards it
+    to the Go executor via gRPC Execute()
   → Go executes HTTP request with httptrace instrumentation
   → Go returns HttpResponse (status, headers, body, timing, TLS info) via gRPC
-  → Node.js proxy returns HttpResponse to React UI
+  → Bun proxy returns HttpResponse to React UI
   → @invoke/core (in browser) runs assertions against the response
   → @invoke/core saves request + response to history in IndexedDB
   → React UI renders response body, timing waterfall, headers, TLS info, assertion results
@@ -344,8 +348,8 @@ User clicks "Run Flow"
       For each step:
         → Read request config from IndexedDB
         → Resolve variables (including extracted variables from previous steps)
-        → Send resolved request to POST /api/proxy/execute
-        → Node.js proxy forwards to Go executor via gRPC
+        → Send resolved request to POST /api/execute
+        → Bun proxy forwards to Go executor via gRPC
         → Receive response
         → Evaluate assertions
         → Extract variables from response (JSONPath/header extraction)
@@ -360,13 +364,13 @@ User clicks "Run Flow"
 ```
 User sends request to SSE endpoint
   → @invoke/core resolves request in browser
-  → React UI opens WebSocket/SSE to /api/proxy/stream with resolved request
-  → Node.js proxy calls Go executor via gRPC ExecuteStream()
+  → React UI opens SSE to POST /api/execute/stream with resolved request
+  → Bun proxy calls Go executor via gRPC ExecuteStream()
   → Go opens HTTP connection, receives chunks
   → Go streams ResponseChunk messages back via gRPC stream
-  → Node.js proxy forwards chunks to React UI via SSE
-     (backpressure: if SSE buffer exceeds high-water mark,
-      Node pauses gRPC stream read until buffer drains)
+  → Bun proxy forwards chunks to React UI via SSE
+     (backpressure: if the SSE buffer exceeds the high-water mark, the
+      proxy pauses the gRPC stream read until the buffer drains)
   → React UI renders chunks in real-time in the response viewer
 ```
 
@@ -375,22 +379,23 @@ User sends request to SSE endpoint
 ```
 User clicks "Start Mock"
   → @invoke/core (in browser) reads collection from IndexedDB
-  → @invoke/core generates mock endpoint config (routes, responses, conditions)
-  → React UI sends full mock config to POST /api/mock/start
-  → Node.js starts Hono mock server on specified port, holds config in memory
-  → External clients hit mock server → Node matches routes → serves responses
-  → Mock request log accessible via GET /api/mock/log
+  → @invoke/core generates mock route config (routes, responses, conditions)
+  → React UI pushes the full route set to PUT /api/mock/routes
+  → Bun proxy (Effect HttpApi) holds the route table in memory and
+    matches incoming requests via the catch-all ALL /mock/* raw route
+  → External clients hit /mock/* → the proxy matches the route → serves responses
+  → Mock request log accessible via GET /api/mock/routes
 
-Note: Mock server state is held in Node.js memory. If the container
-restarts, mock state is lost. The UI detects this via GET /api/mock/status
-and prompts the user to restart the mock (re-pushing config from IndexedDB).
+Note: Mock server state is held in the Bun proxy's memory. If the
+container restarts, mock state is lost. The UI re-pushes the route table
+from IndexedDB on reconnect.
 ```
 
 ---
 
 ## 6. Core Engine Specification
 
-The core engine (`@invoke/core`) is a standalone TypeScript library with zero framework dependencies. It can be imported by the Node.js server, a CLI tool, or any other TypeScript/JavaScript application.
+The core engine (`@invoke/core`) is a standalone TypeScript library with zero framework dependencies. It is imported directly by the React UI today, and can be reused by a Bun-based server, a CLI tool, or any other TypeScript/JavaScript application.
 
 ### 6.1 Module Inventory
 
@@ -407,7 +412,7 @@ The core engine (`@invoke/core`) is a standalone TypeScript library with zero fr
 | `export` | Export collections to YAML, JSON, or other tool formats |
 | `history` | Request/response history storage, full-text search, retention policies |
 | `executor-client` | gRPC client to communicate with the Go HTTP executor |
-| `storage` | Storage adapter interface with IndexedDB and PostgreSQL implementations |
+| `storage` | Storage adapter interface; ships an IndexedDB (Dexie) implementation, with a server-side implementation reserved as a future consideration |
 | `schema` | JSON Schema validation for request/response bodies |
 | `auth` | Auth helper logic (Bearer, Basic, OAuth2, API Key, Digest, AWS Sig V4, NTLM) |
 
@@ -749,17 +754,17 @@ class WebWorkerSandbox implements ScriptSandbox {
   // Timeout enforced via Worker.terminate()
 }
 
-// isolated-vm sandbox (Node.js server — for future server-side use)
+// isolated-vm sandbox (server-side — future consideration)
 class IsolatedVmSandbox implements ScriptSandbox {
-  // Creates V8 isolate with 128MB memory limit
-  // Timeout enforced via isolate timeout parameter
-  // Same V8 engine as Node.js for 100% behavior consistency
+  // Creates V8 isolate with a configurable memory limit
+  // Timeout enforced via the isolate timeout parameter
+  // Same V8 engine as Node-compatible runtimes for consistent JS behavior
 }
 ```
 
 **Web Worker sandbox (browser):** The worker script is pre-bundled at build time (via Vite/tsup) with allowed utility libraries attached to `self`. User code executes inside the worker with no access to the main thread's DOM, IndexedDB, or network. The worker communicates results back via `postMessage`.
 
-**isolated-vm sandbox (server):** When `@invoke/core` runs on a Node.js server, uses V8 isolates for stronger isolation with configurable memory and CPU limits.
+**isolated-vm sandbox (future server-side):** If `@invoke/core` is hosted on a Node-compatible runtime in the future, V8 isolates would provide stronger isolation with configurable memory and CPU limits. This is not used in the current release.
 
 ---
 
@@ -1064,7 +1069,7 @@ Interface for managing mock servers:
 
 ### 9.1 Overview
 
-The CLI (`invoke`) will import `@invoke/core` directly and communicate with the Go executor via the same gRPC protocol used by the Node.js server. Collections are YAML files on disk.
+The CLI (`invoke`) will import `@invoke/core` directly and communicate with the Go executor via the same gRPC protocol used by the Bun server. Collections are YAML files on disk.
 
 ### 9.2 Command Structure
 
@@ -1268,9 +1273,8 @@ interface Workspace {
 }
 ```
 
-- In public hosted mode (anonymous): a single default personal workspace stored in browser.
-- In public hosted mode (with account): multiple personal workspaces, synced to server.
-- In self-hosted mode: personal and team workspaces, stored in PostgreSQL.
+- In public hosted mode (anonymous, current release): a single default personal workspace stored in the browser.
+- A future "with account" mode (public hosted) and a server-side workspace store for self-hosted teams are reserved as future considerations — neither is implemented today.
 
 ### 11.2 Collection File Format
 
@@ -1521,7 +1525,7 @@ interface DiffOptions {
 
 invoke can start a mock HTTP server that serves recorded responses from a collection. This allows frontend teams to develop against stable endpoints while the real API is being built or modified.
 
-**Limitation:** The mock server runs on the Node.js proxy and holds its configuration **in memory**. Since all data lives in browser IndexedDB, the UI must send the full mock configuration (all routes, responses, conditions) in the `POST /api/mock/start` payload. If the Node.js container restarts, mock server state is lost. The UI detects this via `GET /api/mock/status` and prompts the user to restart the mock, which re-pushes the configuration from IndexedDB.
+**Limitation:** The mock server runs inside the Bun proxy and holds its configuration **in memory**. Since all data lives in browser IndexedDB, the UI pushes the full mock route set (all routes, responses, conditions) via `PUT /api/mock/routes`. If the server container restarts, mock state is lost. The UI re-pushes the route set from IndexedDB on reconnect. Incoming mock traffic is served by the catch-all `ALL /mock/*` raw route, and the in-memory request log is read via `GET /api/mock/routes` and cleared via `DELETE /api/mock/logs`.
 
 ### 15.2 Mock Configuration
 
@@ -1685,44 +1689,44 @@ type ImportFormat = 'postman-v2.1' | 'openapi-3.0' | 'openapi-3.1' | 'curl' | 'i
 | Target | Language | Library/Style |
 |--------|----------|---------------|
 | `curl` | Shell | curl command |
+| `httpie` | Shell | HTTPie |
+| `powershell` | PowerShell | Invoke-WebRequest |
 | `fetch` | JavaScript | Fetch API |
-| `axios` | JavaScript | Axios library |
 | `node-fetch` | JavaScript (Node.js) | node-fetch |
 | `node-axios` | JavaScript (Node.js) | axios |
-| `python-requests` | Python | requests library |
-| `python-httpx` | Python | httpx (async) |
+| `python-requests` | Python | requests |
+| `python-httpx` | Python | httpx |
 | `go-net-http` | Go | net/http |
-| `okhttp` | Java | OkHttp |
+| `java-okhttp` | Java | OkHttp |
 | `kotlin-okhttp` | Kotlin | OkHttp |
 | `ruby-net-http` | Ruby | Net::HTTP |
 | `php-guzzle` | PHP | Guzzle |
 | `csharp-httpclient` | C# | HttpClient |
 | `rust-reqwest` | Rust | reqwest |
-| `powershell` | PowerShell | Invoke-WebRequest |
-| `httpie` | Shell | HTTPie |
+
+GraphQL-specialized REST targets (`graphql-fetch`, `graphql-apollo`, `graphql-urql`) emit GraphQL-shaped code from a saved GraphQL request.
 
 #### WebSocket
 
 | Target | Language | Library/Style |
 |--------|----------|---------------|
-| `wscat` | Shell | wscat command |
-| `websocat` | Shell | websocat command |
-| `js-websocket` | JavaScript | native WebSocket API |
-| `node-ws` | JavaScript (Node.js) | ws library |
-| `python-websockets` | Python | websockets library |
-| `go-websocket` | Go | nhooyr.io/websocket |
+| `ws-wscat` | Shell | wscat command |
+| `ws-websocat` | Shell | websocat command |
+| `ws-javascript` | JavaScript | native WebSocket API |
+| `ws-node-ws` | JavaScript (Node.js) | ws library |
+| `ws-python-websockets` | Python | websockets library |
 
 #### gRPC
 
 | Target | Language | Library/Style |
 |--------|----------|---------------|
-| `grpcurl` | Shell | grpcurl command |
-| `go-grpc` | Go | google.golang.org/grpc |
-| `node-grpc` | JavaScript (Node.js) | @grpc/grpc-js |
-| `python-grpcio` | Python | grpcio library |
-| `java-grpc` | Java | io.grpc |
-| `csharp-grpc` | C# | Grpc.Net.Client |
-| `kotlin-grpc` | Kotlin | grpc-kotlin-stub |
+| `grpc-grpcurl` | Shell | grpcurl command |
+| `grpc-go` | Go | google.golang.org/grpc |
+| `grpc-node` | JavaScript (Node.js) | @grpc/grpc-js |
+| `grpc-python` | Python | grpcio |
+| `grpc-java` | Java | io.grpc |
+| `grpc-csharp` | C# | Grpc.Net.Client |
+| `grpc-kotlin` | Kotlin | grpc-kotlin-stub |
 
 ### 17.2 Code Generation Interface
 
@@ -1907,11 +1911,11 @@ Search indexes the following fields:
 ### 21.1 Public Hosted (invoke.dev)
 
 - React SPA served via CDN (Cloudflare)
-- Node.js backend + Go executor on VPS (Contabo Singapore or equivalent)
+- Bun server (Effect HttpApi) + Go executor on VPS (Contabo Singapore or equivalent)
 - No database — all user data in browser IndexedDB
 
 ```
-[User Browser] → [CDN: React SPA] → [API Server: Node.js + @invoke/core]
+[User Browser] → [CDN: React SPA] → [Bun + Effect HttpApi server]
                                            ↓ gRPC
                                      [Go Executor]
 ```
@@ -1927,43 +1931,43 @@ Search indexes the following fields:
 
 | Service | Image | Purpose |
 |---------|-------|---------|
-| `ui` | `invoke/ui:latest` | React SPA served by Nginx |
-| `server` | `invoke/server:latest` | Node.js API server with @invoke/core |
+| `ui` | `invoke/ui:latest` | React SPA served by Nginx, proxying `/api/*` and `/health` to the server |
+| `server` | `invoke/server:latest` | Bun + Effect HttpApi server |
 | `executor` | `invoke/executor:latest` | Go HTTP executor (gRPC) |
 
 ```yaml
-# docker-compose.yml
+# docker-compose.yml (illustrative — see docker-compose.yml in the repo)
 services:
   ui:
-    image: invoke/ui:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
     ports:
-      - "3000:80"
+      - "8080:80"
     depends_on:
       - server
 
   server:
-    image: invoke/server:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.server
     environment:
-      EXECUTOR_ADDR: executor:50051
-      STORAGE_MODE: browser
-      CORS_ORIGIN: http://localhost:3000
+      EXECUTOR_GRPC_ADDR: executor:50051
     depends_on:
       - executor
 
   executor:
-    image: invoke/executor:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.executor
     # internal only, no ports exposed to host
 ```
 
+The actual development variant is `docker-compose.dev.yml`, which bind-mounts the source tree.
+
 ### 21.3 Single-Container Option
 
-For quick local use, a single Docker image bundles all services:
-
-```bash
-docker run -p 3000:3000 invoke/all-in-one:latest
-```
-
-Runs Node.js server + Go executor with IndexedDB in the browser (no embedded database needed).
+A single-container "all-in-one" image is a future consideration; no `invoke/all-in-one` image is published today. For local use, run the three-service compose stack above, or run the dev stack via `pnpm dev:all`.
 
 ---
 
@@ -1995,13 +1999,14 @@ interface CollectionStore {
 
 ### 22.2 IndexedDB Implementation
 
-- Used for all users (anonymous only)
-- All data stored in browser-local IndexedDB via Dexie.js
-- Database name: `invoke`
-- Object stores: `collections`, `environments`, `history`, `flows`, `workspaces`
-- Full-text search via Dexie.js full-text addon or client-side filtering
+- The only storage backend in the current release
+- All data stored in browser-local IndexedDB via Dexie
+- Object stores include collections, environments, history, flows, cookies, mock routes, settings, etc.
+- Full-text search is built in the UI via MiniSearch over Dexie reads
 - Data survives browser restarts but is device-specific
 - Export/import for backup and migration
+
+A server-side adapter (Postgres or otherwise) is reserved as a future consideration; it is not implemented today.
 
 ### 22.3 File/YAML Implementation (Export)
 
@@ -2016,42 +2021,41 @@ interface CollectionStore {
 
 ### 23.1 Core Engine
 
-The core engine runs in the browser. It produces two entry points:
-- `@invoke/core` — browser-safe modules (no Node.js APIs)
-- `@invoke/core/server` — Node.js-only modules (gRPC client, isolated-vm)
-
-| Component | Technology | Version | Environment |
-|-----------|-----------|---------|-------------|
-| Language | TypeScript | 5.x | Both |
-| Build tool | tsup | latest | Both (produces CJS + ESM) |
-| Testing | Vitest | latest | Both |
-| JSON Schema validation | Ajv | 8.x | Both |
-| JSONPath | jsonpath-plus | latest | Both |
-| YAML parsing | js-yaml | 4.x | Both |
-| JSON diffing | microdiff | latest | Both |
-| Script sandbox (browser) | Web Worker + Blob URL | native | Browser only |
-| Script sandbox (server) | isolated-vm | latest | Node.js only |
-| gRPC client | @grpc/grpc-js + @grpc/proto-loader | latest | Node.js only |
-| IndexedDB | Dexie.js | latest | Browser only |
-| E2E testing | @playwright/test | latest | Dev only |
-
-### 23.2 Bun Backend
+The core engine runs in the browser today. It exposes a single browser-safe entry point (`@invoke/core`). A server-side entry point (gRPC client, `isolated-vm`) is a future consideration if business logic moves server-side.
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
-| Runtime | Bun | 1.3.14+ |
-| HTTP server | Bun.serve (built-in) | — |
-| Framework | Hono | latest |
-| WebSocket | ws | latest |
-| Testing | Vitest + Supertest | latest |
-| ORM / Query builder | Drizzle ORM | latest |
-| Database | PostgreSQL | 16 |
-| Authentication | JWT (jsonwebtoken) | latest |
-| Password hashing | bcrypt or argon2 | latest |
-| Validation | Zod | latest |
-| Logging | Pino | latest |
-| Migration | Drizzle Kit | latest |
-| Docker image | oven/bun:1-alpine | — |
+| Language | TypeScript | 5.x |
+| Build tool | tsup | latest (produces CJS + ESM with types) |
+| Testing | Vitest | 3.x |
+| Effect runtime | effect | ^3.21.2 |
+| JSON Schema validation | Ajv | 8.x |
+| JSONPath | jsonpath-plus | 10.x |
+| YAML parsing | js-yaml | 4.x |
+| OpenAPI parsing | @apidevtools/swagger-parser | 12.x |
+| Validation | Zod | 3.x |
+| Zip handling | jszip | 3.x |
+| ID generation | uuid (v7) | 11.x |
+| Code formatting (codegen) | prettier | 3.x |
+| Script sandbox (browser) | Web Worker + Blob URL | native |
+| IndexedDB | Dexie | 4.x |
+
+### 23.2 Server (Bun + Effect HttpApi)
+
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| Runtime | Bun | ≥ 1 (Docker base: `oven/bun:1-alpine`) |
+| HTTP server | `@effect/platform` HttpApi on `@effect/platform-bun` (`BunHttpServer.layer`) | `@effect/platform` ^0.96.1, `@effect/platform-bun` 0.89.0 |
+| Effect runtime | effect | ^3.21.2 |
+| gRPC client | @grpc/grpc-js + @grpc/proto-loader | ^1.14.0, ^0.8.0 |
+| Validation | Effect Schema (built into HttpApi endpoint payloads) | — |
+| Testing | Vitest (route tests with `HttpApiClient.makeWith(InvokeApi)`) | 3.x |
+| Logging | Pino | 9.x |
+| OpenAPI publishing | `OpenApi.fromApi(InvokeApi)` → `/api/openapi.json` | — |
+| API docs UI | Scalar at `/api/docs` | — |
+| Docker base | `oven/bun:1-alpine` | — |
+
+The server has **no database**, **no ORM**, **no authentication layer**, and **no JWT/password hashing**. All user-owned state lives in the browser; server-only state (mock routes, mock gRPC fixtures, webhook captures, OAuth2 callback results, rate-limiter counters, proxy capture log) is held in-memory via `Effect.Service` layers.
 
 ### 23.3 React Web UI
 
@@ -2059,31 +2063,44 @@ The core engine runs in the browser. It produces two entry points:
 |-----------|-----------|---------|
 | Framework | React | 19.x |
 | Language | TypeScript | 5.x |
-| Build tool | Vite | latest |
+| Build tool | Vite | 7.x |
 | State management | Zustand | 5.x |
-| CSS framework | Tailwind CSS | 4.x |
-| Routing | TanStack Router | 1.x |
-| Code editor | CodeMirror 6 | latest |
+| Server state | @tanstack/react-query | 5.x |
+| CSS framework | Tailwind CSS | 4.x (via `@tailwindcss/vite`) |
+| Code editor | CodeMirror 6 | 6.x |
 | Icons | Lucide React | latest |
-| Search | MiniSearch | latest |
+| Search | MiniSearch | 7.x |
+| GraphQL tooling | graphql | 16.x |
 | HTTP client (UI → server) | Native Fetch API | — |
-| WebSocket client | Native WebSocket API / SSE | — |
-| IndexedDB | Dexie 4.x | latest |
-| Linting | ESLint + Prettier | latest |
+| Streaming (UI → server) | Server-Sent Events | — |
+| IndexedDB | Dexie + dexie-react-hooks | 4.x |
+| Testing | Vitest | 3.x |
+| E2E testing | @playwright/test | 1.x |
 
 ### 23.4 Go HTTP Executor
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
-| Language | Go | 1.23+ |
-| gRPC server | google.golang.org/grpc | latest |
-| Protobuf | google.golang.org/protobuf | latest |
+| Language | Go | 1.24 |
+| gRPC server | google.golang.org/grpc | v1.71.0 |
+| Protobuf | google.golang.org/protobuf | v1.36.4 |
 | HTTP client | net/http (standard library) | — |
 | HTTP tracing | net/http/httptrace | — |
 | TLS | crypto/tls | — |
-| WebSocket | nhooyr.io/websocket | latest |
-| gRPC reflection | google.golang.org/grpc/reflection | latest |
-| Logging | zerolog or slog | latest |
+| WebSocket | github.com/gorilla/websocket | v1.5.3 |
+| NTLM auth | github.com/Azure/go-ntlmssp | v0.1.1 |
+| gRPC reflection | google.golang.org/grpc/reflection (v1 + v1alpha) | bundled |
+| Logging | github.com/rs/zerolog | v1.34.0 |
+
+### 23.6 Workspace Tooling
+
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| Package manager | pnpm | 9.15.9 (pinned via `packageManager`) |
+| Task runner | Turbo | 2.x |
+| Linter | Oxlint | 1.x |
+| Formatter | Oxfmt | 0.52.0 |
+| Protobuf codegen | Buf CLI | latest |
 
 ### 23.5 Infrastructure
 
@@ -2195,35 +2212,26 @@ invoke/
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   │
-│   ├── server/                           # Node.js API server
+│   ├── server/                           # @invoke/server — Bun + Effect HttpApi
 │   │   ├── src/
-│   │   │   ├── index.ts                  # Server entrypoint
-│   │   │   ├── config.ts                 # Environment configuration
-│   │   │   ├── routes/
-│   │   │   │   ├── request.ts            # POST /api/requests/execute
-│   │   │   │   ├── request-stream.ts     # WebSocket /api/requests/stream
-│   │   │   │   ├── collection.ts         # CRUD /api/collections
-│   │   │   │   ├── environment.ts        # CRUD /api/environments
-│   │   │   │   ├── flow.ts              # POST /api/flows/run
-│   │   │   │   ├── history.ts            # GET /api/history
-│   │   │   │   ├── diff.ts              # POST /api/diff
-│   │   │   │   ├── mock.ts              # POST /api/mock/start|stop
-│   │   │   │   ├── import.ts            # POST /api/import
-│   │   │   │   ├── export.ts            # POST /api/export
-│   │   │   │   ├── codegen.ts           # POST /api/codegen
-│   │   │   │   ├── workspace.ts         # CRUD /api/workspaces
-│   │   │   │   └── auth.ts             # POST /api/auth/login|register
-│   │   │   ├── middleware/
-│   │   │   │   ├── auth.ts              # JWT verification
-│   │   │   │   ├── error.ts             # Error handling
-│   │   │   │   └── validation.ts        # Request validation (Zod)
-│   │   │   ├── websocket/
-│   │   │   │   ├── hub.ts               # WebSocket connection manager
-│   │   │   │   └── handlers.ts          # Event handlers
-│   │   │   └── db/
-│   │   │       ├── schema.ts            # Drizzle schema
-│   │   │       └── migrations/
-│   │   ├── tests/
+│   │   │   ├── index.ts                  # Server entrypoint, ServerLive layer, Bun listener
+│   │   │   ├── logger.ts                 # Pino + Effect Logger wiring
+│   │   │   ├── errors.ts                 # Shared tagged errors (RateLimitedError, GrpcCallError, etc.)
+│   │   │   ├── api/
+│   │   │   │   ├── index.ts              # InvokeApi composition (HttpApi groups)
+│   │   │   │   ├── openapi.ts            # OpenAPI 3.1 document generation
+│   │   │   │   ├── raw-router.ts         # /api/openapi.json, /api/docs, ALL /mock/*, ALL /webhook/:id, GET /api/oauth2/callback
+│   │   │   │   ├── groups/               # Typed HttpApi group definitions (health, execute, proxy, oauth2, mock, mock-grpc, webhook, websocket, grpc, …)
+│   │   │   │   ├── handlers/             # Per-group HttpApi handler implementations
+│   │   │   │   └── raw/                  # Raw `HttpRouter` handlers backing the catch-all routes
+│   │   │   ├── features/                 # Domain logic — `execute`, `grpc`, `mock`, `oauth2`, `proxy`, `webhook`, `websocket`, `shared`
+│   │   │   ├── services/                 # `Effect.Service` layers (`GrpcExecutor`, `MockStore`, `MockGrpcStore`, `MockGrpcRecorder`, `OAuth2Store`, `ProxyRecordStore`, `WebhookStore`, `RateLimiter`, `SsrfGuard`)
+│   │   │   ├── middleware/               # CORS, request logger, per-group rate-limit
+│   │   │   ├── grpc/                     # gRPC client wiring against executor.proto
+│   │   │   ├── test-support/             # Effect test harness helpers
+│   │   │   ├── types/                    # Shared TypeScript types
+│   │   │   └── __tests__/                # Vitest route tests using `HttpApiClient.makeWith(InvokeApi)`
+│   │   ├── README.md                     # Server architecture and layer hierarchy
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   │
@@ -2295,24 +2303,25 @@ invoke/
 │   ├── go.mod
 │   └── go.sum
 │
-├── docker/
-│   ├── Dockerfile.ui                     # React build → Nginx
-│   ├── Dockerfile.server                 # Node.js server
-│   ├── Dockerfile.executor               # Go executor
-│   └── Dockerfile.all-in-one             # Combined single container
-│
+├── Dockerfile.ui                         # React build → Nginx (root-level)
+├── Dockerfile.server                     # Bun + Effect HttpApi server
+├── Dockerfile.executor                   # Go executor
+├── nginx.conf                            # UI image reverse-proxy config
 ├── docker-compose.yml                    # Self-hosted deployment
-├── docker-compose.dev.yml                # Development with hot-reload
+├── docker-compose.dev.yml                # Development with bind mounts
+├── proto/
+│   └── executor.proto                    # gRPC contract (source of truth)
+├── buf.yaml / buf.gen.yaml               # protobuf codegen config
+├── tests/e2e/                            # Playwright tests + dev-server.mjs orchestrator + mock-target.mjs
+├── docs/                                 # PRD, FEATURES, migration notes
+├── turbo.json                            # Turbo task graph (build/test/lint/e2e)
 ├── pnpm-workspace.yaml
-├── package.json
+├── .oxlintrc.json                        # Oxlint config
+├── package.json                          # Root scripts (dev, build, test, lint, e2e, format, executor:*)
 ├── .github/
-│   └── workflows/
-│       ├── ci.yml                        # Lint, test, build
-│       ├── release.yml                   # Build & push Docker images
-│       └── deploy.yml                    # Deploy to public hosted
+│   └── workflows/                        # CI, release, deploy
 ├── README.md
-├── LICENSE
-└── CONTRIBUTING.md
+└── LICENSE
 ```
 
 ---
@@ -2588,113 +2597,125 @@ message PingResponse {
 
 ## 26. API Routes
 
-### 26.1 Request Execution
+The server exposes a single typed HttpApi (`InvokeApi`) composed of nine groups, plus a small set of raw routes whose response shape is not fixed. All routes are served by `@effect/platform-bun`. The OpenAPI 3.1 document is available at `/api/openapi.json` and a Scalar UI is at `/api/docs`.
+
+The browser owns workspace state — there are no CRUD endpoints for collections, folders, requests, environments, flows, history, settings, or workspaces. Those concepts live entirely in `@invoke/core` against IndexedDB.
+
+### 26.1 Health
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/requests/execute` | Execute a single request |
-| WS | `/api/requests/stream` | Execute with streaming response |
-| POST | `/api/requests/batch` | Execute batch (benchmarking) |
+| GET | `/health` | Plain liveness probe |
+| GET | `/api/ping` | Ping the executor and report its version |
 
-### 26.2 Collections
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/collections` | List all collections |
-| POST | `/api/collections` | Create collection |
-| GET | `/api/collections/:id` | Get collection by ID |
-| PUT | `/api/collections/:id` | Update collection |
-| DELETE | `/api/collections/:id` | Delete collection |
-| POST | `/api/collections/:id/duplicate` | Duplicate collection |
-| POST | `/api/collections/:id/folders` | Create folder |
-| PUT | `/api/collections/folders/:id` | Update folder |
-| DELETE | `/api/collections/folders/:id` | Delete folder |
-| POST | `/api/collections/:id/requests` | Create request |
-| PUT | `/api/collections/requests/:id` | Update request |
-| DELETE | `/api/collections/requests/:id` | Delete request |
-| POST | `/api/collections/requests/:id/duplicate` | Duplicate request |
-| POST | `/api/collections/reorder` | Reorder items |
-| GET | `/api/collections/search?q=` | Search collections |
-
-### 26.3 Environments
+### 26.2 Execute (rate-limited)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/environments` | List all environments |
-| POST | `/api/environments` | Create environment |
-| GET | `/api/environments/:id` | Get environment |
-| PUT | `/api/environments/:id` | Update environment |
-| DELETE | `/api/environments/:id` | Delete environment |
-| POST | `/api/environments/:id/duplicate` | Duplicate environment |
-| PUT | `/api/environments/active` | Set active environment |
+| POST | `/api/execute` | Execute a fully-resolved request against the Go executor |
+| POST | `/api/execute/stream` | Execute a request and relay the executor's response chunks back as SSE |
 
-### 26.4 Flows
+### 26.3 Proxy Capture
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/flows` | List all flows |
-| POST | `/api/flows` | Create flow |
-| GET | `/api/flows/:id` | Get flow |
-| PUT | `/api/flows/:id` | Update flow |
-| DELETE | `/api/flows/:id` | Delete flow |
-| POST | `/api/flows/:id/run` | Execute flow |
-| POST | `/api/flows/:id/cancel` | Cancel running flow |
+| POST | `/api/proxy/request` | Record an outbound request through the in-memory proxy capture store |
+| GET | `/api/proxy/records` | List captured proxy records |
+| DELETE | `/api/proxy/records` | Clear captured proxy records |
+| POST | `/api/proxy/records/to-mocks` | Convert captured records into mock routes |
 
-### 26.5 History
+### 26.4 OAuth2
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/history` | List history (with filters) |
-| GET | `/api/history/:id` | Get history entry |
-| DELETE | `/api/history` | Clear history (with filters) |
-| GET | `/api/history/search?q=` | Full-text search history |
+| POST | `/api/oauth2/client-credentials` | Run the client-credentials grant |
+| POST | `/api/oauth2/auth-code/start` | Begin the authorization-code flow (returns a `state`) |
+| GET | `/api/oauth2/auth-code/result/:state` | Retrieve the result of a completed auth-code flow |
+| POST | `/api/oauth2/refresh-token` | Refresh an OAuth2 access token |
+| GET | `/api/oauth2/callback` | Provider redirect target (raw route — completes the auth-code flow) |
 
-### 26.6 Diff
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/diff/responses` | Diff two responses |
-| POST | `/api/diff/environments` | Execute + diff across envs |
-
-### 26.7 Mock
+### 26.5 Mock (REST)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/mock/start` | Start mock server |
-| POST | `/api/mock/stop` | Stop mock server |
-| GET | `/api/mock/status` | Get mock server status |
-| GET | `/api/mock/log` | Get mock request log |
-| PUT | `/api/mock/endpoints/:id` | Update mock endpoint |
+| GET | `/api/mock/routes` | Get the current in-memory mock route table and recent log |
+| PUT | `/api/mock/routes` | Replace the mock route table |
+| DELETE | `/api/mock/logs` | Clear the mock request log |
+| ALL | `/mock/*` | Catch-all that serves mock responses (raw route) |
 
-### 26.8 Import / Export
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/import` | Import collection (multipart file) |
-| POST | `/api/import/detect` | Detect import format |
-| POST | `/api/export/:format` | Export collection |
-
-### 26.9 Code Generation
+### 26.6 Mock gRPC
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/codegen` | Generate code snippet |
-| GET | `/api/codegen/targets` | List available targets |
+| GET | `/api/mock-grpc/routes` | Get the mock gRPC route table |
+| PUT | `/api/mock-grpc/routes` | Replace the mock gRPC route table |
+| DELETE | `/api/mock-grpc/logs` | Clear the mock gRPC call log |
+| POST | `/api/mock-grpc/invoke` | Invoke a mock gRPC method (used by the UI's playground) |
 
-### 26.10 TLS
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/tls/inspect` | Inspect TLS certificate |
-
-### 26.11 Settings
-
-> **Note:** Settings are stored in browser localStorage.
+### 26.7 Mock gRPC Record / Replay
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/settings` | Get settings |
-| PUT | `/api/settings` | Update settings |
+| POST | `/api/mock-grpc/record/start` | Begin recording live gRPC traffic as fixtures |
+| POST | `/api/mock-grpc/record/stop` | Stop recording |
+| GET | `/api/mock-grpc/record/status` | Report current recorder status |
+| GET | `/api/mock-grpc/fixtures` | List recorded fixtures |
+| GET | `/api/mock-grpc/fixtures/:id` | Get a fixture by id |
+| DELETE | `/api/mock-grpc/fixtures/:id` | Delete a fixture |
+| POST | `/api/mock-grpc/fixtures/:id/replay` | Replay a recorded fixture |
+
+### 26.8 Webhook Capture
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/webhook/:id/logs` | List captured webhook calls for a capture id |
+| DELETE | `/api/webhook/:id/logs` | Clear captured webhook calls |
+| PUT | `/api/webhook/:id/config` | Update capture configuration (validator, ack response, etc.) |
+| DELETE | `/api/webhook/:id` | Delete a webhook capture |
+| ALL | `/webhook/:id` | Public webhook receiver (raw route) |
+
+### 26.9 WebSocket (rate-limited)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/websocket/connect` | Open a WebSocket via the executor |
+| POST | `/api/websocket/send` | Send a frame on an open WebSocket |
+| POST | `/api/websocket/poll` | Poll buffered inbound frames |
+| POST | `/api/websocket/close` | Close a WebSocket |
+| GET | `/api/websocket/events` | SSE stream of WebSocket events |
+
+### 26.10 gRPC (rate-limited)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/grpc/reflect` | Run gRPC server reflection against a target |
+| POST | `/api/grpc/execute` | Execute a unary gRPC call |
+| POST | `/api/grpc/server-stream` | Execute a server-streaming gRPC call, relayed as SSE |
+| POST | `/api/grpc/stream/open` | Open a client-streaming or bidi call |
+| POST | `/api/grpc/stream/send` | Send a message on an open gRPC stream |
+| POST | `/api/grpc/stream/close` | Close an open gRPC stream |
+| GET | `/api/grpc/stream/events` | SSE stream of gRPC stream events |
+
+### 26.11 Discovery
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/openapi.json` | OpenAPI 3.1 document for `InvokeApi` |
+| GET | `/api/docs` | Scalar UI backed by `/api/openapi.json` |
+
+### 26.12 Error Mapping
+
+Tagged errors are mapped to HTTP status codes via `addError(...)` on the HttpApi endpoints (see `packages/server/src/errors.ts`):
+
+| Error | Status | Used For |
+|-------|-------:|----------|
+| `RateLimitedError` | 429 | Per-group token-bucket exhaustion on execute / grpc / websocket |
+| `GrpcCallError` | 502 | Unary executor call failure |
+| `FixtureNotFoundError` | 404 | Unknown fixture id on get / delete / replay |
+| `GrpcStreamError` | — | Streaming executor failure; closes the SSE stream (no HTTP remap) |
+| `SsrfBlockedError` | 403 | Private or unsupported outbound target |
+
+Schema decode failures return 400 (built into HttpApi). Unhandled failures surface as 500.
 
 ---
 
@@ -2711,7 +2732,7 @@ message PingResponse {
 | `ConfirmDialog` | Confirmation modal with customizable message and actions |
 | `ToastNotification` | Toast notifications (success, error, warning, info) |
 | `LoadingSkeleton` | Skeleton loading placeholders |
-| `CodeEditor` | Monaco/CodeMirror wrapper with language modes, themes, and formatting |
+| `CodeEditor` | CodeMirror 6 wrapper with language modes, themes, and formatting |
 | `EmptyState` | Illustrated empty state with action button |
 
 ### 27.2 Component Count Summary
@@ -2783,23 +2804,25 @@ All shortcuts are customizable in settings.
 ### 29.2 Reliability
 
 - Go executor process recovery: auto-restart on crash
-- Node.js server graceful shutdown: drain active requests
-- IndexedDB data integrity: transactions for multi-object writes
-- PostgreSQL: connection pool with health checks and retry
-- gRPC: connection retry with exponential backoff
+- Bun server graceful shutdown via Effect scoped layers (drains in-flight handlers)
+- IndexedDB data integrity: Dexie transactions for multi-object writes
+- gRPC: connection retry with backoff on the server's gRPC client
+- Stream backpressure: SSE relays pause executor reads when the client buffer is full
 
 ### 29.3 Security
 
-- All passwords hashed with argon2id
-- JWT tokens with RS256 or HS256
-- Sensitive environment variables encrypted at rest (AES-256-GCM)
-- CSRF protection on all state-changing endpoints
-- Rate limiting on auth endpoints (5 attempts per minute)
-- Input validation on all API endpoints (Zod schemas)
-- CSP headers on the web UI
+- No accounts and no server-stored credentials in the current release — there is no password store, no JWT layer, and no session state
+- Input validation on every typed endpoint via Effect Schema (HttpApi decodes payloads before reaching handlers; decode failures return 400)
+- Per-group rate limiting on `execute`, `grpc`, and `websocket` via in-memory token buckets (`RateLimiter` service); exhaustion returns 429
+- SSRF protection in two layers:
+  - Server `SsrfGuard` service (opt-in via `INVOKE_SSRF_GUARD=true`) — hostname/CIDR check before dispatching to the executor
+  - Executor dial-time DNS-resolved IP filter (opt-in via `ALLOW_PRIVATE_ADDRESSES`)
+- CORS enforced by `CorsHttpMiddleware` at the HttpApi server layer
 - No eval() or dynamic code execution in the frontend
-- Script sandbox (vm2/isolated-vm) with CPU/memory limits
-- Dependencies audited regularly (npm audit, govulncheck)
+- Script sandbox runs in a Web Worker with a Blob URL boundary in the browser
+- CSP headers on the web UI
+- Dependencies audited regularly (`pnpm audit`, `govulncheck`)
+- Account-bound features (CSRF tokens, encrypted secrets at rest, password hashing) are future considerations and are not implemented today
 
 ### 29.4 Scalability (Self-Hosted)
 
@@ -2831,13 +2854,12 @@ All shortcuts are customizable in settings.
 
 | Scenario | Behavior |
 |----------|----------|
-| Go executor crashes mid-request | Node.js proxy returns 502 with "Executor unavailable" message. Auto-retry connection with exponential backoff (1s, 2s, 4s, max 30s). UI shows error toast with retry button. |
+| Go executor crashes mid-request | Bun proxy returns 502 (`GrpcCallError`) with an "Executor unavailable" message. Auto-retry connection with exponential backoff (1s, 2s, 4s, max 30s). UI shows error toast with retry button. |
 | Go executor crashes during flow | Current step fails. If `continueOnFailure` is true, next step runs. Otherwise flow stops with partial results and status `'error'`. All completed steps are preserved. |
 | Flow step times out | Step marked as `'error'` with timeout message. Same `continueOnFailure` logic applies. Default timeout: 30 seconds per step. |
 | User navigates away during flow | Flow continues running in the browser (same tab). If user closes the tab, flow is lost (browser-only execution). History entries for completed steps are already saved. |
 | IndexedDB storage quota exceeded | Browser typically allows 50-80% of available disk. When quota is hit, write operations fail. UI shows warning: "Storage full — export and clear history to free space." History retention auto-prune runs immediately. |
-| Mock server port already in use | `POST /api/mock/start` returns error with message "Port 8080 is already in use". UI prompts user to choose a different port. |
-| Mock server container restart | Mock state (in-memory) is lost. `GET /api/mock/status` returns "not running". UI detects this and shows "Restart Mock" button, which re-pushes config from IndexedDB. |
+| Mock server container restart | Mock state (in-memory) is lost. `GET /api/mock/routes` returns an empty table. The UI detects this on reconnect and re-pushes the route set from IndexedDB. |
 | Import file is malformed | Import parser returns error with specific message (e.g., "Invalid JSON at line 42" or "Missing required field 'info' for Postman format"). UI shows error in import dialog with option to try a different format. |
 | Large response body (>10MB) | JSON tree view switches to virtualized rendering. Raw view uses CodeMirror's lazy rendering. Response is still saved to history but subject to retention limits. |
 | WebSocket connection drops | UI shows "Disconnected" status. Auto-reconnect option available. Message log preserves all messages from the session. |
@@ -2850,11 +2872,11 @@ All shortcuts are customizable in settings.
 
 Observability is minimal — focused on operational health, not analytics:
 
-- **Health endpoint:** `GET /api/ping` returns Go executor version, uptime, and connection status
-- **Structured logging:** Pino (Node.js) and zerolog (Go) with JSON output, log levels, request IDs
-- **Error tracking:** All errors include a request ID that traces through Node.js proxy → Go executor for debugging
-- **Request timing:** Every proxy request logs total proxy overhead (time from receiving browser request to returning Go response)
-- **Mock server metrics:** Request count and error count exposed via `GET /api/mock/status`
+- **Health endpoints:** `GET /health` (plain liveness) and `GET /api/ping` (executor version + connection status)
+- **Structured logging:** Pino on the Bun server (wired into Effect's logger), `log/slog` on the Go executor — both emit JSON with request IDs
+- **Request timing:** The `RequestLogger` middleware records method, URL, status, and latency for every typed HttpApi call
+- **Mock activity:** Mock route hits and recent payloads are exposed via `GET /api/mock/routes`
+- **API docs / discovery:** `/api/openapi.json` and `/api/docs` (Scalar) make the typed surface inspectable at runtime
 
 **Not included:** APM integration, distributed tracing, metrics dashboards, usage analytics.
 
@@ -2884,7 +2906,7 @@ Observability is minimal — focused on operational health, not analytics:
 | C14 | Cookie management | Auto-send cookies, manual override, cookie jar |
 | C15 | Pre-request scripts | JavaScript scripts executed before request |
 | C16 | Post-response scripts | JavaScript scripts executed after response |
-| C17 | Script sandbox | Secure isolated-vm execution environment for scripts |
+| C17 | Script sandbox | Web Worker (Blob URL) isolation for pre/post scripts in the browser, with timeout-based termination |
 | C18 | Assertion engine | Status, header, body, timing, size assertions |
 | C19 | JSON Schema validation | Validate response body against JSON Schema |
 | C20 | Flow runner | Orchestrate multi-step request chains |
@@ -2987,10 +3009,11 @@ Observability is minimal — focused on operational health, not analytics:
 |---|---------|-------------|
 | D01 | Public hosted deployment | invoke.dev hosted on VPS with CDN |
 | D02 | Self-hosted Docker Compose | Multi-container deployment (no database) |
-| D03 | Single-container Docker | All-in-one image (server + executor) |
 | D04 | Anonymous mode | Full features without account (IndexedDB) |
 | D14 | CI/CD pipeline | GitHub Actions for lint, test, build, deploy |
 | D15 | Docker image publishing | ghcr.io or Docker Hub |
+
+> Note: a combined single-container image is a future consideration; only the three-service compose stack ships today.
 
 ---
 
@@ -3016,13 +3039,14 @@ Observability is minimal — focused on operational health, not analytics:
 |---|----------|----------|-----------|
 | 1 | License selection | **BSL 1.1** with Apache 2.0 conversion after 4 years | Battle-tested (HashiCorp, MariaDB), simple terms, protects against competing hosted services while allowing all other use. SSPL has legal ambiguity and community pushback. |
 | 2 | Domain and branding | **Deferred** — check availability of invoke.dev, invoke.io, invoke.app, getinvoke.com | Domain availability to be verified before public launch. |
-| 3 | Go executor distribution | **Both options** — separate containers for teams (Docker Compose) + all-in-one single container for solo use | Minimal extra effort (~30 lines of Dockerfile). Solo devs get `docker run invoke/all-in-one`, teams get `docker compose up` with independent scaling. |
-| 4 | Script sandbox runtime | **isolated-vm** (V8 isolates) | Uses same V8 engine as Node.js for 100% JavaScript behavior consistency. Actively maintained (used by Figma). Configurable memory (128MB) and CPU (5s timeout) limits per isolate. ~1ms isolate creation overhead. |
-| 5 | Database ORM | **Drizzle ORM** | Lighter, SQL-like API, faster queries, smaller bundle. Better fit for a project that values performance and minimal abstraction. |
+| 3 | Go executor distribution | **Three-service Docker Compose** (UI / server / executor) | The three-image split keeps the UI (Nginx), Bun server, and Go executor independently scalable. A single all-in-one image is deferred as a future consideration. |
+| 4 | Script sandbox runtime | **Web Worker (browser)**; server-side `isolated-vm` is reserved for a future server-side execution mode | The browser-side runner is sufficient for the current local-first product. A V8-isolate sandbox would be revisited if/when scripts run on the server. |
+| 5 | Database ORM | **No database, no ORM** | The product is local-first and uses IndexedDB (via Dexie) in the browser. A server-side store (and any ORM/migration tooling) is a future consideration. |
 | 6 | File System Access API | **Both** — File System Access API on Chrome/Edge, download link fallback on Safari/Firefox | ~10 lines of feature detection code. Chrome/Edge users get native save dialogs, others get standard file downloads. No reason to limit to one approach. |
 | 7 | Collection format versioning | **Both** — semver header (`invoke_version: "1.0"`) + auto-migration scripts | Version header in every YAML file costs one line. Migration functions chain `v1.0 → v1.1 → v1.2` automatically on import. Users never need to manually update files. |
 | 8 | WebSocket/gRPC connections | **Connection registry with TTL-based cleanup** | Go executor maintains `map[string]*Connection` keyed by UUID. Background goroutine checks for idle connections every 30 seconds, closes connections idle for 30 minutes (configurable). Explicit disconnect from UI removes immediately. Prevents memory leaks from abandoned browser tabs. |
-| 9 | Runtime | **Node.js 20 LTS** (not Bun) | gRPC dependency (`@grpc/grpc-js`) and script sandbox (`isolated-vm`) both require Node.js. Bun uses JavaScriptCore (not V8), so `isolated-vm` cannot work. Bun's gRPC streaming compatibility has known issues. |
+| 9 | Server runtime | **Bun + `@effect/platform` HttpApi** | Bun's native TypeScript execution, fast startup, and Node-compatible APIs let the server stay tiny. Effect HttpApi gives typed endpoints, schema-validated payloads, dependency-injected services, auto-generated OpenAPI, and tagged errors — all with no extra request-shape duplication. The earlier "Node.js + Hono" stack was superseded in May 2026; see `docs/HONO_TO_HTTPAPI_MIGRATION.md`. |
+| 10 | Lint / format tooling | **Oxlint + Oxfmt** | Single fast Rust-based toolchain replaces the earlier ESLint/Prettier setup across all packages. Configured via `.oxlintrc.json`. |
 
 ### 32.2 Future Considerations
 

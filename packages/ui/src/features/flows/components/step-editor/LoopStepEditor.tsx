@@ -36,18 +36,18 @@ function NumberField({
   placeholder: string;
   onChange: (value?: number) => void;
 }) {
+  const id = `loop-field-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-[var(--text-2)]">{label}</label>
+      <label htmlFor={id} className="text-xs font-medium text-[var(--text-2)]">{label}</label>
       <input
+        id={id}
         type="number"
         className="input text-sm py-1.5 w-32"
         min={1}
         placeholder={placeholder}
         value={value ?? ""}
-        onChange={(event) =>
-          onChange(event.target.value ? Number(event.target.value) : undefined)
-        }
+        onChange={(event) => onChange(event.target.value ? Number(event.target.value) : undefined)}
       />
     </div>
   );

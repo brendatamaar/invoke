@@ -6,8 +6,7 @@ export function VisualizeTab() {
 
   const ct =
     (Array.isArray(response.headers)
-      ? response.headers.find((h) => h.key.toLowerCase() === "content-type")
-          ?.value
+      ? response.headers.find((h) => h.key.toLowerCase() === "content-type")?.value
       : "") ?? "";
 
   const isImage = ct.startsWith("image/");
@@ -18,11 +17,7 @@ export function VisualizeTab() {
     const src = `data:${ct.split(";")[0]};base64,${btoa(response.body)}`;
     return (
       <div className="flex items-center justify-center h-full p-4 overflow-auto bg-[var(--surface-2)]">
-        <img
-          src={src}
-          alt="response"
-          className="max-w-full max-h-full object-contain"
-        />
+        <img src={src} alt="response" className="max-w-full max-h-full object-contain" />
       </div>
     );
   }
@@ -35,7 +30,7 @@ export function VisualizeTab() {
       <iframe
         key={url}
         src={url}
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts"
         className="w-full h-full border-none"
         onLoad={() => URL.revokeObjectURL(url)}
         title="Response preview"

@@ -22,7 +22,7 @@ import (
 	"time"
 
 	ntlmssp "github.com/Azure/go-ntlmssp"
-	"github.com/brendatama/invoke/executor/internal/executorpb"
+	"github.com/brendatamaar/invoke/executor/internal/executorpb"
 	"golang.org/x/net/proxy"
 )
 

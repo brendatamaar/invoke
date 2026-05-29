@@ -10,7 +10,7 @@ import {
   type RequestProtocol,
 } from "@invoke/core";
 import type { AppState } from "../../../types";
-import { processMultipartResponse } from "../../execute";
+import { processMultipartResponse } from "../../execute/multipart";
 import { coreStore } from "../../../store";
 import { persistResponseCookies } from "../cookies";
 

@@ -10,9 +10,7 @@ export function RouteHeadersEditor({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-[var(--text-2)]">
-        Response headers
-      </label>
+      <span className="text-xs font-medium text-[var(--text-2)]">Response headers</span>
       <div className="border border-[var(--border)] rounded overflow-hidden">
         <KeyValueEditor
           rows={headers}

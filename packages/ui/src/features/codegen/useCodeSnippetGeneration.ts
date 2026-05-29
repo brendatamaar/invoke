@@ -1,10 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  generateCodeSnippet,
-  resolveRequest,
-  type RequestConfig,
-} from "@invoke/core";
+import { generateCodeSnippet, resolveRequest, type RequestConfig } from "@invoke/core";
 import { applyProtocolDefaults } from "../../lib/protocolDefaults";
 import { useStore } from "../../store";
 
@@ -55,15 +51,8 @@ export function useCodeSnippetGeneration() {
   return useQuery({
     queryKey: ["codegen", requestHash, codeTarget],
     queryFn: async () => {
-      const { request: resolved } = resolveRequest(
-        request as RequestConfig,
-        env,
-        sessionVariables,
-      );
-      const snippet = await generateCodeSnippet(
-        applyProtocolDefaults(resolved),
-        codeTarget,
-      );
+      const { request: resolved } = resolveRequest(request as RequestConfig, env, sessionVariables);
+      const snippet = await generateCodeSnippet(applyProtocolDefaults(resolved), codeTarget);
       return snippet.code;
     },
     enabled: !!response,

@@ -111,9 +111,7 @@ export const emptyGrpcRequest = (): GrpcRequestConfig => ({
   scripts: { preRequest: "", postResponse: "" },
 });
 
-export function toRequestConfig(
-  request: RequestConfig | RequestDraft,
-): RequestConfig {
+export function toRequestConfig(request: RequestConfig | RequestDraft): RequestConfig {
   const draft = request as RequestDraft;
   return {
     method: draft.method,
@@ -133,9 +131,7 @@ export function toRequestConfig(
   };
 }
 
-export function graphQLToRequestConfig(
-  request: GraphQLRequestConfig,
-): RequestConfig {
+export function graphQLToRequestConfig(request: GraphQLRequestConfig): RequestConfig {
   const useGet = request.httpMethod === "GET";
   const contentType = request.contentType ?? "application/json";
 
@@ -167,8 +163,7 @@ export function graphQLToRequestConfig(
   const headers = [...(request.headers ?? [])];
   if (
     !headers.some(
-      (header) =>
-        header.enabled !== false && header.key.toLowerCase() === "content-type",
+      (header) => header.enabled !== false && header.key.toLowerCase() === "content-type",
     )
   ) {
     headers.push({ key: "Content-Type", value: contentType, enabled: true });
@@ -183,9 +178,7 @@ export function graphQLToRequestConfig(
     body: JSON.stringify({
       query: request.query,
       variables: parseGraphQLVariables(request.variables),
-      ...(request.operationName?.trim()
-        ? { operationName: request.operationName.trim() }
-        : {}),
+      ...(request.operationName?.trim() ? { operationName: request.operationName.trim() } : {}),
     }),
     auth: request.auth,
     timeoutMs: request.timeoutMs,
@@ -198,8 +191,7 @@ export function inferProtocol(
   request: ProtocolRequestConfig | RequestDraft,
   fallback: RequestProtocol = "rest",
 ): RequestProtocol {
-  if ((request as RequestDraft).protocol)
-    return (request as RequestDraft).protocol!;
+  if ((request as RequestDraft).protocol) return (request as RequestDraft).protocol!;
   if (isGraphQLRequestConfig(request)) return "graphql";
   if (isWebSocketRequestConfig(request)) return "websocket";
   if (isGrpcRequestConfig(request)) return "grpc";

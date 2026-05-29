@@ -1,8 +1,5 @@
 import { ArrowDown } from "lucide-react";
-import type {
-  GQLSubMessage,
-  GQLSubState,
-} from "../hooks/useGraphQLSubscription";
+import type { GQLSubMessage, GQLSubState } from "../hooks/useGraphQLSubscription";
 
 export function GQLSubscriptionLog({
   state,
@@ -38,6 +35,7 @@ export function GQLSubscriptionLog({
         </span>
         {messages.length > 0 && (
           <button
+            type="button"
             onClick={onClear}
             className="text-2xs text-[var(--text-3)] hover:text-[var(--text-1)]"
           >

@@ -14,9 +14,7 @@ export function HistoryPanel() {
     ? history.filter((entry) => matchesHistoryQuery(entry, historyQuery))
     : history;
   const pinned = filtered.filter((entry) => entry.pinned);
-  const grouped = groupHistoryByDate(
-    filtered.filter((entry) => !entry.pinned),
-  );
+  const grouped = groupHistoryByDate(filtered.filter((entry) => !entry.pinned));
 
   const restore = (entry: HistoryEntry) => {
     const request = entry.request as Parameters<typeof setRequest>[0] | undefined;
@@ -103,6 +101,7 @@ export function HistoryPanel() {
           History
         </span>
         <button
+          type="button"
           onClick={() => set({ showDiffModal: true })}
           className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
           title="Compare responses"
@@ -110,6 +109,7 @@ export function HistoryPanel() {
           <ArrowLeftRight size={12} />
         </button>
         <button
+          type="button"
           onClick={() => set({ showClearHistoryModal: true })}
           className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
           title="Clear all history"
@@ -127,6 +127,7 @@ export function HistoryPanel() {
             value={historyQuery}
             onChange={(event) => set({ historyQuery: event.target.value })}
             placeholder="Search history..."
+            aria-label="Search history"
             className="input text-xs py-1"
             style={{ paddingLeft: "1.5rem" }}
           />
@@ -134,9 +135,7 @@ export function HistoryPanel() {
       </div>
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 && (
-          <p className="p-4 text-xs text-[var(--text-3)] text-center">
-            No history
-          </p>
+          <p className="p-4 text-xs text-[var(--text-3)] text-center">No history</p>
         )}
         {pinned.length > 0 && (
           <HistoryGroup

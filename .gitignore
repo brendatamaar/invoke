@@ -7,8 +7,21 @@ coverage/
 test-results/
 playwright-report/
 *.tsbuildinfo
+
+# Secrets / credentials (belt-and-braces — Push Protection backstops this)
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
 .DS_Store
+
+# Tool / IDE caches
+.claude/
+
 executor/bin/
 tmp/
 .design-temp

@@ -2,11 +2,15 @@ import { useStore } from "../../../store";
 import { Select } from "../../../components/shared/Select";
 import { URLBar } from "./URLBar";
 import { KeyValueEditor } from "../../../components/shared/KeyValueEditor";
-import { WebSocketBar, WebSocketClient } from "../../websocket";
-import { GRPCBar, GRPCClient } from "../../grpc";
+import { WebSocketBar } from "../../websocket/components/WebSocketBar";
+import { WebSocketClient } from "../../websocket/components/WebSocketClient";
+import { GRPCBar } from "../../grpc/components/GRPCBar";
+import { GRPCClient } from "../../grpc/components/GRPCClient";
 import { BodyPanel } from "./BodyPanel";
 import { AuthPanel } from "./auth/AuthPanel";
-import { GraphQLQueryPanel, GraphQLOptionsPanel, GraphQLVariablesPanel } from "../../graphql";
+import { GraphQLQueryPanel } from "../../graphql/components/GraphQLQueryPanel";
+import { GraphQLOptionsPanel } from "../../graphql/components/GraphQLOptionsPanel";
+import { GraphQLVariablesPanel } from "../../graphql/components/GraphQLVariablesPanel";
 import { ScriptsPanel } from "./ScriptsPanel";
 import { AssertionsPanel } from "./AssertionsPanel";
 import { ExtractPanel } from "./ExtractPanel";
@@ -60,6 +64,7 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
         <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)]">
           {tabs.map((tab) => (
             <button
+              type="button"
               key={tab.id}
               onClick={() => set({ requestTab: tab.id })}
               className={`tab-btn ${requestTab === tab.id ? "active" : ""}`}
@@ -91,16 +96,11 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
                 const base = request.url.split("?")[0];
                 const enabled = kv.filter((r) => r.enabled !== false && r.key);
                 const qs = enabled
-                  .map(
-                    (r) =>
-                      `${encodeURIComponent(r.key)}=${encodeURIComponent(r.value ?? "")}`,
-                  )
+                  .map((r) => `${encodeURIComponent(r.key)}=${encodeURIComponent(r.value ?? "")}`)
                   .join("&");
                 setRequest({ params: kv, url: qs ? `${base}?${qs}` : base });
               }}
-              onPathVariablesChange={(pathVariables) =>
-                setRequest({ pathVariables })
-              }
+              onPathVariablesChange={(pathVariables) => setRequest({ pathVariables })}
             />
           )}
           {requestTab === "headers" && (
