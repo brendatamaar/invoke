@@ -41,6 +41,7 @@ export function SaveActionModal() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) close();
       }}
@@ -53,6 +54,7 @@ export function SaveActionModal() {
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
           <span className="text-sm font-semibold text-[var(--text-1)]">Save Request</span>
           <button
+            type="button"
             onClick={close}
             className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
           >
@@ -71,6 +73,7 @@ export function SaveActionModal() {
           </p>
           <div className="flex flex-col gap-2">
             <button
+              type="button"
               onClick={updateExisting}
               className="flex items-center gap-3 px-3 py-2.5 rounded border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-subtle)] text-left transition-colors group"
             >
@@ -86,6 +89,7 @@ export function SaveActionModal() {
             </button>
 
             <button
+              type="button"
               onClick={saveAsNew}
               className="flex items-center gap-3 px-3 py-2.5 rounded border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-subtle)] text-left transition-colors group"
             >
@@ -100,7 +104,7 @@ export function SaveActionModal() {
 
         {/* Footer */}
         <div className="flex justify-end px-4 py-3 border-t border-[var(--border)]">
-          <button onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
+          <button type="button" onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
             Cancel
           </button>
         </div>

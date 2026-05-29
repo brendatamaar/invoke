@@ -31,29 +31,28 @@ export function RunnerFooter({
           </span>
           <ExportButton
             label="JSON"
-            onClick={() =>
-              downloadText(
-                exportRunResultJson(runResult),
-                `run-${Date.now()}.json`,
-                "application/json",
-              )
-            }
+            onClick={() => {
+              const ts = String(runResult.completedAt ?? runResult.startedAt);
+              downloadText(exportRunResultJson(runResult), `run-${ts}.json`, "application/json");
+            }}
           />
           <ExportButton
             label="CSV"
-            onClick={() =>
-              downloadText(exportRunResultCsv(runResult), `run-${Date.now()}.csv`, "text/csv")
-            }
+            onClick={() => {
+              const ts = String(runResult.completedAt ?? runResult.startedAt);
+              downloadText(exportRunResultCsv(runResult), `run-${ts}.csv`, "text/csv");
+            }}
           />
         </div>
       )}
       {!runResult && <div className="mr-auto" />}
       {running ? (
-        <button onClick={onCancel} className="btn btn-danger text-xs flex items-center gap-1.5">
+        <button type="button" onClick={onCancel} className="btn btn-danger text-xs flex items-center gap-1.5">
           <StopCircle size={13} /> Cancel
         </button>
       ) : (
         <button
+          type="button"
           onClick={runResult ? onRunAgain : onRun}
           disabled={!canRun}
           className="btn btn-primary text-xs flex items-center gap-1.5"
@@ -67,7 +66,7 @@ export function RunnerFooter({
 
 function ExportButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="btn text-2xs py-0.5 px-2 flex items-center gap-1">
+    <button type="button" onClick={onClick} className="btn text-2xs py-0.5 px-2 flex items-center gap-1">
       <Download size={11} /> {label}
     </button>
   );

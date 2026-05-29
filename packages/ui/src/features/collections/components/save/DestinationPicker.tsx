@@ -33,7 +33,7 @@ export function DestinationPicker({
               {collection.name}
             </option>
           ))}
-          <option value={NEW_COLLECTION_SENTINEL}>+ New collection...</option>
+          <option value={NEW_COLLECTION_SENTINEL}>+ New collection…</option>
         </Select>
       </div>
       <div className="flex flex-col gap-1">
@@ -45,7 +45,7 @@ export function DestinationPicker({
               {folder.name}
             </option>
           ))}
-          <option value={NEW_FOLDER_SENTINEL}>+ New folder...</option>
+          <option value={NEW_FOLDER_SENTINEL}>+ New folder…</option>
         </Select>
       </div>
     </>

@@ -14,19 +14,17 @@ export function ClearHistoryModal() {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={close}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <button type="button" className="absolute inset-0 bg-black/40" onClick={close} aria-label="Close" />
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
+        className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 360 }}
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
           <Trash2 size={15} className="text-[var(--danger)]" />
           <span className="text-sm font-semibold">Clear History</span>
           <button
+            type="button"
             onClick={close}
             className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
           >
@@ -41,10 +39,11 @@ export function ClearHistoryModal() {
         </div>
 
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
-          <button onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
+          <button type="button" onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
             Cancel
           </button>
           <button
+            type="button"
             onClick={confirm}
             className="btn text-xs px-3 py-1.5 bg-[var(--danger)] text-white hover:opacity-90"
           >

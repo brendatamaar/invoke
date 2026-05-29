@@ -101,6 +101,7 @@ export function HistoryPanel() {
           History
         </span>
         <button
+          type="button"
           onClick={() => set({ showDiffModal: true })}
           className="text-[var(--text-3)] hover:text-[var(--accent)] p-0.5"
           title="Compare responses"
@@ -108,6 +109,7 @@ export function HistoryPanel() {
           <ArrowLeftRight size={12} />
         </button>
         <button
+          type="button"
           onClick={() => set({ showClearHistoryModal: true })}
           className="text-[var(--text-3)] hover:text-[var(--danger)] p-0.5"
           title="Clear all history"
@@ -125,6 +127,7 @@ export function HistoryPanel() {
             value={historyQuery}
             onChange={(event) => set({ historyQuery: event.target.value })}
             placeholder="Search history..."
+            aria-label="Search history"
             className="input text-xs py-1"
             style={{ paddingLeft: "1.5rem" }}
           />

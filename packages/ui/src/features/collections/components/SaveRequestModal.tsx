@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { FolderOpen, X } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
 import { useCollections, useFolders } from "../../../hooks/useDb";
@@ -12,33 +12,41 @@ export function SaveRequestModal() {
   const inputRef = useRef<HTMLInputElement>(null);
   const newColInputRef = useRef<HTMLInputElement>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
-  const [name, setName] = useState("");
-  const [collectionId, setCollectionId] = useState("");
-  const [newCollectionName, setNewCollectionName] = useState("");
-  const [folderId, setFolderId] = useState("");
-  const [newFolderName, setNewFolderName] = useState("");
+  type FormState = { name: string; collectionId: string; newCollectionName: string; folderId: string; newFolderName: string };
+  const [formState, formDispatch] = useReducer(
+    (prev: FormState, patch: Partial<FormState>) => ({ ...prev, ...patch }),
+    { name: "", collectionId: "", newCollectionName: "", folderId: "", newFolderName: "" },
+  );
+  const { name, collectionId, newCollectionName, folderId, newFolderName } = formState;
+  const setName = (v: string) => formDispatch({ name: v });
+  const setCollectionId = (v: string) => {
+    formDispatch({ collectionId: v, folderId: "", newFolderName: "" });
+    if (v === NEW_COLLECTION_SENTINEL) setTimeout(() => newColInputRef.current?.focus(), 50);
+  };
+  const setNewCollectionName = (v: string) => formDispatch({ newCollectionName: v });
+  const setFolderId = (v: string) => {
+    formDispatch({ folderId: v });
+    if (v === NEW_FOLDER_SENTINEL) setTimeout(() => newFolderInputRef.current?.focus(), 50);
+  };
+  const setNewFolderName = (v: string) => formDispatch({ newFolderName: v });
   const isNewCollection = collectionId === NEW_COLLECTION_SENTINEL;
   const isNewFolder = folderId === NEW_FOLDER_SENTINEL;
 
   useEffect(() => {
     if (!saveDialog.open) return;
-    setName(saveDialog.name);
-    setCollectionId(saveDialog.collectionId || collections[0]?.id || "");
-    setFolderId(saveDialog.folderId || "");
-    setNewCollectionName("");
-    setNewFolderName("");
-    setTimeout(() => inputRef.current?.focus(), 50);
+    formDispatch({
+      name: saveDialog.name,
+      collectionId: saveDialog.collectionId || collections[0]?.id || "",
+      folderId: saveDialog.folderId || "",
+      newCollectionName: "",
+      newFolderName: "",
+    });
+    const id = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(id);
   }, [collections, saveDialog]);
-  useEffect(() => {
-    setFolderId("");
-    setNewFolderName("");
-  }, [collectionId]);
-  useEffect(() => {
-    if (isNewCollection) setTimeout(() => newColInputRef.current?.focus(), 50);
-  }, [isNewCollection]);
-  useEffect(() => {
-    if (isNewFolder) setTimeout(() => newFolderInputRef.current?.focus(), 50);
-  }, [isNewFolder]);
+
+  const closeRef = useRef<() => void>(() => {});
+  const confirmRef = useRef<() => void>(() => {});
 
   const close = () => set({ saveDialog: { ...saveDialog, open: false } });
   const availableFolders = folders.filter((folder) => folder.collectionId === collectionId);
@@ -77,26 +85,40 @@ export function SaveRequestModal() {
     }
   };
 
+  closeRef.current = close;
+  confirmRef.current = () => { if (canSave) void confirm(); };
+
+  useEffect(() => {
+    if (!saveDialog.open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeRef.current();
+      if (e.key === "Enter") { e.preventDefault(); confirmRef.current(); }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [saveDialog.open]);
+
   if (!saveDialog.open) return null;
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) close();
       }}
     >
-      <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
+      <dialog
+        open
+        aria-label="Save to Collection"
+        className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col p-0"
         style={{ width: 400 }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") confirm();
-          if (event.key === "Escape") close();
-        }}
       >
+        <form method="dialog" className="flex flex-col">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
           <FolderOpen size={15} className="text-[var(--accent)]" />
           <span className="text-sm font-semibold text-[var(--text-1)]">Save to Collection</span>
           <button
+            type="button"
             onClick={close}
             className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
           >
@@ -121,10 +143,11 @@ export function SaveRequestModal() {
           onNewFolderNameChange={setNewFolderName}
         />
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
-          <button onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
+          <button type="button" onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
             Cancel
           </button>
           <button
+            type="button"
             onClick={confirm}
             disabled={!canSave}
             className="btn btn-primary text-xs px-3 py-1.5"
@@ -132,7 +155,8 @@ export function SaveRequestModal() {
             Save
           </button>
         </div>
-      </div>
+        </form>
+      </dialog>
     </div>
   );
 }

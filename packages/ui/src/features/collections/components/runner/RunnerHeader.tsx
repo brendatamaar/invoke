@@ -20,6 +20,7 @@ export function RunnerHeader({
       </span>
       {!running && (
         <button
+          type="button"
           onClick={onClose}
           className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
         >

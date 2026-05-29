@@ -44,8 +44,8 @@ export function BatchResults({ result }: { result: BatchRunStats }) {
             Errors ({result.errors.length})
           </p>
           <div className="max-h-24 overflow-y-auto flex flex-col gap-1">
-            {result.errors.map((error, index) => (
-              <span key={index} className="text-2xs font-mono text-[var(--danger)] truncate">
+            {result.errors.map((error) => (
+              <span key={error} className="text-2xs font-mono text-[var(--danger)] truncate">
                 {error}
               </span>
             ))}

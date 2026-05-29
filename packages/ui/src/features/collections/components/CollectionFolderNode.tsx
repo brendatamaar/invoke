@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef } from "react";
 import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen } from "lucide-react";
 import type { Folder as FolderType } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
@@ -20,11 +20,17 @@ export function CollectionFolderNode({
   collectionId: string;
 }) {
   const { expandedFolderIds, toggleFolder, requests, set, addToast } = useStore();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [descModal, setDescModal] = useState(false);
-  const [deleteModal, setDeleteModal] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  type FolderNodeState = { menuOpen: boolean; descModal: boolean; deleteModal: boolean; isDragOver: boolean; dragOverIndex: number | null };
+  const [state, dispatch] = useReducer(
+    (prev: FolderNodeState, patch: Partial<FolderNodeState>) => ({ ...prev, ...patch }),
+    { menuOpen: false, descModal: false, deleteModal: false, isDragOver: false, dragOverIndex: null },
+  );
+  const { menuOpen, descModal, deleteModal, isDragOver, dragOverIndex } = state;
+  const setMenuOpen = (v: boolean) => dispatch({ menuOpen: v });
+  const setDescModal = (v: boolean) => dispatch({ descModal: v });
+  const setDeleteModal = (v: boolean) => dispatch({ deleteModal: v });
+  const setIsDragOver = (v: boolean) => dispatch({ isDragOver: v });
+  const setDragOverIndex = (v: number | null) => dispatch({ dragOverIndex: v });
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!menuOpen) return;
@@ -85,8 +91,7 @@ export function CollectionFolderNode({
     <>
       <div>
         <div
-          className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer rounded mx-1 text-[var(--text-2)] transition-colors ${isDragOver ? "bg-[var(--accent-subtle,var(--surface-2))] ring-1 ring-inset ring-[var(--accent,var(--border))]" : "hover:bg-[var(--surface-2)]"}`}
-          onClick={() => toggleFolder(folder.id)}
+          className={`group flex items-center gap-1.5 rounded mx-1 text-[var(--text-2)] transition-colors ${isDragOver ? "bg-[var(--accent-subtle,var(--surface-2))] ring-1 ring-inset ring-[var(--accent,var(--border))]" : "hover:bg-[var(--surface-2)]"}`}
           onDragOver={(event) => handleFolderDragOver(event, collectionId, setIsDragOver)}
           onDragLeave={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget as Node)) {
@@ -97,20 +102,26 @@ export function CollectionFolderNode({
             handleFolderDrop(event, collectionId, setIsDragOver, moveToFolder, addToast)
           }
         >
-          {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-          {expanded ? <FolderOpen size={13} /> : <Folder size={13} />}
-          <span className="flex-1 text-xs truncate" title={folder.description || undefined}>
-            {folder.name}
-          </span>
-          {folder.description && (
-            <span title={folder.description} className="shrink-0">
-              <FileText size={11} className="text-[var(--text-3)]" />
+          <button
+            type="button"
+            className="flex flex-1 items-center gap-1.5 px-3 py-1 cursor-pointer text-left min-w-0"
+            onClick={() => toggleFolder(folder.id)}
+          >
+            {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            {expanded ? <FolderOpen size={13} /> : <Folder size={13} />}
+            <span className="flex-1 text-xs truncate" title={folder.description || undefined}>
+              {folder.name}
             </span>
-          )}
+            {folder.description && (
+              <span title={folder.description} className="shrink-0">
+                <FileText size={11} className="text-[var(--text-3)]" />
+              </span>
+            )}
+          </button>
           <FolderActionsMenu
             open={menuOpen}
             menuRef={menuRef}
-            onToggle={() => setMenuOpen((value) => !value)}
+            onToggle={() => setMenuOpen(!menuOpen)}
             onRun={() => {
               setMenuOpen(false);
               set({

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef } from "react";
 import { GripVertical } from "lucide-react";
 import type { RequestConfig, SavedRequest } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
-import { webSocketClose } from "../../websocket";
-import { MethodBadge, protocolMethod } from "../../../components/shared/MethodBadge";
+import { webSocketClose } from "../../websocket/api";
+import { MethodBadge } from "../../../components/shared/MethodBadge";
+import { protocolMethod } from "../../../components/shared/methodUtils";
 import { CollectionRequestMenu } from "./tree/CollectionRequestMenu";
 import { CollectionRequestModals } from "./tree/CollectionRequestModals";
 import { openSavedRequest } from "./tree/openSavedRequest";
@@ -33,11 +34,17 @@ export function CollectionRequestNode({
   collectionId: string;
 }) {
   const store = useStore();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
-  const [duplicateName, setDuplicateName] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
+  type NodeState = { menuOpen: boolean; confirmDelete: boolean; confirmDisconnect: boolean; duplicateName: string | null; dragging: boolean };
+  const [state, dispatch] = useReducer(
+    (prev: NodeState, patch: Partial<NodeState>) => ({ ...prev, ...patch }),
+    { menuOpen: false, confirmDelete: false, confirmDisconnect: false, duplicateName: null, dragging: false },
+  );
+  const { menuOpen, confirmDelete, confirmDisconnect, duplicateName, dragging } = state;
+  const setMenuOpen = (v: boolean) => dispatch({ menuOpen: v });
+  const setConfirmDelete = (v: boolean) => dispatch({ confirmDelete: v });
+  const setConfirmDisconnect = (v: boolean) => dispatch({ confirmDisconnect: v });
+  const setDuplicateName = (v: string | null) => dispatch({ duplicateName: v });
+  const setDragging = (v: boolean) => dispatch({ dragging: v });
   const menuRef = useRef<HTMLDivElement>(null);
   const pendingOpenRef = useRef<(() => void) | null>(null);
   useEffect(() => {
@@ -129,32 +136,37 @@ export function CollectionRequestNode({
         draggable
         onDragStart={(event) => startDrag(event, request, setDragging)}
         onDragEnd={() => setDragging(false)}
-        className={`group relative flex items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer rounded mx-1 transition-opacity ${dragging ? "opacity-40" : ""}`}
-        onClick={open}
+        className={`group relative flex items-center gap-1.5 rounded mx-1 transition-opacity ${dragging ? "opacity-40" : ""}`}
       >
-        <GripVertical
-          size={11}
-          className="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--text-3)] cursor-grab"
-        />
-        <MethodBadge
-          method={protocolMethod(
-            request.protocol,
-            (request.request as { method?: string })?.method,
-          )}
-        />
-        <span className="flex-1 text-xs text-[var(--text-1)] truncate">
-          {request.name || (request.request as { url?: string })?.url || "Untitled"}
-        </span>
-        {isDirty && (
-          <span
-            title="Unsaved changes"
-            className="shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--warn)]"
+        <button
+          type="button"
+          className="flex flex-1 items-center gap-1.5 px-3 py-1 hover:bg-[var(--surface-2)] cursor-pointer text-left min-w-0"
+          onClick={open}
+        >
+          <GripVertical
+            size={11}
+            className="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--text-3)] cursor-grab"
           />
-        )}
+          <MethodBadge
+            method={protocolMethod(
+              request.protocol,
+              (request.request as { method?: string })?.method,
+            )}
+          />
+          <span className="flex-1 text-xs text-[var(--text-1)] truncate">
+            {request.name || (request.request as { url?: string })?.url || "Untitled"}
+          </span>
+          {isDirty && (
+            <span
+              title="Unsaved changes"
+              className="shrink-0 size-1.5 rounded-full bg-[var(--warn)]"
+            />
+          )}
+        </button>
         <CollectionRequestMenu
           open={menuOpen}
           menuRef={menuRef}
-          onToggle={() => setMenuOpen((value) => !value)}
+          onToggle={() => setMenuOpen(!menuOpen)}
           onDuplicate={() => {
             setMenuOpen(false);
             setDuplicateName(`${request.name || "Untitled"} Copy`);

@@ -1,6 +1,7 @@
 import { CheckCircle2, SkipForward, XCircle } from "lucide-react";
 import type { RequestRunResult, SavedRequest } from "@invoke/core";
-import { MethodBadge, protocolMethod } from "../../../../components/shared/MethodBadge";
+import { MethodBadge } from "../../../../components/shared/MethodBadge";
+import { protocolMethod } from "../../../../components/shared/methodUtils";
 import { StatusBadge } from "../../../../components/shared/StatusBadge";
 
 export function RunnerResults({

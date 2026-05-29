@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useReducer, useRef } from "react";
 import { X, Zap } from "lucide-react";
 import { BatchRunner, resolveRequest, type VariableScope } from "@invoke/core";
 import { useStore } from "../../../store";
-import { execute } from "../../execute";
+import { execute } from "../../execute/api";
 import { BatchFooter } from "./batch/BatchFooter";
 import { BatchProgress } from "./batch/BatchProgress";
 import { BatchResults } from "./batch/BatchResults";
@@ -20,11 +20,17 @@ export function BatchRunnerModal() {
     set,
     addToast,
   } = useStore();
-  const [iterations, setIterations] = useState(10);
-  const [concurrency, setConcurrency] = useState(1);
-  const [delayMs, setDelayMs] = useState(0);
-  const [stopOnFailure, setStopOnFailure] = useState(false);
-  const [progress, setProgress] = useState(0);
+  type BatchState = { iterations: number; concurrency: number; delayMs: number; stopOnFailure: boolean; progress: number };
+  const [batchState, batchDispatch] = useReducer(
+    (prev: BatchState, patch: Partial<BatchState>) => ({ ...prev, ...patch }),
+    { iterations: 10, concurrency: 1, delayMs: 0, stopOnFailure: false, progress: 0 },
+  );
+  const { iterations, concurrency, delayMs, stopOnFailure, progress } = batchState;
+  const setIterations = (v: number) => batchDispatch({ iterations: v });
+  const setConcurrency = (v: number) => batchDispatch({ concurrency: v });
+  const setDelayMs = (v: number) => batchDispatch({ delayMs: v });
+  const setStopOnFailure = (v: boolean) => batchDispatch({ stopOnFailure: v });
+  const setProgress = (v: number) => batchDispatch({ progress: v });
   const runnerRef = useRef<BatchRunner | null>(null);
   if (!showBatchRunner) return null;
 
@@ -65,8 +71,10 @@ export function BatchRunnerModal() {
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={close}
+      onKeyDown={(e) => { if (e.key === "Escape") close(); }}
     >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
@@ -78,6 +86,7 @@ export function BatchRunnerModal() {
           <span className="text-sm font-semibold">Batch Runner</span>
           {!batchRunning && (
             <button
+              type="button"
               onClick={close}
               className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
             >

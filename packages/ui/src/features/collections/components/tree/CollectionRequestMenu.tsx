@@ -21,6 +21,7 @@ export function CollectionRequestMenu({
       onClick={(event) => event.stopPropagation()}
     >
       <button
+        type="button"
         onClick={onToggle}
         className="p-0.5 rounded hover:bg-[var(--border)] text-[var(--text-3)]"
       >

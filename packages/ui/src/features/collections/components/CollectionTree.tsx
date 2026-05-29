@@ -34,6 +34,7 @@ export function CollectionTree() {
           <div className="flex items-center gap-1">
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setImportMenuOpen((v) => !v)}
                 className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 rounded hover:bg-[var(--surface-2)]"
                 title="Import"
@@ -45,6 +46,7 @@ export function CollectionTree() {
                   {COLLECTION_IMPORT_OPTIONS.map((opt) => (
                     <button
                       key={opt.type}
+                      type="button"
                       onClick={() => {
                         setImportMenuOpen(false);
                         triggerImport(opt.type);
@@ -58,6 +60,7 @@ export function CollectionTree() {
               )}
             </div>
             <button
+              type="button"
               onClick={() => setNewColModal(true)}
               className="text-[var(--text-3)] hover:text-[var(--text-1)] p-0.5 rounded hover:bg-[var(--surface-2)]"
               title="New collection"
@@ -74,6 +77,7 @@ export function CollectionTree() {
           accept={accept}
           multiple={accept === ".yaml,.yml"}
           onChange={handleFileImport}
+          aria-label="Import collection file"
         />
 
         {!collections.length ? (

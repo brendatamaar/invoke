@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { CollectionRunner, type RequestRunResult, type VariableScope } from "@invoke/core";
 import { useStore } from "../../../store";
-import { execute } from "../../execute";
-import { protocolMethod } from "../../../components/shared/MethodBadge";
+import { execute } from "../../execute/api";
+import { protocolMethod } from "../../../components/shared/methodUtils";
 import { RunnerFooter } from "./runner/RunnerFooter";
 import { RunnerHeader } from "./runner/RunnerHeader";
 import { RunnerResults } from "./runner/RunnerResults";
@@ -90,8 +90,10 @@ export function CollectionRunnerModal() {
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={close}
+      onKeyDown={(e) => { if (e.key === "Escape") close(); }}
     >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"

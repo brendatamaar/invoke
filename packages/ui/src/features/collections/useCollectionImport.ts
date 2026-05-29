@@ -65,25 +65,31 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
 
   const persistImported = async (imported: CollectionImportResult) => {
     const col = await coreStore.createCollection(imported.collection.name, imported.collection);
-    const folderIds = new Map<string, string>();
-    for (const folder of imported.folders ?? []) {
-      const parentId = folder.parentFolderId
-        ? (folderIds.get(folder.parentFolderId) ?? null)
-        : null;
-      const saved = await coreStore.createFolder(col.id, folder.name, parentId, folder);
-      folderIds.set(folder.id, saved.id);
+    const folders = imported.folders ?? [];
+    let folderChain = Promise.resolve(new Map<string, string>());
+    for (const folder of folders) {
+      folderChain = folderChain.then((map) => {
+        const parentId = folder.parentFolderId ? (map.get(folder.parentFolderId) ?? null) : null;
+        return coreStore.createFolder(col.id, folder.name, parentId, folder).then((saved) => {
+          map.set(folder.id, saved.id);
+          return map;
+        });
+      });
     }
-    for (const item of imported.requests) {
-      await coreStore.saveRequest(
-        item.request as Parameters<typeof coreStore.saveRequest>[0],
-        item.name,
-        col.id,
-        {
-          protocol: item.protocol,
-          folderId: item.folderId ? (folderIds.get(item.folderId) ?? null) : null,
-        },
-      );
-    }
+    const folderIds = await folderChain;
+    await Promise.all(
+      imported.requests.map((item) =>
+        coreStore.saveRequest(
+          item.request as Parameters<typeof coreStore.saveRequest>[0],
+          item.name,
+          col.id,
+          {
+            protocol: item.protocol,
+            folderId: item.folderId ? (folderIds.get(item.folderId) ?? null) : null,
+          },
+        ),
+      ),
+    );
     return imported.requests.length;
   };
 
