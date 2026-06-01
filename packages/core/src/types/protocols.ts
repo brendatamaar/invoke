@@ -45,6 +45,8 @@ export interface WebSocketRequestConfig {
   scripts?: RequestScripts;
   savedMessages?: WsSavedMessage[];
   autoReconnect?: boolean;
+  reconnectDelay?: number;
+  reconnectMaxRetries?: number;
   preset?: WsPreset;
   presetQuery?: string;
   presetVariables?: string;
