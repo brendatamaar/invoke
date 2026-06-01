@@ -168,11 +168,41 @@ function generatorFor(target: CodeExportTarget) {
 }
 
 function generateCurl(request: RequestConfig) {
+  if (request.bodyMode === "graphql-multipart") {
+    return generateCurlGraphqlMultipart(request);
+  }
   const parts = ["curl", "-X", shellQuote(request.method), shellQuote(request.url)];
   for (const header of enabledHeaders(request.headers)) {
     parts.push("-H", shellQuote(`${header.key}: ${header.value}`));
   }
   if (hasBody(request)) {
+    parts.push("--data-raw", shellQuote(request.body));
+  }
+  return parts.reduce((lines, part, index) => {
+    if (index === 0) return part;
+    return `${lines} \\\n  ${part}`;
+  }, "");
+}
+
+function generateCurlGraphqlMultipart(request: RequestConfig) {
+  const parts = ["curl", "-X", shellQuote(request.method), shellQuote(request.url)];
+  for (const header of enabledHeaders(request.headers)) {
+    if (header.key.toLowerCase() === "content-type") continue; // curl sets it automatically for multipart
+    parts.push("-H", shellQuote(`${header.key}: ${header.value}`));
+  }
+  try {
+    const parsed = JSON.parse(request.body) as {
+      operations?: unknown;
+      map?: unknown;
+      files?: { field: string; filename: string; mimeType?: string }[];
+    };
+    if (parsed.operations) parts.push("-F", shellQuote(`operations=${JSON.stringify(parsed.operations)}`));
+    if (parsed.map) parts.push("-F", shellQuote(`map=${JSON.stringify(parsed.map)}`));
+    for (const file of parsed.files ?? []) {
+      const type = file.mimeType ? `;type=${file.mimeType}` : "";
+      parts.push("-F", shellQuote(`${file.field}=@${file.filename}${type}`));
+    }
+  } catch {
     parts.push("--data-raw", shellQuote(request.body));
   }
   return parts.reduce((lines, part, index) => {

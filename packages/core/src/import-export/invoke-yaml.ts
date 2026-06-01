@@ -239,7 +239,7 @@ function savedRequestFromDocument(
       url: doc.url ?? "",
       headers: recordToKeyValues(doc.headers ?? {}),
       auth: doc.auth ?? { type: "none" },
-      query: doc.graphql?.query ?? "",
+      query: doc.graphql?.query || "query {\n  __typename\n}",
       variables: doc.graphql?.variables ?? "{}",
       operationName: doc.graphql?.operationName ?? "",
       timeoutMs: doc.timeoutMs ?? 30000,
