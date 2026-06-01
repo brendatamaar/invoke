@@ -6,23 +6,25 @@ export function listCookies(db: InvokeDB): Promise<StoredCookie[]> {
 }
 
 export async function upsertCookie(db: InvokeDB, cookie: StoredCookie): Promise<void> {
-  const existing = await db.cookies
-    .where("[domain+path+name]")
-    .equals([cookie.domain, cookie.path, cookie.name])
-    .first();
-  if (existing) {
-    await db.cookies.put({
-      ...cookie,
-      id: existing.id,
-      createdAt: existing.createdAt,
-    });
-  } else {
-    await db.cookies.put(cookie);
-  }
+  await db.transaction("rw", db.cookies, async () => {
+    const all = await db.cookies
+      .where("[domain+path+name]")
+      .equals([cookie.domain, cookie.path, cookie.name])
+      .toArray();
+    if (all.length > 1) {
+      const [keep, ...dupes] = all;
+      await Promise.all(dupes.map((d) => db.cookies.delete(d.id)));
+      await db.cookies.put({ ...cookie, id: keep.id, createdAt: keep.createdAt });
+    } else if (all.length === 1) {
+      await db.cookies.put({ ...cookie, id: all[0].id, createdAt: all[0].createdAt });
+    } else {
+      await db.cookies.put(cookie);
+    }
+  });
 }
 
 export async function upsertCookies(db: InvokeDB, cookies: StoredCookie[]): Promise<void> {
-  await Promise.all(cookies.map((c) => upsertCookie(db, c)));
+  for (const c of cookies) await upsertCookie(db, c);
 }
 
 export async function updateCookie(db: InvokeDB, cookie: StoredCookie): Promise<void> {
