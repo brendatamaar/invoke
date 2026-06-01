@@ -17,13 +17,15 @@ function useEntityPaletteItems(): PaletteItem[] {
   return [
     ...requests.map((request) => {
       const draft = request.request as { method?: string; url?: string } | undefined;
+      const isRest = request.protocol === "rest" || !request.protocol;
       return {
         id: request.id,
         kind: "request" as const,
         title: request.name || draft?.url || "Untitled",
         subtitle: draft?.url || "",
         keywords: `${draft?.method ?? ""} ${draft?.url ?? ""} ${request.name}`,
-        method: draft?.method,
+        method: isRest ? draft?.method : undefined,
+        protocol: request.protocol,
         run: () =>
           setRequest({
             method: (draft?.method ?? "GET") as Parameters<typeof setRequest>[0]["method"],
@@ -64,7 +66,7 @@ function useEntityPaletteItems(): PaletteItem[] {
         id: `hist-${entry.id}`,
         kind: "history" as const,
         title: entry.label ? `${entry.label} - ${url}` : url,
-        subtitle: `${method} - ${entry.response?.status ?? "-"}`,
+        subtitle: `${method} - ${entry.response == null ? "-" : entry.response.status === 0 ? "ERR" : entry.response.status}`,
         keywords: `history ${method} ${url} ${entry.label ?? ""} ${entry.response?.status ?? ""}`,
         method,
         run: () => {

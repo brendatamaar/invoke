@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import { Select } from "../../../components/shared/Select";
 import { useStore } from "../../../store";
 
@@ -99,7 +100,7 @@ export function AssertionsPanel() {
             onClick={() => remove(index)}
             className="shrink-0 text-[var(--text-3)] hover:text-[var(--danger)]"
           >
-            x
+            <Trash2 size={14} />
           </button>
         </div>
       ))}

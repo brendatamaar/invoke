@@ -162,15 +162,6 @@ func (s *Service) GrpcStreamOpen(ctx context.Context, req *GrpcExecuteRequest) (
 		}()
 	}
 
-	// Send initial body if provided.
-	body := strings.TrimSpace(req.GetBodyJson())
-	if body != "" && body != "{}" {
-		input := dynamicpb.NewMessage(methodDesc.Input())
-		if merr := protojson.Unmarshal([]byte(body), input); merr == nil {
-			_ = clientStream.SendMsg(input)
-		}
-	}
-
 	// Build per-stream sender and closer closures.
 	sender := func(bodyJSON string) error {
 		bj := strings.TrimSpace(bodyJSON)

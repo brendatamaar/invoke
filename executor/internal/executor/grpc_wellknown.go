@@ -15,7 +15,11 @@ import (
 // protoset → server reflection → well-known fallback in that priority order.
 func registryForService(ctx context.Context, conn *grpc.ClientConn, protosetBase64, serviceName string) (*protoregistry.Files, error) {
 	if ps := strings.TrimSpace(protosetBase64); ps != "" {
-		return registryFromProtosetBase64(ps)
+		if reg, err := registryFromProtosetBase64(ps); err == nil {
+			if _, lookupErr := reg.FindDescriptorByName(protoreflect.FullName(serviceName)); lookupErr == nil {
+				return reg, nil
+			}
+		}
 	}
 	files, err := descriptorRegistryForSymbols(ctx, conn, []string{serviceName})
 	if err == nil {

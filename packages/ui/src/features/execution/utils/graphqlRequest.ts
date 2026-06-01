@@ -1,3 +1,4 @@
+import { parse as gqlParse, print as gqlPrint } from "graphql";
 import { graphQLToRequestConfig, type GraphQLRequestConfig, type RequestDraft } from "@invoke/core";
 import type { AppState, GraphQLFileUpload } from "../../../types";
 import { extractRequiredVarNames } from "../../graphql/utils/query";
@@ -15,6 +16,12 @@ export function buildGraphQLExecutionRequest({
   set: AppState["set"];
   addToast: AppState["addToast"];
 }) {
+  if (!graphqlRequest.query?.trim()) {
+    addToast("warn", "Query is empty — enter a GraphQL query before sending");
+    set({ requestTab: "graphql" });
+    return null;
+  }
+
   const parsedVariables = parseGraphQLVariables(graphqlRequest.variables);
   if (!parsedVariables.ok) {
     addToast("warn", "Variables panel contains invalid JSON");
@@ -45,7 +52,21 @@ export function buildGraphQLExecutionRequest({
 
   if (graphqlRequest.batchMode && graphqlFileUploads.length === 0) {
     try {
-      converted.body = JSON.stringify([JSON.parse(converted.body)]);
+      const parsedBody = JSON.parse(converted.body) as { query?: string; variables?: unknown };
+      const query = parsedBody.query ?? "";
+      const ast = gqlParse(query);
+      const opDefs = ast.definitions.filter((d) => d.kind === "OperationDefinition");
+      if (opDefs.length > 1) {
+        converted.body = JSON.stringify(
+          opDefs.map((def) => ({
+            query: gqlPrint({ kind: "Document", definitions: [def] }),
+            variables: parsedBody.variables,
+            ...((def as any).name?.value ? { operationName: (def as any).name.value } : {}),
+          })),
+        );
+      } else {
+        converted.body = JSON.stringify([parsedBody]);
+      }
     } catch {
       /* keep original body */
     }

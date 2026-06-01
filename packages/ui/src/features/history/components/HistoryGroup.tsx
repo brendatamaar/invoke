@@ -25,7 +25,7 @@ export function HistoryGroup({
   const [expanded, setExpanded] = useState(true);
   return (
     <div>
-      <div className="group/hdr flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-1)] border-b border-[var(--border)] sticky top-0">
+      <div className="group/hdr flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-10">
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}

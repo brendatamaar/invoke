@@ -126,6 +126,7 @@ export async function runBufferedRequest({
     loadController: controller,
     response: undefined,
     retryAttempts: undefined,
+    apqRetried: undefined,
   });
   try {
     const rawResponse = await (protocol === "graphql" &&

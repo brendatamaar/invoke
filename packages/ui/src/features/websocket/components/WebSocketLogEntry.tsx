@@ -1,7 +1,8 @@
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Copy, Info } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { WebSocketLogItem } from "../../../types";
 import { useStore } from "../../../store";
-import { byteSize, tryPrettyJson } from "../utils/log";
+import { byteSize, decodeBinaryBody, decodedByteSize, tryPrettyJson } from "../utils/log";
 
 export function WebSocketLogEntry({
   entry,
@@ -18,7 +19,9 @@ export function WebSocketLogEntry({
   onToggleExpanded: () => void;
   onToggleDiff: () => void;
 }) {
-  const displayBody = prettyJson ? (tryPrettyJson(entry.body) ?? entry.body) : entry.body;
+  const isBinary = entry.type === "binary";
+  const decodedBody = isBinary ? decodeBinaryBody(entry.body) : entry.body;
+  const displayBody = prettyJson ? (tryPrettyJson(decodedBody) ?? decodedBody) : decodedBody;
 
   return (
     <div
@@ -50,7 +53,7 @@ export function WebSocketLogEntry({
         </button>
         <DirectionIcon direction={entry.direction} />
         <pre className="flex-1 break-all whitespace-pre-wrap text-[var(--text-1)] font-mono">
-          {displayBody}
+          {entry.reconnectAt != null ? <ReconnectCountdown entry={entry} /> : displayBody}
         </pre>
         <div className="flex flex-col items-end gap-0.5 shrink-0">
           {entry.type === "binary" && (
@@ -72,6 +75,24 @@ export function WebSocketLogEntry({
   );
 }
 
+function ReconnectCountdown({ entry }: { entry: WebSocketLogItem }) {
+  const [remaining, setRemaining] = useState(() => Math.max(0, (entry.reconnectAt ?? 0) - Date.now()));
+
+  useEffect(() => {
+    if (remaining === 0) return;
+    const id = setInterval(() => {
+      const r = Math.max(0, (entry.reconnectAt ?? 0) - Date.now());
+      setRemaining(r);
+      if (r === 0) clearInterval(id);
+    }, 250);
+    return () => clearInterval(id);
+  }, [entry.reconnectAt]);
+
+  const label = entry.body ? ` (${entry.body})` : "";
+  if (remaining <= 0) return <>Reconnecting…{label}</>;
+  return <>Reconnecting in {Math.ceil(remaining / 1000)}s…{label}</>;
+}
+
 function DirectionIcon({ direction }: { direction: WebSocketLogItem["direction"] }) {
   if (direction === "sent") {
     return <ArrowUp size={11} className="text-[var(--info)] mt-0.5 shrink-0" />;
@@ -85,39 +106,49 @@ function DirectionIcon({ direction }: { direction: WebSocketLogItem["direction"]
 }
 
 function WebSocketLogMetadata({ entry }: { entry: WebSocketLogItem }) {
+  const isBinary = entry.type === "binary";
+  const size = isBinary ? decodedByteSize(entry.body) : byteSize(entry.body);
+
   return (
-    <div className="px-7 pb-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-[var(--text-3)] border-t border-[var(--border)]">
-      <span>
-        type: <span className="text-[var(--text-2)]">{entry.type}</span>
-      </span>
-      <span>
-        direction: <span className="text-[var(--text-2)]">{entry.direction}</span>
-      </span>
-      <span>
-        size: <span className="text-[var(--text-2)]">{byteSize(entry.body)} B</span>
-      </span>
-      <span>
-        timestamp:{" "}
-        <span className="text-[var(--text-2)]">{new Date(entry.createdAt).toISOString()}</span>
-      </span>
-      <button
-        type="button"
-        onClick={() =>
-          navigator.clipboard
-            .writeText(entry.body)
-            .catch((error: unknown) =>
-              useStore
-                .getState()
-                .addToast(
-                  "error",
-                  `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
-                ),
-            )
-        }
-        className="flex items-center gap-0.5 hover:text-[var(--text-1)] transition-colors"
-      >
-        <Copy size={9} /> copy
-      </button>
+    <div className="pl-7 pr-1.5 pb-1.5 flex flex-col gap-y-0.5 text-[10px] text-[var(--text-3)] border-t border-[var(--border)]">
+      <div className="flex items-center gap-x-4">
+        <span>
+          type: <span className="text-[var(--text-2)]">{entry.type}</span>
+        </span>
+        <span>
+          direction: <span className="text-[var(--text-2)]">{entry.direction}</span>
+        </span>
+        <span>
+          size: <span className="text-[var(--text-2)]">{size} B</span>
+        </span>
+        <span>
+          timestamp:{" "}
+          <span className="text-[var(--text-2)]">{new Date(entry.createdAt).toISOString()}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() =>
+            navigator.clipboard
+              .writeText(entry.body)
+              .catch((error: unknown) =>
+                useStore
+                  .getState()
+                  .addToast(
+                    "error",
+                    `Copy failed: ${error instanceof Error ? error.message : String(error)}`,
+                  ),
+              )
+          }
+          className="flex items-center gap-0.5 hover:text-[var(--text-1)] transition-colors ml-auto"
+        >
+          <Copy size={9} /> copy
+        </button>
+      </div>
+      {isBinary && (
+        <span className="font-mono break-all">
+          base64: <span className="text-[var(--text-2)]">{entry.body}</span>
+        </span>
+      )}
     </div>
   );
 }

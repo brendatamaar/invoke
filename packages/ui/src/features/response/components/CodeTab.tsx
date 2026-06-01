@@ -98,7 +98,7 @@ export function CodeTab() {
           {copied ? <Check size={13} className="text-[var(--ok)]" /> : <Copy size={13} />}
         </button>
       </div>
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto pb-4">
         <CodeEditor value={displayCode} lang={codeTarget === "curl" ? "text" : "text"} readOnly />
       </div>
     </div>

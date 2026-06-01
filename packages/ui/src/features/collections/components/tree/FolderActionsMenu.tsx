@@ -21,7 +21,7 @@ export function FolderActionsMenu({
   return (
     <div
       ref={menuRef}
-      className="opacity-0 group-hover:opacity-100 relative"
+      className={`${open ? "opacity-100" : "opacity-0 group-hover:opacity-100"} relative`}
       onClick={(event) => event.stopPropagation()}
     >
       <button

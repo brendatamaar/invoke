@@ -25,8 +25,9 @@ const AUTH_TYPES = [
 ] as const;
 
 export function AuthPanel() {
-  const { request, setRequest, addToast } = useStore();
+  const { request, setRequest, setGraphqlRequest, addToast } = useStore();
   const auth = request.auth ?? { type: "none" };
+  const isGraphql = request.protocol === "graphql";
   const [authorizing, setAuthorizing] = useState(false);
   const oauthStateRef = useRef<string | null>(null);
   const { data: oauthResult } = useQuery({
@@ -47,28 +48,31 @@ export function AuthPanel() {
     setAuthorizing(false);
     if (oauthResult.status === "done" && oauthResult.accessToken) {
       const currentAuth = useStore.getState().request.auth ?? { type: "oauth2" };
-      setRequest({
-        auth: {
-          ...currentAuth,
-          accessToken: oauthResult.accessToken,
-          refreshToken: oauthResult.refreshToken,
-          tokenExpiresAt: oauthResult.expiresIn
-            ? Date.now() + oauthResult.expiresIn * 1000
-            : undefined,
-        },
-      });
+      const nextAuth = {
+        ...currentAuth,
+        accessToken: oauthResult.accessToken,
+        refreshToken: oauthResult.refreshToken,
+        tokenExpiresAt: oauthResult.expiresIn
+          ? Date.now() + oauthResult.expiresIn * 1000
+          : undefined,
+      };
+      setRequest({ auth: nextAuth });
+      if (isGraphql) setGraphqlRequest({ auth: nextAuth });
       addToast("success", "OAuth2 token obtained");
     } else {
       addToast("error", `OAuth2 failed: ${oauthResult.error ?? "unknown"}`);
     }
   }, [addToast, oauthResult, setRequest]);
 
-  const _handleOauthState = (state: string) => {
+  const setOauthState = (state: string) => {
     oauthStateRef.current = state;
     setAuthorizing(true);
   };
 
-  const setAuth = (nextAuth: AuthConfig) => setRequest({ auth: nextAuth });
+  const setAuth = (nextAuth: AuthConfig) => {
+    setRequest({ auth: nextAuth });
+    if (isGraphql) setGraphqlRequest({ auth: nextAuth });
+  };
 
   return (
     <div className="p-3 flex flex-col gap-3">

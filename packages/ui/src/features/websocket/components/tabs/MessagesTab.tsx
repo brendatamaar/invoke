@@ -3,7 +3,7 @@ import type { WsSavedMessage } from "@invoke/core";
 import { useStore } from "../../../../store";
 import { webSocketSend } from "../../api";
 import type { MsgTemplate, SavedMessageDraft } from "../../types";
-import { normalizeJsonBody, resolveDynamicVars } from "../../utils/body";
+import { resolveDynamicVars } from "../../utils/body";
 import { SavedMessagesModal } from "../SavedMessagesModal";
 import { WebSocketComposer } from "../WebSocketComposer";
 
@@ -38,29 +38,12 @@ export function MessagesTab() {
   const gqlSubscribed = !!activeSession?.activeGqlSubscriptionId;
   const currentSubId = activeSession?.activeGqlSubscriptionId ?? "";
 
-  const appendSentLog = (body: string, type: "text" | "binary") => {
-    if (!activeSession) return;
-    setWsSession(activeSession.id, {
-      log: [
-        ...(activeSession.log ?? []),
-        {
-          id: crypto.randomUUID(),
-          direction: "sent" as const,
-          type,
-          body: type === "binary" ? body : normalizeJsonBody(body),
-          createdAt: Date.now(),
-        },
-      ],
-    });
-  };
-
   const send = async () => {
     if (!message.trim() || !activeSession) return;
     const body = resolveDynamicVars(message);
     setMessage("");
     try {
       await webSocketSend(activeSession.connectionId ?? "", body, binaryMode);
-      appendSentLog(body, binaryMode ? "binary" : "text");
     } catch (e) {
       setMessage(body);
       addToast("error", String(e));
@@ -84,7 +67,6 @@ export function MessagesTab() {
     setWsSession(activeSession.id, { activeGqlSubscriptionId: id });
     try {
       await webSocketSend(activeSession.connectionId ?? "", frame);
-      appendSentLog(frame, "text");
     } catch (e) {
       setWsSession(activeSession.id, { activeGqlSubscriptionId: undefined });
       addToast("error", String(e));
@@ -97,7 +79,6 @@ export function MessagesTab() {
     setWsSession(activeSession.id, { activeGqlSubscriptionId: undefined });
     try {
       await webSocketSend(activeSession.connectionId ?? "", frame);
-      appendSentLog(frame, "text");
     } catch (e) {
       setWsSession(activeSession.id, { activeGqlSubscriptionId: currentSubId });
       addToast("error", String(e));

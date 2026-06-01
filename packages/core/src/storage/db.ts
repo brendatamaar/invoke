@@ -141,6 +141,44 @@ export class InvokeDB extends Dexie {
         cookies: "id, domain, [domain+path+name], updatedAt",
       })
       .upgrade(migrateNetworkOptionsToDefaults);
+
+    // v7: deduplicate cookies before adding unique index in v8
+    this.version(7)
+      .stores({
+        collections: "id, name, updatedAt, sortOrder",
+        folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
+        requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+        environments: "id, name, updatedAt",
+        history: "id, createdAt, requestId, collectionId, protocol, pinned",
+        flows: "id, name, updatedAt",
+        meta: "key",
+        cookies: "id, domain, [domain+path+name], updatedAt",
+      })
+      .upgrade(async (tx) => {
+        const cookies = tx.table<{ id: string; domain: string; path: string; name: string }>("cookies");
+        const all = await cookies.toArray();
+        const seen = new Set<string>();
+        for (const c of all) {
+          const key = `${c.domain}\0${c.path}\0${c.name}`;
+          if (seen.has(key)) {
+            await cookies.delete(c.id);
+          } else {
+            seen.add(key);
+          }
+        }
+      });
+
+    // v8: enforce uniqueness now that duplicates are gone
+    this.version(8).stores({
+      collections: "id, name, updatedAt, sortOrder",
+      folders: "id, collectionId, parentFolderId, name, updatedAt, sortOrder",
+      requests: "id, collectionId, folderId, name, protocol, updatedAt, sortOrder",
+      environments: "id, name, updatedAt",
+      history: "id, createdAt, requestId, collectionId, protocol, pinned",
+      flows: "id, name, updatedAt",
+      meta: "key",
+      cookies: "id, domain, &[domain+path+name], updatedAt",
+    });
   }
 }
 

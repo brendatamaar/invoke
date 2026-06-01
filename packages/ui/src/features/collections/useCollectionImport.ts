@@ -39,7 +39,7 @@ export const COLLECTION_IMPORT_OPTIONS: {
 ];
 
 export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | null>) {
-  const { addToast, setRequest } = useStore();
+  const { addToast, setRequest, set } = useStore();
   const [importType, setImportType] = useState<CollectionImportType>("zip");
   const [curlModal, setCurlModal] = useState(false);
 
@@ -127,6 +127,7 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
       }
       if (imported) {
         const count = await persistImported(imported);
+        set({ requests: await coreStore.listRequests() });
         addToast("success", `Imported ${count} requests`);
       }
     } catch (err) {

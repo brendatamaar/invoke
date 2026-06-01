@@ -44,6 +44,35 @@ export function OptionsTab() {
         />
         <span className="text-xs text-[var(--text-2)]">Auto-reconnect on disconnect</span>
       </label>
+      {websocketRequest.autoReconnect && (
+        <div className="ml-6 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-[var(--text-2)] w-28 shrink-0">Delay (ms)</label>
+            <input
+              type="number"
+              value={websocketRequest.reconnectDelay ?? 2000}
+              onChange={(e) => setWebsocketRequest({ reconnectDelay: Number(e.target.value) })}
+              min={100}
+              className="input text-xs w-28"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-[var(--text-2)] w-28 shrink-0">Max retries</label>
+            <input
+              type="number"
+              value={websocketRequest.reconnectMaxRetries ?? ""}
+              onChange={(e) =>
+                setWebsocketRequest({
+                  reconnectMaxRetries: e.target.value ? Number(e.target.value) : undefined,
+                })
+              }
+              min={1}
+              placeholder="unlimited"
+              className="input text-xs w-28"
+            />
+          </div>
+        </div>
+      )}
       <label className="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"

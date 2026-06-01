@@ -44,7 +44,7 @@ export function ProxyUrlTooltip({ url }: { url: string }) {
 
   const exampleBody = JSON.stringify(
     {
-      targetUrl: "https://api.example.com/users",
+      targetUrl: "https://api.example.com/endpoint",
       method: "GET",
       headers: [],
       body: "",
@@ -68,7 +68,7 @@ export function ProxyUrlTooltip({ url }: { url: string }) {
         createPortal(
           <div
             ref={panelRef}
-            className="fixed z-50 w-80 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] p-3 flex flex-col gap-3"
+            className="fixed z-50 w-80 max-h-[min(420px,80vh)] bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] p-3 flex flex-col gap-3 overflow-y-auto"
             style={{ top: pos.top, bottom: pos.bottom, left: pos.left }}
           >
             <div>
@@ -102,7 +102,7 @@ export function ProxyUrlTooltip({ url }: { url: string }) {
 
             <div>
               <p className="text-2xs font-semibold text-[var(--text-1)] mb-1">Example body</p>
-              <pre className="text-2xs font-mono text-[var(--text-2)] bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1.5 leading-relaxed">
+              <pre className="text-2xs font-mono text-[var(--text-2)] bg-[var(--surface-2)] border border-[var(--border)] rounded px-2 py-1.5 leading-relaxed overflow-x-auto">
                 {exampleBody}
               </pre>
             </div>

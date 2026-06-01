@@ -27,11 +27,13 @@ function stableRequestHash(
 
 export function useCodeSnippetGeneration() {
   const request = useStore((s) => s.request);
+  const resolvedRequest = useStore((s) => s.resolvedRequest);
   const environments = useStore((s) => s.environments);
   const activeEnvironmentId = useStore((s) => s.activeEnvironmentId);
   const sessionVariables = useStore((s) => s.sessionVariables);
   const codeTarget = useStore((s) => s.codeTarget);
   const response = useStore((s) => s.response);
+  const protocol = useStore((s) => s.request.protocol);
 
   const env = useMemo(
     () => environments.find((e) => e.id === activeEnvironmentId),
@@ -41,21 +43,27 @@ export function useCodeSnippetGeneration() {
   const requestHash = useMemo(
     () =>
       stableRequestHash(
-        request as unknown as Record<string, unknown>,
+        (resolvedRequest ?? request) as unknown as Record<string, unknown>,
         activeEnvironmentId,
         sessionVariables,
       ),
-    [request, activeEnvironmentId, sessionVariables],
+    [resolvedRequest, request, activeEnvironmentId, sessionVariables],
   );
 
   return useQuery({
     queryKey: ["codegen", requestHash, codeTarget],
     queryFn: async () => {
-      const { request: resolved } = resolveRequest(request as RequestConfig, env, sessionVariables);
-      const snippet = await generateCodeSnippet(applyProtocolDefaults(resolved), codeTarget);
+      // For GraphQL/multipart, use the already-resolved request stored after execution.
+      // For other protocols, resolve variables from the draft now.
+      const base = resolvedRequest ?? request;
+      const effective =
+        resolvedRequest
+          ? (resolvedRequest as RequestConfig)
+          : resolveRequest(base as RequestConfig, env, sessionVariables).request;
+      const snippet = await generateCodeSnippet(applyProtocolDefaults(effective), codeTarget);
       return snippet.code;
     },
-    enabled: !!response,
+    enabled: !!response || protocol === "websocket",
     staleTime: 5 * 60 * 1000,
     placeholderData: (prev) => prev,
   });

@@ -15,8 +15,7 @@ export type ResponseTab =
   | "auth"
   | "visualize"
   | "console"
-  | "graphql-errors"
-  | "graphql-deferred";
+  | "graphql-errors";
 
 export interface AssertionDraft {
   type: AssertionType;

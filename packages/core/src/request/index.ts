@@ -88,6 +88,8 @@ export const emptyWebSocketRequest = (): WebSocketRequestConfig => ({
   scripts: { preRequest: "", postResponse: "" },
   savedMessages: [],
   autoReconnect: false,
+  reconnectDelay: 2000,
+  reconnectMaxRetries: undefined,
   preset: "none",
   presetQuery: "",
   presetVariables: "{}",

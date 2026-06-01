@@ -110,6 +110,7 @@ function HistorySelect({
 }
 
 function entryLabel(entry: HistoryEntry) {
-  const request = entry.request as { method?: string; url?: string } | undefined;
-  return `${request?.method ?? "GET"} ${(request?.url ?? "-").slice(0, 60)}`;
+  const request = entry.request as { method?: string; url?: string; address?: string; service?: string } | undefined;
+  const url = request?.url ?? (request?.address ? `${request.address}/${request.service}` : "-");
+  return `${request?.method ?? "GET"} ${url.slice(0, 60)}`;
 }

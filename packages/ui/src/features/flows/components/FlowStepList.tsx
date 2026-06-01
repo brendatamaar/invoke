@@ -101,7 +101,7 @@ export function FlowStepList({
                         <Clock size={9} />
                         {stepResult.completedAt - stepResult.startedAt}ms
                       </span>
-                      {stepResult.response?.status && <span>{stepResult.response.status}</span>}
+                      {stepResult.response?.status != null && <span>{stepResult.response.status === 0 ? "ERR" : stepResult.response.status}</span>}
                     </div>
                   )}
                 </div>

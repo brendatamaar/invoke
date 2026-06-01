@@ -45,12 +45,8 @@ export function stripNetworkOptionsFromProtocolRequest<T extends ProtocolRequest
 
 export function stripNetworkOptionsFromSavedRequest(saved: SavedRequest): SavedRequest {
   const cleaned = stripRequestNetworkOptions(saved.request);
-  if (!cleaned.changed && !saved.encryptedTlsKey) return saved;
-  return {
-    ...saved,
-    request: cleaned.request,
-    encryptedTlsKey: undefined,
-  };
+  if (!cleaned.changed) return saved;
+  return { ...saved, request: cleaned.request };
 }
 
 function stripNetworkOptionsFromFlowStep(step: FlowStep): {

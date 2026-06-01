@@ -106,7 +106,11 @@ export function useGraphQLSchemaImport(open: boolean, onClose: () => void) {
     setWorking(true);
     set({ graphqlSchemaStatus: "Importing schema..." });
     try {
-      commitSchema(parseGraphQLIntrospection(await file.text()), "");
+      const text = await file.text();
+      const schema = text.trimStart().startsWith("{")
+        ? parseGraphQLIntrospection(text)
+        : sdlToIntrospectionSchema(text);
+      commitSchema(schema, "");
     } catch (e) {
       set({ graphqlSchemaStatus: graphQLSchemaFailureStatus(e) });
     } finally {

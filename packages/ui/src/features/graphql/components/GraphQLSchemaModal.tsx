@@ -142,7 +142,7 @@ export function GraphQLSchemaModal({
       onClick={onClose}
     >
       <div
-        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-[var(--shadow-pop)] flex flex-col overflow-hidden"
+        className="bg-[var(--surface)] rounded-xl shadow-[var(--shadow-pop)] flex flex-col overflow-hidden"
         style={{
           width: 880,
           maxWidth: "calc(100vw - 48px)",

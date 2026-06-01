@@ -8,12 +8,18 @@ export function useAppBootstrap() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [reqs, envs, activeEnvId] = await Promise.all([
+        const [reqs, envs, activeEnvId, enableCookies] = await Promise.all([
           coreStore.listRequests(),
           coreStore.listEnvironments(),
           coreStore.getActiveEnvironmentId(),
+          coreStore.getMeta<boolean>("enableCookies"),
         ]);
-        set({ requests: reqs, environments: envs, activeEnvironmentId: activeEnvId });
+        set({
+          requests: reqs,
+          environments: envs,
+          activeEnvironmentId: activeEnvId,
+          ...(enableCookies !== undefined && { enableCookies }),
+        });
       } catch (e) {
         addToast("error", `Failed to load data: ${e}`);
       }

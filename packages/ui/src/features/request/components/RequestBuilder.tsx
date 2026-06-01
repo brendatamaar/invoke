@@ -16,12 +16,43 @@ import { AssertionsPanel } from "./AssertionsPanel";
 import { ExtractPanel } from "./ExtractPanel";
 import { OptionsPanel } from "./OptionsPanel";
 import type { KeyValue, RequestProtocol } from "@invoke/core";
+
+function escapeRe(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function syncPathVarsToUrl(url: string, prevVars: KeyValue[], nextVars: KeyValue[]): string {
+  const qsIdx = url.indexOf("?");
+  const qs = qsIdx !== -1 ? url.slice(qsIdx) : "";
+  let path = qsIdx !== -1 ? url.slice(0, qsIdx) : url;
+
+  const prevKeys = prevVars.filter((v) => v.key).map((v) => v.key);
+  const nextKeys = nextVars.filter((v) => v.key).map((v) => v.key);
+  const maxLen = Math.max(prevKeys.length, nextKeys.length);
+
+  for (let i = 0; i < maxLen; i++) {
+    const prev = prevKeys[i] ?? "";
+    const next = nextKeys[i] ?? "";
+    if (prev === next) continue;
+    if (prev && next) {
+      path = path.replace(new RegExp(`:${escapeRe(prev)}(?=[/?#]|$)`, "g"), `:${next}`);
+    } else if (prev) {
+      path = path
+        .replace(new RegExp(`/:${escapeRe(prev)}(?=[/?#]|$)`, "g"), "")
+        .replace(new RegExp(`/:${escapeRe(prev)}$`, "g"), "");
+    } else {
+      path = path.replace(/\/$/, "") + `/:${next}`;
+    }
+  }
+
+  return path + qs;
+}
 import type { RequestBuilderProps } from "../../../types";
 import { ParamsPanel } from "./ParamsPanel";
 import { COMMON_HEADERS, PROTOCOLS, REST_TABS, GQL_TABS } from "../constants";
 
 export function RequestBuilder({ onSend }: RequestBuilderProps) {
-  const { request, setRequest, requestTab, set, loading } = useStore();
+  const { request, setRequest, setGraphqlRequest, requestTab, set, loading } = useStore();
   const protocol = (request.protocol ?? "rest") as RequestProtocol;
 
   const tabs = protocol === "graphql" ? GQL_TABS : REST_TABS;
@@ -40,7 +71,7 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
               set({ requestTab: p === "graphql" ? "graphql" : "params" });
             }}
             size="xs"
-            wrapperClassName="w-28"
+            wrapperClassName="w-32"
             className="font-semibold"
           >
             {PROTOCOLS.map((p) => (
@@ -88,7 +119,6 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
         <div className="flex-1 overflow-auto">
           {requestTab === "params" && (
             <ParamsPanel
-              url={request.url}
               params={request.params ?? []}
               pathVariables={request.pathVariables ?? []}
               onParamsChange={(rows) => {
@@ -100,13 +130,21 @@ export function RequestBuilder({ onSend }: RequestBuilderProps) {
                   .join("&");
                 setRequest({ params: kv, url: qs ? `${base}?${qs}` : base });
               }}
-              onPathVariablesChange={(pathVariables) => setRequest({ pathVariables })}
+              onPathVariablesChange={(rows) => {
+                const kv = rows as KeyValue[];
+                const url = syncPathVarsToUrl(request.url, request.pathVariables ?? [], kv);
+                setRequest({ pathVariables: kv, url });
+              }}
             />
           )}
           {requestTab === "headers" && (
             <KeyValueEditor
               rows={request.headers ?? []}
-              onChange={(rows) => setRequest({ headers: rows as KeyValue[] })}
+              onChange={(rows) => {
+                const headers = rows as KeyValue[];
+                setRequest({ headers });
+                if (protocol === "graphql") setGraphqlRequest({ headers });
+              }}
               keyPlaceholder="Header-Name"
               valuePlaceholder="value"
               keyDatalist={COMMON_HEADERS}

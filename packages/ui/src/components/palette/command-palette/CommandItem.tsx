@@ -12,6 +12,12 @@ const KIND_LABELS: Record<string, string> = {
   mock: "Mock",
 };
 
+const PROTOCOL_LABELS: Record<string, string> = {
+  graphql: "GraphQL",
+  websocket: "WS",
+  grpc: "gRPC",
+};
+
 const KIND_COLORS: Record<string, string> = {
   request: "text-[var(--info)]",
   environment: "text-[var(--method-patch)]",
@@ -44,7 +50,7 @@ export function CommandItem({
         <MethodBadge method={item.method} />
       ) : (
         <span className={`text-2xs font-medium ${KIND_COLORS[item.kind] ?? "text-[var(--fg-2)]"}`}>
-          {KIND_LABELS[item.kind] ?? item.kind}
+          {(item.protocol && PROTOCOL_LABELS[item.protocol]) ?? KIND_LABELS[item.kind] ?? item.kind}
         </span>
       )}
       <span className="flex-1 text-sm text-[var(--text-1)] truncate">{item.title}</span>

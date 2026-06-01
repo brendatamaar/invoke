@@ -1,14 +1,19 @@
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { useStore } from "../../../store";
 import type { DirectionFilter } from "../types";
+import { CodeTab } from "../../response/components/CodeTab";
+import { HandshakeTab } from "./tabs/HandshakeTab";
 import { WebSocketDiffBar } from "./WebSocketDiffBar";
 import { WebSocketLogList } from "./WebSocketLogList";
 import { WebSocketLogToolbar } from "./WebSocketLogToolbar";
 import { WsLogDiffModal } from "./WsLogDiffModal";
 
+type LogTab = "messages" | "handshake" | "code";
+
 export function WebSocketLogPanel() {
   const { wsSessions, activeWsSessionId, setWsSession } = useStore();
   const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
+  const [logTab, setLogTab] = useState<LogTab>("messages");
 
   type LogPanelState = { search: string; dirFilter: DirectionFilter; prettyJson: boolean; expandedIds: Set<string>; diffSelected: string[]; showDiff: boolean };
   const [logState, logDispatch] = useReducer(
@@ -26,7 +31,7 @@ export function WebSocketLogPanel() {
   const setShowDiff = (v: boolean) => logDispatch({ showDiff: v });
 
   const filteredLog = useMemo(() => {
-    let entries = activeSession?.log ?? [];
+    let entries = (activeSession?.log ?? []).filter((e) => e.type !== "handshake");
     if (dirFilter !== "all") {
       entries = entries.filter((e) => e.direction === dirFilter);
     }
@@ -90,42 +95,66 @@ export function WebSocketLogPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <WebSocketLogToolbar
-        search={search}
-        dirFilter={dirFilter}
-        prettyJson={prettyJson}
-        onSearch={setSearch}
-        onDirectionFilter={setDirFilter}
-        onPrettyJson={() => setPrettyJson((v) => !v)}
-        onCopyAll={copyAll}
-        onClearLog={clearLog}
-      />
-      <WebSocketLogList
-        entries={filteredLog}
-        prettyJson={prettyJson}
-        expandedIds={expandedIds}
-        diffSelected={diffSelected}
-        search={search}
-        dirFilter={dirFilter}
-        websocketState={websocketState}
-        onToggleExpanded={toggleExpanded}
-        onToggleDiff={toggleDiffSelect}
-      />
-      <WebSocketDiffBar
-        selectedCount={diffSelected.length}
-        onOpen={() => setShowDiff(true)}
-        onClear={() => {
-          setDiffSelected([]);
-          setShowDiff(false);
-        }}
-      />
-      {showDiff && diffSelected.length === 2 && (
-        <WsLogDiffModal
-          left={allLog.find((e) => e.id === diffSelected[0])}
-          right={allLog.find((e) => e.id === diffSelected[1])}
-          onClose={() => setShowDiff(false)}
-        />
+      <div className="flex items-center border-b border-[var(--border)] shrink-0 px-2">
+        {(["messages", "handshake", "code"] as LogTab[]).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setLogTab(tab)}
+            className={`px-3 py-1.5 text-2xs border-b-2 transition-colors capitalize ${
+              logTab === tab
+                ? "border-[var(--accent)] text-[var(--text-1)]"
+                : "border-transparent text-[var(--text-3)] hover:text-[var(--text-2)]"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {logTab === "messages" && (
+        <>
+          <WebSocketLogToolbar
+            search={search}
+            dirFilter={dirFilter}
+            prettyJson={prettyJson}
+            onSearch={setSearch}
+            onDirectionFilter={setDirFilter}
+            onPrettyJson={() => setPrettyJson((v) => !v)}
+            onCopyAll={copyAll}
+            onClearLog={clearLog}
+          />
+          <WebSocketLogList
+            entries={filteredLog}
+            prettyJson={prettyJson}
+            expandedIds={expandedIds}
+            diffSelected={diffSelected}
+            search={search}
+            dirFilter={dirFilter}
+            websocketState={websocketState}
+            onToggleExpanded={toggleExpanded}
+            onToggleDiff={toggleDiffSelect}
+          />
+          <WebSocketDiffBar
+            selectedCount={diffSelected.length}
+            onOpen={() => setShowDiff(true)}
+            onClear={() => {
+              setDiffSelected([]);
+              setShowDiff(false);
+            }}
+          />
+          {showDiff && diffSelected.length === 2 && (
+            <WsLogDiffModal
+              left={allLog.find((e) => e.id === diffSelected[0])}
+              right={allLog.find((e) => e.id === diffSelected[1])}
+              onClose={() => setShowDiff(false)}
+            />
+          )}
+        </>
       )}
+
+      {logTab === "handshake" && <HandshakeTab />}
+      {logTab === "code" && <CodeTab />}
     </div>
   );
 }

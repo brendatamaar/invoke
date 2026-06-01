@@ -5,7 +5,7 @@ export async function executeWithAPQ(
   request: RequestConfig,
   signal: AbortSignal | undefined,
   queryText: string,
-): Promise<ExecuteResponse & { retryAttempts?: number }> {
+): Promise<ExecuteResponse & { retryAttempts?: number; apqRetried?: boolean }> {
   const hash = await computeQueryHash(queryText);
   const extensions = { persistedQuery: { version: 1, sha256Hash: hash } };
 
@@ -28,7 +28,8 @@ export async function executeWithAPQ(
 
   if (!isPersistedQueryNotFound(probe.body)) return probe;
 
-  return executeWithRetry({ ...request, body: JSON.stringify({ ...body, extensions }) }, signal);
+  const result = await executeWithRetry({ ...request, body: JSON.stringify({ ...body, extensions }) }, signal);
+  return { ...result, apqRetried: true };
 }
 
 async function computeQueryHash(query: string): Promise<string> {

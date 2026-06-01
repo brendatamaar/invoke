@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { autocompletion } from "@codemirror/autocomplete";
 import type { CompletionContext } from "@codemirror/autocomplete";
 import { lintGutter } from "@codemirror/lint";
+import { EditorView } from "@codemirror/view";
 import {
   generateCodeSnippet,
   graphQLAutocompleteFields,
@@ -48,10 +49,33 @@ export function useGraphQLQueryPanel() {
     };
   }, []);
 
+  const editorRef = useRef<EditorView | null>(null);
   const schemaRef = useRef<GraphQLIntrospectionSchema | undefined>(graphqlSchema);
   schemaRef.current = graphqlSchema;
+  const jsonUnescapePasteExtension = useMemo(
+    () =>
+      EditorView.domEventHandlers({
+        paste(event, view) {
+          const text = event.clipboardData?.getData("text/plain");
+          if (!text || !/\\[ntr"\\]/.test(text)) return false;
+          try {
+            const decoded = text.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+            if (decoded === text) return false;
+            event.preventDefault();
+            const { from, to } = view.state.selection.main;
+            view.dispatch({ changes: { from, to, insert: decoded } });
+            return true;
+          } catch {
+            return false;
+          }
+        },
+      }),
+    [],
+  );
+
   const editorExtensions = useMemo(
     () => [
+      jsonUnescapePasteExtension,
       autocompletion({
         override: [
           (ctx: CompletionContext) => {
@@ -148,6 +172,13 @@ export function useGraphQLQueryPanel() {
   }, [operations, graphqlRequest.operationName, setGraphqlRequest]);
 
   const insertField = (snippet: string) => {
+    const view = editorRef.current;
+    if (view) {
+      const { from, to } = view.state.selection.main;
+      view.dispatch({ changes: { from, to, insert: `  ${snippet}\n` } });
+      view.focus();
+      return;
+    }
     const current = graphqlRequest.query ?? "";
     const suffix = current && !current.endsWith("\n") ? "\n" : "";
     setGraphqlRequest({ query: current + suffix + `  ${snippet}\n` });
@@ -164,6 +195,7 @@ export function useGraphQLQueryPanel() {
     setSchemaExplorerOpen,
     curlCopied,
     editorExtensions,
+    editorRef,
     operations,
     isSubscription,
     subscription,

@@ -1,4 +1,4 @@
-import { useRef, type MutableRefObject } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { useStore } from "../../../store";
 import { webSocketSend } from "../api";
 import {
@@ -13,13 +13,19 @@ export function useWebSocketEventStream({
   onAutoReconnect,
 }: {
   pingTimestampRef: MutableRefObject<Map<string, number>>;
-  onAutoReconnect: (sessionId: string) => void;
+  onAutoReconnect: (sessionId: string, retryCount: number) => void;
 }) {
   const eventSourcesRef = useRef(new Map<string, EventSource>());
   const setWsSession = useStore((state) => state.setWsSession);
   const addToast = useStore((state) => state.addToast);
   const findWsSession = (sessionId: string) =>
     useStore.getState().wsSessions.find((session) => session.id === sessionId);
+
+  useEffect(() => {
+    return () => {
+      eventSourcesRef.current.forEach((es) => es.close());
+    };
+  }, []);
 
   const appendSystemLog = (sessionId: string, body: string) => {
     const previous = findWsSession(sessionId);
@@ -48,7 +54,10 @@ export function useWebSocketEventStream({
         const frame = JSON.parse(message.body) as { type?: string };
         const connectionId = findWsSession(sessionId)?.connectionId;
         if (frame.type === "ping" && connectionId) {
-          webSocketSend(connectionId, JSON.stringify({ type: "pong" })).catch(() => {});
+          webSocketSend(connectionId, JSON.stringify({ type: "pong" })).catch(() => { });
+        }
+        if (frame.type === "complete") {
+          setWsSession(sessionId, { activeGqlSubscriptionId: undefined });
         }
       } catch {
         /* not valid JSON */
@@ -67,7 +76,7 @@ export function useWebSocketEventStream({
     setWsSession(sessionId, sessionUpdate);
   };
 
-  const startEventStream = (sessionId: string, connectionId: string) => {
+  const startEventStream = (sessionId: string, connectionId: string, retryCount = 0) => {
     const eventSource = new EventSource(
       `/api/websocket/events?connectionId=${encodeURIComponent(connectionId)}`,
     );
@@ -83,6 +92,14 @@ export function useWebSocketEventStream({
       eventSourcesRef.current.delete(sessionId);
       const reason = parseWsCloseReason(event);
       const previous = findWsSession(sessionId);
+      const { autoReconnect, reconnectDelay = 2000, reconnectMaxRetries } =
+        useStore.getState().websocketRequest;
+      const nextRetry = retryCount + 1;
+      const canRetry = autoReconnect && (reconnectMaxRetries == null || nextRetry <= reconnectMaxRetries);
+      const attemptsBody = reconnectMaxRetries != null
+        ? `attempt ${nextRetry}/${reconnectMaxRetries}`
+        : `attempt ${nextRetry}`;
+      const now = Date.now();
       setWsSession(sessionId, {
         state: "disconnected",
         connectionId: "",
@@ -94,13 +111,35 @@ export function useWebSocketEventStream({
             direction: "system" as WsDirection,
             type: "info",
             body: reason,
-            createdAt: Date.now(),
+            createdAt: now,
           },
+          ...(canRetry
+            ? [
+                {
+                  id: crypto.randomUUID(),
+                  direction: "system" as WsDirection,
+                  type: "reconnecting" as const,
+                  body: attemptsBody,
+                  createdAt: now,
+                  reconnectAt: now + reconnectDelay,
+                },
+              ]
+            : reconnectMaxRetries != null && !canRetry && autoReconnect
+              ? [
+                  {
+                    id: crypto.randomUUID(),
+                    direction: "system" as WsDirection,
+                    type: "info" as const,
+                    body: `Max reconnect attempts reached (${reconnectMaxRetries})`,
+                    createdAt: now,
+                  },
+                ]
+              : []),
         ],
       });
       addToast("info", `WebSocket disconnected: ${reason}`);
-      if (useStore.getState().websocketRequest.autoReconnect) {
-        setTimeout(() => onAutoReconnect(sessionId), 2000);
+      if (canRetry) {
+        setTimeout(() => onAutoReconnect(sessionId, nextRetry), reconnectDelay);
       }
     });
     eventSourcesRef.current.set(sessionId, eventSource);
@@ -113,9 +152,6 @@ export function useWebSocketEventStream({
     closeEventStream: (sessionId: string) => {
       eventSourcesRef.current.get(sessionId)?.close();
       eventSourcesRef.current.delete(sessionId);
-    },
-    closeAllEventStreams: () => {
-      eventSourcesRef.current.forEach((eventSource) => eventSource.close());
     },
   };
 }

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCollections, useCookies, useFolders } from "../../hooks/useDb";
 import { useStore } from "../../store";
@@ -23,6 +23,8 @@ export function useRequestExecution() {
   const enableCookies = useStore((state) => state.enableCookies);
   const requests = useStore((state) => state.requests);
   const cookies = useCookies();
+  const cookiesRef = useRef(cookies);
+  cookiesRef.current = cookies;
   const collections = useCollections();
   const folders = useFolders();
   const loading = useStore((state) => state.loading);
@@ -70,8 +72,9 @@ export function useRequestExecution() {
     }
 
     let resolved = prepared.resolved;
-    if (enableCookies && cookies.length > 0) {
-      resolved = injectCookies(resolved, cookies);
+    const currentCookies = cookiesRef.current;
+    if (enableCookies && currentCookies.length > 0) {
+      resolved = injectCookies(resolved, currentCookies);
     }
     set({ resolvedRequest: resolved });
 
@@ -118,7 +121,6 @@ export function useRequestExecution() {
     addToast,
     assertionRules,
     collections,
-    cookies,
     enableCookies,
     environments,
     extractRules,

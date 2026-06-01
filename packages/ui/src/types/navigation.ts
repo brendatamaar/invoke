@@ -24,5 +24,6 @@ export interface PaletteItem {
   subtitle: string;
   keywords: string;
   method?: string;
+  protocol?: string;
   run: () => void | Promise<void>;
 }

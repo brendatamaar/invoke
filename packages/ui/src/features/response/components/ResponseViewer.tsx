@@ -3,7 +3,6 @@ import { AssertionsTab } from "./AssertionsTab";
 import { AuthDebugTab } from "./AuthDebugTab";
 import { CodeTab } from "./CodeTab";
 import { ConsoleTab } from "./ConsoleTab";
-import { DeferredTab } from "./DeferredTab";
 import { GraphQLErrorsTab } from "./GraphQLErrorsTab";
 import { HeadersTab } from "./HeadersTab";
 import { TLSTab } from "./TLSTab";
@@ -34,6 +33,7 @@ export function ResponseViewer() {
     assertionRules,
     request,
     retryAttempts,
+    apqRetried,
     graphqlDeferredParts,
     consoleLogs,
   } = store;
@@ -51,6 +51,7 @@ export function ResponseViewer() {
           responseTab={responseTab}
           responsePretty={responsePretty}
           retryAttempts={retryAttempts}
+          apqRetried={apqRetried}
           gqlComplexity={model.gqlComplexity}
           gqlCost={model.gqlCost}
           passedCount={model.passedCount}
@@ -90,7 +91,7 @@ export function ResponseViewer() {
         passedCount={model.passedCount}
         totalCount={model.totalCount}
         consoleLogs={model.hasConsoleLogs ? { count: consoleLogs.preRequest.length + consoleLogs.postResponse.length, hasError: model.hasConsoleError } : undefined}
-        graphql={model.hasGraphQLTab ? { hasErrors: model.graphqlErrors.length > 0, errorCount: model.graphqlErrors.length, deferredCount: graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0 } : undefined}
+        graphql={model.hasGraphQLTab ? { hasErrors: model.graphqlErrors.length > 0, errorCount: model.graphqlErrors.length, hasDeferred: (graphqlDeferredParts?.length ?? 0) > 0, deferredCount: graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0 } : undefined}
         onSelect={(tab) => set({ responseTab: tab })}
       />
 
@@ -119,7 +120,6 @@ export function ResponseViewer() {
         {responseTab === "visualize" && <VisualizeTab />}
         {responseTab === "console" && <ConsoleTab />}
         {responseTab === "graphql-errors" && <GraphQLErrorsTab />}
-        {responseTab === "graphql-deferred" && <DeferredTab />}
       </div>
 
       {model.overlay?.kind === "assertion" && (

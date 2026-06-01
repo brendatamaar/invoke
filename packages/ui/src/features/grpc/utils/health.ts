@@ -9,7 +9,7 @@ export async function runGrpcHealthCheck() {
 
   try {
     const response = await grpcExecute(
-      { ...request, service: "grpc.health.v1.Health", method: "Check" },
+      { ...request, service: "grpc.health.v1.Health", method: "Check", body: "{}" },
       undefined,
     );
     const durationMs = response.durationMs;

@@ -63,10 +63,10 @@ export function FlowNode({
       {step.type === "delay" && (
         <div className="text-2xs text-[var(--text-3)]">{step.delayMs}ms</div>
       )}
-      {stepResult?.response?.status && (
+      {stepResult?.response?.status != null && (
         <div className="flex items-center gap-1 text-2xs text-[var(--text-3)]">
           <Clock size={9} />
-          {stepResult.completedAt - stepResult.startedAt}ms - {stepResult.response.status}
+          {stepResult.completedAt - stepResult.startedAt}ms - {stepResult.response.status === 0 ? "ERR" : stepResult.response.status}
         </div>
       )}
     </button>

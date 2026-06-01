@@ -18,9 +18,6 @@ export async function saveEnvironment(
     variables: environment.variables,
     createdAt: environment.createdAt ?? now,
     updatedAt: now,
-    ...(environment.encryptedVariables !== undefined
-      ? { encryptedVariables: environment.encryptedVariables }
-      : {}),
   };
   await db.environments.put(clonePlain(saved));
   return saved;
