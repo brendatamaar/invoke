@@ -45,6 +45,7 @@ export function GraphQLQueryPanel() {
             lang="graphql"
             minHeight="200px"
             extensions={model.editorExtensions}
+            editorRef={model.editorRef}
           />
         </div>
       </div>

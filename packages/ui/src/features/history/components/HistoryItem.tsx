@@ -21,7 +21,7 @@ export function HistoryItem({
   onLabel: (entry: HistoryEntry, label: string) => void;
   onCreateMock: (entry: HistoryEntry) => void;
 }) {
-  const request = entry.request as { method?: string; url?: string } | undefined;
+  const request = entry.request as { method?: string; url?: string; address?: string; service?: string } | undefined;
   const [menuOpen, setMenuOpen] = useState(false);
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(entry.label ?? "");
@@ -44,9 +44,9 @@ export function HistoryItem({
         <div className="flex-1 min-w-0">
           <span
             className="block text-xs font-mono text-[var(--text-1)] truncate"
-            title={request?.url}
+            title={request?.url ?? (request?.address ? `${request.address}/${request.service}` : undefined)}
           >
-            {request?.url ?? "-"}
+            {request?.url ?? (request?.address ? `${request.address}/${request.service}` : "-")}
           </span>
           {entry.label && !editingLabel && (
             <span className="text-2xs text-[var(--accent)] truncate">{entry.label}</span>

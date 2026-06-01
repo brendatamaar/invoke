@@ -20,13 +20,20 @@ export function RequestUrlInput({
   return (
     <div className="flex-1 min-w-0">
       <VariableAutocompleteInput
-        value={url}
+        value={buildDisplayUrl(url, params)}
         onPaste={(event) => {
           const text = event.clipboardData.getData("text");
-          if (text.trimStart().startsWith("curl ")) {
+          if (/^curl[\s]/i.test(text.trimStart())) {
             event.preventDefault();
             const parsed = parseCurl(text);
-            if (parsed.url) onPatch(parsed as Record<string, unknown>);
+            if (parsed.url) {
+              const names = extractPathVariableNames(parsed.url);
+              const existingMap = new Map(pathVariables.map((v) => [v.key, v]));
+              const nextPathVariables = names.map(
+                (name) => existingMap.get(name) ?? { key: name, value: "", enabled: true },
+              );
+              onPatch({ ...parsed, pathVariables: nextPathVariables } as Record<string, unknown>);
+            }
           }
         }}
         onChange={(nextUrl) => onPatch(buildUrlPatch(nextUrl, params, pathVariables))}
@@ -45,6 +52,16 @@ export function RequestUrlInput({
   );
 }
 
+function buildDisplayUrl(url: string, params: KeyValue[]): string {
+  if (url.includes("?")) return url;
+  const enabled = params.filter((p) => p.enabled !== false && p.key.trim());
+  if (enabled.length === 0) return url;
+  const qs = enabled
+    .map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value ?? "")}`)
+    .join("&");
+  return `${url}?${qs}`;
+}
+
 function buildUrlPatch(url: string, params: KeyValue[], pathVariables: KeyValue[]) {
   const names = extractPathVariableNames(url);
   const existingMap = new Map(pathVariables.map((variable) => [variable.key, variable]));
@@ -54,8 +71,11 @@ function buildUrlPatch(url: string, params: KeyValue[], pathVariables: KeyValue[
 
   const queryIndex = url.indexOf("?");
   if (queryIndex === -1) return { url, pathVariables: nextPathVariables };
+  const rawQuery = url.slice(queryIndex + 1);
+  const fragmentIndex = rawQuery.indexOf("#");
+  const queryString = fragmentIndex === -1 ? rawQuery : rawQuery.slice(0, fragmentIndex);
   const urlParams: KeyValue[] = [];
-  new URLSearchParams(url.slice(queryIndex + 1)).forEach((value, key) => {
+  new URLSearchParams(queryString).forEach((value, key) => {
     if (key) urlParams.push({ key, value, enabled: true });
   });
   return {

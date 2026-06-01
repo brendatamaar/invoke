@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Lock, Plus, Unlock, X } from "lucide-react";
+import { Eye, EyeOff, Lock, Plus, Trash2, Unlock } from "lucide-react";
 import { isSensitiveVariableName, type KeyValue } from "@invoke/core";
 
 export function EnvironmentVariableTable({
@@ -97,7 +97,7 @@ export function EnvironmentVariableTable({
             onClick={() => onSetVariables(variables.filter((_, i) => i !== index))}
             className="flex items-center justify-center text-[var(--text-3)] hover:text-[var(--danger)]"
           >
-            <X size={12} />
+            <Trash2 size={12} />
           </button>
         </div>
       ))}

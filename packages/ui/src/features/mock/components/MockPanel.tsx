@@ -58,7 +58,6 @@ export function MockPanel() {
     setMockStatus("Stopping...");
     try {
       await syncMockRoutes([]);
-      await coreStore.setMeta("mockRoutes", []);
       setMockStatus("Inactive");
       addToast("success", "Mock server stopped");
     } catch (e) {

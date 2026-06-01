@@ -19,6 +19,7 @@ export function ResponseStatusBar({
   responseTab,
   responsePretty,
   retryAttempts,
+  apqRetried,
   gqlComplexity,
   gqlCost,
   passedCount,
@@ -38,6 +39,7 @@ export function ResponseStatusBar({
   responseTab: string;
   responsePretty: boolean;
   retryAttempts?: number;
+  apqRetried?: boolean;
   gqlComplexity: unknown;
   gqlCost: any;
   passedCount: number;
@@ -66,6 +68,11 @@ export function ResponseStatusBar({
         <span className="text-2xs text-[var(--warn)] flex items-center gap-1">
           <RefreshCw size={11} /> {retryAttempts} retr
           {retryAttempts === 1 ? "y" : "ies"}
+        </span>
+      )}
+      {apqRetried && (
+        <span className="text-2xs text-[var(--accent)] flex items-center gap-1">
+          <RefreshCw size={11} /> APQ retry
         </span>
       )}
       {gqlComplexity !== null && (

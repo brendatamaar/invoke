@@ -33,6 +33,7 @@ export interface WebSocketLogItem {
   type: string;
   body: string;
   createdAt: number;
+  reconnectAt?: number;
 }
 
 export interface WsSession {
@@ -96,6 +97,7 @@ export interface AppState {
   loading: boolean;
   loadController: AbortController | undefined;
   retryAttempts: number | undefined;
+  apqRetried: boolean | undefined;
   streaming: boolean;
   streamMode: boolean;
   streamBytes: number;
@@ -174,9 +176,6 @@ export interface AppState {
   settingsTab: SettingsTab | undefined;
   showHelp: boolean;
   showClearHistoryModal: boolean;
-  showPassphraseModal: boolean;
-  passphraseMode: "setup" | "unlock";
-  passphraseCallback: ((passphrase: string | null) => void) | null;
   uiFontSize: number;
   editorWordWrap: boolean;
   showSaveActionModal: boolean;

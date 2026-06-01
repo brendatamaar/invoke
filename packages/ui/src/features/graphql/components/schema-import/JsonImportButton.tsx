@@ -6,18 +6,20 @@ export function JsonImportButton({
   inputRef,
   onImport,
   label,
+  accept = ".json,application/json",
 }: {
   working: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
   onImport: (file: File | undefined) => void;
   label: string;
+  accept?: string;
 }) {
   return (
     <div className="flex items-center gap-2">
       <input
         ref={inputRef}
         type="file"
-        accept=".json,application/json"
+        accept={accept}
         aria-label="Import JSON file"
         className="hidden"
         onChange={(e) => onImport(e.target.files?.[0])}

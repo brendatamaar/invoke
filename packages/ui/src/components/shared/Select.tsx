@@ -111,7 +111,7 @@ export function Select({
 
       {open && (
         <div
-          className="absolute z-50 top-full left-0 mt-0.5 min-w-full overflow-hidden"
+          className="absolute z-50 top-full left-0 mt-0.5 min-w-full overflow-y-auto max-h-60"
           style={{
             background: "var(--bg-2)",
             border: "1px solid var(--line-2)",

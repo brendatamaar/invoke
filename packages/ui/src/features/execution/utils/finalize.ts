@@ -57,7 +57,7 @@ export async function finalizeResponseExecution({
   preRequestError,
   ...base
 }: FinalizeBase & {
-  rawResponse: ExecuteResponse & { retryAttempts?: number };
+  rawResponse: ExecuteResponse & { retryAttempts?: number; apqRetried?: boolean };
   activeRequest: RequestDraft;
   vars: Record<string, string>;
   preRequestLogs: string[];
@@ -94,6 +94,7 @@ export async function finalizeResponseExecution({
     loading: false,
     loadController: undefined,
     retryAttempts: rawResponse.retryAttempts,
+    apqRetried: rawResponse.apqRetried,
     graphqlDeferredParts: parts,
     consoleLogs: {
       preRequest: preRequestLogs,

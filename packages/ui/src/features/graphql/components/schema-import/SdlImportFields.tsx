@@ -20,6 +20,7 @@ export function SdlImportFields({ model }: { model: ImportModel }) {
         inputRef={model.sdlFileInputRef}
         onImport={model.importSDLFile}
         label="Load file"
+        accept=".graphql,.graphqls,.gql,text/plain"
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import type React from "react";
 import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
 import type { KeyValue } from "@invoke/core";
+import type { EditorView } from "@codemirror/view";
 
 export type CodeEditorLang = "json" | "javascript" | "xml" | "python" | "text" | "graphql";
 
@@ -12,6 +13,7 @@ export interface CodeEditorProps {
   minHeight?: string;
   placeholder?: string;
   extensions?: import("@codemirror/state").Extension[];
+  editorRef?: React.MutableRefObject<EditorView | null>;
 }
 
 export interface DialogProps {

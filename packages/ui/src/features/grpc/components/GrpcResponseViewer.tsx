@@ -1,7 +1,8 @@
-import { useEffect, useCallback, useReducer, useRef, type ReactNode } from "react";
+import { useEffect, useCallback, useReducer, useRef, useState, type ReactNode } from "react";
 import { Code2 } from "lucide-react";
 import { useStore } from "../../../store";
 import { grpcMethodFlags, selectedGrpcMethod } from "../utils/protocolBar";
+import { CodeTab } from "../../response/components/CodeTab";
 import { GrpcDeadlineCountdown } from "./GrpcDeadlineCountdown";
 import { GrpcMessageDiffModal } from "./GrpcMessageDiffModal";
 import { GrpcResponsePanel } from "./GrpcResponsePanel";
@@ -107,6 +108,8 @@ export function GrpcResponseViewer() {
     set({ grpcStreamSentMessages: [], grpcStreamReceivedMessages: [] });
   };
 
+  const [activeTab, setActiveTab] = useState<"response" | "code">("response");
+
   const isPlaceholder =
     !hasClosedClientStreamResponse && !hasClientStreamLog && !hasServerStreamLog && !grpcResponse;
 
@@ -179,8 +182,25 @@ export function GrpcResponseViewer() {
         />
       )}
       <div className="flex flex-col h-full">
-        {grpcStatus && isPlaceholder && <GrpcStatusBar status={grpcStatus} />}
-        {content}
+        <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)]">
+          {(["response", "code"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`tab-btn text-2xs ${activeTab === tab ? "active" : ""}`}
+            >
+              {tab === "response" ? "Response" : "Code"}
+            </button>
+          ))}
+        </div>
+        {activeTab === "response" && (
+          <>
+            {grpcStatus && isPlaceholder && <GrpcStatusBar status={grpcStatus} />}
+            {content}
+          </>
+        )}
+        {activeTab === "code" && <CodeTab />}
       </div>
     </>
   );

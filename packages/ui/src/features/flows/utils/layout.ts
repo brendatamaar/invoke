@@ -1,7 +1,7 @@
 import type { FlowStep } from "@invoke/core";
 
 export const NODE_W = 180;
-export const NODE_H = 72;
+export const NODE_H = 90;
 export const NODE_GAP_Y = 56;
 export const CANVAS_PAD = 40;
 

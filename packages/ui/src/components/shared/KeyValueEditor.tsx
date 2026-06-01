@@ -50,7 +50,7 @@ export function KeyValueEditor({
       )}
       {rows.map((row, i) => (
         <div
-          key={row.key ? `row-${row.key}-${i}` : `row-${i}`}
+          key={`row-${i}`}
           className={`group grid ${COL_TEMPLATE} items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]`}
         >
           <span />

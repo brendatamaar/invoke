@@ -70,7 +70,7 @@ function GraphQLTypeListItem({
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${selected ? "bg-[var(--accent)]/10 border-r-2 border-[var(--accent)]" : "hover:bg-[var(--border)]"}`}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${selected ? "bg-[var(--accent)]/10" : "hover:bg-[var(--border)]"}`}
       title={type.description ?? undefined}
     >
       <span className={`text-2xs px-1.5 py-0.5 rounded font-mono shrink-0 ${badge.cls}`}>

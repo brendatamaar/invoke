@@ -12,6 +12,7 @@ export type ResponseSlice = Pick<
   | "loading"
   | "loadController"
   | "retryAttempts"
+  | "apqRetried"
   | "streaming"
   | "streamMode"
   | "streamBytes"
@@ -32,6 +33,7 @@ export function createResponseSlice(_set: StoreSet): ResponseSlice {
     loading: false,
     loadController: undefined,
     retryAttempts: undefined,
+    apqRetried: undefined,
     streaming: false,
     streamMode: false,
     streamBytes: 0,

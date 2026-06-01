@@ -73,17 +73,16 @@ export function GraphQLQueryToolbar({
       >
         {curlCopied ? <Check size={13} className="text-[var(--ok)]" /> : <Copy size={13} />}
       </button>
-      <div className="flex-1" />
       {operations.length > 1 && (
-        <div className="flex items-center gap-1.5">
-          <span className="text-2xs text-[var(--text-3)]">Op:</span>
+        <div className="flex items-center gap-1.5 ml-1">
+          <span className="text-2xs text-[var(--text-3)]">Operation:</span>
           <Select
             value={operationName ?? ""}
             onChange={(e) => onOperationName(e.target.value)}
             size="2xs"
           >
             <option value="">
-              {"\u2014"} pick {"\u2014"}
+              Pick operation below:
             </option>
             {operations.map((op, i) => (
               <option key={op.name ?? `op-${i}`} value={op.name ?? ""}>
@@ -93,6 +92,7 @@ export function GraphQLQueryToolbar({
           </Select>
         </div>
       )}
+      <div className="flex-1" />
       {isSubscription &&
         (subState === "subscribed" || subState === "connecting" ? (
           <button type="button" onClick={onUnsubscribe} className="btn btn-danger text-2xs py-0.5 px-2 gap-1">

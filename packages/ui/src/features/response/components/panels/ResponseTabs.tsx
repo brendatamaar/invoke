@@ -23,7 +23,7 @@ export function ResponseTabs({
   passedCount: number;
   totalCount: number;
   consoleLogs?: { count: number; hasError: boolean };
-  graphql?: { hasErrors: boolean; errorCount: number; deferredCount: number };
+  graphql?: { hasErrors: boolean; errorCount: number; deferredCount: number; hasDeferred: boolean };
   onSelect: (tab: ResponseTab) => void;
 }) {
   return (
@@ -71,18 +71,11 @@ export function ResponseTabs({
               {graphql.errorCount}
             </span>
           )}
-        </button>
-      )}
-      {graphql && graphql.deferredCount > 0 && (
-        <button
-          type="button"
-          onClick={() => onSelect("graphql-deferred")}
-          className={`tab-btn text-2xs ${responseTab === "graphql-deferred" ? "active" : ""}`}
-        >
-          Deferred
-          <span className="ml-1 px-1 rounded bg-[var(--accent-subtle)] text-[var(--accent)]">
-            {graphql.deferredCount}
-          </span>
+          {!graphql.hasErrors && graphql.hasDeferred && (
+            <span className="ml-1 px-1 rounded bg-[var(--accent-subtle)] text-[var(--accent)]">
+              {graphql.deferredCount}
+            </span>
+          )}
         </button>
       )}
     </div>

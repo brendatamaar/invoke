@@ -101,6 +101,7 @@ export function CodeEditor({
   readOnly = false,
   minHeight = "120px",
   extensions: extraExtensions = EMPTY_EXTENSIONS,
+  editorRef,
 }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -146,10 +147,12 @@ export function CodeEditor({
       parent: containerRef.current,
     });
     viewRef.current = view;
+    if (editorRef) editorRef.current = view;
 
     return () => {
       view.destroy();
       viewRef.current = null;
+      if (editorRef) editorRef.current = null;
     };
   }, [lang, readOnly, minHeight, wrapCompartment]);
 

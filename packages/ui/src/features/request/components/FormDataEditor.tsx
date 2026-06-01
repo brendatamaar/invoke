@@ -63,7 +63,7 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
         const isFile = row.type === "file";
         return (
           <div
-            key={`${row.key}-${i}`}
+            key={`row-${i}`}
             className={`group grid ${COL_TEMPLATE} items-center border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]`}
           >
             <span className="flex items-center justify-center text-[var(--text-3)] opacity-0 group-hover:opacity-100 cursor-grab">

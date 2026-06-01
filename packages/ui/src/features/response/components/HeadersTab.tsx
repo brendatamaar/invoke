@@ -16,7 +16,7 @@ export function HeadersTab({
     <div className="divide-y divide-[var(--border)]">
       {headers.map((h) => (
         <div key={h.key} className="group flex items-start gap-2 px-3 py-2 hover:bg-[var(--surface-2)]">
-          <span className="text-xs font-mono font-medium text-[var(--text-1)] w-56 shrink-0 truncate">
+          <span className="text-xs font-mono font-medium text-[var(--text-1)] w-72 shrink-0 truncate">
             {h.key}
           </span>
           <span className="text-xs font-mono text-[var(--text-2)] break-all flex-1">{h.value}</span>

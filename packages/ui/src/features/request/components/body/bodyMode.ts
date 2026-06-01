@@ -14,12 +14,37 @@ export function buildBodyModePatch(
   const isSourceKV = currentMode === "form-data" || currentMode === "urlencoded";
   const isTargetJSON = nextMode === "json" || nextMode === "raw";
   const isSourceJSON = currentMode === "json" || currentMode === "raw";
-  if (isTargetKV && isSourceJSON) return jsonToRowsPatch(request, nextMode);
-  if (isTargetJSON && isSourceKV) return rowsToJsonPatch(request, nextMode);
+  // Also check body shape for transitions through "none" where currentMode has no format info
+  if (isTargetKV && (isSourceJSON || looksLikeJsonObject(request.body))) {
+    return jsonToRowsPatch(request, nextMode);
+  }
+  if (isTargetJSON && (isSourceKV || looksLikeKeyValueArray(request.body))) {
+    return rowsToJsonPatch(request, nextMode);
+  }
   if (nextMode === "urlencoded" && currentMode === "form-data") {
     return formDataToUrlEncodedPatch(request, nextMode);
   }
   return { bodyMode: nextMode };
+}
+
+function looksLikeJsonObject(body?: string): boolean {
+  if (!body) return false;
+  try {
+    const parsed = JSON.parse(body);
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed);
+  } catch {
+    return false;
+  }
+}
+
+function looksLikeKeyValueArray(body?: string): boolean {
+  if (!body) return false;
+  try {
+    const parsed = JSON.parse(body);
+    return Array.isArray(parsed) && (parsed.length === 0 || (typeof parsed[0] === "object" && "key" in parsed[0]));
+  } catch {
+    return false;
+  }
 }
 
 function jsonToRowsPatch(request: RequestDraft, bodyMode: BodyMode) {
@@ -28,7 +53,7 @@ function jsonToRowsPatch(request: RequestDraft, bodyMode: BodyMode) {
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       const rows: KeyValue[] = Object.entries(parsed).map(([key, value]) => ({
         key,
-        value: String(value),
+        value: typeof value === "string" ? value : JSON.stringify(value),
         enabled: true,
         type: "text",
       }));
