@@ -112,7 +112,6 @@ describe("storage migrations", () => {
       sortOrder: 1,
       createdAt: 1,
       updatedAt: 1,
-      encryptedTlsKey: "encrypted",
     });
     await legacy.table("history").add({
       id: "hist_legacy",
@@ -141,7 +140,6 @@ describe("storage migrations", () => {
     const [history] = await store.listHistory();
     const [flow] = await store.listFlows();
 
-    expect(saved.encryptedTlsKey).toBeUndefined();
     expect(saved.request).toMatchObject({
       timeoutMs: 12000,
       retryPolicy: {

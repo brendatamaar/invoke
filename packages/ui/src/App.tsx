@@ -10,7 +10,6 @@ import { VariableEditorModal } from "./features/variables/components/VariableEdi
 import { HelpModal } from "./features/help/components/HelpModal";
 import { ClearHistoryModal } from "./features/history/components/ClearHistoryModal";
 import { SettingsPanel } from "./features/settings/components/SettingsPanel";
-import { PassphraseModal } from "./features/settings/components/PassphraseModal";
 import { BatchRunnerModal } from "./features/collections/components/BatchRunnerModal";
 import { CollectionRunnerModal } from "./features/collections/components/CollectionRunnerModal";
 import { SaveActionModal } from "./features/collections/components/SaveActionModal";
@@ -20,7 +19,6 @@ import { useAppBootstrap } from "./features/bootstrap/useAppBootstrap";
 import { useActiveEnvironmentPersistence } from "./features/environments/useActiveEnvironmentPersistence";
 import { useRequestExecution } from "./features/execution/useRequestExecution";
 import { useResizablePane } from "./hooks/useResizablePane";
-import { checkAndUnlockOnStartup } from "./features/settings/useCrypto";
 import { useStore } from "./store";
 
 const COMPARE_FIELDS = [
@@ -58,10 +56,6 @@ export default function App() {
 
   useAppBootstrap();
   useActiveEnvironmentPersistence();
-
-  useEffect(() => {
-    checkAndUnlockOnStartup(set).catch(() => {});
-  }, [set]);
 
   const handleSaveRef = useRef<() => void>(() => {});
   handleSaveRef.current = () => {
@@ -136,7 +130,6 @@ export default function App() {
       <HelpModal />
       <ClearHistoryModal />
       <SettingsPanel />
-      <PassphraseModal />
       <CollectionRunnerModal />
       <BatchRunnerModal />
       <SaveRequestModal />
