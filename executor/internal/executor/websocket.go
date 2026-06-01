@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -86,7 +87,7 @@ func (s *Service) WebSocketConnect(ctx context.Context, req *WebSocketConnectReq
 	connectCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	conn, _, connErr := dialer.DialContext(connectCtx, rawURL, reqHeaders)
+	conn, resp, connErr := dialer.DialContext(connectCtx, rawURL, reqHeaders)
 	if connErr != nil {
 		return &WebSocketConnectResponse{Error: connErr.Error()}, nil
 	}
@@ -103,6 +104,22 @@ func (s *Service) WebSocketConnect(ctx context.Context, req *WebSocketConnectReq
 		messages: []*WebSocketMessage{},
 		lastUsed: time.Now(),
 	}
+
+	if resp != nil {
+		flat := make(map[string]string, len(resp.Header))
+		for k, vs := range resp.Header {
+			flat[k] = strings.Join(vs, ", ")
+		}
+		if body, err := json.Marshal(flat); err == nil {
+			wrapped.messages = append(wrapped.messages, &WebSocketMessage{
+				Direction: "system",
+				Type:      "handshake",
+				Body:      string(body),
+				CreatedAt: time.Now().UnixMilli(),
+			})
+		}
+	}
+
 	s.wsMu.Lock()
 	s.cleanupWebSocketsLocked()
 	s.wsConnections[connectionID] = wrapped
