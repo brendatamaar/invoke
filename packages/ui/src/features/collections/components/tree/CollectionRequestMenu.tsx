@@ -1,15 +1,17 @@
-import { Copy, MoreHorizontal, Trash2 } from "lucide-react";
+import { Copy, Info, MoreHorizontal, Trash2 } from "lucide-react";
 import { CollectionMenuItem } from "../CollectionMenuItem";
 
 export function CollectionRequestMenu({
   open,
   onToggle,
+  onDetail,
   onDuplicate,
   onDelete,
   menuRef,
 }: {
   open: boolean;
   onToggle: () => void;
+  onDetail: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
   menuRef: React.RefObject<HTMLDivElement | null>;
@@ -17,7 +19,7 @@ export function CollectionRequestMenu({
   return (
     <div
       ref={menuRef}
-      className="opacity-0 group-hover:opacity-100 relative"
+      className={`${open ? "opacity-100" : "opacity-0 group-hover:opacity-100"} relative`}
       onClick={(event) => event.stopPropagation()}
     >
       <button
@@ -32,7 +34,9 @@ export function CollectionRequestMenu({
           className="absolute right-0 top-full mt-1 z-20 bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-2)] py-1 min-w-[140px]"
           onClick={(event) => event.stopPropagation()}
         >
+          <CollectionMenuItem icon={<Info size={12} />} label="Detail" onClick={onDetail} />
           <CollectionMenuItem icon={<Copy size={12} />} label="Duplicate" onClick={onDuplicate} />
+          <div className="h-px bg-[var(--border)] my-1" />
           <CollectionMenuItem
             icon={<Trash2 size={12} />}
             label="Delete"
