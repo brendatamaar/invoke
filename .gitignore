@@ -8,7 +8,6 @@ test-results/
 playwright-report/
 *.tsbuildinfo
 
-# Secrets / credentials (belt-and-braces — Push Protection backstops this)
 .env
 .env.*
 !.env.example
@@ -19,15 +18,11 @@ playwright-report/
 *.pfx
 .DS_Store
 
-# Tool / IDE caches
 .claude/
 
 executor/bin/
 tmp/
-.design-temp
-packages/ui-backup
 docs/docs-invoke
-invoke-design-system/
 plan/
 test-results/
 uat-data/
