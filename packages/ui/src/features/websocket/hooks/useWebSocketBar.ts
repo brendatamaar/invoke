@@ -23,13 +23,17 @@ export function useWebSocketBar() {
   const pingTimestampRef = useRef(new Map<string, number>());
   const eventStream = useWebSocketEventStream({
     pingTimestampRef,
-    onAutoReconnect: (sessionId) => connect(sessionId),
+    onAutoReconnect: (sessionId, retryCount) => connect(sessionId, retryCount),
   });
 
-  async function connect(sessionId: string) {
+  async function connect(sessionId: string, retryCount = 0) {
     const controller = new AbortController();
     controllersRef.current.set(sessionId, controller);
-    setWsSession(sessionId, { state: "connecting", log: [] });
+    setWsSession(sessionId, {
+      state: "connecting",
+      ...(retryCount === 0 ? { log: [] } : {}),
+      activeGqlSubscriptionId: undefined,
+    });
     const activeEnv = environments.find((env) => env.id === activeEnvironmentId);
     const { request: resolved } = resolveWebSocketRequest(
       websocketRequest,
@@ -41,7 +45,7 @@ export function useWebSocketBar() {
       const { connectionId, error } = await webSocketConnect(resolved, controller.signal);
       if (error) throw new Error(error);
       setWsSession(sessionId, { state: "connected", connectionId });
-      eventStream.startEventStream(sessionId, connectionId);
+      eventStream.startEventStream(sessionId, connectionId, 0);
       addToast("success", "WebSocket connected");
       const wsRequest = useStore.getState().websocketRequest;
       if (wsRequest.preset === "graphql-transport-ws") {
@@ -57,6 +61,46 @@ export function useWebSocketBar() {
       if ((error as Error).name === "AbortError") return;
       setWsSession(sessionId, { state: "disconnected", connectionId: "" });
       addToast("error", String(error));
+      if (retryCount > 0) {
+        const { autoReconnect, reconnectDelay = 2000, reconnectMaxRetries } =
+          useStore.getState().websocketRequest;
+        const nextRetry = retryCount + 1;
+        const canRetry = autoReconnect && (reconnectMaxRetries == null || nextRetry <= reconnectMaxRetries);
+        const now = Date.now();
+        const previous = eventStream.findWsSession(sessionId);
+        if (canRetry) {
+          const attemptsBody = reconnectMaxRetries != null
+            ? `attempt ${nextRetry}/${reconnectMaxRetries}`
+            : `attempt ${nextRetry}`;
+          setWsSession(sessionId, {
+            log: [
+              ...(previous?.log ?? []),
+              {
+                id: crypto.randomUUID(),
+                direction: "system" as const,
+                type: "reconnecting" as const,
+                body: attemptsBody,
+                createdAt: now,
+                reconnectAt: now + reconnectDelay,
+              },
+            ],
+          });
+          setTimeout(() => connect(sessionId, nextRetry), reconnectDelay);
+        } else if (autoReconnect && reconnectMaxRetries != null) {
+          setWsSession(sessionId, {
+            log: [
+              ...(previous?.log ?? []),
+              {
+                id: crypto.randomUUID(),
+                direction: "system" as const,
+                type: "info" as const,
+                body: `Max reconnect attempts reached (${reconnectMaxRetries})`,
+                createdAt: now,
+              },
+            ],
+          });
+        }
+      }
     } finally {
       controllersRef.current.delete(sessionId);
     }
@@ -114,7 +158,6 @@ export function useWebSocketBar() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  useEffect(() => () => eventStream.closeAllEventStreams(), [eventStream]);
 
   const state = activeSession?.state ?? "disconnected";
   return {
