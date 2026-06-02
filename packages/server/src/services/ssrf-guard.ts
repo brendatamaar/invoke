@@ -2,10 +2,7 @@ import dns from "node:dns";
 import { Context, Effect, Layer } from "effect";
 import { SsrfBlockedError } from "../errors.js";
 
-const BLOCKED_HOSTNAMES = new Set([
-  "metadata.google.internal",
-  "metadata.aws.internal",
-]);
+const BLOCKED_HOSTNAMES = new Set(["metadata.google.internal", "metadata.aws.internal"]);
 
 const PRIVATE_PATTERNS: readonly RegExp[] = [
   /^localhost$/i,
