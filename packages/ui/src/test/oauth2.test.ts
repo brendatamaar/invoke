@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RequestConfig } from "@invoke/core";
 import { applyOAuth2Token } from "../features/execution/oauth2";
-import { oauth2ClientCredentials } from "../features/oauth2";
+import { oauth2ClientCredentials } from "../features/oauth2/api";
 
-vi.mock("../features/oauth2", () => ({
+vi.mock("../features/oauth2/api", () => ({
   oauth2ClientCredentials: vi.fn(),
+  oauth2RefreshToken: vi.fn(),
 }));
 
 const request: RequestConfig = {
