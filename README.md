@@ -49,6 +49,8 @@ Open: http://localhost:8080
 
 Three images are built: UI (Nginx serving the static bundle, proxying `/api/*` and `/health` to the server), server (Bun), and executor (Go). Private address access is enabled by default so requests to `localhost` and internal IPs work out of the box.
 
+> **Note:** To reach APIs running on your host machine from the Docker stack, use `host.docker.internal` instead of `localhost` (e.g., `http://host.docker.internal:3000`). `host.docker.internal` is available on Docker Desktop (Mac/Windows) by default; on Linux add `extra_hosts: ["host.docker.internal:host-gateway"]` to the `executor` service in your compose override or use your host's LAN IP.
+
 ## Configuration
 
 Both the server and the executor are configured through environment variables. Defaults work out of the box for the self-hosted compose stack.
