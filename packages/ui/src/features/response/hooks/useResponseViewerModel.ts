@@ -36,7 +36,6 @@ export function useResponseViewerModel() {
     !!consoleLogs.postResponseError;
   const hasConsoleError = !!consoleLogs.preRequestError || !!consoleLogs.postResponseError;
   const isGraphQL = request.protocol === "graphql";
-  const { graphqlDeferredParts } = store;
   const hasGraphQLTab = isGraphQL;
   const bodyInfo = getBodyInfo(response, responsePretty);
 
