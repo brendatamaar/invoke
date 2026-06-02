@@ -1,10 +1,11 @@
-import { HttpApiBuilder } from "@effect/platform";
+import { HttpApiBuilder, HttpServerResponse } from "@effect/platform";
 import { Effect, Stream } from "effect";
 import type { ExecuteInput } from "../../types/index.js";
 import { executeDigest } from "../../features/execute/digest-auth.js";
 import { executePayload } from "../../features/execute/payload.js";
 import { bytesFrom, normalizeResponse } from "../../features/execute/response.js";
 import { GrpcExecutor } from "../../services/grpc-executor.js";
+import { SsrfGuard } from "../../services/ssrf-guard.js";
 import { InvokeApi } from "../index.js";
 import { sseEvent, sseResponse } from "./sse.js";
 
@@ -39,6 +40,11 @@ export const ExecuteLive = HttpApiBuilder.group(InvokeApi, "execute", (handlers)
     .handle("execute", ({ payload }) =>
       Effect.gen(function* () {
         const input = payload as ExecuteInput;
+        const guard = yield* SsrfGuard;
+        const ssrf = yield* guard.check(input.url).pipe(Effect.either);
+        if (ssrf._tag === "Left") {
+          return HttpServerResponse.unsafeJson({ error: ssrf.left.reason }, { status: 403 });
+        }
         const executor = yield* GrpcExecutor;
         const raw =
           input.auth?.type === "digest"
@@ -51,8 +57,15 @@ export const ExecuteLive = HttpApiBuilder.group(InvokeApi, "execute", (handlers)
     )
     .handle("stream", ({ payload }) =>
       Effect.gen(function* () {
-        const executor = yield* GrpcExecutor;
+        const guard = yield* SsrfGuard;
         const input = payload as ExecuteInput;
+        const ssrf = yield* guard.check(input.url).pipe(Effect.either);
+        if (ssrf._tag === "Left") {
+          return sseResponse(
+            Stream.succeed(sseEvent("final", { error: ssrf.left.reason, status: 403 })),
+          );
+        }
+        const executor = yield* GrpcExecutor;
         const stream = executor.executeStream(executePayload(input)).pipe(
           Stream.flatMap((chunk) => Stream.fromIterable(formatExecuteChunk(chunk))),
           Stream.catchAll((error) =>
