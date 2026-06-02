@@ -32,12 +32,43 @@ flowchart LR
 |-------|------|----------------|
 | **React UI** | `packages/ui` | Request builder, response viewer, runners, mock/webhook tools, flow editor, settings. Imports `@invoke/core` directly. |
 | **Core engine** | `packages/core` | Browser-safe TypeScript: types, variable resolution, auth helpers, assertions, extraction, diffing, flow execution, run orchestration, import/export, code generation. Must not depend on Node-only APIs. |
-| **Server** | `packages/server` | Thin bridge on `@effect/platform` HttpApi + Bun: forwards requests to the executor, relays gRPC/WebSocket over SSE, hosts the in-memory mock and webhook capture, handles the OAuth2 authorization-code callback. Exposes `/api/openapi.json` and a Scalar UI at `/api/docs`. |
+| **Server** | `packages/server` | Thin bridge on `@effect` HttpApi + Bun: forwards requests to the executor, relays gRPC/WebSocket over SSE, hosts the in-memory mock and webhook capture, handles the OAuth2 authorization-code callback. Exposes `/api/openapi.json` and a Scalar UI at `/api/docs`. |
 | **Executor** | `executor/` | Network correctness in Go: HTTP/2, timing, redirects, mTLS, custom CAs, WebSocket lifecycle (`gorilla/websocket`), gRPC reflection (v1/v1alpha), unary + streaming, gRPC-Web, SSRF guard, NTLM auth. Speaks gRPC to the server (contract: `proto/executor.proto`). |
 
 The browser is the source of truth for workspace data. The server and executor only see resolved requests at execution time.
 
 ## Getting Started
+
+**Self-host** to test `localhost` and private APIs:
+
+```bash
+docker compose up --build
+```
+
+Open: http://localhost:8080
+
+Three images are built: UI (Nginx serving the static bundle, proxying `/api/*` and `/health` to the server), server (Bun), and executor (Go). Private address access is enabled by default so requests to `localhost` and internal IPs work out of the box.
+
+## Configuration
+
+Both the server and the executor are configured through environment variables. Defaults work out of the box for the self-hosted compose stack.
+
+| Component | Variable | Default | Purpose |
+|-----------|----------|---------|---------|
+| Server | `PORT` | `4000` | HTTP listen port |
+| Server | `NODE_ENV` | unset | Skips `Bun.serve` when set to `test` |
+| Server | `EXECUTOR_GRPC_ADDR` | `127.0.0.1:50051` | gRPC address of the Go executor; set to `executor:50051` in compose |
+| Server | `INVOKE_SSRF_GUARD` | unset (off) | Set to `true` to block requests to private/internal addresses at the server edge |
+| Executor | `EXECUTOR_ADDR` | `:50051` | gRPC listen address |
+| Executor | `ALLOW_PRIVATE_ADDRESSES` | `true` in compose | Set to `false` to block the executor's dialer from reaching loopback/private IPs |
+
+For public hosted deployments, use the production compose override to enable the SSRF guard:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+```
+
+## Contributing
 
 ### Requirements
 
@@ -45,7 +76,7 @@ The browser is the source of truth for workspace data. The server and executor o
 - **pnpm** ≥ 9 (UI install + workspace; pinned via `packageManager` in `package.json`)
 - **Bun** ≥ 1 (server runtime — used by `dev:server`, `Dockerfile.server`, and `docker-compose.dev.yml`)
 - **Go** (executor)
-- **Docker** + **Docker Compose** (for self-hosting)
+- **Docker** + **Docker Compose**
 - **Buf CLI** (only when regenerating protobuf)
 
 ### Install
@@ -70,31 +101,6 @@ pnpm executor:dev   # Go executor on :50051
 pnpm dev:server     # Bun + Effect HttpApi server on :4000
 pnpm dev:ui         # Vite UI on :3000
 ```
-
-## Self-Hosting
-
-```bash
-docker compose up --build
-```
-
-Open: http://localhost:8080
-
-Three images are built: UI (Nginx serving the static bundle, proxying `/api/*` and `/health` to the server), server (Bun), and executor (Go). The compose file is `docker-compose.yml`; `docker-compose.dev.yml` is the development variant with bind mounts.
-
-## Configuration
-
-Both the server and the executor are configured through environment variables. Defaults work out of the box for local development and the bundled compose stack.
-
-| Component | Variable | Default | Purpose |
-|-----------|----------|---------|---------|
-| Server | `PORT` | `4000` | HTTP listen port |
-| Server | `NODE_ENV` | unset | Skips `Bun.serve` when set to `test` |
-| Server | `EXECUTOR_GRPC_ADDR` | `127.0.0.1:50051` | gRPC address of the Go executor; set to `executor:50051` in compose |
-| Server | `INVOKE_SSRF_GUARD` | unset (off) | Set to `true` to block requests to private/internal addresses at the server edge |
-| Executor | `EXECUTOR_ADDR` | `:50051` | gRPC listen address |
-| Executor | `ALLOW_PRIVATE_ADDRESSES` | unset (off) | Set to `true` to permit the executor's dialer to reach loopback/private IPs (required when targeting `localhost`, `10.0.0.0/8`, etc., with the SSRF guard otherwise blocking) |
-
-The SSRF guard is opt-in. The server middleware (`INVOKE_SSRF_GUARD`) does a hostname pattern check; the executor (`ALLOW_PRIVATE_ADDRESSES`) does DNS-resolved IP filtering on dial. Enable both for hosted deployments; leave them off for local development against `localhost` services.
 
 ## Repository Structure
 
