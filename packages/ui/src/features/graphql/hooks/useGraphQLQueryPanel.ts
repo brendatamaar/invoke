@@ -55,7 +55,7 @@ export function useGraphQLQueryPanel() {
   const jsonUnescapePasteExtension = useMemo(
     () =>
       EditorView.domEventHandlers({
-        paste(event, view) {
+        paste(event: ClipboardEvent, view: EditorView) {
           const text = event.clipboardData?.getData("text/plain");
           if (!text || !/\\[ntr"\\]/.test(text)) return false;
           try {
