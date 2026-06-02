@@ -1,0 +1,8 @@
+services:
+  executor:
+    environment:
+      ALLOW_PRIVATE_ADDRESSES: "false"
+
+  server:
+    environment:
+      INVOKE_SSRF_GUARD: "true"
