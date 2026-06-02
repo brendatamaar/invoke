@@ -154,7 +154,7 @@ export function CodeEditor({
       viewRef.current = null;
       if (editorRef) editorRef.current = null;
     };
-  }, [lang, readOnly, minHeight, wrapCompartment]);
+  }, [lang, readOnly, minHeight, wrapCompartment, editorRef]);
 
   useEffect(() => {
     viewRef.current?.dispatch({

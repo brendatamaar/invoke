@@ -86,7 +86,7 @@ function ReconnectCountdown({ entry }: { entry: WebSocketLogItem }) {
       if (r === 0) clearInterval(id);
     }, 250);
     return () => clearInterval(id);
-  }, [entry.reconnectAt]);
+  }, [entry.reconnectAt, remaining]);
 
   const label = entry.body ? ` (${entry.body})` : "";
   if (remaining <= 0) return <>Reconnecting…{label}</>;

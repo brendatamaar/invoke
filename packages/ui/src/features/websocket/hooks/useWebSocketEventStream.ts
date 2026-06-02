@@ -22,8 +22,9 @@ export function useWebSocketEventStream({
     useStore.getState().wsSessions.find((session) => session.id === sessionId);
 
   useEffect(() => {
+    const sources = eventSourcesRef.current;
     return () => {
-      eventSourcesRef.current.forEach((es) => es.close());
+      sources.forEach((es) => es.close());
     };
   }, []);
 

@@ -98,7 +98,7 @@ export function useGraphQLQueryPanel() {
       makeGraphQLLinter(schemaRef),
       lintGutter(),
     ],
-    [],
+    [jsonUnescapePasteExtension],
   );
 
   const handlePrettify = () => {
