@@ -35,7 +35,7 @@
     "format:check": "oxfmt --check",
     "executor:dev": "cd executor && go run ./cmd/executor",
     "executor:test": "cd executor && go test ./...",
-    "prepare": "husky"
+    "prepare": "node -e \"if (process.env.NODE_ENV !== 'production') require('child_process').execSync('husky', {stdio: 'inherit'})\""
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
