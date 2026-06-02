@@ -2,7 +2,7 @@
   "name": "invoke",
   "version": "1.0.0",
   "private": true,
-  "description": "API platform for development and testing that runs locally.",
+  "description": "Open-source API testing, development and documentation platform.",
   "homepage": "https://runinvoke.com",
   "bugs": {
     "url": "https://github.com/brendatamaar/invoke/issues"
