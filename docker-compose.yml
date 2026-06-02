@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.executor
+    environment:
+      ALLOW_PRIVATE_ADDRESSES: "true"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 50051"]
