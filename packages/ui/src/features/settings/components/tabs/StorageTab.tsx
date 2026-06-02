@@ -1,5 +1,4 @@
 import { Cookie, Trash2 } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
 import type { RetentionSettings } from "@invoke/core";
 import { numericInputValue } from "../../utils/numbers";
 import { FieldRow } from "../shared/FieldRow";
@@ -16,7 +15,7 @@ export function StorageTab({
   onOpenClearHistory,
 }: {
   retentionDraft: RetentionSettings;
-  setRetentionDraft: Dispatch<SetStateAction<RetentionSettings>>;
+  setRetentionDraft: (v: RetentionSettings) => void;
   statItems: Array<{ label: string; value: number }>;
   cookiesCount: number;
   confirmClearCookies: boolean;
@@ -40,7 +39,7 @@ export function StorageTab({
             onFocus={(e) => e.currentTarget.select()}
             onChange={(e) => {
               const value = numericInputValue(e.currentTarget.value, 0, 0);
-              setRetentionDraft((draft) => ({ ...draft, maxEntries: value }));
+              setRetentionDraft({ ...retentionDraft, maxEntries: value });
             }}
             aria-label="Max entries"
             className="input w-24 text-xs"
@@ -55,7 +54,7 @@ export function StorageTab({
             onFocus={(e) => e.currentTarget.select()}
             onChange={(e) => {
               const value = numericInputValue(e.currentTarget.value, 0, 0);
-              setRetentionDraft((draft) => ({ ...draft, retentionDays: value }));
+              setRetentionDraft({ ...retentionDraft, retentionDays: value });
             }}
             aria-label="Keep days"
             className="input w-24 text-xs"

@@ -1,4 +1,4 @@
-import { parse as gqlParse, print as gqlPrint } from "graphql";
+import { Kind, parse as gqlParse, print as gqlPrint } from "graphql";
 import { graphQLToRequestConfig, type GraphQLRequestConfig, type RequestDraft } from "@invoke/core";
 import type { AppState, GraphQLFileUpload } from "../../../types";
 import { extractRequiredVarNames } from "../../graphql/utils/query";
@@ -59,7 +59,7 @@ export function buildGraphQLExecutionRequest({
       if (opDefs.length > 1) {
         converted.body = JSON.stringify(
           opDefs.map((def) => ({
-            query: gqlPrint({ kind: "Document", definitions: [def] }),
+            query: gqlPrint({ kind: Kind.DOCUMENT, definitions: [def] }),
             variables: parsedBody.variables,
             ...((def as any).name?.value ? { operationName: (def as any).name.value } : {}),
           })),

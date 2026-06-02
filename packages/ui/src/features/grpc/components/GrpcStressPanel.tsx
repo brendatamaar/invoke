@@ -61,7 +61,7 @@ export function GrpcStressPanel({ streamId }: { streamId: string }) {
       }
     }
 
-    const sorted = rtts.toSorted((a, b) => a - b);
+    const sorted = [...rtts].sort((a, b) => a - b);
     setStats({
       sent,
       received,

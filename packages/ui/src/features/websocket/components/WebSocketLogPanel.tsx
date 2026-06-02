@@ -138,7 +138,7 @@ export function WebSocketLogPanel() {
             prettyJson={prettyJson}
             onSearch={setSearch}
             onDirectionFilter={setDirFilter}
-            onPrettyJson={() => setPrettyJson((v) => !v)}
+            onPrettyJson={() => setPrettyJson(!prettyJson)}
             onCopyAll={copyAll}
             onClearLog={clearLog}
           />

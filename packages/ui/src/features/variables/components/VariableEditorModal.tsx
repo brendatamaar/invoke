@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
 import { useCollections, useFolders } from "../../../hooks/useDb";
-import type { KeyValue } from "@invoke/core/types/common";
+import type { KeyValue } from "@invoke/core";
 
 export function VariableEditorModal() {
   const { variableEditor, set, addToast } = useStore();
