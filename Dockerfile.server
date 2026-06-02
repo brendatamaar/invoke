@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/core/package.json packages/core/package.json
 COPY packages/server/package.json packages/server/package.json
+COPY packages/ui/package.json packages/ui/package.json
 RUN bun install
 COPY proto/ proto/
 COPY packages/core packages/core
@@ -15,6 +16,7 @@ ENV NODE_ENV=production
 COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/core/package.json packages/core/package.json
 COPY packages/server/package.json packages/server/package.json
+COPY packages/ui/package.json packages/ui/package.json
 RUN bun install --production
 COPY proto/ proto/
 COPY --from=build /app/packages/core/dist packages/core/dist
