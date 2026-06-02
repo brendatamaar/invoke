@@ -95,7 +95,7 @@ export function EnvironmentModal({
           onToggleReveal={(index) =>
             setRevealed((current) => {
               const next = new Set(current);
-              next.has(index) ? next.delete(index) : next.add(index);
+              if (next.has(index)) { next.delete(index); } else { next.add(index); }
               return next;
             })
           }
