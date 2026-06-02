@@ -25,9 +25,6 @@ services:
       timeout: 3s
       retries: 5
 
-  server:
-    image: ghcr.io/brendatamaar/invoke-server:latest
-
   ui:
     image: ghcr.io/brendatamaar/invoke-ui:latest
     depends_on:
