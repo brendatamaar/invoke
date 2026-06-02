@@ -2,7 +2,33 @@ services:
   executor:
     environment:
       ALLOW_PRIVATE_ADDRESSES: "false"
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
 
   server:
     environment:
       INVOKE_SSRF_GUARD: "true"
+      CORS_ORIGIN: "https://runinvoke.com"
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  ui:
+    ports:
+      - "80:8080"
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
