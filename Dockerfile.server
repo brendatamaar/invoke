@@ -13,6 +13,7 @@ RUN cd packages/core && bun run build && cd /app && cd packages/server && bun ru
 FROM oven/bun:1-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PROTO_PATH=/app/proto/executor.proto
 COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/core/package.json packages/core/package.json
 COPY packages/server/package.json packages/server/package.json

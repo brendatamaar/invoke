@@ -4,8 +4,7 @@ import grpc from "@grpc/grpc-js";
 import protoLoader from "@grpc/proto-loader";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const root = resolve(__dirname, "../../../..");
-const protoPath = resolve(root, "proto/executor.proto");
+const protoPath = process.env.PROTO_PATH ?? resolve(__dirname, "../../../../proto/executor.proto");
 
 const packageDefinition = protoLoader.loadSync(protoPath, {
   keepCase: false,
