@@ -35,10 +35,13 @@ export function SavedMessageCard({
         borderRadius: "var(--r-2)",
       }}
     >
-      <div
-        className="relative flex items-center gap-2 px-3 py-2 group hover:bg-[var(--surface-2)]"
-      >
-        <button type="button" className="absolute inset-0" onClick={onSelect} aria-label="Select message" />
+      <div className="relative flex items-center gap-2 px-3 py-2 group hover:bg-[var(--surface-2)]">
+        <button
+          type="button"
+          className="absolute inset-0"
+          onClick={onSelect}
+          aria-label="Select message"
+        />
         <input
           type="checkbox"
           checked={selected}

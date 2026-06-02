@@ -34,10 +34,24 @@ export function CollectionRequestNode({
   collectionId: string;
 }) {
   const store = useStore();
-  type NodeState = { menuOpen: boolean; showDetail: boolean; confirmDelete: boolean; confirmDisconnect: boolean; duplicateName: string | null; dragging: boolean };
+  type NodeState = {
+    menuOpen: boolean;
+    showDetail: boolean;
+    confirmDelete: boolean;
+    confirmDisconnect: boolean;
+    duplicateName: string | null;
+    dragging: boolean;
+  };
   const [state, dispatch] = useReducer(
     (prev: NodeState, patch: Partial<NodeState>) => ({ ...prev, ...patch }),
-    { menuOpen: false, showDetail: false, confirmDelete: false, confirmDisconnect: false, duplicateName: null, dragging: false },
+    {
+      menuOpen: false,
+      showDetail: false,
+      confirmDelete: false,
+      confirmDisconnect: false,
+      duplicateName: null,
+      dragging: false,
+    },
   );
   const { menuOpen, showDetail, confirmDelete, confirmDisconnect, duplicateName, dragging } = state;
   const setMenuOpen = (v: boolean) => dispatch({ menuOpen: v });

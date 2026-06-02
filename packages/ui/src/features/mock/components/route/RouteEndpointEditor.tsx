@@ -15,7 +15,9 @@ export function RouteEndpointEditor({
 }) {
   return (
     <div className="px-5 pt-4 pb-3 flex flex-col gap-1.5 shrink-0 border-b border-[var(--border)]">
-      <label htmlFor="route-path-pattern" className="text-xs font-medium text-[var(--text-2)]">Endpoint</label>
+      <label htmlFor="route-path-pattern" className="text-xs font-medium text-[var(--text-2)]">
+        Endpoint
+      </label>
       <div className="flex gap-2">
         <Select
           value={method}

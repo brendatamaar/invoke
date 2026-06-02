@@ -20,7 +20,9 @@ export function GraphQLErrorsTab() {
   const { response, graphqlDeferredParts } = useStore();
 
   const errors = response ? parseGraphQLErrors(response.body) : [];
-  const { cost, complexity } = response ? parseGraphQLCost(response.body) : { cost: null, complexity: null };
+  const { cost, complexity } = response
+    ? parseGraphQLCost(response.body)
+    : { cost: null, complexity: null };
   const hasCostInfo = cost !== null || complexity !== null;
   const hasDeferred = (graphqlDeferredParts?.length ?? 0) > 0;
 
@@ -86,7 +88,12 @@ export function GraphQLErrorsTab() {
                 <CostRow label="Max available" value={cost.maximumAvailable} />
               )}
               {Object.entries(cost).flatMap(([k, v]) =>
-                ["requestedQueryCost", "actualQueryCost", "maximumAvailable", "throttleStatus"].includes(k)
+                [
+                  "requestedQueryCost",
+                  "actualQueryCost",
+                  "maximumAvailable",
+                  "throttleStatus",
+                ].includes(k)
                   ? []
                   : [<CostRow key={k} label={k} value={v} />],
               )}
@@ -127,14 +134,16 @@ export function GraphQLErrorsTab() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-2xs font-mono text-[var(--text-2)]">
-                  Part {part.partIndex}{part.label ? `: ${part.label}` : ""}
+                  Part {part.partIndex}
+                  {part.label ? `: ${part.label}` : ""}
                 </span>
                 <span className="text-2xs text-[var(--text-3)]">
                   hasNext: {String(part.hasNext)}
                 </span>
               </div>
               <p className="text-2xs text-[var(--text-3)]">
-                Path: <span className="font-mono text-[var(--text-2)]">{formatPath(part.path)}</span>
+                Path:{" "}
+                <span className="font-mono text-[var(--text-2)]">{formatPath(part.path)}</span>
               </p>
               {part.data !== undefined && (
                 <pre className="text-2xs font-mono text-[var(--text-2)] whitespace-pre-wrap break-all mt-1 max-h-40 overflow-auto bg-[var(--surface-2)] rounded p-2">

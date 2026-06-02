@@ -12,7 +12,9 @@ export function RequestStepEditor({
   return (
     <>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="request-url" className="text-xs font-medium text-[var(--text-2)]">Request</label>
+        <label htmlFor="request-url" className="text-xs font-medium text-[var(--text-2)]">
+          Request
+        </label>
         <div className="flex gap-2">
           <Select
             value={step.request.method}

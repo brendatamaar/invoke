@@ -51,7 +51,12 @@ export function ProxyRecordingList({
           key={record.id}
           className={`relative flex items-center gap-2.5 px-3 py-2 border-b border-[var(--border)] last:border-0 transition-colors ${selected.has(record.id) ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--surface-2)]"}`}
         >
-          <button type="button" className="absolute inset-0" onClick={() => onToggleSelect(record.id)} aria-label="Toggle selection" />
+          <button
+            type="button"
+            className="absolute inset-0"
+            onClick={() => onToggleSelect(record.id)}
+            aria-label="Toggle selection"
+          />
           <button
             type="button"
             onClick={() => onToggleSelect(record.id)}

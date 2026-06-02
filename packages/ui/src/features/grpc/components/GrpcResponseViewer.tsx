@@ -24,12 +24,25 @@ export function GrpcResponseViewer() {
     set,
   } = useStore();
 
-  type ViewerState = { streamDiffSelected: number[]; showStreamDiff: boolean; diffLeft: string | null; diffRight: string | null; showTranscriptDiff: boolean };
+  type ViewerState = {
+    streamDiffSelected: number[];
+    showStreamDiff: boolean;
+    diffLeft: string | null;
+    diffRight: string | null;
+    showTranscriptDiff: boolean;
+  };
   const [viewerState, viewerDispatch] = useReducer(
     (prev: ViewerState, patch: Partial<ViewerState>) => ({ ...prev, ...patch }),
-    { streamDiffSelected: [], showStreamDiff: false, diffLeft: null, diffRight: null, showTranscriptDiff: false },
+    {
+      streamDiffSelected: [],
+      showStreamDiff: false,
+      diffLeft: null,
+      diffRight: null,
+      showTranscriptDiff: false,
+    },
   );
-  const { streamDiffSelected, showStreamDiff, diffLeft, diffRight, showTranscriptDiff } = viewerState;
+  const { streamDiffSelected, showStreamDiff, diffLeft, diffRight, showTranscriptDiff } =
+    viewerState;
   const setStreamDiffSelected = (v: number[] | ((prev: number[]) => number[])) =>
     viewerDispatch({ streamDiffSelected: typeof v === "function" ? v(streamDiffSelected) : v });
   const setShowStreamDiff = (v: boolean) => viewerDispatch({ showStreamDiff: v });

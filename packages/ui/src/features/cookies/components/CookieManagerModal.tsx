@@ -80,7 +80,12 @@ export function CookieManagerModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button type="button" className="absolute inset-0 bg-black/40" onClick={close} aria-label="Close" />
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40"
+        onClick={close}
+        aria-label="Close"
+      />
       <div
         className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 620, maxHeight: "80vh" }}
@@ -160,11 +165,7 @@ export function CookieManagerModal() {
             <span className="text-xs text-[var(--text-3)] mr-auto">
               {pendingDeletes.size} deletion{pendingDeletes.size !== 1 ? "s" : ""} pending
             </span>
-            <button
-              type="button"
-              onClick={cancelChanges}
-              className="btn text-xs py-1 px-3"
-            >
+            <button type="button" onClick={cancelChanges} className="btn text-xs py-1 px-3">
               Cancel
             </button>
             <button

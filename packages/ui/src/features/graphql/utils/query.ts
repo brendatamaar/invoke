@@ -28,7 +28,7 @@ export function extractQueryVarDefs(query: string): string[] {
     const ast = gqlParse(query);
     return ast.definitions.reduce<string[]>((acc, d) => {
       if (d.kind === "OperationDefinition") {
-        for (const v of ((d as any).variableDefinitions ?? [])) {
+        for (const v of (d as any).variableDefinitions ?? []) {
           acc.push(v.variable.name.value as string);
         }
       }
@@ -44,7 +44,7 @@ export function extractRequiredVarNames(query: string): string[] {
     const ast = gqlParse(query);
     return ast.definitions.reduce<string[]>((acc, d) => {
       if (d.kind === "OperationDefinition") {
-        for (const v of ((d as any).variableDefinitions ?? [])) {
+        for (const v of (d as any).variableDefinitions ?? []) {
           if (v.type.kind === "NonNullType" && !v.defaultValue) {
             acc.push(v.variable.name.value as string);
           }

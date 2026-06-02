@@ -40,7 +40,9 @@ export function DiffSelectors({
         onChange={onRightChange}
       />
       <div className="flex-1">
-        <label htmlFor="diff-ignore-paths" className="text-2xs text-[var(--text-3)] block mb-1">Ignore paths</label>
+        <label htmlFor="diff-ignore-paths" className="text-2xs text-[var(--text-3)] block mb-1">
+          Ignore paths
+        </label>
         <div className="flex flex-wrap gap-1 mb-1">
           {ignoreRules.map((rule) => (
             <span
@@ -110,7 +112,9 @@ function HistorySelect({
 }
 
 function entryLabel(entry: HistoryEntry) {
-  const request = entry.request as { method?: string; url?: string; address?: string; service?: string } | undefined;
+  const request = entry.request as
+    | { method?: string; url?: string; address?: string; service?: string }
+    | undefined;
   const url = request?.url ?? (request?.address ? `${request.address}/${request.service}` : "-");
   return `${request?.method ?? "GET"} ${url.slice(0, 60)}`;
 }

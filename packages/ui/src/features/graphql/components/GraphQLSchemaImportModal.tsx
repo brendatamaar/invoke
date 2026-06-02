@@ -17,7 +17,12 @@ export function GraphQLSchemaImportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button type="button" className="absolute inset-0 bg-black/40" onClick={model.close} aria-label="Close" />
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40"
+        onClick={model.close}
+        aria-label="Close"
+      />
       <div
         className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 520, maxWidth: "calc(100vw - 32px)" }}
@@ -37,7 +42,12 @@ export function GraphQLSchemaImportModal({
         <GraphQLSchemaImportBody model={model} status={graphqlSchemaStatus} />
 
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
-          <button type="button" onClick={model.close} disabled={model.working} className="btn text-xs">
+          <button
+            type="button"
+            onClick={model.close}
+            disabled={model.working}
+            className="btn text-xs"
+          >
             Cancel
           </button>
           {model.source === "url" && (

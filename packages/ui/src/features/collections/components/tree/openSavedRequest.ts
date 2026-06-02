@@ -41,7 +41,13 @@ export function openSavedRequest(request: SavedRequest, store: AppState) {
     store.set((state) => ({
       wsSessions: state.wsSessions.map((session) =>
         session.id === state.activeWsSessionId
-          ? { ...session, websocketRequest: wsReq, requestId: request.id, log: [], activeGqlSubscriptionId: undefined }
+          ? {
+              ...session,
+              websocketRequest: wsReq,
+              requestId: request.id,
+              log: [],
+              activeGqlSubscriptionId: undefined,
+            }
           : session,
       ),
       websocketRequest: wsReq,

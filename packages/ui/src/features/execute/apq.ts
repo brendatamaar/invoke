@@ -28,7 +28,10 @@ export async function executeWithAPQ(
 
   if (!isPersistedQueryNotFound(probe.body)) return probe;
 
-  const result = await executeWithRetry({ ...request, body: JSON.stringify({ ...body, extensions }) }, signal);
+  const result = await executeWithRetry(
+    { ...request, body: JSON.stringify({ ...body, extensions }) },
+    signal,
+  );
   return { ...result, apqRetried: true };
 }
 

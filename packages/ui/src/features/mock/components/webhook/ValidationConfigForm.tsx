@@ -34,7 +34,12 @@ export function ValidationConfigForm({
       {config.type === "hmac" && <HmacFields config={config} onPatch={patch} />}
       {config.type === "header" && <HeaderFields config={config} onPatch={patch} />}
       <div className="flex justify-end">
-        <button type="button" onClick={onSave} disabled={saving} className="btn text-2xs py-0.5 px-3">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="btn text-2xs py-0.5 px-3"
+        >
           {saving ? "Saving..." : "Apply"}
         </button>
       </div>
@@ -129,7 +134,9 @@ function ValidationInput({
   const id = `validation-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor={id} className="text-2xs text-[var(--text-3)] w-20 shrink-0">{label}</label>
+      <label htmlFor={id} className="text-2xs text-[var(--text-3)] w-20 shrink-0">
+        {label}
+      </label>
       <input
         id={id}
         type={type}

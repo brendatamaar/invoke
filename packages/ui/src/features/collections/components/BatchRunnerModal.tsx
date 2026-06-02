@@ -20,7 +20,13 @@ export function BatchRunnerModal() {
     set,
     addToast,
   } = useStore();
-  type BatchState = { iterations: number; concurrency: number; delayMs: number; stopOnFailure: boolean; progress: number };
+  type BatchState = {
+    iterations: number;
+    concurrency: number;
+    delayMs: number;
+    stopOnFailure: boolean;
+    progress: number;
+  };
   const [batchState, batchDispatch] = useReducer(
     (prev: BatchState, patch: Partial<BatchState>) => ({ ...prev, ...patch }),
     { iterations: 10, concurrency: 1, delayMs: 0, stopOnFailure: false, progress: 0 },
@@ -74,7 +80,9 @@ export function BatchRunnerModal() {
       role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={close}
-      onKeyDown={(e) => { if (e.key === "Escape") close(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") close();
+      }}
     >
       <div
         className="bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"

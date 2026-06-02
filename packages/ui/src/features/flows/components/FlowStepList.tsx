@@ -65,7 +65,12 @@ export function FlowStepList({
               <div
                 className={`relative group flex items-start gap-1.5 px-2 py-2 rounded hover:bg-[var(--surface-2)] ${selectedIndex === i ? "bg-[var(--accent-subtle)]" : ""}`}
               >
-                <button type="button" className="absolute inset-0" onClick={() => onSelect(i)} aria-label={`Select step ${step.name}`} />
+                <button
+                  type="button"
+                  className="absolute inset-0"
+                  onClick={() => onSelect(i)}
+                  aria-label={`Select step ${step.name}`}
+                />
                 <GripVertical
                   size={11}
                   className="text-[var(--text-3)] opacity-0 group-hover:opacity-100 shrink-0 mt-1 cursor-grab"
@@ -101,7 +106,11 @@ export function FlowStepList({
                         <Clock size={9} />
                         {stepResult.completedAt - stepResult.startedAt}ms
                       </span>
-                      {stepResult.response?.status != null && <span>{stepResult.response.status === 0 ? "ERR" : stepResult.response.status}</span>}
+                      {stepResult.response?.status != null && (
+                        <span>
+                          {stepResult.response.status === 0 ? "ERR" : stepResult.response.status}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

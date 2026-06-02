@@ -17,12 +17,36 @@ export function MessagesTab() {
     setWebsocketRequest,
   } = useStore();
   const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
-  type TabState = { showTemplates: boolean; showSavedModal: boolean; selectedSaved: string | null; expandedSaved: string | null; editDraft: SavedMessageDraft | null; message: string; binaryMode: boolean };
+  type TabState = {
+    showTemplates: boolean;
+    showSavedModal: boolean;
+    selectedSaved: string | null;
+    expandedSaved: string | null;
+    editDraft: SavedMessageDraft | null;
+    message: string;
+    binaryMode: boolean;
+  };
   const [tabState, tabDispatch] = useReducer(
     (prev: TabState, patch: Partial<TabState>) => ({ ...prev, ...patch }),
-    { showTemplates: false, showSavedModal: false, selectedSaved: null, expandedSaved: null, editDraft: null, message: "", binaryMode: false },
+    {
+      showTemplates: false,
+      showSavedModal: false,
+      selectedSaved: null,
+      expandedSaved: null,
+      editDraft: null,
+      message: "",
+      binaryMode: false,
+    },
   );
-  const { showTemplates, showSavedModal, selectedSaved, expandedSaved, editDraft, message, binaryMode } = tabState;
+  const {
+    showTemplates,
+    showSavedModal,
+    selectedSaved,
+    expandedSaved,
+    editDraft,
+    message,
+    binaryMode,
+  } = tabState;
   const setShowTemplates = (v: boolean) => tabDispatch({ showTemplates: v });
   const setShowSavedModal = (v: boolean) => tabDispatch({ showSavedModal: v });
   const setSelectedSaved = (v: string | null) => tabDispatch({ selectedSaved: v });

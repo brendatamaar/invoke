@@ -90,8 +90,25 @@ export function ResponseViewer() {
         responseTab={responseTab}
         passedCount={model.passedCount}
         totalCount={model.totalCount}
-        consoleLogs={model.hasConsoleLogs ? { count: consoleLogs.preRequest.length + consoleLogs.postResponse.length, hasError: model.hasConsoleError } : undefined}
-        graphql={model.hasGraphQLTab ? { hasErrors: model.graphqlErrors.length > 0, errorCount: model.graphqlErrors.length, hasDeferred: (graphqlDeferredParts?.length ?? 0) > 0, deferredCount: graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0 } : undefined}
+        consoleLogs={
+          model.hasConsoleLogs
+            ? {
+                count: consoleLogs.preRequest.length + consoleLogs.postResponse.length,
+                hasError: model.hasConsoleError,
+              }
+            : undefined
+        }
+        graphql={
+          model.hasGraphQLTab
+            ? {
+                hasErrors: model.graphqlErrors.length > 0,
+                errorCount: model.graphqlErrors.length,
+                hasDeferred: (graphqlDeferredParts?.length ?? 0) > 0,
+                deferredCount:
+                  graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0,
+              }
+            : undefined
+        }
         onSelect={(tab) => set({ responseTab: tab })}
       />
 

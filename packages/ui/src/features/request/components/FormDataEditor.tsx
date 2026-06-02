@@ -43,7 +43,13 @@ export function FormDataEditor({ rows, onChange }: FormDataEditorProps) {
 
   return (
     <div className="flex flex-col">
-      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} aria-label="Upload file" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+        aria-label="Upload file"
+      />
       {rows.length > 0 && (
         <div
           className={`grid ${COL_TEMPLATE} items-center text-2xs text-[var(--text-3)] py-1 border-b border-[var(--border)]`}

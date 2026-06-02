@@ -62,16 +62,21 @@ export function useWebSocketBar() {
       setWsSession(sessionId, { state: "disconnected", connectionId: "" });
       addToast("error", String(error));
       if (retryCount > 0) {
-        const { autoReconnect, reconnectDelay = 2000, reconnectMaxRetries } =
-          useStore.getState().websocketRequest;
+        const {
+          autoReconnect,
+          reconnectDelay = 2000,
+          reconnectMaxRetries,
+        } = useStore.getState().websocketRequest;
         const nextRetry = retryCount + 1;
-        const canRetry = autoReconnect && (reconnectMaxRetries == null || nextRetry <= reconnectMaxRetries);
+        const canRetry =
+          autoReconnect && (reconnectMaxRetries == null || nextRetry <= reconnectMaxRetries);
         const now = Date.now();
         const previous = eventStream.findWsSession(sessionId);
         if (canRetry) {
-          const attemptsBody = reconnectMaxRetries != null
-            ? `attempt ${nextRetry}/${reconnectMaxRetries}`
-            : `attempt ${nextRetry}`;
+          const attemptsBody =
+            reconnectMaxRetries != null
+              ? `attempt ${nextRetry}/${reconnectMaxRetries}`
+              : `attempt ${nextRetry}`;
           setWsSession(sessionId, {
             log: [
               ...(previous?.log ?? []),
@@ -157,7 +162,6 @@ export function useWebSocketBar() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
-
 
   const state = activeSession?.state ?? "disconnected";
   return {

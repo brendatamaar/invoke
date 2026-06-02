@@ -11,7 +11,9 @@ export function GrpcAuthPanel() {
   return (
     <div className="p-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <label htmlFor="grpc-auth-type" className="text-xs text-[var(--text-2)] w-20 shrink-0">Type</label>
+        <label htmlFor="grpc-auth-type" className="text-xs text-[var(--text-2)] w-20 shrink-0">
+          Type
+        </label>
         <Select
           id="grpc-auth-type"
           value={auth.type}
@@ -30,7 +32,9 @@ export function GrpcAuthPanel() {
       </div>
       {auth.type === "bearer" && (
         <div className="flex items-center gap-2">
-          <label htmlFor="grpc-auth-token" className="text-xs text-[var(--text-2)] w-20 shrink-0">Token</label>
+          <label htmlFor="grpc-auth-token" className="text-xs text-[var(--text-2)] w-20 shrink-0">
+            Token
+          </label>
           <input
             id="grpc-auth-token"
             className={inputCls}
@@ -43,7 +47,12 @@ export function GrpcAuthPanel() {
       {auth.type === "basic" && (
         <>
           <div className="flex items-center gap-2">
-            <label htmlFor="grpc-auth-username" className="text-xs text-[var(--text-2)] w-20 shrink-0">Username</label>
+            <label
+              htmlFor="grpc-auth-username"
+              className="text-xs text-[var(--text-2)] w-20 shrink-0"
+            >
+              Username
+            </label>
             <input
               id="grpc-auth-username"
               className={inputCls}
@@ -52,7 +61,12 @@ export function GrpcAuthPanel() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="grpc-auth-password" className="text-xs text-[var(--text-2)] w-20 shrink-0">Password</label>
+            <label
+              htmlFor="grpc-auth-password"
+              className="text-xs text-[var(--text-2)] w-20 shrink-0"
+            >
+              Password
+            </label>
             <input
               id="grpc-auth-password"
               className={inputCls}
@@ -66,7 +80,12 @@ export function GrpcAuthPanel() {
       {auth.type === "api-key" && (
         <>
           <div className="flex items-center gap-2">
-            <label htmlFor="grpc-auth-api-key-name" className="text-xs text-[var(--text-2)] w-20 shrink-0">Key name</label>
+            <label
+              htmlFor="grpc-auth-api-key-name"
+              className="text-xs text-[var(--text-2)] w-20 shrink-0"
+            >
+              Key name
+            </label>
             <input
               id="grpc-auth-api-key-name"
               className={inputCls}
@@ -76,7 +95,12 @@ export function GrpcAuthPanel() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="grpc-auth-api-key-value" className="text-xs text-[var(--text-2)] w-20 shrink-0">Key value</label>
+            <label
+              htmlFor="grpc-auth-api-key-value"
+              className="text-xs text-[var(--text-2)] w-20 shrink-0"
+            >
+              Key value
+            </label>
             <input
               id="grpc-auth-api-key-value"
               className={inputCls}
@@ -89,7 +113,12 @@ export function GrpcAuthPanel() {
       )}
       {auth.type === "oauth2" && (
         <div className="flex items-center gap-2">
-          <label htmlFor="grpc-auth-access-token" className="text-xs text-[var(--text-2)] w-20 shrink-0">Access token</label>
+          <label
+            htmlFor="grpc-auth-access-token"
+            className="text-xs text-[var(--text-2)] w-20 shrink-0"
+          >
+            Access token
+          </label>
           <input
             id="grpc-auth-access-token"
             className={inputCls}

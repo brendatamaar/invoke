@@ -6,7 +6,9 @@ export function OptionsTab() {
   return (
     <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <label htmlFor="ws-protocols" className="text-xs text-[var(--text-2)] w-28 shrink-0">Sub-protocols</label>
+        <label htmlFor="ws-protocols" className="text-xs text-[var(--text-2)] w-28 shrink-0">
+          Sub-protocols
+        </label>
         <input
           id="ws-protocols"
           value={websocketRequest.protocols ?? ""}
@@ -16,7 +18,9 @@ export function OptionsTab() {
         />
       </div>
       <div className="flex items-center gap-2">
-        <label htmlFor="ws-origin" className="text-xs text-[var(--text-2)] w-28 shrink-0">Origin header</label>
+        <label htmlFor="ws-origin" className="text-xs text-[var(--text-2)] w-28 shrink-0">
+          Origin header
+        </label>
         <input
           id="ws-origin"
           value={websocketRequest.origin ?? ""}
@@ -26,7 +30,9 @@ export function OptionsTab() {
         />
       </div>
       <div className="flex items-center gap-2">
-        <label htmlFor="ws-timeout" className="text-xs text-[var(--text-2)] w-28 shrink-0">Timeout (ms)</label>
+        <label htmlFor="ws-timeout" className="text-xs text-[var(--text-2)] w-28 shrink-0">
+          Timeout (ms)
+        </label>
         <input
           id="ws-timeout"
           type="number"

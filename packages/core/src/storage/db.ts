@@ -155,7 +155,9 @@ export class InvokeDB extends Dexie {
         cookies: "id, domain, [domain+path+name], updatedAt",
       })
       .upgrade(async (tx) => {
-        const cookies = tx.table<{ id: string; domain: string; path: string; name: string }>("cookies");
+        const cookies = tx.table<{ id: string; domain: string; path: string; name: string }>(
+          "cookies",
+        );
         const all = await cookies.toArray();
         const seen = new Set<string>();
         for (const c of all) {

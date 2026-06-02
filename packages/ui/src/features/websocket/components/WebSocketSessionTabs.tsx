@@ -17,7 +17,12 @@ export function WebSocketSessionTabs() {
               : "text-[var(--text-3)] hover:text-[var(--text-2)]"
           }`}
         >
-          <button type="button" className="absolute inset-0" onClick={() => setActiveWsSession(sess.id)} aria-label={`Session: ${sess.label}`} />
+          <button
+            type="button"
+            className="absolute inset-0"
+            onClick={() => setActiveWsSession(sess.id)}
+            aria-label={`Session: ${sess.label}`}
+          />
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
               sess.state === "connected"

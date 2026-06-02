@@ -21,7 +21,12 @@ export function EnvironmentList({
           key={environment.id}
           className={`relative group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] ${activeEnvironmentId === environment.id ? "bg-[var(--accent-subtle)]" : ""}`}
         >
-          <button type="button" className="absolute inset-0" onClick={() => onActivate(environment.id)} aria-label={`Activate ${environment.name}`} />
+          <button
+            type="button"
+            className="absolute inset-0"
+            onClick={() => onActivate(environment.id)}
+            aria-label={`Activate ${environment.name}`}
+          />
           <span
             className={`flex-1 text-xs truncate ${activeEnvironmentId === environment.id ? "text-[var(--accent)] font-medium" : "text-[var(--text-1)]"}`}
           >

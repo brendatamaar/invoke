@@ -39,7 +39,9 @@ function NumberField({
   const id = `loop-field-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-medium text-[var(--text-2)]">{label}</label>
+      <label htmlFor={id} className="text-xs font-medium text-[var(--text-2)]">
+        {label}
+      </label>
       <input
         id={id}
         type="number"

@@ -35,7 +35,9 @@ export function RouteSequenceEditor({
           </div>
           <div className="flex gap-4">
             <div className="flex flex-col gap-1">
-              <label htmlFor={`seq-status-${index}`} className="text-2xs text-[var(--text-3)]">Status</label>
+              <label htmlFor={`seq-status-${index}`} className="text-2xs text-[var(--text-3)]">
+                Status
+              </label>
               <input
                 id={`seq-status-${index}`}
                 type="number"
@@ -48,7 +50,9 @@ export function RouteSequenceEditor({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor={`seq-latency-${index}`} className="text-2xs text-[var(--text-3)]">Latency</label>
+              <label htmlFor={`seq-latency-${index}`} className="text-2xs text-[var(--text-3)]">
+                Latency
+              </label>
               <div className="flex items-center gap-1">
                 <input
                   id={`seq-latency-${index}`}

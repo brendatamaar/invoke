@@ -31,9 +31,18 @@ export function CollectionNode({ collection }: { collection: Collection }) {
   };
   const [state, dispatch] = useReducer(
     (prev: CollectionNodeState, patch: Partial<CollectionNodeState>) => ({ ...prev, ...patch }),
-    { menuOpen: false, addReqModal: false, addFolderModal: false, renameModal: false, deleteModal: false, descModal: false, isDragOver: false },
+    {
+      menuOpen: false,
+      addReqModal: false,
+      addFolderModal: false,
+      renameModal: false,
+      deleteModal: false,
+      descModal: false,
+      isDragOver: false,
+    },
   );
-  const { menuOpen, addReqModal, addFolderModal, renameModal, deleteModal, descModal, isDragOver } = state;
+  const { menuOpen, addReqModal, addFolderModal, renameModal, deleteModal, descModal, isDragOver } =
+    state;
   const setMenuOpen = (v: boolean) => dispatch({ menuOpen: v });
   const setAddReqModal = (v: boolean) => dispatch({ addReqModal: v });
   const setAddFolderModal = (v: boolean) => dispatch({ addFolderModal: v });

@@ -81,9 +81,7 @@ export function GraphQLQueryToolbar({
             onChange={(e) => onOperationName(e.target.value)}
             size="2xs"
           >
-            <option value="">
-              Pick operation below:
-            </option>
+            <option value="">Pick operation below:</option>
             {operations.map((op, i) => (
               <option key={op.name ?? `op-${i}`} value={op.name ?? ""}>
                 {op.name ?? `(anonymous ${op.kind})`}
@@ -95,7 +93,11 @@ export function GraphQLQueryToolbar({
       <div className="flex-1" />
       {isSubscription &&
         (subState === "subscribed" || subState === "connecting" ? (
-          <button type="button" onClick={onUnsubscribe} className="btn btn-danger text-2xs py-0.5 px-2 gap-1">
+          <button
+            type="button"
+            onClick={onUnsubscribe}
+            className="btn btn-danger text-2xs py-0.5 px-2 gap-1"
+          >
             <StopCircle size={12} />
             {subState === "connecting" ? "Connecting…" : "Stop"}
           </button>

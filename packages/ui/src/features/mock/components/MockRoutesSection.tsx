@@ -117,7 +117,12 @@ export function MockRoutesSection({
             key={route.id}
             className="relative group flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-2)] border-t border-[var(--border)]"
           >
-            <button type="button" className="absolute inset-0" onClick={() => onEdit(route)} aria-label={`Edit ${route.pathPattern}`} />
+            <button
+              type="button"
+              className="absolute inset-0"
+              onClick={() => onEdit(route)}
+              aria-label={`Edit ${route.pathPattern}`}
+            />
             <input
               type="checkbox"
               checked={route.enabled !== false}

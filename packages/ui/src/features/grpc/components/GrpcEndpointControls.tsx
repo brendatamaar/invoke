@@ -1,7 +1,12 @@
 import { Activity, Heart, Loader2, RefreshCw } from "lucide-react";
 import { GrpcCallControls } from "./GrpcCallControls";
 
-type ExecutionState = { streaming: boolean; executing: boolean; clientStream: boolean; streamId?: string };
+type ExecutionState = {
+  streaming: boolean;
+  executing: boolean;
+  clientStream: boolean;
+  streamId?: string;
+};
 type SchemaState = { reflecting: boolean; protosetLoaded: boolean };
 
 export function GrpcEndpointControls({
@@ -61,7 +66,11 @@ export function GrpcEndpointControls({
             : "Reflect (Ctrl+Shift+R)"
         }
       >
-        {schema?.reflecting ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}{" "}
+        {schema?.reflecting ? (
+          <Loader2 size={12} className="animate-spin" />
+        ) : (
+          <RefreshCw size={12} />
+        )}{" "}
         Reflect
       </button>
       <button

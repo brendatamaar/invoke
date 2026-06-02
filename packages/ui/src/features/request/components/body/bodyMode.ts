@@ -41,7 +41,10 @@ function looksLikeKeyValueArray(body?: string): boolean {
   if (!body) return false;
   try {
     const parsed = JSON.parse(body);
-    return Array.isArray(parsed) && (parsed.length === 0 || (typeof parsed[0] === "object" && "key" in parsed[0]));
+    return (
+      Array.isArray(parsed) &&
+      (parsed.length === 0 || (typeof parsed[0] === "object" && "key" in parsed[0]))
+    );
   } catch {
     return false;
   }

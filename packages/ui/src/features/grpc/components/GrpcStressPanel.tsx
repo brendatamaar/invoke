@@ -81,7 +81,9 @@ export function GrpcStressPanel({ streamId }: { streamId: string }) {
         Send messages at a fixed rate on the open stream and measure throughput.
       </p>
       <div className="flex items-center gap-3">
-        <label htmlFor="stress-rate" className="text-xs text-[var(--text-2)] w-24 shrink-0">Rate (msg/s)</label>
+        <label htmlFor="stress-rate" className="text-xs text-[var(--text-2)] w-24 shrink-0">
+          Rate (msg/s)
+        </label>
         <input
           id="stress-rate"
           type="number"
@@ -94,7 +96,9 @@ export function GrpcStressPanel({ streamId }: { streamId: string }) {
         />
       </div>
       <div className="flex items-center gap-3">
-        <label htmlFor="stress-duration" className="text-xs text-[var(--text-2)] w-24 shrink-0">Duration (s)</label>
+        <label htmlFor="stress-duration" className="text-xs text-[var(--text-2)] w-24 shrink-0">
+          Duration (s)
+        </label>
         <input
           id="stress-duration"
           type="number"

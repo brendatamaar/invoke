@@ -73,7 +73,9 @@ function NumberField({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-2xs text-[var(--text-3)]">{label}</label>
+      <label htmlFor={id} className="text-2xs text-[var(--text-3)]">
+        {label}
+      </label>
       <input
         id={id}
         type="number"

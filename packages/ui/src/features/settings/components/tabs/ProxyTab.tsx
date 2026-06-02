@@ -29,7 +29,11 @@ export function ProxyTab({
           title={`${PROTOCOL_LABELS[editingProtocol]} proxy`}
           description="Proxy policy for all requests in this protocol."
         />
-        <button type="button" onClick={activeProxy ? removeProxy : ensureProxy} className="btn text-xs">
+        <button
+          type="button"
+          onClick={activeProxy ? removeProxy : ensureProxy}
+          className="btn text-xs"
+        >
           {activeProxy ? "Remove" : "Configure"}
         </button>
       </div>

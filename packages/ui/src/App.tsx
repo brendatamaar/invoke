@@ -10,7 +10,12 @@ import { VariableEditorModal } from "./features/variables";
 import { HelpModal } from "./features/help";
 import { ClearHistoryModal } from "./features/history";
 import { SettingsPanel } from "./features/settings";
-import { BatchRunnerModal, CollectionRunnerModal, SaveActionModal, SaveRequestModal } from "./features/collections";
+import {
+  BatchRunnerModal,
+  CollectionRunnerModal,
+  SaveActionModal,
+  SaveRequestModal,
+} from "./features/collections";
 import { CookieManagerModal } from "./features/cookies";
 import { useAppBootstrap } from "./features/bootstrap/useAppBootstrap";
 import { useActiveEnvironmentPersistence } from "./features/environments/useActiveEnvironmentPersistence";
@@ -112,7 +117,15 @@ export default function App() {
             <RequestBuilder onSend={handleSend} />
           </div>
 
-          <button type="button" aria-label="Resize panel" className="resize-handle-v" onMouseDown={onResizeMouseDown} onKeyDown={(e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} />
+          <button
+            type="button"
+            aria-label="Resize panel"
+            className="resize-handle-v"
+            onMouseDown={onResizeMouseDown}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
+            }}
+          />
 
           <div className="flex-1 overflow-hidden" style={{ minHeight: 300 }}>
             <ResponseViewer />

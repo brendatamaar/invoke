@@ -32,11 +32,16 @@ type FlowModalAction =
 
 function flowModalReducer(state: FlowModalState, action: FlowModalAction): FlowModalState {
   switch (action.type) {
-    case "SET_DRAFT": return { ...state, draft: action.draft };
-    case "SET_SELECTED_INDEX": return { ...state, selectedIndex: action.index };
-    case "SET_ADDING_STEP": return { ...state, addingStep: action.adding };
-    case "SET_DRAG_OVER": return { ...state, dragOver: action.index };
-    case "SET_VIEW_MODE": return { ...state, viewMode: action.mode };
+    case "SET_DRAFT":
+      return { ...state, draft: action.draft };
+    case "SET_SELECTED_INDEX":
+      return { ...state, selectedIndex: action.index };
+    case "SET_ADDING_STEP":
+      return { ...state, addingStep: action.adding };
+    case "SET_DRAG_OVER":
+      return { ...state, dragOver: action.index };
+    case "SET_VIEW_MODE":
+      return { ...state, viewMode: action.mode };
   }
 }
 
@@ -68,7 +73,8 @@ export function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }
   });
   const { draft, selectedIndex, addingStep, dragOver, viewMode } = state;
   const setDraft = (d: Flow) => dispatch({ type: "SET_DRAFT", draft: d });
-  const setSelectedIndex = (index: number | null) => dispatch({ type: "SET_SELECTED_INDEX", index });
+  const setSelectedIndex = (index: number | null) =>
+    dispatch({ type: "SET_SELECTED_INDEX", index });
   const setAddingStep = (adding: boolean) => dispatch({ type: "SET_ADDING_STEP", adding });
   const setDragOver = (index: number | null) => dispatch({ type: "SET_DRAG_OVER", index });
   const setViewMode = (mode: "list" | "canvas") => dispatch({ type: "SET_VIEW_MODE", mode });

@@ -31,7 +31,9 @@ export function KeyValueEditor({
       {keyDatalist && (
         <datalist id={datalistId}>
           {keyDatalist.map((h) => (
-            <option key={h} value={h}>{h}</option>
+            <option key={h} value={h}>
+              {h}
+            </option>
           ))}
         </datalist>
       )}

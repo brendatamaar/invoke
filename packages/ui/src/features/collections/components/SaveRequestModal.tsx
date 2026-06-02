@@ -12,7 +12,13 @@ export function SaveRequestModal() {
   const inputRef = useRef<HTMLInputElement>(null);
   const newColInputRef = useRef<HTMLInputElement>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
-  type FormState = { name: string; collectionId: string; newCollectionName: string; folderId: string; newFolderName: string };
+  type FormState = {
+    name: string;
+    collectionId: string;
+    newCollectionName: string;
+    folderId: string;
+    newFolderName: string;
+  };
   const [formState, formDispatch] = useReducer(
     (prev: FormState, patch: Partial<FormState>) => ({ ...prev, ...patch }),
     { name: "", collectionId: "", newCollectionName: "", folderId: "", newFolderName: "" },
@@ -86,13 +92,18 @@ export function SaveRequestModal() {
   };
 
   closeRef.current = close;
-  confirmRef.current = () => { if (canSave) void confirm(); };
+  confirmRef.current = () => {
+    if (canSave) void confirm();
+  };
 
   useEffect(() => {
     if (!saveDialog.open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeRef.current();
-      if (e.key === "Enter") { e.preventDefault(); confirmRef.current(); }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        confirmRef.current();
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
@@ -114,47 +125,47 @@ export function SaveRequestModal() {
         style={{ width: 400 }}
       >
         <form method="dialog" className="flex flex-col">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
-          <FolderOpen size={15} className="text-[var(--accent)]" />
-          <span className="text-sm font-semibold text-[var(--text-1)]">Save to Collection</span>
-          <button
-            type="button"
-            onClick={close}
-            className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
-          >
-            <X size={15} />
-          </button>
-        </div>
-        <SaveRequestForm
-          name={name}
-          collectionId={collectionId}
-          folderId={folderId}
-          newCollectionName={newCollectionName}
-          newFolderName={newFolderName}
-          collections={collections}
-          availableFolders={availableFolders}
-          inputRef={inputRef}
-          newColInputRef={newColInputRef}
-          newFolderInputRef={newFolderInputRef}
-          onNameChange={setName}
-          onCollectionChange={setCollectionId}
-          onFolderChange={setFolderId}
-          onNewCollectionNameChange={setNewCollectionName}
-          onNewFolderNameChange={setNewFolderName}
-        />
-        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
-          <button type="button" onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={confirm}
-            disabled={!canSave}
-            className="btn btn-primary text-xs px-3 py-1.5"
-          >
-            Save
-          </button>
-        </div>
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
+            <FolderOpen size={15} className="text-[var(--accent)]" />
+            <span className="text-sm font-semibold text-[var(--text-1)]">Save to Collection</span>
+            <button
+              type="button"
+              onClick={close}
+              className="ml-auto p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)]"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <SaveRequestForm
+            name={name}
+            collectionId={collectionId}
+            folderId={folderId}
+            newCollectionName={newCollectionName}
+            newFolderName={newFolderName}
+            collections={collections}
+            availableFolders={availableFolders}
+            inputRef={inputRef}
+            newColInputRef={newColInputRef}
+            newFolderInputRef={newFolderInputRef}
+            onNameChange={setName}
+            onCollectionChange={setCollectionId}
+            onFolderChange={setFolderId}
+            onNewCollectionNameChange={setNewCollectionName}
+            onNewFolderNameChange={setNewFolderName}
+          />
+          <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)]">
+            <button type="button" onClick={close} className="btn btn-ghost text-xs px-3 py-1.5">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirm}
+              disabled={!canSave}
+              className="btn btn-primary text-xs px-3 py-1.5"
+            >
+              Save
+            </button>
+          </div>
         </form>
       </dialog>
     </div>
