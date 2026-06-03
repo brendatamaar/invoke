@@ -1,7 +1,9 @@
-import type { RequestOptions, RequestProtocol, TlsClientConfig } from "@invoke/core";
+import type { HttpVersion, RequestOptions, RequestProtocol, TlsClientConfig } from "@invoke/core";
 import { PROTOCOL_LABELS } from "../../constants";
 import { numericInputValue } from "../../utils/numbers";
 import { hasAdvancedTimeouts, isRedirectProtocol } from "../../utils/protocol";
+import { Select } from "../../../../components/shared/Select";
+import { useStore } from "../../../../store";
 import { CheckboxControl } from "../shared/CheckboxControl";
 import { FieldRow } from "../shared/FieldRow";
 import { ProtocolPills } from "../shared/ProtocolPills";
@@ -23,8 +25,10 @@ export function NetworkTab({
   patchTlsClientConfig: (patch: Partial<TlsClientConfig>) => void;
   resetActiveProtocolDefaults: () => void;
 }) {
+  const browserMode = useStore((s) => s.browserMode);
   const showRedirects = isRedirectProtocol(editingProtocol);
   const showAdvancedTimeouts = hasAdvancedTimeouts(editingProtocol);
+  const showHttpVersion = isRedirectProtocol(editingProtocol);
   const followsRedirects = activeOptions.followRedirects ?? true;
   const tls = activeOptions.tlsClientConfig ?? {};
 
@@ -47,6 +51,24 @@ export function NetworkTab({
             followsRedirects={followsRedirects}
             patchActiveOptions={patchActiveOptions}
           />
+        )}
+
+        {showHttpVersion && (
+          <FieldRow label="HTTP version">
+            <Select
+              value={activeOptions.httpVersion ?? "auto"}
+              onChange={(e) => {
+                if (browserMode) return;
+                patchActiveOptions({ httpVersion: e.target.value as HttpVersion });
+              }}
+              size="xs"
+              disabled={browserMode}
+            >
+              <option value="auto">Auto (prefer HTTP/2)</option>
+              <option value="http1">HTTP/1.1 only</option>
+              <option value="h2c">HTTP/2 cleartext (h2c)</option>
+            </Select>
+          </FieldRow>
         )}
 
         <FieldRow label="Verify TLS">
