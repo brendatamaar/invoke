@@ -101,7 +101,9 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
 
     const parseEffect = async (): Promise<CollectionImportResult | undefined> => {
       if (importType === "zip") {
-        return Effect.runPromise(importInvokeZipEffect(files[0])) as Promise<CollectionImportResult>;
+        return Effect.runPromise(
+          importInvokeZipEffect(files[0]),
+        ) as Promise<CollectionImportResult>;
       }
       if (importType === "postman") {
         return Effect.runPromise(

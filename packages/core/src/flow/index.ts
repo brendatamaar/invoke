@@ -222,7 +222,9 @@ function requestEffect(
     retryCount > 0
       ? attempt.pipe(
           Effect.retry(
-            Schedule.exponential("500 millis").pipe(Schedule.intersect(Schedule.recurs(retryCount))),
+            Schedule.exponential("500 millis").pipe(
+              Schedule.intersect(Schedule.recurs(retryCount)),
+            ),
           ),
         )
       : attempt;
