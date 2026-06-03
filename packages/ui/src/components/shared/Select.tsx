@@ -56,6 +56,7 @@ export function Select({
   }, [open]);
 
   const pick = (val: string) => {
+    if (disabled) return;
     onChange?.({
       target: { value: val },
     } as React.ChangeEvent<HTMLSelectElement>);
@@ -109,7 +110,7 @@ export function Select({
         />
       </button>
 
-      {open && (
+      {open && !disabled && (
         <div
           className="absolute z-50 top-full left-0 mt-0.5 min-w-full overflow-y-auto max-h-60"
           style={{
