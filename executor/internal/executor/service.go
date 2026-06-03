@@ -23,6 +23,7 @@ import (
 
 	ntlmssp "github.com/Azure/go-ntlmssp"
 	"github.com/brendatamaar/invoke/executor/internal/executorpb"
+	"golang.org/x/net/http2"
 	"golang.org/x/net/proxy"
 )
 
@@ -82,9 +83,9 @@ func (s *Service) Execute(ctx context.Context, req *HttpRequest) (*HttpResponse,
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
 	}
-	connectTimeoutMs, readTimeoutMs, allowPrivate, ntlm := extractInvokeHeaders(req.GetHeaders(), httpReq)
+	connectTimeoutMs, readTimeoutMs, allowPrivate, ntlm, httpVersionMode := extractInvokeHeaders(req.GetHeaders(), httpReq)
 
-	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
+	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate, httpVersionMode)
 	if err != nil {
 		return &HttpResponse{Error: err.Error()}, nil
 	}
@@ -179,9 +180,9 @@ func (s *Service) ExecuteStream(req *HttpRequest, stream executorpb.HttpExecutor
 	if err != nil {
 		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
 	}
-	connectTimeoutMs, readTimeoutMs, allowPrivate, ntlm := extractInvokeHeaders(req.GetHeaders(), httpReq)
+	connectTimeoutMs, readTimeoutMs, allowPrivate, ntlm, httpVersionMode := extractInvokeHeaders(req.GetHeaders(), httpReq)
 
-	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
+	transport, err := transportFor(req, connectTimeoutMs, readTimeoutMs, allowPrivate, httpVersionMode)
 	if err != nil {
 		return stream.Send(&ResponseChunk{Done: true, Error: err.Error(), FinalResponse: &HttpResponse{Error: err.Error()}})
 	}
@@ -293,9 +294,9 @@ type ntlmCreds struct {
 }
 
 // extractInvokeHeaders copies non-internal headers onto httpReq and returns
-// connect/read timeout values, allowPrivate flag, and optional NTLM credentials
-// parsed from X-Invoke-* headers.
-func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, readMs int64, allowPrivate bool, ntlm *ntlmCreds) {
+// connect/read timeout values, allowPrivate flag, optional NTLM credentials,
+// and an httpVersionMode ("auto", "http1", "h2c") parsed from X-Invoke-* headers.
+func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, readMs int64, allowPrivate bool, ntlm *ntlmCreds, httpVersionMode string) {
 	for _, h := range headers {
 		key := strings.TrimSpace(h.GetKey())
 		if key == "" {
@@ -312,6 +313,8 @@ func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, 
 			}
 		case "x-invoke-allow-private":
 			allowPrivate = strings.EqualFold(h.GetValue(), "true")
+		case "x-invoke-http-version-mode":
+			httpVersionMode = strings.ToLower(strings.TrimSpace(h.GetValue()))
 		case "x-invoke-ntlm-username":
 			if ntlm == nil {
 				ntlm = &ntlmCreds{}
@@ -329,22 +332,22 @@ func extractInvokeHeaders(headers []*Header, httpReq *http.Request) (connectMs, 
 	return
 }
 
-func transportFor(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, allowPrivate bool) (*http.Transport, error) {
-	key := buildTransportKey(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
+func transportFor(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, allowPrivate bool, httpVersionMode string) (http.RoundTripper, error) {
+	key := buildTransportKey(req, connectTimeoutMs, readTimeoutMs, allowPrivate, httpVersionMode)
 	if v, ok := transportCache.Load(key); ok {
-		return v.(*http.Transport), nil
+		return v.(http.RoundTripper), nil
 	}
-	t, err := buildTransport(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
+	t, err := buildTransport(req, connectTimeoutMs, readTimeoutMs, allowPrivate, httpVersionMode)
 	if err != nil {
 		return nil, err
 	}
 	actual, _ := transportCache.LoadOrStore(key, t)
-	return actual.(*http.Transport), nil
+	return actual.(http.RoundTripper), nil
 }
 
-func buildTransportKey(req *HttpRequest, connectMs, readMs int64, allowPrivate bool) string {
+func buildTransportKey(req *HttpRequest, connectMs, readMs int64, allowPrivate bool, httpVersionMode string) string {
 	h := sha256.New()
-	fmt.Fprintf(h, "v=%v|ct=%d|rt=%d|ap=%v", req.GetVerifySsl(), connectMs, readMs, allowPrivate)
+	fmt.Fprintf(h, "v=%v|ct=%d|rt=%d|ap=%v|hv=%s", req.GetVerifySsl(), connectMs, readMs, allowPrivate, httpVersionMode)
 	if cc := req.GetTlsClientConfig(); cc != nil {
 		fmt.Fprintf(h, "|sn=%s", cc.GetServerName())
 		certSum := sha256.Sum256(append(append([]byte(nil), cc.GetClientCertPem()...), cc.GetClientKeyPem()...))
@@ -358,7 +361,11 @@ func buildTransportKey(req *HttpRequest, connectMs, readMs int64, allowPrivate b
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func buildTransport(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, allowPrivate bool) (*http.Transport, error) {
+func buildTransport(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, allowPrivate bool, httpVersionMode string) (http.RoundTripper, error) {
+	if httpVersionMode == "h2c" {
+		return buildH2cTransport(req, connectTimeoutMs, readTimeoutMs, allowPrivate)
+	}
+
 	verify := req.GetVerifySsl()
 	tlsConfig, err := tlsConfigFor(verify, req.GetTlsClientConfig())
 	if err != nil {
@@ -368,14 +375,19 @@ func buildTransport(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, all
 	if connectTimeoutMs > 0 {
 		connectTimeout = time.Duration(connectTimeoutMs) * time.Millisecond
 	}
+	forceHTTP2 := httpVersionMode != "http1"
 	transport := &http.Transport{
-		ForceAttemptHTTP2:     true,
+		ForceAttemptHTTP2:     forceHTTP2,
 		TLSClientConfig:       tlsConfig,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   10,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
+	}
+	if !forceHTTP2 {
+		// Disable HTTP/2 upgrade at the TLS level too
+		transport.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
 	}
 	if readTimeoutMs > 0 {
 		transport.ResponseHeaderTimeout = time.Duration(readTimeoutMs) * time.Millisecond
@@ -412,6 +424,56 @@ func buildTransport(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, all
 		}
 	}
 	return transport, nil
+}
+
+func buildH2cTransport(req *HttpRequest, connectTimeoutMs, readTimeoutMs int64, allowPrivate bool) (http.RoundTripper, error) {
+	var connectTimeout time.Duration
+	if connectTimeoutMs > 0 {
+		connectTimeout = time.Duration(connectTimeoutMs) * time.Millisecond
+	}
+
+	dialCtx := ssrfDialContext(&net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}, allowPrivate)
+
+	hasProxy := req.GetProxy() != nil && strings.TrimSpace(req.GetProxy().GetUrl()) != ""
+	if hasProxy && strings.ToLower(req.GetProxy().GetType()) == "socks5" {
+		proxyURL, err := url.Parse(req.GetProxy().GetUrl())
+		if err != nil {
+			return nil, fmt.Errorf("invalid proxy url: %w", err)
+		}
+		if req.GetProxy().GetUsername() != "" {
+			proxyURL.User = url.UserPassword(req.GetProxy().GetUsername(), req.GetProxy().GetPassword())
+		}
+		dialer, err := proxy.FromURL(proxyURL, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+		dialCtx = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			type contextDialer interface {
+				DialContext(context.Context, string, string) (net.Conn, error)
+			}
+			if d, ok := dialer.(contextDialer); ok {
+				return d.DialContext(ctx, network, addr)
+			}
+			return dialer.Dial(network, addr)
+		}
+	}
+
+	t := &http2.Transport{
+		AllowHTTP: true,
+		DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+			return dialCtx(ctx, network, addr)
+		},
+	}
+
+	if readTimeoutMs > 0 {
+		t.ReadIdleTimeout = time.Duration(readTimeoutMs) * time.Millisecond
+	}
+
+	if hasProxy && strings.ToLower(req.GetProxy().GetType()) != "socks5" {
+		return nil, errors.New("HTTP proxies are not supported with h2c mode; use a SOCKS5 proxy or switch to auto/http1 mode")
+	}
+
+	return t, nil
 }
 
 func appendHttpVersion(headers []*Header, proto string) []*Header {
