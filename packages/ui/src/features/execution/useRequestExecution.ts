@@ -116,6 +116,14 @@ export function useRequestExecution() {
       addToast("warn", `Client mode does not support ${resolved.bodyMode} — using server mode`);
     }
 
+    const httpVersion = resolved.options?.httpVersion ?? "auto";
+    if (browserMode && !browserUnsupported && httpVersion !== "auto") {
+      addToast(
+        "warn",
+        `The HTTP version setting (${httpVersion}) only works in server mode — your browser will pick the version automatically`,
+      );
+    }
+
     if (browserMode && !browserUnsupported) {
       await runBrowserRequest({
         resolved,

@@ -1,5 +1,6 @@
 import { useStore } from "../../../store";
-import type { RequestDraft, RetryPolicy } from "@invoke/core";
+import type { HttpVersion, RequestDraft, RetryPolicy } from "@invoke/core";
+import { Select } from "../../../components/shared/Select";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -20,6 +21,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export function OptionsPanel() {
   const { request, setRequest, set } = useStore();
+  const browserMode = useStore((s) => s.browserMode);
   const policy: RetryPolicy = (request as RequestDraft).retryPolicy ?? {
     maxRetries: 0,
     retryOnTimeout: true,
@@ -34,6 +36,7 @@ export function OptionsPanel() {
 
   const retryEnabled = policy.maxRetries > 0;
   const timeoutMs = request.timeoutMs ?? 30000;
+  const httpVersion: HttpVersion = request.options?.httpVersion ?? "auto";
 
   return (
     <div className="flex flex-col gap-3 p-3">
@@ -44,6 +47,25 @@ export function OptionsPanel() {
       >
         Network policy (TLS, redirects, proxy) is in Settings &gt; Network.
       </button>
+
+      <SectionTitle>HTTP Version</SectionTitle>
+      <Field label="Version">
+        <Select
+          value={httpVersion}
+          onChange={(e) => {
+            if (browserMode) return;
+            setRequest({
+              options: { ...request.options, httpVersion: e.target.value as HttpVersion },
+            } as Partial<RequestDraft>);
+          }}
+          size="xs"
+          disabled={browserMode}
+        >
+          <option value="auto">Auto (prefer HTTP/2)</option>
+          <option value="http1">HTTP/1.1 only</option>
+          <option value="h2c">HTTP/2 cleartext (h2c)</option>
+        </Select>
+      </Field>
 
       <SectionTitle>Timeout</SectionTitle>
       <Field label="Timeout (ms)">

@@ -27,6 +27,7 @@ it("executes a resolved HTTP request through the executor service", async () => 
           followRedirects: true,
           maxRedirects: 10,
           verifySsl: true,
+          httpVersion: "auto" as const,
           allowPrivateAddresses: true,
         },
       });

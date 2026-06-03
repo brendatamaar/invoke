@@ -101,6 +101,7 @@ export interface ExecuteInput {
   followRedirects: boolean;
   maxRedirects: number;
   verifySsl: boolean;
+  httpVersion: "auto" | "http1" | "h2c";
   allowPrivateAddresses?: boolean;
   proxy?: {
     type: "http" | "socks5";
