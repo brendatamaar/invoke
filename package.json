@@ -28,7 +28,7 @@
     "test": "turbo run test",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "typecheck":"tsc --noEmit -p packages/core/tsconfig.json && tsc --noEmit -p packages/server/tsconfig.json && tsc --noEmit -p packages/ui/tsconfig.json",
+    "typecheck": "tsc --noEmit -p packages/core/tsconfig.json && tsc --noEmit -p packages/server/tsconfig.json && tsc --noEmit -p packages/ui/tsconfig.json",
     "dev:all:turbo": "turbo run dev",
     "e2e": "turbo run build && playwright test",
     "proto:generate": "buf generate",
