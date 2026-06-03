@@ -36,6 +36,7 @@
     "codemirror": "^6.0.1",
     "dexie": "^4.2.1",
     "dexie-react-hooks": "^4.4.0",
+    "effect": "^3.21.2",
     "graphql": "^16.14.0",
     "lucide-react": "^0.511.0",
     "minisearch": "^7.2.0",
