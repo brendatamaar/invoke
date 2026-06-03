@@ -11,6 +11,7 @@ COPY packages/server packages/server
 RUN cd packages/core && bun run build && cd /app && cd packages/server && bun run build
 
 FROM oven/bun:1-alpine
+RUN apk upgrade --no-cache
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PROTO_PATH=/app/proto/executor.proto
