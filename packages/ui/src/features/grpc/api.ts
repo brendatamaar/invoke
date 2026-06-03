@@ -43,7 +43,10 @@ export async function grpcServerStream(
     for (const event of events) {
       let dataLine: string | undefined;
       for (const line of event.split("\n")) {
-        if (line.startsWith("data:")) { dataLine = line; break; }
+        if (line.startsWith("data:")) {
+          dataLine = line;
+          break;
+        }
       }
       if (!dataLine) continue;
       try {
@@ -173,7 +176,10 @@ export function grpcStreamEvents(
       for (const event of events) {
         let dataLine: string | undefined;
         for (const line of event.split("\n")) {
-          if (line.startsWith("data:")) { dataLine = line; break; }
+          if (line.startsWith("data:")) {
+            dataLine = line;
+            break;
+          }
         }
         if (!dataLine) continue;
         try {

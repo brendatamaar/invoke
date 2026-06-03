@@ -14,9 +14,7 @@ export function refreshMessage(
   if (diff.removed.length) {
     parts.push(`-${diff.removed.length} type${diff.removed.length > 1 ? "s" : ""}`);
   }
-  return parts.length
-    ? `Schema refreshed (${parts.join(", ")})`
-    : "Schema refreshed \u2014 no changes";
+  return parts.length ? `Schema refreshed (${parts.join(", ")})` : "Schema refreshed — no changes";
 }
 
 export function mergeFragments(current: SavedFragment[], incoming: SavedFragment[]) {

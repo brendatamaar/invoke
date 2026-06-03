@@ -34,14 +34,25 @@ export function CollectionRequestNode({
   collectionId: string;
 }) {
   const store = useStore();
-  type NodeState = { menuOpen: boolean; showDetail: boolean; confirmDelete: boolean; confirmDisconnect: boolean; duplicateName: string | null; dragging: boolean };
+  type NodeState = {
+    menuOpen: boolean;
+    confirmDelete: boolean;
+    confirmDisconnect: boolean;
+    duplicateName: string | null;
+    dragging: boolean;
+  };
   const [state, dispatch] = useReducer(
     (prev: NodeState, patch: Partial<NodeState>) => ({ ...prev, ...patch }),
-    { menuOpen: false, showDetail: false, confirmDelete: false, confirmDisconnect: false, duplicateName: null, dragging: false },
+    {
+      menuOpen: false,
+      confirmDelete: false,
+      confirmDisconnect: false,
+      duplicateName: null,
+      dragging: false,
+    },
   );
-  const { menuOpen, showDetail, confirmDelete, confirmDisconnect, duplicateName, dragging } = state;
+  const { menuOpen, confirmDelete, confirmDisconnect, duplicateName, dragging } = state;
   const setMenuOpen = (v: boolean) => dispatch({ menuOpen: v });
-  const setShowDetail = (v: boolean) => dispatch({ showDetail: v });
   const setConfirmDelete = (v: boolean) => dispatch({ confirmDelete: v });
   const setConfirmDisconnect = (v: boolean) => dispatch({ confirmDisconnect: v });
   const setDuplicateName = (v: string | null) => dispatch({ duplicateName: v });
@@ -168,10 +179,6 @@ export function CollectionRequestNode({
           open={menuOpen}
           menuRef={menuRef}
           onToggle={() => setMenuOpen(!menuOpen)}
-          onDetail={() => {
-            setMenuOpen(false);
-            setShowDetail(true);
-          }}
           onDuplicate={() => {
             setMenuOpen(false);
             setDuplicateName(`${request.name || "Untitled"} Copy`);
@@ -183,13 +190,10 @@ export function CollectionRequestNode({
         />
       </div>
       <CollectionRequestModals
-        request={request}
         requestName={request.name || "Untitled"}
-        showDetail={showDetail}
         duplicateName={duplicateName}
         confirmDisconnect={confirmDisconnect}
         confirmDelete={confirmDelete}
-        onDetailClose={() => setShowDetail(false)}
         onDuplicate={duplicate}
         onDuplicateClose={() => setDuplicateName(null)}
         onConfirmDisconnect={disconnectAndOpen}

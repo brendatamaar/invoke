@@ -20,10 +20,22 @@ export function CollectionFolderNode({
   collectionId: string;
 }) {
   const { expandedFolderIds, toggleFolder, requests, set, addToast } = useStore();
-  type FolderNodeState = { menuOpen: boolean; descModal: boolean; deleteModal: boolean; isDragOver: boolean; dragOverIndex: number | null };
+  type FolderNodeState = {
+    menuOpen: boolean;
+    descModal: boolean;
+    deleteModal: boolean;
+    isDragOver: boolean;
+    dragOverIndex: number | null;
+  };
   const [state, dispatch] = useReducer(
     (prev: FolderNodeState, patch: Partial<FolderNodeState>) => ({ ...prev, ...patch }),
-    { menuOpen: false, descModal: false, deleteModal: false, isDragOver: false, dragOverIndex: null },
+    {
+      menuOpen: false,
+      descModal: false,
+      deleteModal: false,
+      isDragOver: false,
+      dragOverIndex: null,
+    },
   );
   const { menuOpen, descModal, deleteModal, isDragOver, dragOverIndex } = state;
   const setMenuOpen = (v: boolean) => dispatch({ menuOpen: v });

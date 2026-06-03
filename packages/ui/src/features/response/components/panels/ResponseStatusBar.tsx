@@ -77,7 +77,7 @@ export function ResponseStatusBar({
       )}
       {gqlComplexity !== null && (
         <span className="text-2xs text-[var(--warn)] flex items-center gap-1">
-          {"\u26a1"} {String(gqlComplexity)}
+          {"⚡"} {String(gqlComplexity)}
         </span>
       )}
       <GraphQLCostBadge gqlCost={gqlCost} />
@@ -133,7 +133,7 @@ function GraphQLCostBadge({ gqlCost }: { gqlCost: any }) {
   if (typeof gqlCost === "number") {
     return (
       <span className="text-2xs text-[var(--warn)] flex items-center gap-1">
-        {"\u26a1"} {gqlCost}
+        {"⚡"} {gqlCost}
       </span>
     );
   }
@@ -143,7 +143,7 @@ function GraphQLCostBadge({ gqlCost }: { gqlCost: any }) {
       className="text-2xs text-[var(--warn)] flex items-center gap-1"
       title={`Max: ${gqlCost.maximumAvailable ?? "?"}`}
     >
-      {"\u26a1"} {gqlCost.requestedQueryCost}/{gqlCost.maximumAvailable ?? "?"}
+      {"⚡"} {gqlCost.requestedQueryCost}/{gqlCost.maximumAvailable ?? "?"}
     </span>
   );
 }

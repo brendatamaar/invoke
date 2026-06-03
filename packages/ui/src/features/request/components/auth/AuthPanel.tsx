@@ -62,7 +62,7 @@ export function AuthPanel() {
     } else {
       addToast("error", `OAuth2 failed: ${oauthResult.error ?? "unknown"}`);
     }
-  }, [addToast, oauthResult, setRequest]);
+  }, [addToast, oauthResult, setRequest, setGraphqlRequest, isGraphql]);
 
   const setOauthState = (state: string) => {
     oauthStateRef.current = state;

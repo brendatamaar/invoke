@@ -47,7 +47,11 @@ export function RunnerFooter({
       )}
       {!runResult && <div className="mr-auto" />}
       {running ? (
-        <button type="button" onClick={onCancel} className="btn btn-danger text-xs flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="btn btn-danger text-xs flex items-center gap-1.5"
+        >
           <StopCircle size={13} /> Cancel
         </button>
       ) : (
@@ -66,7 +70,11 @@ export function RunnerFooter({
 
 function ExportButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="btn text-2xs py-0.5 px-2 flex items-center gap-1">
+    <button
+      type="button"
+      onClick={onClick}
+      className="btn text-2xs py-0.5 px-2 flex items-center gap-1"
+    >
       <Download size={11} /> {label}
     </button>
   );

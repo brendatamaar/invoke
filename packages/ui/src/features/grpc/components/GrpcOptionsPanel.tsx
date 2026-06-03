@@ -27,7 +27,9 @@ export function GrpcOptionsPanel() {
   return (
     <div className="p-3 flex flex-col gap-3 overflow-auto">
       <div className="flex items-center gap-2">
-        <label htmlFor="grpc-timeout" className="text-xs text-[var(--text-2)] w-36 shrink-0">Timeout (ms)</label>
+        <label htmlFor="grpc-timeout" className="text-xs text-[var(--text-2)] w-36 shrink-0">
+          Timeout (ms)
+        </label>
         <input
           id="grpc-timeout"
           type="number"
@@ -53,7 +55,9 @@ export function GrpcOptionsPanel() {
         TLS and certificate policy is in Settings &gt; Network.
       </button>
       <div className="flex items-center gap-2">
-        <label htmlFor="grpc-compression" className="text-xs text-[var(--text-2)] w-36 shrink-0">Compression</label>
+        <label htmlFor="grpc-compression" className="text-xs text-[var(--text-2)] w-36 shrink-0">
+          Compression
+        </label>
         <Select
           id="grpc-compression"
           value={grpcRequest.compression ?? "none"}
@@ -64,7 +68,9 @@ export function GrpcOptionsPanel() {
         </Select>
       </div>
       <div className="flex items-center gap-2">
-        <label htmlFor="grpc-max-recv" className="text-xs text-[var(--text-2)] w-36 shrink-0">Max recv msg (MB)</label>
+        <label htmlFor="grpc-max-recv" className="text-xs text-[var(--text-2)] w-36 shrink-0">
+          Max recv msg (MB)
+        </label>
         <input
           id="grpc-max-recv"
           type="number"
@@ -81,12 +87,14 @@ export function GrpcOptionsPanel() {
         />
         {(grpcRequest.maxRecvMsgSize ?? 0) >= 256 * 1024 * 1024 && (
           <span className="text-2xs text-[var(--warn)]">
-            {"\u26a0"} Large messages may exhaust memory
+            {"⚠"} Large messages may exhaust memory
           </span>
         )}
       </div>
       <div className="flex items-center gap-2">
-        <label htmlFor="grpc-max-send" className="text-xs text-[var(--text-2)] w-36 shrink-0">Max send msg (MB)</label>
+        <label htmlFor="grpc-max-send" className="text-xs text-[var(--text-2)] w-36 shrink-0">
+          Max send msg (MB)
+        </label>
         <input
           id="grpc-max-send"
           type="number"
@@ -126,8 +134,8 @@ export function GrpcOptionsPanel() {
           )}
           {grpcRequest.protosetBase64 && (
             <span className="text-2xs text-[var(--ok)]">
-              {"\u2713"} Protoset loaded (
-              {Math.round((grpcRequest.protosetBase64.length * 0.75) / 1024)}KB)
+              {"✓"} Protoset loaded ({Math.round((grpcRequest.protosetBase64.length * 0.75) / 1024)}
+              KB)
             </span>
           )}
         </div>

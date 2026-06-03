@@ -41,7 +41,13 @@ export function SettingsPanel() {
   const retentionSettings = useRetentionSettings();
   const activeProtocol = (request.protocol ?? "rest") as RequestProtocol;
 
-  type PanelState = { tab: SettingsTab; general: GeneralDraft; retentionDraft: RetentionSettings; storageStats: Record<string, number>; confirmClearCookies: boolean };
+  type PanelState = {
+    tab: SettingsTab;
+    general: GeneralDraft;
+    retentionDraft: RetentionSettings;
+    storageStats: Record<string, number>;
+    confirmClearCookies: boolean;
+  };
   const [panelState, panelDispatch] = useReducer(
     (prev: PanelState, patch: Partial<PanelState>) => ({ ...prev, ...patch }),
     {

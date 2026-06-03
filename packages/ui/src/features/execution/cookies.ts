@@ -39,7 +39,7 @@ export async function persistResponseCookies(
   url: string,
 ) {
   const setCookieHeaders = response.headers.flatMap((header) =>
-    header.key.toLowerCase() === "set-cookie" ? [header.value] : []
+    header.key.toLowerCase() === "set-cookie" ? [header.value] : [],
   );
   if (setCookieHeaders.length === 0) return undefined;
 

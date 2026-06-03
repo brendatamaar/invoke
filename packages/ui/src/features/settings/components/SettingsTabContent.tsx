@@ -5,6 +5,7 @@ import type {
   TlsClientConfig,
 } from "@invoke/core";
 import type { Dispatch, RefObject, SetStateAction } from "react";
+
 import type { GeneralDraft, SettingsTab } from "../../../types";
 import { BackupTab } from "./tabs/BackupTab";
 import { GeneralTab } from "./tabs/GeneralTab";
@@ -54,7 +55,7 @@ export function SettingsTabContent({
   removeProxy: () => void;
   patchProxy: (patch: Partial<ProxyConfig>) => void;
   retentionDraft: RetentionSettings;
-  setRetentionDraft: Dispatch<SetStateAction<RetentionSettings>>;
+  setRetentionDraft: (v: RetentionSettings) => void;
   statItems: Array<{ label: string; value: number }>;
   cookiesCount: number;
   confirmClearCookies: boolean;

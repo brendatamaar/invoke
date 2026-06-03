@@ -28,7 +28,8 @@ export function HistoryLogEntry({
         className="flex items-center gap-2 px-3 py-2 cursor-pointer w-full text-left"
         style={{ background: expanded ? "var(--bg-3)" : undefined }}
         onMouseEnter={(event) => {
-          if (!expanded) (event.currentTarget as HTMLButtonElement).style.background = "var(--bg-3)";
+          if (!expanded)
+            (event.currentTarget as HTMLButtonElement).style.background = "var(--bg-3)";
         }}
         onMouseLeave={(event) => {
           if (!expanded) (event.currentTarget as HTMLButtonElement).style.background = "";

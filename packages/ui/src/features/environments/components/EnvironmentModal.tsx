@@ -73,7 +73,12 @@ export function EnvironmentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Close" />
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40"
+        onClick={onClose}
+        aria-label="Close"
+      />
       <div
         className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 640, maxHeight: "80vh" }}
@@ -95,7 +100,11 @@ export function EnvironmentModal({
           onToggleReveal={(index) =>
             setRevealed((current) => {
               const next = new Set(current);
-              next.has(index) ? next.delete(index) : next.add(index);
+              if (next.has(index)) {
+                next.delete(index);
+              } else {
+                next.add(index);
+              }
               return next;
             })
           }

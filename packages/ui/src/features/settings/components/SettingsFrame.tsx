@@ -20,10 +20,13 @@ export function SettingsFrame({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button type="button" className="absolute inset-0 bg-black/40" onClick={onCancel} aria-label="Close" />
-      <div
-        className="relative flex max-h-[80vh] w-[760px] max-w-[calc(100vw-32px)] flex-col rounded-md border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-pop)]"
-      >
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40"
+        onClick={onCancel}
+        aria-label="Close"
+      />
+      <div className="relative flex max-h-[80vh] w-[760px] max-w-[calc(100vw-32px)] flex-col rounded-md border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-pop)]">
         <div className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-3">
           <span className="text-sm font-semibold">Settings</span>
           <button

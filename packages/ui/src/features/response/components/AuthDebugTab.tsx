@@ -19,9 +19,10 @@ export function AuthDebugTab() {
   const sentCookieHeader = findHeader(resolvedRequest?.headers, "cookie");
   const redirects = response?.redirects ?? [];
   const sentCookies = sentCookieHeader
-    ? sentCookieHeader
-        .split(";")
-        .flatMap((pair) => { const trimmed = pair.trim(); return trimmed ? [trimmed] : []; })
+    ? sentCookieHeader.split(";").flatMap((pair) => {
+        const trimmed = pair.trim();
+        return trimmed ? [trimmed] : [];
+      })
     : [];
   const firstCertificate = response?.tls?.certificates[0];
   const tokenExpiresAt =

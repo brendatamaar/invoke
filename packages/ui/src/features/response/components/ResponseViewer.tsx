@@ -81,7 +81,7 @@ export function ResponseViewer() {
 
       {streaming && !response && (
         <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] bg-[var(--accent-subtle)]">
-          <span className="text-xs text-[var(--accent)] animate-pulse">Streaming{"\u2026"}</span>
+          <span className="text-xs text-[var(--accent)] animate-pulse">Streaming…</span>
           <span className="text-2xs text-[var(--text-3)]">{fmtSize(streamBytes)}</span>
         </div>
       )}
@@ -90,8 +90,25 @@ export function ResponseViewer() {
         responseTab={responseTab}
         passedCount={model.passedCount}
         totalCount={model.totalCount}
-        consoleLogs={model.hasConsoleLogs ? { count: consoleLogs.preRequest.length + consoleLogs.postResponse.length, hasError: model.hasConsoleError } : undefined}
-        graphql={model.hasGraphQLTab ? { hasErrors: model.graphqlErrors.length > 0, errorCount: model.graphqlErrors.length, hasDeferred: (graphqlDeferredParts?.length ?? 0) > 0, deferredCount: graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0 } : undefined}
+        consoleLogs={
+          model.hasConsoleLogs
+            ? {
+                count: consoleLogs.preRequest.length + consoleLogs.postResponse.length,
+                hasError: model.hasConsoleError,
+              }
+            : undefined
+        }
+        graphql={
+          model.hasGraphQLTab
+            ? {
+                hasErrors: model.graphqlErrors.length > 0,
+                errorCount: model.graphqlErrors.length,
+                hasDeferred: (graphqlDeferredParts?.length ?? 0) > 0,
+                deferredCount:
+                  graphqlDeferredParts?.filter((part) => part.partIndex > 0).length ?? 0,
+              }
+            : undefined
+        }
         onSelect={(tab) => set({ responseTab: tab })}
       />
 

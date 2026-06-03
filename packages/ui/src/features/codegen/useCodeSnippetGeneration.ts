@@ -56,10 +56,9 @@ export function useCodeSnippetGeneration() {
       // For GraphQL/multipart, use the already-resolved request stored after execution.
       // For other protocols, resolve variables from the draft now.
       const base = resolvedRequest ?? request;
-      const effective =
-        resolvedRequest
-          ? (resolvedRequest as RequestConfig)
-          : resolveRequest(base as RequestConfig, env, sessionVariables).request;
+      const effective = resolvedRequest
+        ? (resolvedRequest as RequestConfig)
+        : resolveRequest(base as RequestConfig, env, sessionVariables).request;
       const snippet = await generateCodeSnippet(applyProtocolDefaults(effective), codeTarget);
       return snippet.code;
     },

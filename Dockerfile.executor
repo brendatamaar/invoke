@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS build
+FROM golang:1.26-alpine AS build
 WORKDIR /src
 COPY executor/go.mod executor/go.sum* ./executor/
 WORKDIR /src/executor
@@ -6,8 +6,8 @@ RUN go mod download
 COPY executor/ ./
 RUN go build -o /out/invoke-executor ./cmd/executor
 
-FROM alpine:3.20
-RUN adduser -D -H invoke
+FROM alpine:3.22
+RUN apk upgrade --no-cache && adduser -D -H invoke
 USER invoke
 COPY --from=build /out/invoke-executor /usr/local/bin/invoke-executor
 EXPOSE 50051

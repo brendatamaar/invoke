@@ -15,10 +15,24 @@ export function WebSocketLogPanel() {
   const activeSession = wsSessions.find((s) => s.id === activeWsSessionId) ?? wsSessions[0];
   const [logTab, setLogTab] = useState<LogTab>("messages");
 
-  type LogPanelState = { search: string; dirFilter: DirectionFilter; prettyJson: boolean; expandedIds: Set<string>; diffSelected: string[]; showDiff: boolean };
+  type LogPanelState = {
+    search: string;
+    dirFilter: DirectionFilter;
+    prettyJson: boolean;
+    expandedIds: Set<string>;
+    diffSelected: string[];
+    showDiff: boolean;
+  };
   const [logState, logDispatch] = useReducer(
     (prev: LogPanelState, patch: Partial<LogPanelState>) => ({ ...prev, ...patch }),
-    { search: "", dirFilter: "all" as DirectionFilter, prettyJson: false, expandedIds: new Set<string>(), diffSelected: [], showDiff: false },
+    {
+      search: "",
+      dirFilter: "all" as DirectionFilter,
+      prettyJson: false,
+      expandedIds: new Set<string>(),
+      diffSelected: [],
+      showDiff: false,
+    },
   );
   const { search, dirFilter, prettyJson, expandedIds, diffSelected, showDiff } = logState;
   const setSearch = (v: string) => logDispatch({ search: v });
@@ -85,7 +99,11 @@ export function WebSocketLogPanel() {
   const toggleExpanded = (id: string) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -120,7 +138,7 @@ export function WebSocketLogPanel() {
             prettyJson={prettyJson}
             onSearch={setSearch}
             onDirectionFilter={setDirFilter}
-            onPrettyJson={() => setPrettyJson((v) => !v)}
+            onPrettyJson={() => setPrettyJson(!prettyJson)}
             onCopyAll={copyAll}
             onClearLog={clearLog}
           />

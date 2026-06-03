@@ -1,20 +1,22 @@
 import { useEffect, useRef } from "react";
 import { TopBar } from "./components/layout/TopBar";
 import { Sidebar } from "./components/layout/Sidebar";
-import { RequestBuilder } from "./features/request/components/RequestBuilder";
-import { ResponseViewer } from "./features/response/components/ResponseViewer";
+import { RequestBuilder } from "./features/request";
+import { ResponseViewer } from "./features/response";
 import { CommandPalette } from "./components/palette/CommandPalette";
 import { Toasts } from "./components/shared/Toast";
-import { DiffModal } from "./features/diff/components/DiffModal";
-import { VariableEditorModal } from "./features/variables/components/VariableEditorModal";
-import { HelpModal } from "./features/help/components/HelpModal";
-import { ClearHistoryModal } from "./features/history/components/ClearHistoryModal";
-import { SettingsPanel } from "./features/settings/components/SettingsPanel";
-import { BatchRunnerModal } from "./features/collections/components/BatchRunnerModal";
-import { CollectionRunnerModal } from "./features/collections/components/CollectionRunnerModal";
-import { SaveActionModal } from "./features/collections/components/SaveActionModal";
-import { SaveRequestModal } from "./features/collections/components/SaveRequestModal";
-import { CookieManagerModal } from "./features/cookies/components/CookieManagerModal";
+import { DiffModal } from "./features/diff";
+import { VariableEditorModal } from "./features/variables";
+import { HelpModal } from "./features/help";
+import { ClearHistoryModal } from "./features/history";
+import { SettingsPanel } from "./features/settings";
+import {
+  BatchRunnerModal,
+  CollectionRunnerModal,
+  SaveActionModal,
+  SaveRequestModal,
+} from "./features/collections";
+import { CookieManagerModal } from "./features/cookies";
 import { useAppBootstrap } from "./features/bootstrap/useAppBootstrap";
 import { useActiveEnvironmentPersistence } from "./features/environments/useActiveEnvironmentPersistence";
 import { useRequestExecution } from "./features/execution/useRequestExecution";
@@ -115,7 +117,15 @@ export default function App() {
             <RequestBuilder onSend={handleSend} />
           </div>
 
-          <button type="button" aria-label="Resize panel" className="resize-handle-v" onMouseDown={onResizeMouseDown} onKeyDown={(e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} />
+          <button
+            type="button"
+            aria-label="Resize panel"
+            className="resize-handle-v"
+            onMouseDown={onResizeMouseDown}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
+            }}
+          />
 
           <div className="flex-1 overflow-hidden" style={{ minHeight: 300 }}>
             <ResponseViewer />

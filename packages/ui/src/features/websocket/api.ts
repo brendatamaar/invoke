@@ -95,9 +95,10 @@ function buildWsPayload(req: WebSocketRequestConfig) {
   return {
     url: req.url,
     headers,
-    protocols: (req.protocols ?? "")
-      .split(",")
-      .flatMap((p) => { const t = p.trim(); return t ? [t] : []; }),
+    protocols: (req.protocols ?? "").split(",").flatMap((p) => {
+      const t = p.trim();
+      return t ? [t] : [];
+    }),
     timeoutMs: req.timeoutMs ?? 30000,
     verifySsl: req.options?.verifySsl ?? true,
     tlsClientConfig: req.options?.tlsClientConfig,

@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef } from "react";
-import { ChevronDown, ChevronRight, FileText } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Collection } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
 import { useFolders } from "../../../hooks/useDb";
@@ -26,20 +26,25 @@ export function CollectionNode({ collection }: { collection: Collection }) {
     addFolderModal: boolean;
     renameModal: boolean;
     deleteModal: boolean;
-    descModal: boolean;
     isDragOver: boolean;
   };
   const [state, dispatch] = useReducer(
     (prev: CollectionNodeState, patch: Partial<CollectionNodeState>) => ({ ...prev, ...patch }),
-    { menuOpen: false, addReqModal: false, addFolderModal: false, renameModal: false, deleteModal: false, descModal: false, isDragOver: false },
+    {
+      menuOpen: false,
+      addReqModal: false,
+      addFolderModal: false,
+      renameModal: false,
+      deleteModal: false,
+      isDragOver: false,
+    },
   );
-  const { menuOpen, addReqModal, addFolderModal, renameModal, deleteModal, descModal, isDragOver } = state;
+  const { menuOpen, addReqModal, addFolderModal, renameModal, deleteModal, isDragOver } = state;
   const setMenuOpen = (v: boolean) => dispatch({ menuOpen: v });
   const setAddReqModal = (v: boolean) => dispatch({ addReqModal: v });
   const setAddFolderModal = (v: boolean) => dispatch({ addFolderModal: v });
   const setRenameModal = (v: boolean) => dispatch({ renameModal: v });
   const setDeleteModal = (v: boolean) => dispatch({ deleteModal: v });
-  const setDescModal = (v: boolean) => dispatch({ descModal: v });
   const setIsDragOver = (v: boolean) => dispatch({ isDragOver: v });
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -135,17 +140,9 @@ export function CollectionNode({ collection }: { collection: Collection }) {
             ) : (
               <ChevronRight size={13} className="text-[var(--text-3)]" />
             )}
-            <span
-              className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate"
-              title={collection.description || undefined}
-            >
+            <span className="flex-1 text-xs font-semibold text-[var(--text-1)] truncate">
               {collection.name}
             </span>
-            {collection.description && (
-              <span title={collection.description} className="shrink-0">
-                <FileText size={11} className="text-[var(--text-3)]" />
-              </span>
-            )}
             <span className="text-2xs text-[var(--text-3)]">{totalRequests}</span>
           </button>
           <CollectionActionsMenu
@@ -156,7 +153,6 @@ export function CollectionNode({ collection }: { collection: Collection }) {
             onNewFolder={() => openModal(setMenuOpen, setAddFolderModal)}
             onRename={() => openModal(setMenuOpen, setRenameModal)}
             onVariables={() => openVariables(collection, setMenuOpen, set)}
-            onDescription={() => openModal(setMenuOpen, setDescModal)}
             onRun={() => runCollection(collection, setMenuOpen, set)}
             onExportZip={() => exportWithToast("zip")}
             onExportOpenApi={() => exportWithToast("openapi")}
@@ -180,12 +176,10 @@ export function CollectionNode({ collection }: { collection: Collection }) {
       </div>
       <CollectionNodeModals
         collectionName={collection.name}
-        description={collection.description}
         addFolderOpen={addFolderModal}
         addRequestOpen={addReqModal}
         renameOpen={renameModal}
         deleteOpen={deleteModal}
-        descriptionOpen={descModal}
         onAddFolder={addFolder}
         onAddRequest={addRequest}
         onRename={(name) => {
@@ -193,15 +187,10 @@ export function CollectionNode({ collection }: { collection: Collection }) {
           if (name !== collection.name) updateCollection({ name });
         }}
         onDelete={deleteCollection}
-        onSaveDescription={(description) => {
-          setDescModal(false);
-          updateCollection({ description });
-        }}
         onCloseAddFolder={() => setAddFolderModal(false)}
         onCloseAddRequest={() => setAddReqModal(false)}
         onCloseRename={() => setRenameModal(false)}
         onCloseDelete={() => setDeleteModal(false)}
-        onCloseDescription={() => setDescModal(false)}
       />
     </>
   );

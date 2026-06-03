@@ -3,20 +3,25 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/core/package.json packages/core/package.json
 COPY packages/server/package.json packages/server/package.json
+COPY packages/ui/package.json packages/ui/package.json
 RUN bun install
 COPY proto/ proto/
 COPY packages/core packages/core
 COPY packages/server packages/server
-RUN bun --filter @invoke/core run build && bun --filter @invoke/server run build
+RUN cd packages/core && bun run build && cd /app && cd packages/server && bun run build
 
 FROM oven/bun:1-alpine
+RUN apk upgrade --no-cache
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PROTO_PATH=/app/proto/executor.proto
 COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/core/package.json packages/core/package.json
 COPY packages/server/package.json packages/server/package.json
-RUN bun install --production
+COPY packages/ui/package.json packages/ui/package.json
+RUN bun install --production && rm -rf /root/.bun/install/cache
 COPY proto/ proto/
+RUN ln -s /app/proto /proto
 COPY --from=build /app/packages/core/dist packages/core/dist
 COPY --from=build /app/packages/server/dist packages/server/dist
 EXPOSE 4000

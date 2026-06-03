@@ -37,7 +37,10 @@ export function EnvironmentModalHeader({
           placeholder="Environment name"
         />
         {!focused && (
-          <Pencil size={11} className="text-[var(--text-3)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          <Pencil
+            size={11}
+            className="text-[var(--text-3)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          />
         )}
       </div>
       <div className="flex items-center gap-1.5">

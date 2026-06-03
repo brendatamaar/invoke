@@ -55,11 +55,16 @@ export function useGraphQLQueryPanel() {
   const jsonUnescapePasteExtension = useMemo(
     () =>
       EditorView.domEventHandlers({
-        paste(event, view) {
+        paste(event: ClipboardEvent, view: EditorView) {
           const text = event.clipboardData?.getData("text/plain");
           if (!text || !/\\[ntr"\\]/.test(text)) return false;
           try {
-            const decoded = text.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+            const decoded = text
+              .replace(/\\n/g, "\n")
+              .replace(/\\t/g, "\t")
+              .replace(/\\r/g, "\r")
+              .replace(/\\"/g, '"')
+              .replace(/\\\\/g, "\\");
             if (decoded === text) return false;
             event.preventDefault();
             const { from, to } = view.state.selection.main;
@@ -98,7 +103,7 @@ export function useGraphQLQueryPanel() {
       makeGraphQLLinter(schemaRef),
       lintGutter(),
     ],
-    [],
+    [jsonUnescapePasteExtension],
   );
 
   const handlePrettify = () => {

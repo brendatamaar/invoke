@@ -43,7 +43,12 @@ export function GrpcMessageDiffModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Close" />
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40"
+        onClick={onClose}
+        aria-label="Close"
+      />
       <div
         className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: "90vw", maxHeight: "90vh", minHeight: "50vh" }}

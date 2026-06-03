@@ -26,7 +26,7 @@ export function SavedMessageCard({
   onDiscard: () => void;
   onSave: () => void;
 }) {
-  const preview = msg.label || msg.body.slice(0, 52) + (msg.body.length > 52 ? "\u2026" : "");
+  const preview = msg.label || msg.body.slice(0, 52) + (msg.body.length > 52 ? "…" : "");
 
   return (
     <div
@@ -35,10 +35,13 @@ export function SavedMessageCard({
         borderRadius: "var(--r-2)",
       }}
     >
-      <div
-        className="relative flex items-center gap-2 px-3 py-2 group hover:bg-[var(--surface-2)]"
-      >
-        <button type="button" className="absolute inset-0" onClick={onSelect} aria-label="Select message" />
+      <div className="relative flex items-center gap-2 px-3 py-2 group hover:bg-[var(--surface-2)]">
+        <button
+          type="button"
+          className="absolute inset-0"
+          onClick={onSelect}
+          aria-label="Select message"
+        />
         <input
           type="checkbox"
           checked={selected}
@@ -91,7 +94,7 @@ export function SavedMessageCard({
           <textarea
             value={editDraft.body}
             onChange={(e) => onEditDraft({ ...editDraft, body: e.target.value })}
-            placeholder="Message body\u2026"
+            placeholder="Message body…"
             aria-label="Message body"
             rows={3}
             className="input text-xs font-mono resize-none py-1.5"

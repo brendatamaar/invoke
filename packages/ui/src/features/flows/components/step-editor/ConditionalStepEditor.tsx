@@ -11,7 +11,9 @@ export function ConditionalStepEditor({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="condition-expression" className="text-xs font-medium text-[var(--text-2)]">Source</label>
+        <label htmlFor="condition-expression" className="text-xs font-medium text-[var(--text-2)]">
+          Source
+        </label>
         <div className="flex gap-2">
           <Select
             value={step.condition.source}
@@ -44,7 +46,9 @@ export function ConditionalStepEditor({
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="condition-expected" className="text-xs font-medium text-[var(--text-2)]">Matcher</label>
+        <label htmlFor="condition-expected" className="text-xs font-medium text-[var(--text-2)]">
+          Matcher
+        </label>
         <div className="flex gap-2">
           <Select
             value={step.condition.matcher}

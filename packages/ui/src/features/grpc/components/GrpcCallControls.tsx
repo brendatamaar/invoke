@@ -21,21 +21,33 @@ export function GrpcCallControls({
 }) {
   if (grpcStreamId) {
     return (
-      <button type="button" onClick={onCloseStream} className="btn btn-danger text-xs flex items-center gap-1">
+      <button
+        type="button"
+        onClick={onCloseStream}
+        className="btn btn-danger text-xs flex items-center gap-1"
+      >
         <StopCircle size={12} /> Close Stream
       </button>
     );
   }
   if (grpcStreaming) {
     return (
-      <button type="button" onClick={onCancelStream} className="btn btn-danger text-xs flex items-center gap-1">
+      <button
+        type="button"
+        onClick={onCancelStream}
+        className="btn btn-danger text-xs flex items-center gap-1"
+      >
         <StopCircle size={12} /> Cancel
       </button>
     );
   }
   if (isExecuting) {
     return (
-      <button type="button" onClick={onCancelExecute} className="btn btn-danger text-xs flex items-center gap-1">
+      <button
+        type="button"
+        onClick={onCancelExecute}
+        className="btn btn-danger text-xs flex items-center gap-1"
+      >
         <StopCircle size={12} /> Cancel
       </button>
     );

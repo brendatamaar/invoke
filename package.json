@@ -28,17 +28,20 @@
     "test": "turbo run test",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
+    "typecheck": "pnpm --filter @invoke/core build && tsc --noEmit -p packages/core/tsconfig.json && tsc --noEmit -p packages/server/tsconfig.json && tsc --noEmit -p packages/ui/tsconfig.json",
     "dev:all:turbo": "turbo run dev",
     "e2e": "turbo run build && playwright test",
     "proto:generate": "buf generate",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "executor:dev": "cd executor && go run ./cmd/executor",
-    "executor:test": "cd executor && go test ./..."
+    "executor:test": "cd executor && go test ./...",
+    "prepare": "node -e \"if (process.env.NODE_ENV !== 'production') require('child_process').execSync('husky', {stdio: 'inherit'})\""
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "concurrently": "^9.2.1",
+    "husky": "^9.1.7",
     "oxfmt": "0.52.0",
     "oxlint": "^1.67.0",
     "turbo": "^2.9.14",

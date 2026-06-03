@@ -100,7 +100,7 @@ export function GrpcSavedMessagesPanel() {
           </div>
           <pre className="text-2xs font-mono text-[var(--text-3)] truncate">
             {msg.body.slice(0, 80)}
-            {msg.body.length > 80 ? "\u2026" : ""}
+            {msg.body.length > 80 ? "…" : ""}
           </pre>
         </div>
       ))}

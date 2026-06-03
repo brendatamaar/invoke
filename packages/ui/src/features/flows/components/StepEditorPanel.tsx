@@ -32,7 +32,9 @@ export function StepEditorPanel({
         </button>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="step-name" className="text-xs font-medium text-[var(--text-2)]">Name</label>
+        <label htmlFor="step-name" className="text-xs font-medium text-[var(--text-2)]">
+          Name
+        </label>
         <input
           id="step-name"
           className="input text-sm py-1.5 w-full"

@@ -76,7 +76,9 @@ export function WebSocketLogEntry({
 }
 
 function ReconnectCountdown({ entry }: { entry: WebSocketLogItem }) {
-  const [remaining, setRemaining] = useState(() => Math.max(0, (entry.reconnectAt ?? 0) - Date.now()));
+  const [remaining, setRemaining] = useState(() =>
+    Math.max(0, (entry.reconnectAt ?? 0) - Date.now()),
+  );
 
   useEffect(() => {
     if (remaining === 0) return;
@@ -86,11 +88,15 @@ function ReconnectCountdown({ entry }: { entry: WebSocketLogItem }) {
       if (r === 0) clearInterval(id);
     }, 250);
     return () => clearInterval(id);
-  }, [entry.reconnectAt]);
+  }, [entry.reconnectAt, remaining]);
 
   const label = entry.body ? ` (${entry.body})` : "";
   if (remaining <= 0) return <>Reconnecting…{label}</>;
-  return <>Reconnecting in {Math.ceil(remaining / 1000)}s…{label}</>;
+  return (
+    <>
+      Reconnecting in {Math.ceil(remaining / 1000)}s…{label}
+    </>
+  );
 }
 
 function DirectionIcon({ direction }: { direction: WebSocketLogItem["direction"] }) {

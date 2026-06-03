@@ -22,8 +22,9 @@ export function useWebSocketEventStream({
     useStore.getState().wsSessions.find((session) => session.id === sessionId);
 
   useEffect(() => {
+    const sources = eventSourcesRef.current;
     return () => {
-      eventSourcesRef.current.forEach((es) => es.close());
+      sources.forEach((es) => es.close());
     };
   }, []);
 
@@ -54,7 +55,7 @@ export function useWebSocketEventStream({
         const frame = JSON.parse(message.body) as { type?: string };
         const connectionId = findWsSession(sessionId)?.connectionId;
         if (frame.type === "ping" && connectionId) {
-          webSocketSend(connectionId, JSON.stringify({ type: "pong" })).catch(() => { });
+          webSocketSend(connectionId, JSON.stringify({ type: "pong" })).catch(() => {});
         }
         if (frame.type === "complete") {
           setWsSession(sessionId, { activeGqlSubscriptionId: undefined });
@@ -92,13 +93,18 @@ export function useWebSocketEventStream({
       eventSourcesRef.current.delete(sessionId);
       const reason = parseWsCloseReason(event);
       const previous = findWsSession(sessionId);
-      const { autoReconnect, reconnectDelay = 2000, reconnectMaxRetries } =
-        useStore.getState().websocketRequest;
+      const {
+        autoReconnect,
+        reconnectDelay = 2000,
+        reconnectMaxRetries,
+      } = useStore.getState().websocketRequest;
       const nextRetry = retryCount + 1;
-      const canRetry = autoReconnect && (reconnectMaxRetries == null || nextRetry <= reconnectMaxRetries);
-      const attemptsBody = reconnectMaxRetries != null
-        ? `attempt ${nextRetry}/${reconnectMaxRetries}`
-        : `attempt ${nextRetry}`;
+      const canRetry =
+        autoReconnect && (reconnectMaxRetries == null || nextRetry <= reconnectMaxRetries);
+      const attemptsBody =
+        reconnectMaxRetries != null
+          ? `attempt ${nextRetry}/${reconnectMaxRetries}`
+          : `attempt ${nextRetry}`;
       const now = Date.now();
       setWsSession(sessionId, {
         state: "disconnected",

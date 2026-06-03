@@ -87,7 +87,10 @@ export async function executeStream(
     buffer += decoder.decode(value, { stream: true });
     const events = buffer.split("\n\n");
     buffer = events.pop() ?? "";
-    await events.reduce((p, event) => p.then(() => handleSseEvent(event, handlers)), Promise.resolve());
+    await events.reduce(
+      (p, event) => p.then(() => handleSseEvent(event, handlers)),
+      Promise.resolve(),
+    );
   }
   if (buffer.trim()) await handleSseEvent(buffer, handlers);
 }

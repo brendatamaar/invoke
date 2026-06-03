@@ -60,9 +60,7 @@ export function QuickAssertionOverlay({
         <input
           aria-label="Assertion expression"
           value={current.expression}
-          onChange={(event) =>
-            setEdits((prev) => ({ ...prev, expression: event.target.value }))
-          }
+          onChange={(event) => setEdits((prev) => ({ ...prev, expression: event.target.value }))}
           placeholder={current.type === "header" ? "Header-Name" : "$.path"}
           className="input text-2xs py-0.5 font-mono"
         />
@@ -78,7 +76,11 @@ export function QuickAssertionOverlay({
         <button type="button" onClick={onClose} className="btn text-2xs py-0.5 px-2">
           Cancel
         </button>
-        <button type="button" onClick={() => onConfirm(current)} className="btn btn-primary text-2xs py-0.5 px-2">
+        <button
+          type="button"
+          onClick={() => onConfirm(current)}
+          className="btn btn-primary text-2xs py-0.5 px-2"
+        >
           Add assertion
         </button>
       </div>

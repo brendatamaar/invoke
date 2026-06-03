@@ -25,7 +25,9 @@ export function GraphQLSchemaImportBody({ model, status }: { model: ImportModel;
 
       {model.source === "url" && (
         <div className="flex flex-col gap-2">
-          <label htmlFor="graphql-schema-url" className="text-2xs text-[var(--text-3)]">GraphQL endpoint</label>
+          <label htmlFor="graphql-schema-url" className="text-2xs text-[var(--text-3)]">
+            GraphQL endpoint
+          </label>
           <VariableAutocompleteInput
             id="graphql-schema-url"
             value={model.schemaUrl}

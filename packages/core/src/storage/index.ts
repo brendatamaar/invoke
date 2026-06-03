@@ -17,7 +17,7 @@ import type {
 } from "../types";
 import * as collectionStorage from "./collections";
 import * as cookieStorage from "./cookies";
-import { db } from "./db";
+import { InvokeDB } from "./db";
 import * as environmentStorage from "./environments";
 import * as flowStorage from "./flows";
 import * as historyStorage from "./history";
@@ -25,7 +25,7 @@ import * as metaStorage from "./meta";
 import * as workspaceStorage from "./workspace";
 
 export class InvokeStore {
-  private db = db;
+  private db = new InvokeDB();
 
   close() {
     this.db.close();

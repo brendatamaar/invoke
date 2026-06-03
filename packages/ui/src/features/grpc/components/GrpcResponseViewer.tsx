@@ -24,12 +24,25 @@ export function GrpcResponseViewer() {
     set,
   } = useStore();
 
-  type ViewerState = { streamDiffSelected: number[]; showStreamDiff: boolean; diffLeft: string | null; diffRight: string | null; showTranscriptDiff: boolean };
+  type ViewerState = {
+    streamDiffSelected: number[];
+    showStreamDiff: boolean;
+    diffLeft: string | null;
+    diffRight: string | null;
+    showTranscriptDiff: boolean;
+  };
   const [viewerState, viewerDispatch] = useReducer(
     (prev: ViewerState, patch: Partial<ViewerState>) => ({ ...prev, ...patch }),
-    { streamDiffSelected: [], showStreamDiff: false, diffLeft: null, diffRight: null, showTranscriptDiff: false },
+    {
+      streamDiffSelected: [],
+      showStreamDiff: false,
+      diffLeft: null,
+      diffRight: null,
+      showTranscriptDiff: false,
+    },
   );
-  const { streamDiffSelected, showStreamDiff, diffLeft, diffRight, showTranscriptDiff } = viewerState;
+  const { streamDiffSelected, showStreamDiff, diffLeft, diffRight, showTranscriptDiff } =
+    viewerState;
   const setStreamDiffSelected = (v: number[] | ((prev: number[]) => number[])) =>
     viewerDispatch({ streamDiffSelected: typeof v === "function" ? v(streamDiffSelected) : v });
   const setShowStreamDiff = (v: boolean) => viewerDispatch({ showStreamDiff: v });
@@ -215,7 +228,7 @@ function GrpcResponsePlaceholder({ active }: { active: boolean }) {
       <p className="text-sm text-[var(--text-2)] font-medium">No gRPC response yet</p>
       {active && (
         <div className="flex items-center gap-2 text-2xs text-[var(--text-3)]">
-          <span className="text-[var(--accent)] animate-pulse">Working\u2026</span>
+          <span className="text-[var(--accent)] animate-pulse">Working...</span>
           <GrpcDeadlineCountdown />
         </div>
       )}

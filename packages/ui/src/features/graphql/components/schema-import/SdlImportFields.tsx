@@ -6,7 +6,9 @@ type ImportModel = ReturnType<typeof useGraphQLSchemaImport>;
 export function SdlImportFields({ model }: { model: ImportModel }) {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor="sdl-text" className="text-2xs text-[var(--text-3)]">Paste SDL or load a .graphql file</label>
+      <label htmlFor="sdl-text" className="text-2xs text-[var(--text-3)]">
+        Paste SDL or load a .graphql file
+      </label>
       <textarea
         id="sdl-text"
         value={model.sdlText}

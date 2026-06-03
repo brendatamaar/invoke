@@ -26,7 +26,11 @@ export function EnvironmentExportDialog({
             <button type="button" className="btn text-xs" onClick={onClose}>
               Cancel
             </button>
-            <button type="button" className="btn btn-primary text-xs" onClick={onExportNonSensitive}>
+            <button
+              type="button"
+              className="btn btn-primary text-xs"
+              onClick={onExportNonSensitive}
+            >
               Export non-sensitive
             </button>
             <button type="button" className="btn btn-danger text-xs" onClick={onExportAll}>

@@ -1,5 +1,5 @@
 import type { AuthConfig, RequestConfig } from "@invoke/core";
-import { oauth2ClientCredentials, oauth2RefreshToken } from "../oauth2/api";
+import { oauth2ClientCredentials, oauth2RefreshToken } from "../oauth2";
 
 export async function applyOAuth2Token(
   request: RequestConfig,

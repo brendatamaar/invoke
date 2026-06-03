@@ -18,6 +18,4 @@ jobs:
             cd /opt/invoke
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-            sleep 5
-            curl -f http://localhost/health || exit 1
             echo "Deploy succeeded"

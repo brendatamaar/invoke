@@ -38,7 +38,7 @@ export function VariableAutocompleteInput({
   const allVars = useMemo(() => {
     const env = environments.find((e) => e.id === activeEnvironmentId);
     const vars = new Map<string, VariableSuggestion>();
-    for (const v of (env?.variables ?? [])) {
+    for (const v of env?.variables ?? []) {
       if (v.enabled !== false && v.key.trim()) {
         vars.set(v.key.trim(), {
           name: v.key.trim(),
@@ -106,21 +106,24 @@ export function VariableAutocompleteInput({
     }
   };
 
-  const applySuggestion = useCallback((varName: string) => {
-    const input = inputRef.current;
-    if (!input || triggerStart.current === -1) return;
-    const before = value.slice(0, triggerStart.current);
-    const after = value.slice(input.selectionStart ?? value.length);
-    const newVal = `${before}{{${varName}}}${after}`;
-    onChange(newVal);
-    setSuggestions([]);
-    triggerStart.current = -1;
-    requestAnimationFrame(() => {
-      const pos = before.length + varName.length + 4;
-      input.setSelectionRange(pos, pos);
-      input.focus();
-    });
-  }, [value, onChange]);
+  const applySuggestion = useCallback(
+    (varName: string) => {
+      const input = inputRef.current;
+      if (!input || triggerStart.current === -1) return;
+      const before = value.slice(0, triggerStart.current);
+      const after = value.slice(input.selectionStart ?? value.length);
+      const newVal = `${before}{{${varName}}}${after}`;
+      onChange(newVal);
+      setSuggestions([]);
+      triggerStart.current = -1;
+      requestAnimationFrame(() => {
+        const pos = before.length + varName.length + 4;
+        input.setSelectionRange(pos, pos);
+        input.focus();
+      });
+    },
+    [value, onChange],
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (suggestions.length > 0) {

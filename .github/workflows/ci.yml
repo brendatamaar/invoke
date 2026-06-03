@@ -14,14 +14,20 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: tim-actions/dco@master
+        if: github.event_name == 'pull_request'
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: "1.26"
           cache-dependency-path: executor/go.sum
       - run: cd executor && go test ./...
       - run: pnpm audit --prod

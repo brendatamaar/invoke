@@ -26,7 +26,7 @@ export function GrpcDeadlineCountdown() {
     <span
       className={`font-mono text-2xs shrink-0 ${urgent ? "text-[var(--danger)] animate-pulse" : "text-[var(--text-3)]"}`}
     >
-      {"\u23f1"} {secs}s
+      {"⏱"} {secs}s
     </span>
   );
 }

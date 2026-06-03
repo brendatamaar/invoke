@@ -65,7 +65,11 @@ export function GraphQLVariablesPanel() {
         </div>
       )}
       <div className="flex-1 overflow-auto">
-        <CodeEditor value={graphqlRequest.variables ?? "{}"} onChange={handleVariablesChange} lang="json" />
+        <CodeEditor
+          value={graphqlRequest.variables ?? "{}"}
+          onChange={handleVariablesChange}
+          lang="json"
+        />
       </div>
       <GraphQLFileUploads
         expanded={filesExpanded}

@@ -20,10 +20,22 @@ export function WebhookModal({
   onUpdate: (id: string, label: string, validation: WebhookValidationConfig) => void;
 }) {
   const { addToast } = useStore();
-  type ModalState = { tab: WebhookModalTab; label: string; validation: WebhookValidationConfig; saving: boolean; copied: boolean };
+  type ModalState = {
+    tab: WebhookModalTab;
+    label: string;
+    validation: WebhookValidationConfig;
+    saving: boolean;
+    copied: boolean;
+  };
   const [state, dispatch] = useReducer(
     (prev: ModalState, patch: Partial<ModalState>) => ({ ...prev, ...patch }),
-    { tab: "config" as WebhookModalTab, label: endpoint.label, validation: endpoint.validation, saving: false, copied: false },
+    {
+      tab: "config" as WebhookModalTab,
+      label: endpoint.label,
+      validation: endpoint.validation,
+      saving: false,
+      copied: false,
+    },
   );
   const { tab, label, validation, saving, copied } = state;
   const setTab = (v: WebhookModalTab) => dispatch({ tab: v });

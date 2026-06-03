@@ -196,7 +196,8 @@ function generateCurlGraphqlMultipart(request: RequestConfig) {
       map?: unknown;
       files?: { field: string; filename: string; mimeType?: string }[];
     };
-    if (parsed.operations) parts.push("-F", shellQuote(`operations=${JSON.stringify(parsed.operations)}`));
+    if (parsed.operations)
+      parts.push("-F", shellQuote(`operations=${JSON.stringify(parsed.operations)}`));
     if (parsed.map) parts.push("-F", shellQuote(`map=${JSON.stringify(parsed.map)}`));
     for (const file of parsed.files ?? []) {
       const type = file.mimeType ? `;type=${file.mimeType}` : "";

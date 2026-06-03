@@ -19,7 +19,9 @@ export function WebhookConfigTab({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <label htmlFor="webhook-label" className="text-2xs text-[var(--text-3)] w-20 shrink-0">Label</label>
+        <label htmlFor="webhook-label" className="text-2xs text-[var(--text-3)] w-20 shrink-0">
+          Label
+        </label>
         <input
           id="webhook-label"
           value={label}

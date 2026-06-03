@@ -29,7 +29,7 @@ export function GQLSubscriptionLog({
           Subscription
           {state === "subscribed" && (
             <span className="ml-1 font-normal normal-case">
-              {"\u2014"} {messages.filter((m) => m.kind === "data").length} messages
+              {"—"} {messages.filter((m) => m.kind === "data").length} messages
             </span>
           )}
         </span>
@@ -46,7 +46,7 @@ export function GQLSubscriptionLog({
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 && (
           <p className="text-2xs text-[var(--text-3)] text-center py-4">
-            {state === "connecting" ? "Connecting\u2026" : "Waiting for messages\u2026"}
+            {state === "connecting" ? "Connecting…" : "Waiting for messages…"}
           </p>
         )}
         {messages.map((msg) => (

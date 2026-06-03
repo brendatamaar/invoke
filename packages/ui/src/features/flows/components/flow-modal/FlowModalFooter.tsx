@@ -22,12 +22,20 @@ export function FlowModalFooter({
         Save
       </button>
       {running ? (
-        <button type="button" onClick={onStop} className="btn btn-danger text-xs flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onStop}
+          className="btn btn-danger text-xs flex items-center gap-1.5"
+        >
           <Square size={12} />
           Stop
         </button>
       ) : (
-        <button type="button" onClick={onRun} className="btn btn-primary text-xs flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onRun}
+          className="btn btn-primary text-xs flex items-center gap-1.5"
+        >
           <Play size={12} />
           Run
         </button>

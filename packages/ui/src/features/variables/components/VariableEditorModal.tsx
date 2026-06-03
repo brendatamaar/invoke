@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import { useStore, coreStore } from "../../../store";
 import { useCollections, useFolders } from "../../../hooks/useDb";
-import type { KeyValue } from "@invoke/core/types/common";
+import type { KeyValue } from "@invoke/core";
 
 export function VariableEditorModal() {
   const { variableEditor, set, addToast } = useStore();
@@ -49,7 +49,12 @@ export function VariableEditorModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <button type="button" className="absolute inset-0 bg-black/40" onClick={close} aria-label="Close" />
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40"
+        onClick={close}
+        aria-label="Close"
+      />
       <div
         className="relative bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-[var(--shadow-pop)] flex flex-col"
         style={{ width: 520, maxHeight: "80vh" }}
@@ -103,7 +108,11 @@ export function VariableEditorModal() {
               </button>
             </div>
           ))}
-          <button type="button" onClick={addRow} className="btn text-xs self-start mt-1 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={addRow}
+            className="btn text-xs self-start mt-1 flex items-center gap-1"
+          >
             <Plus size={12} /> Add variable
           </button>
         </div>

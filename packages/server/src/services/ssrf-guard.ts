@@ -1,5 +1,8 @@
+import dns from "node:dns";
 import { Context, Effect, Layer } from "effect";
 import { SsrfBlockedError } from "../errors.js";
+
+const BLOCKED_HOSTNAMES = new Set(["metadata.google.internal", "metadata.aws.internal"]);
 
 const PRIVATE_PATTERNS: readonly RegExp[] = [
   /^localhost$/i,
@@ -16,6 +19,10 @@ const PRIVATE_PATTERNS: readonly RegExp[] = [
   /^fd[0-9a-f]{2}:/i,
   /^fe80:/i,
 ];
+
+function isPrivateIp(ip: string): boolean {
+  return PRIVATE_PATTERNS.some((pattern) => pattern.test(ip));
+}
 
 const ALLOWED_SCHEMES = new Set(["ws:", "wss:", "http:", "https:"]);
 
@@ -48,7 +55,32 @@ export const SsrfGuardLive = Layer.succeed(SsrfGuard, {
       }
 
       const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
-      if (PRIVATE_PATTERNS.some((pattern) => pattern.test(hostname))) {
+
+      if (BLOCKED_HOSTNAMES.has(hostname.toLowerCase())) {
+        return yield* Effect.fail(
+          new SsrfBlockedError({
+            url: rawUrl,
+            reason: "Requests to internal metadata endpoints are not allowed",
+          }),
+        );
+      }
+
+      // Check literal hostname/IP against private patterns first (fast path)
+      if (isPrivateIp(hostname)) {
+        return yield* Effect.fail(
+          new SsrfBlockedError({
+            url: rawUrl,
+            reason: "Requests to private/internal addresses are not allowed",
+          }),
+        );
+      }
+
+      // Resolve the hostname to an IP and re-validate to prevent DNS rebinding
+      const resolved = yield* Effect.tryPromise(() => dns.promises.lookup(hostname)).pipe(
+        Effect.option,
+      );
+
+      if (resolved._tag === "Some" && isPrivateIp(resolved.value.address)) {
         return yield* Effect.fail(
           new SsrfBlockedError({
             url: rawUrl,

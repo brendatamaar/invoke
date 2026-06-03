@@ -3,9 +3,19 @@ import { Clock, Effect } from "effect";
 import { logger } from "../logger.js";
 
 const SENSITIVE_PARAMS = new Set([
-  "api_key", "apikey", "token", "access_token", "refresh_token",
-  "secret", "password", "client_secret", "auth", "authorization",
-  "key", "signature", "sig",
+  "api_key",
+  "apikey",
+  "token",
+  "access_token",
+  "refresh_token",
+  "secret",
+  "password",
+  "client_secret",
+  "auth",
+  "authorization",
+  "key",
+  "signature",
+  "sig",
 ]);
 
 function safePath(url: string): string {

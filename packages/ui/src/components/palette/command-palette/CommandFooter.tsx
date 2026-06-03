@@ -1,6 +1,6 @@
 const HINTS = [
-  ["\u2191\u2193", "Navigate"],
-  ["\u21b5", "Select"],
+  ["↑↓", "Navigate"],
+  ["↵", "Select"],
   ["esc", "Close"],
 ];
 

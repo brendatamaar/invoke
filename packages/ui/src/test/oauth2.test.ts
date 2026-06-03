@@ -5,6 +5,7 @@ import { oauth2ClientCredentials } from "../features/oauth2";
 
 vi.mock("../features/oauth2", () => ({
   oauth2ClientCredentials: vi.fn(),
+  oauth2RefreshToken: vi.fn(),
 }));
 
 const request: RequestConfig = {
