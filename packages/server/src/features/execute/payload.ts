@@ -232,6 +232,8 @@ export function executePayload(input: ExecuteInput) {
     });
   if (input.allowPrivateAddresses)
     transportHeaders.push({ key: "X-Invoke-Allow-Private", value: "true" });
+  if (input.httpVersion !== "auto")
+    transportHeaders.push({ key: "X-Invoke-Http-Version-Mode", value: input.httpVersion });
 
   return {
     method: input.method,

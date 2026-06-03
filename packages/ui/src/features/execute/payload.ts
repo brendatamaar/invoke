@@ -50,6 +50,7 @@ export function buildExecutePayload(request: RequestConfig) {
     followRedirects: request.options?.followRedirects ?? true,
     maxRedirects: request.options?.maxRedirects ?? 10,
     verifySsl: request.options?.verifySsl ?? true,
+    httpVersion: request.options?.httpVersion ?? "auto",
     allowPrivateAddresses: request.options?.allowPrivateAddresses ?? true,
     proxy: request.options?.proxy,
     tlsClientConfig: request.options?.tlsClientConfig,
