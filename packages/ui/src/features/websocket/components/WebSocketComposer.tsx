@@ -94,7 +94,7 @@ export function WebSocketComposer({
             <textarea
               value={message}
               onChange={(e) => onMessageChange(e.target.value)}
-              placeholder={binaryMode ? "Base64-encoded bytes\u2026" : "Message\u2026"}
+              placeholder={binaryMode ? "Base64-encoded bytes…" : "Message…"}
               disabled={websocketState !== "connected"}
               rows={6}
               aria-label="Message to send"

@@ -26,7 +26,7 @@ export function SavedMessageCard({
   onDiscard: () => void;
   onSave: () => void;
 }) {
-  const preview = msg.label || msg.body.slice(0, 52) + (msg.body.length > 52 ? "\u2026" : "");
+  const preview = msg.label || msg.body.slice(0, 52) + (msg.body.length > 52 ? "…" : "");
 
   return (
     <div
@@ -94,7 +94,7 @@ export function SavedMessageCard({
           <textarea
             value={editDraft.body}
             onChange={(e) => onEditDraft({ ...editDraft, body: e.target.value })}
-            placeholder="Message body\u2026"
+            placeholder="Message body…"
             aria-label="Message body"
             rows={3}
             className="input text-xs font-mono resize-none py-1.5"

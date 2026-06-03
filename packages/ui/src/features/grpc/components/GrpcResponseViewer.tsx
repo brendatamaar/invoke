@@ -228,7 +228,7 @@ function GrpcResponsePlaceholder({ active }: { active: boolean }) {
       <p className="text-sm text-[var(--text-2)] font-medium">No gRPC response yet</p>
       {active && (
         <div className="flex items-center gap-2 text-2xs text-[var(--text-3)]">
-          <span className="text-[var(--accent)] animate-pulse">Working\u2026</span>
+          <span className="text-[var(--accent)] animate-pulse">Working...</span>
           <GrpcDeadlineCountdown />
         </div>
       )}

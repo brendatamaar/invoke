@@ -86,7 +86,7 @@ export function CodeTab() {
           </Select>
         )}
         {codeLoading && !isGrpc && (
-          <span className="text-2xs text-[var(--text-3)]">Generating{"\u2026"}</span>
+          <span className="text-2xs text-[var(--text-3)]">Generating…</span>
         )}
         <button
           type="button"

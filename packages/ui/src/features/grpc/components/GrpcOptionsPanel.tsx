@@ -87,7 +87,7 @@ export function GrpcOptionsPanel() {
         />
         {(grpcRequest.maxRecvMsgSize ?? 0) >= 256 * 1024 * 1024 && (
           <span className="text-2xs text-[var(--warn)]">
-            {"\u26a0"} Large messages may exhaust memory
+            {"⚠"} Large messages may exhaust memory
           </span>
         )}
       </div>
@@ -134,8 +134,8 @@ export function GrpcOptionsPanel() {
           )}
           {grpcRequest.protosetBase64 && (
             <span className="text-2xs text-[var(--ok)]">
-              {"\u2713"} Protoset loaded (
-              {Math.round((grpcRequest.protosetBase64.length * 0.75) / 1024)}KB)
+              {"✓"} Protoset loaded ({Math.round((grpcRequest.protosetBase64.length * 0.75) / 1024)}
+              KB)
             </span>
           )}
         </div>

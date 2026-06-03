@@ -1,16 +1,11 @@
-import type { SavedRequest } from "@invoke/core";
 import { ConfirmModal } from "../../../../components/shared/ConfirmModal";
 import { PromptModal } from "../../../../components/shared/PromptModal";
-import { RequestDetailModal } from "./RequestDetailModal";
 
 export function CollectionRequestModals({
-  request,
   requestName,
-  showDetail,
   duplicateName,
   confirmDisconnect,
   confirmDelete,
-  onDetailClose,
   onDuplicate,
   onDuplicateClose,
   onConfirmDisconnect,
@@ -18,13 +13,10 @@ export function CollectionRequestModals({
   onConfirmDelete,
   onDeleteClose,
 }: {
-  request: SavedRequest;
   requestName: string;
-  showDetail: boolean;
   duplicateName: string | null;
   confirmDisconnect: boolean;
   confirmDelete: boolean;
-  onDetailClose: () => void;
   onDuplicate: (name: string) => void;
   onDuplicateClose: () => void;
   onConfirmDisconnect: () => void;
@@ -34,7 +26,6 @@ export function CollectionRequestModals({
 }) {
   return (
     <>
-      <RequestDetailModal open={showDetail} request={request} onClose={onDetailClose} />
       <PromptModal
         open={duplicateName !== null}
         title="Duplicate Request"

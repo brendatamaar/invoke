@@ -81,7 +81,7 @@ export function ResponseViewer() {
 
       {streaming && !response && (
         <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] bg-[var(--accent-subtle)]">
-          <span className="text-xs text-[var(--accent)] animate-pulse">Streaming{"\u2026"}</span>
+          <span className="text-xs text-[var(--accent)] animate-pulse">Streaming…</span>
           <span className="text-2xs text-[var(--text-3)]">{fmtSize(streamBytes)}</span>
         </div>
       )}

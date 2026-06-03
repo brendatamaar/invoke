@@ -3,40 +3,32 @@ import { PromptModal } from "../../../../components/shared/PromptModal";
 
 export function CollectionNodeModals({
   collectionName,
-  description,
   addFolderOpen,
   addRequestOpen,
   renameOpen,
   deleteOpen,
-  descriptionOpen,
   onAddFolder,
   onAddRequest,
   onRename,
   onDelete,
-  onSaveDescription,
   onCloseAddFolder,
   onCloseAddRequest,
   onCloseRename,
   onCloseDelete,
-  onCloseDescription,
 }: {
   collectionName: string;
-  description?: string;
   addFolderOpen: boolean;
   addRequestOpen: boolean;
   renameOpen: boolean;
   deleteOpen: boolean;
-  descriptionOpen: boolean;
   onAddFolder: (name: string) => void;
   onAddRequest: (name: string) => void;
   onRename: (name: string) => void;
   onDelete: () => void;
-  onSaveDescription: (description: string) => void;
   onCloseAddFolder: () => void;
   onCloseAddRequest: () => void;
   onCloseRename: () => void;
   onCloseDelete: () => void;
-  onCloseDescription: () => void;
 }) {
   return (
     <>
@@ -78,18 +70,6 @@ export function CollectionNodeModals({
         danger
         onConfirm={onDelete}
         onClose={onCloseDelete}
-      />
-      <PromptModal
-        open={descriptionOpen}
-        title={`Description - ${collectionName}`}
-        label="Description"
-        defaultValue={description ?? ""}
-        placeholder="Describe this collection..."
-        multiline
-        confirmLabel="Save"
-        allowEmpty
-        onConfirm={onSaveDescription}
-        onClose={onCloseDescription}
       />
     </>
   );

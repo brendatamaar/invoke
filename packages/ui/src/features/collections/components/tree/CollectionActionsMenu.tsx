@@ -1,7 +1,6 @@
 import {
   Download,
   Edit3,
-  FileText,
   FolderPlus,
   MoreHorizontal,
   Play,
@@ -19,7 +18,6 @@ export function CollectionActionsMenu({
   onNewFolder,
   onRename,
   onVariables,
-  onDescription,
   onRun,
   onExportZip,
   onExportOpenApi,
@@ -32,7 +30,6 @@ export function CollectionActionsMenu({
   onNewFolder: () => void;
   onRename: () => void;
   onVariables: () => void;
-  onDescription: () => void;
   onRun: () => void;
   onExportZip: () => void;
   onExportOpenApi: () => void;
@@ -68,11 +65,6 @@ export function CollectionActionsMenu({
             icon={<Variable size={12} />}
             label="Variables"
             onClick={onVariables}
-          />
-          <CollectionMenuItem
-            icon={<FileText size={12} />}
-            label="Description"
-            onClick={onDescription}
           />
           <CollectionMenuItem icon={<Play size={12} />} label="Run" onClick={onRun} />
           <CollectionMenuItem
