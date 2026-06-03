@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { ParseError } from "../errors";
 import yaml from "js-yaml";
 import JSZip from "jszip";
 import { slug } from "../lib/format";
@@ -69,6 +71,22 @@ export async function importInvokeZip(file: Blob) {
   );
   return importedFromDocuments(documents);
 }
+
+export const importInvokeZipEffect = (
+  file: Blob,
+): Effect.Effect<Awaited<ReturnType<typeof importInvokeZip>>, ParseError> =>
+  Effect.tryPromise({
+    try: () => importInvokeZip(file),
+    catch: (e) => new ParseError({ format: "invoke-yaml", message: String(e) }),
+  });
+
+export const importYamlFilesEffect = (
+  files: File[],
+): Effect.Effect<Awaited<ReturnType<typeof importYamlFiles>>, ParseError> =>
+  Effect.tryPromise({
+    try: () => importYamlFiles(files),
+    catch: (e) => new ParseError({ format: "invoke-yaml", message: String(e) }),
+  });
 
 export async function importYamlFiles(files: File[]) {
   const zipFile = files.find((file) => file.name.endsWith(".zip"));

@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { ParseError } from "../errors";
 import { emptyRequest, id, toRequestConfig } from "../request";
 import type {
   BodyMode,
@@ -8,6 +10,19 @@ import type {
   RequestProtocol,
   SavedRequest,
 } from "../types";
+
+export const importHarFileEffect = (
+  raw: unknown,
+): Effect.Effect<ReturnType<typeof importHarFile>, ParseError> =>
+  Effect.try({
+    try: () => {
+      if (!raw || typeof raw !== "object" || !("log" in raw)) {
+        throw new Error("not a valid HAR file: missing log object");
+      }
+      return importHarFile(raw as any);
+    },
+    catch: (e) => new ParseError({ format: "har", message: String(e) }),
+  });
 
 export function importHarFile(doc: any): {
   collection: Collection;

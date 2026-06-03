@@ -1,13 +1,14 @@
 import type { RefObject } from "react";
 import { useState } from "react";
+import { Effect } from "effect";
 import {
-  importHarFile,
-  importHoppscotchCollection,
-  importInsomniaExport,
-  importInvokeZip,
-  importOpenApiSpec,
-  importPostmanCollection,
-  importYamlFiles,
+  importHarFileEffect,
+  importHoppscotchCollectionEffect,
+  importInsomniaExportEffect,
+  importInvokeZipEffect,
+  importOpenApiSpecEffect,
+  importPostmanCollectionEffect,
+  importYamlFilesEffect,
   parseCurl,
 } from "@invoke/core";
 import { useStore, coreStore } from "../../store";
@@ -39,7 +40,7 @@ export const COLLECTION_IMPORT_OPTIONS: {
 ];
 
 export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | null>) {
-  const { addToast, setRequest, set } = useStore();
+  const { addToast, setRequest } = useStore();
   const [importType, setImportType] = useState<CollectionImportType>("zip");
   const [curlModal, setCurlModal] = useState(false);
 
@@ -97,37 +98,47 @@ export function useCollectionImport(fileInputRef: RefObject<HTMLInputElement | n
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     e.target.value = "";
-    try {
-      let imported: CollectionImportResult | undefined;
+
+    const parseEffect = async (): Promise<CollectionImportResult | undefined> => {
       if (importType === "zip") {
-        imported = (await importInvokeZip(files[0])) as unknown as CollectionImportResult;
-      } else if (importType === "postman") {
-        imported = importPostmanCollection(
-          JSON.parse(await files[0].text()),
-        ) as unknown as CollectionImportResult;
-      } else if (importType === "insomnia") {
-        imported = importInsomniaExport(
-          JSON.parse(await files[0].text()),
-        ) as unknown as CollectionImportResult;
-      } else if (importType === "hoppscotch") {
-        imported = importHoppscotchCollection(
-          JSON.parse(await files[0].text()),
-        ) as unknown as CollectionImportResult;
-      } else if (importType === "openapi") {
-        imported = (await importOpenApiSpec(
-          await files[0].text(),
-        )) as unknown as CollectionImportResult;
-      } else if (importType === "yaml") {
-        imported = (await importYamlFiles(files)) as unknown as CollectionImportResult;
+        return Effect.runPromise(importInvokeZipEffect(files[0])) as Promise<CollectionImportResult>;
+      }
+      if (importType === "postman") {
+        return Effect.runPromise(
+          importPostmanCollectionEffect(JSON.parse(await files[0].text())),
+        ) as Promise<CollectionImportResult>;
+      }
+      if (importType === "insomnia") {
+        return Effect.runPromise(
+          importInsomniaExportEffect(JSON.parse(await files[0].text())),
+        ) as Promise<CollectionImportResult>;
+      }
+      if (importType === "hoppscotch") {
+        return Effect.runPromise(
+          importHoppscotchCollectionEffect(JSON.parse(await files[0].text())),
+        ) as Promise<CollectionImportResult>;
+      }
+      if (importType === "openapi") {
+        return Effect.runPromise(
+          importOpenApiSpecEffect(await files[0].text()),
+        ) as Promise<CollectionImportResult>;
+      }
+      if (importType === "yaml") {
+        return Effect.runPromise(importYamlFilesEffect(files)) as Promise<CollectionImportResult>;
       }
       if (importType === "har") {
-        imported = importHarFile(
-          JSON.parse(await files[0].text()),
-        ) as unknown as CollectionImportResult;
+        return Effect.runPromise(
+          importHarFileEffect(JSON.parse(await files[0].text())),
+        ) as Promise<CollectionImportResult>;
       }
+    };
+
+    try {
+      const imported = await parseEffect();
       if (imported) {
         const count = await persistImported(imported);
-        set({ requests: await coreStore.listRequests() });
+        // No manual set({ requests }) needed — useLiveQuery in useAppBootstrap
+        // reacts to the Dexie write and syncs automatically.
         addToast("success", `Imported ${count} requests`);
       }
     } catch (err) {

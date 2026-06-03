@@ -1,4 +1,4 @@
-import { Cause, Duration, Effect, Exit, Fiber } from "effect";
+import { Cause, Duration, Effect, Exit, Fiber, Schedule } from "effect";
 import { JSONPath } from "jsonpath-plus";
 import { runAssertions } from "../assertions";
 import { StepExecutionError, StepTimeoutError } from "../errors";
@@ -199,7 +199,7 @@ function requestEffect(
   const startedAt = Date.now();
   const timeoutMs = step.request.timeoutMs ?? 30_000;
 
-  const executeWithTimeout = Effect.tryPromise({
+  const attempt = Effect.tryPromise({
     try: () => {
       const { request: resolved } = resolveRequest(step.request, [
         ...(options.scopes ?? []),
@@ -217,12 +217,22 @@ function requestEffect(
     ),
   );
 
+  const retryCount = step.retryCount ?? 0;
+  const executeWithRetry =
+    retryCount > 0
+      ? attempt.pipe(
+          Effect.retry(
+            Schedule.exponential("500 millis").pipe(Schedule.intersect(Schedule.recurs(retryCount))),
+          ),
+        )
+      : attempt;
+
   return Effect.gen(function* () {
     if (options.hooks?.onStepStart) {
       yield* Effect.promise(() => Promise.resolve(options.hooks!.onStepStart!(step)));
     }
 
-    const outcome = yield* Effect.either(executeWithTimeout);
+    const outcome = yield* Effect.either(executeWithRetry);
 
     let result: FlowStepResult;
 

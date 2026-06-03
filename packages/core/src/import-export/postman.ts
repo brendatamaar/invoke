@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { ParseError } from "../errors";
 import { emptyGrpcRequest, emptyRequest, id, toRequestConfig } from "../request";
 import type {
   Collection,
@@ -157,6 +159,19 @@ function postmanAuth(auth: any): RequestConfig["auth"] {
   }
   return { type: "none" };
 }
+
+export const importPostmanCollectionEffect = (
+  raw: unknown,
+): Effect.Effect<ReturnType<typeof importPostmanCollection>, ParseError> =>
+  Effect.try({
+    try: () => {
+      if (!raw || typeof raw !== "object" || !("info" in raw)) {
+        throw new Error("not a valid Postman collection: missing info object");
+      }
+      return importPostmanCollection(raw as any);
+    },
+    catch: (e) => new ParseError({ format: "postman", message: String(e) }),
+  });
 
 function postmanGrpcItem(item: any, collectionId: string, folderId: string | null): SavedRequest {
   const raw = item.request ?? item;

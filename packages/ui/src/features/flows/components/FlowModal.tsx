@@ -1,13 +1,8 @@
 import { useReducer, useRef } from "react";
-import {
-  FlowRunner,
-  validateFlow,
-  type Flow,
-  type FlowStep,
-  type VariableScope,
-} from "@invoke/core";
+import { validateFlow, type Flow, type FlowStep, type VariableScope } from "@invoke/core";
 import { useStore, coreStore } from "../../../store";
 import { execute } from "../../execute/api";
+import { useFlowRunner } from "../../../hooks/useFlowRunner";
 import { showFlowValidation } from "../utils/validation";
 import { FlowModalBody } from "./flow-modal/FlowModalBody";
 import { FlowModalFooter } from "./flow-modal/FlowModalFooter";
@@ -56,10 +51,10 @@ export function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }
     flowLog,
     flowResult,
   } = useStore();
-  const runner = useRef(new FlowRunner());
+  const { run: runFlowEffect, stop } = useFlowRunner();
 
   const handleClose = () => {
-    runner.current.cancel();
+    stop();
     set({ flowRunning: false, flowLog: [], flowResult: undefined });
     onClose();
   };
@@ -131,7 +126,7 @@ export function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }
     if (Object.keys(sessionVariables).length)
       scopes.push({ name: "session", variables: sessionVariables });
     try {
-      const result = await runner.current.run(draft, {
+      const result = await runFlowEffect(draft, {
         execute,
         scopes,
         hooks: {
@@ -157,7 +152,7 @@ export function FlowModal({ flow, onClose }: { flow: Flow; onClose: () => void }
   };
 
   const stopFlow = () => {
-    runner.current.cancel();
+    stop();
     set({ flowRunning: false });
   };
 

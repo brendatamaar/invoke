@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { ParseError } from "../errors";
 import { emptyRequest, id, toRequestConfig } from "../request";
 import type {
   AuthConfig,
@@ -9,6 +11,19 @@ import type {
   SavedRequest,
 } from "../types";
 import { recordToKeyValues } from "./shared";
+
+export const importHoppscotchCollectionEffect = (
+  raw: unknown,
+): Effect.Effect<ReturnType<typeof importHoppscotchCollection>, ParseError> =>
+  Effect.try({
+    try: () => {
+      if (!raw || typeof raw !== "object") {
+        throw new Error("not a valid Hoppscotch collection: expected an object");
+      }
+      return importHoppscotchCollection(raw as any);
+    },
+    catch: (e) => new ParseError({ format: "hoppscotch", message: String(e) }),
+  });
 
 export function importHoppscotchCollection(doc: any) {
   const now = Date.now();

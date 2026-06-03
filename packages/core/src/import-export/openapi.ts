@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { ParseError } from "../errors";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import yaml from "js-yaml";
 import { emptyRequest, id, toRequestConfig } from "../request";
@@ -104,6 +106,15 @@ export async function importOpenApiSpec(
     throw openApiImportError(error);
   }
 }
+
+export const importOpenApiSpecEffect = (
+  input: string | Record<string, unknown>,
+  sourceName?: string,
+): Effect.Effect<Awaited<ReturnType<typeof importOpenApiSpec>>, ParseError> =>
+  Effect.tryPromise({
+    try: () => importOpenApiSpec(input, sourceName),
+    catch: (e) => new ParseError({ format: "openapi", message: String(e) }),
+  });
 
 export function exportCollectionAsOpenApi(
   collection: Collection,

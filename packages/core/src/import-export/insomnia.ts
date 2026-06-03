@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { ParseError } from "../errors";
 import { emptyGrpcRequest, emptyRequest, id, toRequestConfig } from "../request";
 import type {
   AuthConfig,
@@ -10,6 +12,19 @@ import type {
   SavedRequest,
 } from "../types";
 import { recordToKeyValues } from "./shared";
+
+export const importInsomniaExportEffect = (
+  raw: unknown,
+): Effect.Effect<ReturnType<typeof importInsomniaExport>, ParseError> =>
+  Effect.try({
+    try: () => {
+      if (!raw || typeof raw !== "object") {
+        throw new Error("not a valid Insomnia export: expected an object");
+      }
+      return importInsomniaExport(raw as any);
+    },
+    catch: (e) => new ParseError({ format: "insomnia", message: String(e) }),
+  });
 
 export function importInsomniaExport(doc: any) {
   const resources = Array.isArray(doc?.resources) ? doc.resources : [];

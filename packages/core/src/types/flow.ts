@@ -20,6 +20,7 @@ export interface FlowRequestStep {
   name: string;
   request: RequestConfig;
   continueOnFailure?: boolean;
+  retryCount?: number;
 }
 
 export interface FlowDelayStep {

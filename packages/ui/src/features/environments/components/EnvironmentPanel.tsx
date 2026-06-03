@@ -31,8 +31,7 @@ export function EnvironmentPanel() {
         name: envDraft.name,
         variables: envDraft.variables ?? [],
       });
-      const envs = await coreStore.listEnvironments();
-      set({ environments: envs, envDraft: undefined });
+      set({ envDraft: undefined });
       addToast("success", "Environment saved");
     } catch (error) {
       addToast("error", String(error));
@@ -42,11 +41,7 @@ export function EnvironmentPanel() {
   const deleteEnv = async (id: string) => {
     try {
       await coreStore.deleteEnvironment(id);
-      const envs = await coreStore.listEnvironments();
-      set({
-        environments: envs,
-        activeEnvironmentId: activeEnvironmentId === id ? undefined : activeEnvironmentId,
-      });
+      if (activeEnvironmentId === id) set({ activeEnvironmentId: undefined });
     } catch (error) {
       addToast("error", String(error));
     }
