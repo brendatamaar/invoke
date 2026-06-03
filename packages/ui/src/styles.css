@@ -302,7 +302,18 @@ body {
   background: transparent !important;
 }
 .cm-activeLine {
-  background: var(--bg-2) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+[data-theme="light"] .cm-activeLine {
+  background: rgba(0, 0, 0, 0.06) !important;
+}
+.cm-selectionBackground,
+.cm-focused .cm-selectionBackground {
+  background: rgba(125, 207, 255, 0.2) !important;
+}
+[data-theme="light"] .cm-selectionBackground,
+[data-theme="light"] .cm-focused .cm-selectionBackground {
+  background: rgba(12, 123, 179, 0.15) !important;
 }
 
 /* Cursor blink — brand motif */
