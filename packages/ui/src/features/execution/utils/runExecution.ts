@@ -1,5 +1,6 @@
 import type { RequestConfig, RequestDraft } from "@invoke/core";
 import type { AppState } from "../../../types";
+import { browserFetch } from "../../execute/browserFetch";
 import { executeStream, executeWithRetry } from "../../execute/api";
 import { executeWithAPQ } from "../../execute/apq";
 import { finalizeResponseExecution, finalizeStreamExecution } from "./finalize";
@@ -93,6 +94,62 @@ export async function runStreamingRequest({
   }
 }
 
+export async function runBrowserRequest({
+  resolved,
+  activeRequest,
+  protocol,
+  prepared,
+  vars,
+  assertionRules,
+  extractRules,
+  sessionVariables,
+  enableCookies,
+  set,
+  addToast,
+}: {
+  resolved: RequestConfig;
+  activeRequest: RequestDraft;
+  protocol: NonNullable<RequestDraft["protocol"]>;
+  prepared: PreparedRequest;
+  vars: Record<string, string>;
+  assertionRules: Parameters<typeof finalizeResponseExecution>[0]["assertionRules"];
+  extractRules: Parameters<typeof finalizeResponseExecution>[0]["extractRules"];
+  sessionVariables: Record<string, string>;
+  enableCookies: boolean;
+  set: AppState["set"];
+  addToast: AppState["addToast"];
+}) {
+  const controller = new AbortController();
+  set({
+    loading: true,
+    loadController: controller,
+    response: undefined,
+    retryAttempts: undefined,
+    apqRetried: undefined,
+  });
+  try {
+    const rawResponse = await browserFetch(resolved, controller.signal);
+    await finalizeResponseExecution({
+      rawResponse,
+      resolved,
+      activeRequest,
+      vars,
+      preRequestLogs: prepared.preRequestLogs,
+      preRequestError: prepared.preRequestError,
+      assertionRules,
+      extractRules,
+      sessionVariables,
+      protocol,
+      requestMode: "browser",
+      enableCookies,
+      set,
+    });
+  } catch (error) {
+    if ((error as Error).name !== "AbortError") addToast("error", String(error));
+    set({ loading: false, loadController: undefined });
+  }
+}
+
 export async function runBufferedRequest({
   resolved,
   activeRequest,
@@ -145,6 +202,7 @@ export async function runBufferedRequest({
       extractRules,
       sessionVariables,
       protocol,
+      requestMode: "server",
       enableCookies,
       set,
     });

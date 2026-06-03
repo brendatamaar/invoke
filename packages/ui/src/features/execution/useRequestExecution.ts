@@ -6,7 +6,7 @@ import { PROXY_RECORDS_KEY } from "../proxy/useProxyRecords";
 import { applyOAuth2Token } from "./oauth2";
 import { injectCookies } from "./cookies";
 import { resolveWithPreRequestScript } from "./utils/preRequest";
-import { buildActiveRequest, runBufferedRequest, runStreamingRequest } from "./utils/runExecution";
+import { buildActiveRequest, runBrowserRequest, runBufferedRequest, runStreamingRequest } from "./utils/runExecution";
 import { buildExecutionScopeContext } from "./utils/scopes";
 
 export function useRequestExecution() {
@@ -20,6 +20,7 @@ export function useRequestExecution() {
   const assertionRules = useStore((state) => state.assertionRules);
   const extractRules = useStore((state) => state.extractRules);
   const streamMode = useStore((state) => state.streamMode);
+  const browserMode = useStore((state) => state.browserMode);
   const enableCookies = useStore((state) => state.enableCookies);
   const requests = useStore((state) => state.requests);
   const cookies = useCookies();
@@ -84,11 +85,39 @@ export function useRequestExecution() {
       (newAuth) => setRequest({ auth: newAuth }),
     );
 
+    set({ responseBrowserMode: browserMode && !streamMode });
+
     if (streamMode) {
       await runStreamingRequest({
         resolved,
         protocol,
         prepared,
+        assertionRules,
+        extractRules,
+        sessionVariables,
+        enableCookies,
+        set,
+        addToast,
+      });
+      return;
+    }
+
+    const browserUnsupported =
+      browserMode &&
+      (resolved.bodyMode === "form-data" ||
+        resolved.bodyMode === "file" ||
+        resolved.bodyMode === "graphql-multipart");
+    if (browserUnsupported) {
+      addToast("warn", `Client mode does not support ${resolved.bodyMode} — using server mode`);
+    }
+
+    if (browserMode && !browserUnsupported) {
+      await runBrowserRequest({
+        resolved,
+        activeRequest,
+        protocol,
+        prepared,
+        vars,
         assertionRules,
         extractRules,
         sessionVariables,
@@ -120,6 +149,7 @@ export function useRequestExecution() {
     activeEnvironmentId,
     addToast,
     assertionRules,
+    browserMode,
     collections,
     enableCookies,
     environments,

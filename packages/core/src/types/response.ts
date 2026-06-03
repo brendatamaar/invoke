@@ -74,6 +74,7 @@ export interface HistoryEntry {
   requestId?: string;
   collectionId?: string;
   protocol?: RequestProtocol;
+  requestMode?: "server" | "browser";
   createdAt: number;
   pinned?: boolean;
   label?: string;

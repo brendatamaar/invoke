@@ -9,6 +9,7 @@ invoke combines a React UI, a TypeScript core engine, a thin Effect HttpApi serv
 - **Local-first** — collections, environments, history, flows, cookies, mock routes, and settings live in browser storage. No account, no database.
 - **Multi-protocol** — REST, GraphQL, WebSocket, gRPC (unary, server-stream, client-stream, bidi), and streaming HTTP in one UI.
 - **Accurate timing** — DNS, TCP, TLS, TTFB, transfer, and total timing via `net/http/httptrace` in Go, with a redirect-aware waterfall and per-attempt retry chart.
+- **Request mode** — toggle between *Via server* (Go executor, default) and *Via client* (browser `fetch()` directly) per request. Client mode sends from the user's IP, useful when target APIs block IPs. Applies to REST and GraphQL; not available for gRPC or WebSocket.
 - **Repeatable checks** — assertions, extractions, pre/post scripts, request flows, collection runs, and batch runs across all protocols.
 - **Portable** — import Postman, OpenAPI, Insomnia, Hoppscotch, HAR, cURL, and `grpcurl`; export OpenAPI, workspace JSON, and code snippets in 15+ languages.
 

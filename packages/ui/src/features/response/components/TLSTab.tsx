@@ -2,13 +2,21 @@ import { useStore } from "../../../store";
 import type { TlsInfo } from "@invoke/core";
 
 export function TLSTab() {
-  const { response } = useStore();
+  const { response, responseBrowserMode } = useStore();
   const tls = (response as any)?.tls as TlsInfo | undefined;
   const httpVersion = response?.headers?.find(
     (h) => h.key?.toLowerCase() === "x-invoke-http-version",
   )?.value;
 
-  if (!tls && !httpVersion) return <p className="p-4 text-xs text-[var(--text-3)]">No TLS data</p>;
+  if (!tls && !httpVersion) {
+    return (
+      <p className="p-4 text-xs text-[var(--text-3)]">
+        {responseBrowserMode
+          ? "TLS information is not available in client mode."
+          : "No TLS data"}
+      </p>
+    );
+  }
 
   return (
     <div className="p-4 flex flex-col gap-3">

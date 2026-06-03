@@ -1,5 +1,5 @@
 import { ArrowLeftRight, Search, Trash2 } from "lucide-react";
-import type { HistoryEntry, HttpMethod } from "@invoke/core";
+import type { HistoryEntry, HttpMethod, KeyValue } from "@invoke/core";
 import { useMockRoutes, useHistory } from "../../../hooks/useDb";
 import { useStore, coreStore } from "../../../store";
 import { HistoryGroup } from "./HistoryGroup";
@@ -18,8 +18,12 @@ export function HistoryPanel() {
 
   const restore = (entry: HistoryEntry) => {
     const request = entry.request as Parameters<typeof setRequest>[0] | undefined;
+    const headers = (request?.headers as KeyValue[] | undefined)?.filter(
+      (h) => h.value !== "[redacted]",
+    );
     setRequest({
       ...(request ?? {}),
+      ...(headers !== undefined ? { headers } : {}),
       protocol: entry.protocol ?? "rest",
     } as Parameters<typeof setRequest>[0]);
     addToast("info", "Request restored");

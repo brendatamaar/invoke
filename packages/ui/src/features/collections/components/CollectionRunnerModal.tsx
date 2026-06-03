@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { CollectionRunner, type RequestRunResult, type VariableScope } from "@invoke/core";
 import { useStore } from "../../../store";
 import { execute } from "../../execute/api";
+import { browserFetch } from "../../execute/browserFetch";
 import { protocolMethod } from "../../../components/shared/methodUtils";
 import { RunnerFooter } from "./runner/RunnerFooter";
 import { RunnerHeader } from "./runner/RunnerHeader";
@@ -17,6 +18,7 @@ export function CollectionRunnerModal() {
     environments,
     activeEnvironmentId,
     sessionVariables,
+    browserMode,
     set,
     addToast,
   } = useStore();
@@ -48,7 +50,7 @@ export function CollectionRunnerModal() {
       const result = await runner.run(
         runRequests,
         {
-          execute,
+          execute: browserMode ? browserFetch : execute,
           scopes: buildScopes(environments, activeEnvironmentId, sessionVariables),
           stopOnFailure,
           onRequestStart: (_request, index) =>

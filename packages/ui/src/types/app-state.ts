@@ -102,6 +102,8 @@ export interface AppState {
   streamMode: boolean;
   streamBytes: number;
   streamController: AbortController | undefined;
+  browserMode: boolean;
+  responseBrowserMode: boolean;
   requests: SavedRequest[];
   protocolDefaults: DefaultProtocolOptions;
   expandedFolderIds: string[];
