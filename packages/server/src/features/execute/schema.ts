@@ -29,6 +29,9 @@ export const executeSchema = Schema.Struct({
   followRedirects: Schema.optionalWith(Schema.Boolean, { default: () => true }),
   maxRedirects: Schema.optionalWith(Schema.Number, { default: () => 10 }),
   verifySsl: Schema.optionalWith(Schema.Boolean, { default: () => true }),
+  httpVersion: Schema.optionalWith(Schema.Literal("auto", "http1", "h2c"), {
+    default: () => "auto" as const,
+  }),
   allowPrivateAddresses: Schema.optionalWith(Schema.Boolean, { default: () => true }),
   proxy: Schema.optional(
     Schema.Struct({

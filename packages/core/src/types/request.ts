@@ -28,6 +28,8 @@ export interface RequestConfig {
   retryPolicy?: RetryPolicy;
 }
 
+export type HttpVersion = "auto" | "http1" | "h2c";
+
 export interface RequestOptions {
   followRedirects?: boolean;
   maxRedirects?: number;
@@ -35,6 +37,7 @@ export interface RequestOptions {
   allowPrivateAddresses?: boolean;
   connectTimeoutMs?: number;
   readTimeoutMs?: number;
+  httpVersion?: HttpVersion;
   tlsClientConfig?: TlsClientConfig;
   proxy?: {
     type: "http" | "socks5";
