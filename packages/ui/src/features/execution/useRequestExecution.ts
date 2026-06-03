@@ -6,7 +6,12 @@ import { PROXY_RECORDS_KEY } from "../proxy/useProxyRecords";
 import { applyOAuth2Token } from "./oauth2";
 import { injectCookies } from "./cookies";
 import { resolveWithPreRequestScript } from "./utils/preRequest";
-import { buildActiveRequest, runBrowserRequest, runBufferedRequest, runStreamingRequest } from "./utils/runExecution";
+import {
+  buildActiveRequest,
+  runBrowserRequest,
+  runBufferedRequest,
+  runStreamingRequest,
+} from "./utils/runExecution";
 import { buildExecutionScopeContext } from "./utils/scopes";
 
 export function useRequestExecution() {

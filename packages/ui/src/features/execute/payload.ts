@@ -12,7 +12,10 @@ export function buildExecutePayload(request: RequestConfig) {
     .filter((h) => h.enabled !== false && h.key)
     .reduceRight<typeof request.headers>((acc, h) => {
       const key = h.key.toLowerCase();
-      if (!seen.has(key)) { seen.add(key); acc.unshift(h); }
+      if (!seen.has(key)) {
+        seen.add(key);
+        acc.unshift(h);
+      }
       return acc;
     }, []);
 

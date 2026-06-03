@@ -35,14 +35,20 @@ export function RequestModePopover() {
             icon={<Server size={13} />}
             label="Via server"
             description="Routes through invoke's executor. Full timing breakdown with no CORS, but some APIs may block invoke's server IP."
-            onClick={() => { set({ browserMode: false }); setOpen(false); }}
+            onClick={() => {
+              set({ browserMode: false });
+              setOpen(false);
+            }}
           />
           <ModeOption
             active={browserMode}
             icon={<Globe size={13} />}
             label="Via client"
             description="Sent directly from your browser. Bypasses invoke's IP blocks, but requires CORS and only captures partial timing."
-            onClick={() => { set({ browserMode: true }); setOpen(false); }}
+            onClick={() => {
+              set({ browserMode: true });
+              setOpen(false);
+            }}
           />
         </div>
       )}
@@ -69,14 +75,20 @@ function ModeOption({
       onClick={onClick}
       className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-[var(--surface-2)] transition-colors"
     >
-      <span className={`mt-0.5 shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--text-3)]"}`}>
+      <span
+        className={`mt-0.5 shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--text-3)]"}`}
+      >
         {icon}
       </span>
       <span className="flex flex-col gap-0.5 flex-1">
-        <span className={`text-2xs font-medium ${active ? "text-[var(--text-1)]" : "text-[var(--text-2)]"}`}>
+        <span
+          className={`text-2xs font-medium ${active ? "text-[var(--text-1)]" : "text-[var(--text-2)]"}`}
+        >
           {label}
           {active && <span className="ml-1.5 text-[var(--accent)]">·</span>}
-          {active && <span className="ml-0.5 text-2xs font-normal text-[var(--accent)]">active</span>}
+          {active && (
+            <span className="ml-0.5 text-2xs font-normal text-[var(--accent)]">active</span>
+          )}
         </span>
         <span className="text-2xs text-[var(--text-3)] leading-relaxed">{description}</span>
       </span>

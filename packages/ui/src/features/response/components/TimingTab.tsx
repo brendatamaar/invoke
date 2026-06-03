@@ -78,7 +78,8 @@ export function TimingTab() {
     <div className="p-4 flex flex-col gap-4">
       {responseBrowserMode && (
         <p className="text-2xs text-[var(--text-3)] px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--surface-2)]">
-          Client mode — DNS, TCP, and TLS phases are not available. Only TTFB and transfer are measured.
+          Client mode — DNS, TCP, and TLS phases are not available. Only TTFB and transfer are
+          measured.
         </p>
       )}
       <div className="flex items-center justify-between">

@@ -11,9 +11,7 @@ export function TLSTab() {
   if (!tls && !httpVersion) {
     return (
       <p className="p-4 text-xs text-[var(--text-3)]">
-        {responseBrowserMode
-          ? "TLS information is not available in client mode."
-          : "No TLS data"}
+        {responseBrowserMode ? "TLS information is not available in client mode." : "No TLS data"}
       </p>
     );
   }
