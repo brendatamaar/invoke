@@ -42,7 +42,7 @@ The browser is the source of truth for workspace data. The server and executor o
 **Self-host** to test `localhost` and private APIs:
 
 ```bash
-docker compose up --build
+docker compose up
 ```
 
 Open: http://localhost:8080

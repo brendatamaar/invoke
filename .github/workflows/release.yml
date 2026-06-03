@@ -32,6 +32,14 @@ jobs:
             ghcr.io/${{ env.OWNER }}/invoke-ui:${{ github.ref_name }}
             ghcr.io/${{ env.OWNER }}/invoke-ui:latest
 
+      - name: Scan UI image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ env.OWNER }}/invoke-ui:${{ github.ref_name }}
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
       - name: Build & push server
         uses: docker/build-push-action@v6
         with:
@@ -42,6 +50,14 @@ jobs:
             ghcr.io/${{ env.OWNER }}/invoke-server:${{ github.ref_name }}
             ghcr.io/${{ env.OWNER }}/invoke-server:latest
 
+      - name: Scan server image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ env.OWNER }}/invoke-server:${{ github.ref_name }}
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
       - name: Build & push executor
         uses: docker/build-push-action@v6
         with:
@@ -51,6 +67,14 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER }}/invoke-executor:${{ github.ref_name }}
             ghcr.io/${{ env.OWNER }}/invoke-executor:latest
+
+      - name: Scan executor image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ env.OWNER }}/invoke-executor:${{ github.ref_name }}
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
 
       - name: GitHub Release
         uses: softprops/action-gh-release@v2

@@ -17,9 +17,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - uses: tim-actions/dco@master
+        if: github.event_name == 'pull_request'
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm format:check
+      - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
       - uses: actions/setup-go@v5

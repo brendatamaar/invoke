@@ -27,6 +27,8 @@ services:
 
   ui:
     image: ghcr.io/brendatamaar/invoke-ui:latest
+    ports:
+      - "8080:8080"
     depends_on:
       server:
         condition: service_healthy
