@@ -34,6 +34,7 @@ export function ResponseViewer() {
     request,
     retryAttempts,
     apqRetried,
+    responseBrowserMode,
     graphqlDeferredParts,
     consoleLogs,
   } = store;
@@ -52,6 +53,7 @@ export function ResponseViewer() {
           responsePretty={responsePretty}
           retryAttempts={retryAttempts}
           apqRetried={apqRetried}
+          browserMode={responseBrowserMode}
           gqlComplexity={model.gqlComplexity}
           gqlCost={model.gqlCost}
           passedCount={model.passedCount}

@@ -2,6 +2,7 @@ import { Settings, HelpCircle, Cookie } from "lucide-react";
 import { useStore } from "../../store";
 import { useCookies } from "../../hooks/useDb";
 import { Select } from "../shared/Select";
+import { RequestModePopover } from "./RequestModePopover";
 
 export function TopBar() {
   const { environments, activeEnvironmentId, set, showSettings } = useStore();
@@ -73,6 +74,7 @@ export function TopBar() {
           ))}
         </Select>
 
+        <RequestModePopover />
         <button
           type="button"
           onClick={() => set({ showCookieManager: true })}

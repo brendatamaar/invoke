@@ -4,6 +4,7 @@ import {
   Clock,
   Cpu,
   GitCompare,
+  Globe,
   HardDrive,
   Indent,
   PlusCircle,
@@ -20,6 +21,7 @@ export function ResponseStatusBar({
   responsePretty,
   retryAttempts,
   apqRetried,
+  browserMode,
   gqlComplexity,
   gqlCost,
   passedCount,
@@ -40,6 +42,7 @@ export function ResponseStatusBar({
   responsePretty: boolean;
   retryAttempts?: number;
   apqRetried?: boolean;
+  browserMode?: boolean;
   gqlComplexity: unknown;
   gqlCost: any;
   passedCount: number;
@@ -73,6 +76,14 @@ export function ResponseStatusBar({
       {apqRetried && (
         <span className="text-2xs text-[var(--accent)] flex items-center gap-1">
           <RefreshCw size={11} /> APQ retry
+        </span>
+      )}
+      {browserMode && (
+        <span
+          className="text-2xs text-[var(--accent)] flex items-center gap-1"
+          title="Sent directly from your browser — timing excludes DNS/TLS phases"
+        >
+          <Globe size={11} /> Browser
         </span>
       )}
       {gqlComplexity !== null && (

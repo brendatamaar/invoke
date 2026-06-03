@@ -40,6 +40,7 @@ export interface SavedRequest {
   name: string;
   protocol: RequestProtocol;
   request: ProtocolRequestConfig;
+  requestMode?: "server" | "browser";
   sortOrder: number;
   createdAt: number;
   updatedAt: number;

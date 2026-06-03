@@ -374,7 +374,29 @@ User sends request to SSE endpoint
   → React UI renders chunks in real-time in the response viewer
 ```
 
-#### 5.2.4 Mock Server
+#### 5.2.4 Browser-Direct Execution
+
+An alternative to the standard server-routed flow. The user selects *Via client* in the request mode popover; the browser sends the request using native `fetch()` instead of posting to `/api/execute`.
+
+```
+User selects "Via client" and clicks Send
+  → @invoke/core (in browser) resolves variables and auth as normal
+  → browserFetch() calls native fetch() with resolved URL, headers, and body
+  → Target API receives the request from the user's machine IP
+  → Response is processed by the same finalize pipeline
+    (assertions, extraction, post-response script, history)
+  → Response viewer shows a "Client" badge; timing shows TTFB and transfer only
+    (DNS, TCP, TLS phases are not available from the browser)
+```
+
+**Constraints:**
+- Works for REST and GraphQL only. Not available for gRPC (requires HTTP/2 binary framing) or WebSocket (already browser-native).
+- CORS: the target API must allow cross-origin requests. APIs that block VPS IPs but also lack CORS headers will still fail.
+- Timing: DNS/TCP/TLS breakdown is unavailable. Only TTFB and transfer are measured via `performance.now()`.
+- Streaming mode is mutually exclusive with client mode.
+- Auth types not supported in client mode: Digest, NTLM, AWS SigV4 (all require server-side computation).
+
+#### 5.2.5 Mock Server
 
 ```
 User clicks "Start Mock"
@@ -455,6 +477,7 @@ interface SavedRequest {
   description?: string;
   protocol: 'rest' | 'graphql' | 'websocket' | 'grpc';
   request: RequestConfig;
+  requestMode?: 'server' | 'browser'; // default 'server'; 'browser' sends via native fetch()
   assertions: Assertion[];
   preRequestScript?: Script;
   postResponseScript?: Script;
@@ -903,6 +926,7 @@ The executor can act as a gRPC client:
 - Send button (primary action)
 - Save button (to collection)
 - Variable chips — hover `{{token}}` to see resolved value from current environment
+- **Request mode popover** (top bar, beside cookie manager) — *Via server* routes through the Go executor (default); *Via client* sends via browser `fetch()` from the user's machine. REST and GraphQL only. Disabled when stream mode is active.
 
 **Request Configuration Tabs:**
 

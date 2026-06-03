@@ -20,6 +20,7 @@ type FinalizeBase = {
   extractRules: ExtractionRule[];
   sessionVariables: Record<string, string>;
   protocol: RequestProtocol;
+  requestMode?: "server" | "browser";
   enableCookies: boolean;
   set: AppState["set"];
 };
@@ -38,6 +39,7 @@ export async function finalizeStreamExecution({
     request: base.resolved,
     response,
     protocol: base.protocol,
+    requestMode: base.requestMode,
   });
   base.set({
     response,
@@ -86,6 +88,7 @@ export async function finalizeResponseExecution({
     request: base.resolved,
     response,
     protocol: base.protocol,
+    requestMode: base.requestMode,
   });
   base.set({
     response,

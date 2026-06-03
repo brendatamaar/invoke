@@ -17,6 +17,8 @@ export type ResponseSlice = Pick<
   | "streamMode"
   | "streamBytes"
   | "streamController"
+  | "browserMode"
+  | "responseBrowserMode"
   | "resolvedRequest"
 >;
 
@@ -38,6 +40,8 @@ export function createResponseSlice(_set: StoreSet): ResponseSlice {
     streamMode: false,
     streamBytes: 0,
     streamController: undefined,
+    browserMode: false,
+    responseBrowserMode: false,
     resolvedRequest: undefined,
   };
 }

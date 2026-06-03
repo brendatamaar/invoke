@@ -48,7 +48,7 @@ function buildAttemptBars(attempt: TimingAttempt): PhaseBar[] {
 }
 
 export function TimingTab() {
-  const { response } = useStore();
+  const { response, responseBrowserMode } = useStore();
   if (!response?.timing) return <p className="p-4 text-xs text-[var(--text-3)]">No timing data</p>;
 
   const attempts: TimingAttempt[] = response.attempts?.length
@@ -76,6 +76,12 @@ export function TimingTab() {
 
   return (
     <div className="p-4 flex flex-col gap-4">
+      {responseBrowserMode && (
+        <p className="text-2xs text-[var(--text-3)] px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--surface-2)]">
+          Client mode — DNS, TCP, and TLS phases are not available. Only TTFB and transfer are
+          measured.
+        </p>
+      )}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-[var(--text-1)]">Timing waterfall</span>
         <span className="text-xs text-[var(--text-3)]">
