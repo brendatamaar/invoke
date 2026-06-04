@@ -52,7 +52,7 @@ export function URLBar({ onSend, loading }: URLBarProps) {
   );
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2">
+    <div className="flex items-center gap-2 px-3 py-2" data-tour="url-bar">
       {request.protocol !== "graphql" && (
         <MethodDropdown
           method={request.method}

@@ -48,6 +48,7 @@ export function Sidebar() {
               key={id}
               type="button"
               title={label}
+              data-tour={id === "collections" ? "sidebar-collections" : id === "environments" ? "sidebar-environments" : undefined}
               onClick={() => {
                 if (sidebarSection === id) {
                   set({ sidebarCollapsed: !sidebarCollapsed });
