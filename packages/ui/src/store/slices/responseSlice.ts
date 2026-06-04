@@ -40,7 +40,7 @@ export function createResponseSlice(_set: StoreSet): ResponseSlice {
     streamMode: false,
     streamBytes: 0,
     streamController: undefined,
-    browserMode: false,
+    browserMode: window.location.hostname === "runinvoke.com",
     responseBrowserMode: false,
     resolvedRequest: undefined,
   };

@@ -18,6 +18,7 @@ import {
 } from "./features/collections";
 import { CookieManagerModal } from "./features/cookies";
 import { useAppBootstrap } from "./features/bootstrap/useAppBootstrap";
+import { OnboardingTour } from "./features/onboarding";
 import { useActiveEnvironmentPersistence } from "./features/environments/useActiveEnvironmentPersistence";
 import { useRequestExecution } from "./features/execution/useRequestExecution";
 import { useResizablePane } from "./hooks/useResizablePane";
@@ -127,7 +128,11 @@ export default function App() {
             }}
           />
 
-          <div className="flex-1 overflow-hidden" style={{ minHeight: 300 }}>
+          <div
+            className="flex-1 overflow-hidden"
+            style={{ minHeight: 300 }}
+            data-tour="response-area"
+          >
             <ResponseViewer />
           </div>
         </div>
@@ -145,6 +150,7 @@ export default function App() {
       <SaveRequestModal />
       <SaveActionModal />
       <CookieManagerModal />
+      <OnboardingTour />
     </div>
   );
 }

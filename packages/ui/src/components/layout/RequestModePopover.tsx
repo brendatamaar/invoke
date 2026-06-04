@@ -1,15 +1,27 @@
 import { useState } from "react";
 import { ChevronDown, Globe, Server } from "lucide-react";
 import { useStore } from "../../store";
+import { ConfirmModal } from "../shared/ConfirmModal";
 
 export function RequestModePopover() {
   const { browserMode, streamMode, set, request } = useStore();
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState<boolean | null>(null);
 
   if (request.protocol === "grpc" || request.protocol === "websocket") return null;
 
+  const requestSwitch = (value: boolean) => {
+    setOpen(false);
+    setPending(value);
+  };
+
+  const confirmSwitch = () => {
+    set({ browserMode: pending! });
+    setPending(null);
+  };
+
   return (
-    <div className="relative">
+    <div className="relative" data-tour="request-mode">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -35,23 +47,30 @@ export function RequestModePopover() {
             icon={<Server size={13} />}
             label="Via server"
             description="Routes through invoke's executor. Full timing breakdown with no CORS, but some APIs may block invoke's server IP."
-            onClick={() => {
-              set({ browserMode: false });
-              setOpen(false);
-            }}
+            onClick={() => requestSwitch(false)}
           />
           <ModeOption
             active={browserMode}
             icon={<Globe size={13} />}
             label="Via client"
-            description="Sent directly from your browser. Bypasses invoke's IP blocks, but requires CORS and only captures partial timing."
-            onClick={() => {
-              set({ browserMode: true });
-              setOpen(false);
-            }}
+            description="Sent directly from your browser. Bypasses invoke's IP blocks, but requires CORS and only captures limited timing."
+            onClick={() => requestSwitch(true)}
           />
         </div>
       )}
+
+      <ConfirmModal
+        open={pending !== null}
+        title="Switch request mode?"
+        message={
+          pending
+            ? "Switch to Client mode? Requests will be sent directly from your browser. CORS restrictions apply and timing data will be limited."
+            : "Switch to Server mode? Requests will be routed through invoke's executor. Some APIs may block invoke's server IP."
+        }
+        confirmLabel="Switch"
+        onConfirm={confirmSwitch}
+        onClose={() => setPending(null)}
+      />
     </div>
   );
 }
