@@ -6,7 +6,7 @@ Please do not open public issues for vulnerabilities. See [SECURITY.md](./SECURI
 
 ## Dev Setup
 
-Requires Node.js (pnpm), Bun, and Go.
+Requires pnpm, Bun, and Go.
 
 ```sh
 pnpm install
@@ -26,7 +26,7 @@ pnpm dev
 
 ## Code Style
 
-We use oxlint for linting and oxfmt for formatting. Run both with:
+Use oxlint for linting and oxfmt for formatting. Run both with:
 
 ```sh
 pnpm lint
