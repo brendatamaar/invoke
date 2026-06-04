@@ -1,7 +1,5 @@
 # Contributing to Invoke
 
-Thanks for taking the time to contribute.
-
 ## Security Issues
 
 Please do not open public issues for vulnerabilities. See [SECURITY.md](./SECURITY.md) for the responsible disclosure process.
