@@ -1,6 +1,6 @@
 # invoke
 
-Open-source API development, debugging, documentation and testing platform. Use [runinvoke.com](https://runinvoke.com) or self-host with Docker — no account required, all workspace data stays in your browser.
+Open-source API development, debugging, documentation and testing platform. Use [runinvoke.com](https://runinvoke.com) or self-host with Docker. No account required, all workspace data stays in your browser.
 
 invoke combines a React UI, a TypeScript core engine, a thin Effect HttpApi server on Bun, and a Go executor. The browser owns workspace state, the core engine handles client-side API logic, and the Go executor performs network I/O with the low-level timing data.
 
