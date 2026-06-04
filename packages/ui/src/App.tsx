@@ -128,7 +128,11 @@ export default function App() {
             }}
           />
 
-          <div className="flex-1 overflow-hidden" style={{ minHeight: 300 }} data-tour="response-area">
+          <div
+            className="flex-1 overflow-hidden"
+            style={{ minHeight: 300 }}
+            data-tour="response-area"
+          >
             <ResponseViewer />
           </div>
         </div>

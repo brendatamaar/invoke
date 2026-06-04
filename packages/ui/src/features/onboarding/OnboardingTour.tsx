@@ -122,11 +122,7 @@ export function OnboardingTour() {
   return (
     <>
       {/* Click-blocker */}
-      <div
-        style={{ position: "fixed", inset: 0, zIndex: 9998 }}
-        onClick={dismiss}
-        aria-hidden
-      />
+      <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={dismiss} aria-hidden />
 
       {/* Spotlight */}
       <div
