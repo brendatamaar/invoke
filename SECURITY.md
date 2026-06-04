@@ -7,17 +7,27 @@ Report security issues through GitHub Security Advisories:
 
 Do not open a public issue for security vulnerabilities.
 
+## What to Include
+
+Please include as much detail as possible:
+
+- A description of the vulnerability
+- Steps to reproduce
+- Affected version, commit, or deployment
+- Expected and actual behavior
+- Any proof of concept, logs, screenshots, or sample files
+- Suggested impact or severity, if known
+
 ## Disclosure Timeline
 
-We follow a 90-day coordinated disclosure process:
+After you submit a report:
 
-1. You submit a report via GitHub Security Advisories
-2. We acknowledge receipt within 3 business days
-3. We investigate and keep you informed of progress
-4. We aim to ship a fix within 90 days of confirmation
-5. We coordinate with you on timing before any public disclosure
+1. We will acknowledge receipt when possible
+2. We will review the issue and try to reproduce it
+3. If the issue is confirmed, we will work on a fix based on severity and maintainer availability
+4. We will coordinate with you before any public disclosure when possible
 
-If a fix requires longer than 90 days, we will communicate this and agree on an extension.
+Please do not publicly disclose the issue until we have had a reasonable opportunity to investigate and fix it.
 
 ## Scope
 
@@ -36,4 +46,4 @@ If a fix requires longer than 90 days, we will communicate this and agree on an 
 
 ## Preferred Languages
 
-English.
+English & Indonesia
