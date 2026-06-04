@@ -61,11 +61,11 @@ export function RequestModePopover() {
 
       <ConfirmModal
         open={pending !== null}
-        title="Switch request mode?"
+        title={pending ? "Switch to Client mode?" : "Switch to Server mode?"}
         message={
           pending
-            ? "Switch to Client mode? Requests will be sent directly from your browser. CORS restrictions apply and timing data will be limited."
-            : "Switch to Server mode? Requests will be routed through invoke's executor. Some APIs may block invoke's server IP."
+            ? "Switching to Client mode will send requests directly from your browser. CORS restrictions apply and timing data will be limited."
+            : "Switching to Server mode will route requests through invoke's executor. Some APIs may block invoke's server IP."
         }
         confirmLabel="Switch"
         onConfirm={confirmSwitch}
